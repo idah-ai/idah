@@ -27,7 +27,8 @@ export class DashboardManager {
   updated: Date | null = $state(null);
   version = $state(0);
   tableEpoch = $state(0);
-  poolCount = $state(0);
+  poolCount: number | null = $state(null);
+  projectDatasetCount: number | null = $state(null);
   navigationPage: number | null = $state(0);
   poolMore = $state(false);
   trendRange: DashboardRange = $state(initialCompletionRange());
@@ -44,7 +45,10 @@ export class DashboardManager {
   private disposed = false;
   private reportingDay: Date | null = null;
   sources: ProjectDashboardDataSources = $state.raw(null!);
-  constructor(readonly projectId: string) {
+  constructor(
+    readonly projectId: string,
+    private readonly onScopeChange?: () => void,
+  ) {
     this.replaceSources();
   }
   private replaceSources(): void {
@@ -151,9 +155,9 @@ export class DashboardManager {
       if (generation === this.generation && this.reportingDay === day) this.attention = null;
     }
   }
-  private listDatasetPage(page: number): Promise<CollectionResponse<DatasetRecord>> {
+  private listDatasetPage(page: number, ids = this.ids): Promise<CollectionResponse<DatasetRecord>> {
     return this.sources.datasets.list({
-      filters: this.ids.length ? { id: this.ids } : {},
+      filters: ids.length ? { id: ids } : {},
       sort: ["name", "id"],
       pagination: { page, itemsPerPage: 1 },
       count: true,
@@ -167,12 +171,15 @@ export class DashboardManager {
     }
     this.invalidateTrend();
     this.scopeReady = false;
+    this.onScopeChange?.();
     this.tableEpoch++;
     this.denied = false;
     const token = ++this.generation;
     this.clearMetrics();
     this.loading = true;
     this.ids = [...new SvelteSet(ids)].sort();
+    this.poolCount = null;
+    this.poolMore = false;
     this.focused = null;
     this.replaceSources();
     try {
@@ -180,6 +187,7 @@ export class DashboardManager {
       if (token !== this.generation) return;
       this.poolCount = first.meta?.count ?? 0;
       this.poolMore = first.meta?.more === true;
+      if (!this.ids.length) this.projectDatasetCount = this.poolMore ? null : this.poolCount;
       this.navigationPage = this.poolCount === 1 ? 1 : 0;
       if (this.poolCount === 1) {
         this.focused = first.data[0] ?? null;
@@ -205,6 +213,7 @@ export class DashboardManager {
     if (this.disposed) return;
     this.invalidateTrend();
     this.scopeReady = false;
+    this.onScopeChange?.();
     this.tableEpoch++;
     this.clearMetrics();
     this.focused = dataset;
@@ -227,10 +236,20 @@ export class DashboardManager {
     this.loading = true;
     this.error = "";
     try {
-      const pool = await this.listDatasetPage(1);
+      const [pool, project] = await Promise.all([
+        this.listDatasetPage(1),
+        this.ids.length
+          ? this.listDatasetPage(1, []).catch((error: unknown) => {
+              if (isAccessError(error)) throw error;
+              return null;
+            })
+          : Promise.resolve(null),
+      ]);
       if (token !== this.generation) return;
       this.poolCount = pool.meta?.count ?? 0;
       this.poolMore = pool.meta?.more === true;
+      const projectMeta = this.ids.length ? project?.meta : pool.meta;
+      this.projectDatasetCount = projectMeta && !projectMeta.more ? (projectMeta.count ?? null) : null;
       if (this.focused) {
         const current = await this.sources.datasets.list({
           filters: { id: [this.focused.id] },
@@ -262,16 +281,17 @@ export class DashboardManager {
   async step(delta: number): Promise<void> {
     if (this.disposed || this.loading) return;
     if (this.ids.length === 1) return;
-    if (!this.poolCount) return;
+    const count = this.poolCount;
+    if (!count) return;
     // Overview enters at the first/last Dataset. Detail navigation cycles without an overview stop.
     let page: number;
     if (!this.focused || this.navigationPage === null) {
-      page = delta < 0 && !this.poolMore ? this.poolCount : 1;
+      page = delta < 0 && !this.poolMore ? count : 1;
     } else {
       page = this.navigationPage + delta;
     }
-    if (page < 1) page = this.poolMore ? 1 : this.poolCount;
-    if (!this.poolMore && page > this.poolCount) page = 1;
+    if (page < 1) page = this.poolMore ? 1 : count;
+    if (!this.poolMore && page > count) page = 1;
     this.invalidateTrend();
     this.scopeReady = false;
     const generation = this.generation;
@@ -308,6 +328,8 @@ export class DashboardManager {
     this.clearMetrics();
     this.loading = false;
     this.denied = true;
+    this.projectDatasetCount = null;
+    this.poolCount = null;
     this.sources.retire();
   }
   dispose(): void {

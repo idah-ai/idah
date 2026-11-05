@@ -1,30 +1,23 @@
 <script lang="ts">
   import { today as localToday } from "@/utils/date";
   import { onMount, untrack } from "svelte";
-  import { ChevronLeftIcon, ChevronRightIcon, ArrowLeftIcon } from "@lucide/svelte";
+  import { ChevronLeftIcon, ChevronRightIcon } from "@lucide/svelte";
 
   import { Button } from "@/components/ui/button";
-  import { Badge } from "@/components/ui/badge";
-  import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+  import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
   import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
   import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import MetricCard from "@/components/app/cards/metric-card.svelte";
-  import DateText from "@/components/app/texts/date-text.svelte";
+  import { getTablePreferences } from "@/components/app/datasource-table/datasource-table.stores.svelte";
   import { DashboardManager } from "@/components/app/projects/dashboard/DashboardManager.svelte";
   import DatasetSelector from "@/components/app/projects/dashboard/DatasetSelector.svelte";
-  import DatasetProgressTable from "@/components/app/projects/dashboard/datasourceTable/DatasetProgressTable.svelte";
-  import OpenEntriesTable from "@/components/app/projects/dashboard/datasourceTable/OpenEntriesTable.svelte";
+  import DatasetProgressTable from "@/components/app/projects/dashboard/table/DatasetProgressTable.svelte";
+  import OpenEntriesTable from "@/components/app/projects/dashboard/table/OpenEntriesTable.svelte";
   import CompletionHistoryChart from "@/components/app/projects/dashboard/CompletionHistoryChart.svelte";
   import StatusStack from "@/components/app/projects/dashboard/StatusStack.svelte";
-  import DeliveryBadge from "@/components/app/projects/dashboard/DeliveryBadge.svelte";
-  import {
-    deliveryDate,
-    deliveryStatus,
-    datasetDeliveryDate,
-  } from "@/components/app/projects/dashboard/DashboardStatus";
+  import { deliveryStatus, datasetDeliveryDate } from "@/components/app/projects/dashboard/DashboardStatus";
   import Text from "@/components/ui/text/Text.svelte";
-  import DataDisplay from "@/components/app/texts/data-display.svelte";
 
   import type { Interval } from "@/components/app/projects/dashboard/DashboardHistory";
 
@@ -33,7 +26,16 @@
 
   // Variables
   const uid = $props.id();
-  const manager = untrack(() => new DashboardManager(projectId));
+  const datasetPreferences = getTablePreferences("dashboard-datasets-" + uid);
+  const entryPreferences = getTablePreferences("dashboard-open-entries-" + uid);
+  const manager = untrack(
+    () =>
+      new DashboardManager(projectId, () => {
+        for (const preferences of [datasetPreferences, entryPreferences]) {
+          preferences.update((prefs) => ({ ...prefs, pagination: { ...prefs.pagination, page: 1 } }));
+        }
+      }),
+  );
   const counts = $derived(manager.summary);
   const detail = $derived(manager.focused);
   const progress = $derived(
@@ -48,6 +50,18 @@
   const deliveryCounts = $derived(
     counts ?? (detail ? { total: detail.entries_total_count, completed: detail.entries_completed_count } : null),
   );
+  const datasetCaption = $derived.by((): string => {
+    if (detail) return "in this dataset";
+    if (manager.loading || manager.poolCount === null)
+      return manager.ids.length ? "across selected datasets" : "across all datasets";
+    if (!manager.ids.length || manager.poolCount === manager.projectDatasetCount)
+      return manager.projectDatasetCount === null
+        ? "across all datasets"
+        : `across ${manager.projectDatasetCount} datasets`;
+    if (manager.projectDatasetCount === null || manager.projectDatasetCount < manager.poolCount)
+      return `across ${manager.poolCount} selected datasets`;
+    return `across ${manager.poolCount} of ${manager.projectDatasetCount} datasets`;
+  });
   const scope = $derived(detail?.id ?? (manager.ids.join(",") || "all"));
 
   let notice = $state("");
@@ -67,25 +81,23 @@
 </script>
 
 <TooltipProvider>
-  <section
-    class="min-w-0 space-y-6 pb-6 [&_[id=datasource-table-paginator-container]]:gap-3 [&_[id=datasource-table-paginator-container]]:px-6 [&_[id=datasource-table-paginator-container]]:py-2"
-  >
+  <section class="min-w-0 space-y-6 pb-6 [&_[id=datasource-table-paginator-container]]:gap-3">
     {#if manager.denied}
       <ResponseBlock title="Dashboard data unavailable" description={manager.error}>
         {#snippet actions()}<Button onclick={() => void manager.refresh()}>Try again</Button>{/snippet}
       </ResponseBlock>
     {:else}
       <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex max-w-full min-w-0 items-center gap-3">
+        <div class="flex max-w-full min-w-0 flex-wrap items-center gap-3">
           <span class="text-muted-foreground text-xs">Datasets</span>
           <DatasetSelector {projectId} ids={manager.ids} select={(ids) => void manager.select(ids)} />
 
-          {#if manager.ids.length !== 1 && manager.poolCount > 1}
+          {#if manager.ids.length !== 1 && (manager.poolCount ?? 0) > 1}
             <div
               role="toolbar"
               tabindex="0"
               aria-label="Dataset view"
-              class="bg-background inline-flex h-8 max-w-72 min-w-0 shrink-0 items-center rounded-md border shadow-xs"
+              class="bg-muted inline-flex max-w-full min-w-0 items-center gap-0.5 rounded-lg p-1"
               onkeydown={(event) => {
                 if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
                   event.preventDefault();
@@ -95,8 +107,21 @@
             >
               <Button
                 variant="ghost"
+                class={!detail
+                  ? "bg-background text-primary hover:bg-background font-semibold shadow-sm"
+                  : "text-muted-foreground"}
+                size="sm"
+                aria-pressed={!detail}
+                disabled={manager.loading}
+                onclick={() => {
+                  if (detail) void manager.focus(null);
+                }}>All datasets ({manager.poolCount}{manager.poolMore ? "+" : ""})</Button
+              >
+              <span class="bg-border mx-1 h-4 w-px shrink-0" aria-hidden="true"></span>
+              <Button
+                variant="ghost"
                 size="icon-sm"
-                class="size-7 rounded-none rounded-l-md"
+                class="size-7"
                 aria-label="Previous dataset"
                 disabled={manager.loading}
                 onclick={() => void manager.step(-1)}
@@ -104,17 +129,19 @@
                 <ChevronLeftIcon class="size-3" />
               </Button>
               <Tooltip>
-                <TooltipTrigger class="min-w-0 flex-1 truncate px-2 text-xs font-medium">
-                  {detail?.name ?? (manager.ids.length ? "Selected datasets" : "All datasets")}
+                <TooltipTrigger
+                  class={`h-8 max-w-56 min-w-0 flex-1 truncate rounded-md px-3 text-xs ${detail ? "bg-background text-primary font-semibold shadow-sm" : "text-muted-foreground"}`}
+                >
+                  {detail?.name ?? "Select a dataset"}
                 </TooltipTrigger>
                 <TooltipContent class="max-w-xs [overflow-wrap:anywhere]">
-                  {detail?.name ?? (manager.ids.length ? "Selected datasets" : "All datasets")}
+                  {detail?.name ?? "Select a dataset"}
                 </TooltipContent>
               </Tooltip>
               <Button
                 variant="ghost"
                 size="icon-sm"
-                class="size-7 rounded-none rounded-r-md"
+                class="size-7"
                 aria-label="Next dataset"
                 disabled={manager.loading}
                 onclick={() => void manager.step(1)}
@@ -132,50 +159,15 @@
         </Alert>
       {/if}
 
-      {#if detail}<div class="space-y-3">
-          {#if manager.ids.length !== 1}
-            <Button variant="ghost" size="sm" class="px-0" onclick={() => void manager.focus(null)}
-              ><ArrowLeftIcon />{manager.ids.length ? "Back to selected datasets" : "Back to all datasets"}</Button
-            >
-          {/if}
-          <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <h2 class="min-w-0 flex-1 text-xl font-semibold [overflow-wrap:anywhere]">
-              {detail.name}
-            </h2>
-            <div class="flex shrink-0 items-center justify-end gap-3 self-end sm:ml-6 sm:self-start">
-              <Badge variant="secondary" class="capitalize">
-                {detail.modality}
-              </Badge>
-              {#if deliveryCounts}<DeliveryBadge
-                  date={datasetDeliveryDate(detail)}
-                  counts={deliveryCounts}
-                />{:else}<Badge variant="secondary">Status unavailable</Badge>{/if}
-            </div>
-          </div>
-
-          <DataDisplay label="Delivery date">
-            {#snippet slotValue()}
-              <DateText
-                datetime={deliveryDate(datasetDeliveryDate(detail))}
-                datetimeFormat="MMM dd, yyyy"
-                size="sm"
-                weight="light"
-                showTooltip
-              />
-            {/snippet}
-          </DataDisplay>
-        </div>
-      {:else if manager.ids.length}
-        <p class="text-muted-foreground text-xs">
-          Filtered overview · {manager.ids.length} datasets selected
-        </p>
-      {/if}
-
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          title="Total entries"
-          value={counts ? counts.total.toLocaleString() : (detail?.entries_total_count?.toLocaleString() ?? "—")}
-        />
+        <MetricCard title="Total entries">
+          {#snippet slotValue()}
+            <Text size="h2" weight="semibold"
+              >{counts ? counts.total.toLocaleString() : (detail?.entries_total_count?.toLocaleString() ?? "—")}</Text
+            >
+            <Text size="sm" class="text-muted-foreground">{datasetCaption}</Text>
+          {/snippet}
+        </MetricCard>
 
         <MetricCard
           title={detail ? "Dataset progress" : manager.ids.length ? "Progress of selection" : "Overall progress"}
@@ -199,9 +191,9 @@
 
         <MetricCard title="Open entries">
           {#snippet slotValue()}
-            <Text size="h2" weight="semibold"
-              >{deliveryCounts ? (deliveryCounts.total - deliveryCounts.completed).toLocaleString() : "—"}</Text
-            >
+            <Text size="h2" weight="semibold">
+              {deliveryCounts ? (deliveryCounts.total - deliveryCounts.completed).toLocaleString() : "—"}
+            </Text>
             <Text class="text-muted-foreground" size="sm">
               {counts
                 ? `${(counts.reviewing + counts.pendingReview).toLocaleString()} in review · ${(counts.annotating + counts.pendingAnnotation).toLocaleString()} in annotation${counts.residual ? ` · ${counts.residual} outside active workflow` : ""}`
@@ -212,13 +204,13 @@
 
         <MetricCard title={detail ? "Delivery" : "Datasets needing attention"}>
           {#snippet slotValue()}
-            <Text size="h2" weight="semibold"
-              >{detail
+            <Text size="h2" weight="semibold">
+              {detail
                 ? deliveryCounts
                   ? deliveryStatus(datasetDeliveryDate(detail), deliveryCounts, $localToday).label
                   : "Unavailable"
-                : (manager.attention?.toLocaleString() ?? "—")}</Text
-            >
+                : (manager.attention?.toLocaleString() ?? "—")}
+            </Text>
             <Text class="text-muted-foreground" size="sm">
               {detail
                 ? datasetDeliveryDate(detail)
@@ -231,21 +223,20 @@
           {/snippet}
         </MetricCard>
       </div>
-      <Card
-        ><CardHeader
-          ><CardTitle>Entries by status</CardTitle><CardDescription
-            >Current workflow distribution{counts
-              ? ` · ${counts.total.toLocaleString()} entries`
-              : " · exact counts unavailable"}</CardDescription
-          ></CardHeader
-        ><CardContent
-          >{#if counts}<StatusStack {counts} />{:else}<ResponseBlock
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Entries by status</CardTitle>
+        </CardHeader>
+
+        <CardContent>
+          {#if counts}<StatusStack {counts} />{:else}<ResponseBlock
               size="sm"
               title={manager.loading ? "Loading workflow counts" : "Workflow counts unavailable"}
               description={manager.error || "No counts have been replaced with zero."}
-            />{/if}</CardContent
-        ></Card
-      >
+            />{/if}
+        </CardContent>
+      </Card>
       <CompletionHistoryChart
         range={manager.trendRange}
         bind:interval
@@ -253,19 +244,19 @@
         onApply={(range) => manager.applyTrendRange(range)}
         onRetry={() => manager.retryTrend()}
       />
-      {#if !detail}<Card
-          ><CardHeader><CardTitle>Progress by dataset</CardTitle></CardHeader><CardContent class="px-0"
-            >{#key `${manager.version}-${manager.tableEpoch}`}<DatasetProgressTable
-                stateKey={"dashboard-datasets-" + uid + "-" + manager.tableEpoch}
+      {#if !detail}<Card>
+          <CardHeader><CardTitle>Progress by dataset</CardTitle></CardHeader><CardContent class="px-0">
+            {#key `${manager.version}-${manager.tableEpoch}`}<DatasetProgressTable
+                preferences={datasetPreferences}
                 sources={manager.sources}
                 ids={manager.ids}
                 choose={(record, page) => void manager.focus(record, page)}
-              />{/key}</CardContent
-          ></Card
-        >{/if}
-      <Card
-        ><CardHeader class="flex flex-wrap justify-between gap-3 sm:flex-row"
-          ><div class="space-y-1.5">
+              />{/key}
+          </CardContent>
+        </Card>{/if}
+      <Card>
+        <CardHeader class="flex flex-wrap justify-between gap-3 sm:flex-row">
+          <div class="space-y-1.5">
             <CardTitle>Open entries</CardTitle>
           </div>
           {#if detail}
@@ -273,33 +264,35 @@
               variant="link"
               size="sm"
               onclick={() => location.assign(`/projects/${projectId}/datasets/${detail.id}/entries`)}
-              >All entries</Button
             >
+              All entries
+            </Button>
           {:else}<Button
               variant="link"
               size="sm"
               onclick={() =>
                 (notice =
                   "A combined Dataset Entries view is not connected yet. Select one Dataset to open its Entries page.")}
-              >All entries</Button
             >
+              All entries
+            </Button>
           {/if}
         </CardHeader>
-        <CardContent class="px-0"
-          >{#key `${!!detail}-${scope}-${manager.version}-${manager.tableEpoch}`}<OpenEntriesTable
-              stateKey={"dashboard-open-entries-" + uid + "-" + manager.tableEpoch}
+        <CardContent class="px-0">
+          {#key `${!!detail}-${scope}-${manager.version}-${manager.tableEpoch}`}<OpenEntriesTable
+              preferences={entryPreferences}
               sources={manager.sources}
               ids={detail ? [detail.id] : manager.ids}
-              combined={!detail}
-            />{/key}</CardContent
-        ></Card
-      >
+              combined={!detail && manager.ids.length !== 1 && (manager.poolCount === null || manager.poolCount > 1)}
+            />{/key}
+        </CardContent>
+      </Card>
 
-      {#if notice}<Alert
-          ><AlertTitle>Dashboard information</AlertTitle><AlertDescription
-            >{notice}<Button variant="ghost" size="sm" onclick={() => (notice = "")}>Dismiss</Button></AlertDescription
-          ></Alert
-        >{/if}
+      {#if notice}<Alert>
+          <AlertTitle>Dashboard information</AlertTitle><AlertDescription>
+            {notice}<Button variant="ghost" size="sm" onclick={() => (notice = "")}>Dismiss</Button>
+          </AlertDescription>
+        </Alert>{/if}
     {/if}
   </section>
 </TooltipProvider>

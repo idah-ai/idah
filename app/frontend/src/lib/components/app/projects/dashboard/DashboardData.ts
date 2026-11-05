@@ -17,11 +17,6 @@ export type Counts = {
   pendingAnnotation: number;
   residual: number;
 };
-export type DatasetTableContexts = {
-  countsByDataset: { [id: string]: Counts | null };
-  choose?: (record: DatasetRecord) => void;
-};
-
 export function isAccessError(error: unknown): error is JsonApiErrorResponse {
   return !!error && typeof error === "object" && "status" in error && [401, 403, 404].includes(Number(error.status));
 }
@@ -336,7 +331,7 @@ function datasetTableSource(
     }
   }
   function syncOptions(options: ListOptions): void {
-    // DatasourceTable writes these captured preferences after enrichment finishes.
+    // Keep captured pagination and sorting aligned with the latest response.
     if (options.pagination) Object.assign(options.pagination, latestQuery.pagination);
     if (options.sort) options.sort.splice(0, options.sort.length, ...(latestQuery.sort ?? []));
   }

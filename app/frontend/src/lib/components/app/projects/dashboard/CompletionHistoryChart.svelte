@@ -42,6 +42,9 @@
   const desktop = new MediaQuery("(min-width:768px)");
   const zone = $derived(trend?.zone ?? viewerTimeZone());
   const day = $derived(toCalendarDate(fromDate($localToday, zone)));
+  const currentPeriod = $derived(
+    (interval === "Week" ? startOfWeek(day, "en-GB") : interval === "Month" ? startOfMonth(day) : day).toString(),
+  );
   const complete = $derived(trend?.status === "ready" || trend?.status === "empty");
   const buckets = $derived(completionBuckets(trend?.daily ?? {}, range, interval, complete));
   const maximum = $derived(buckets.reduce((max, bucket) => Math.max(max, bucket.count ?? 0), 1));
@@ -213,13 +216,16 @@
                 <Tooltip>
                   <TooltipTrigger
                     class="relative flex h-full min-w-0 flex-1 items-end focus-visible:outline-2 focus-visible:outline-offset-2"
+                    aria-current={bucket.key === currentPeriod ? "date" : undefined}
                     aria-label={`${dateLabel(bucket.start)} – ${dateLabel(bucket.end)}: ${bucket.count === null ? "not yet verified" : `${bucket.count} recorded completions`}`}
                   >
                     {#if bucket.count === null}
                       <span class="h-full w-full rounded-t border border-dashed" aria-hidden="true"></span>
                     {:else}
                       <span
-                        class="bg-primary w-full rounded-t-sm"
+                        class={bucket.key === currentPeriod
+                          ? "bg-primary w-full rounded-t-sm"
+                          : "bg-primary/30 w-full rounded-t-sm"}
                         style:height={`${(bucket.count / maximum) * 100}%`}
                         aria-hidden="true"
                       ></span>
