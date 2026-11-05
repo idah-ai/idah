@@ -429,7 +429,7 @@ export interface INoteRecord {
 
 // ─── V2 Driver — Annotation change history ────────────────────────────────
 
-/** One recorded annotation change (header only — no diff payload). */
+/** One recorded annotation change. `changes` is present when requested via `includeChanges`. */
 export interface IAnnotationChange {
   id: string;
   annotation_id: string;
@@ -439,13 +439,47 @@ export interface IAnnotationChange {
   version: number;
   /** Epoch ms, parsed explicitly from the API value (second precision, not ISO). */
   changed_at: number;
+  /** Diff payload: [op, path, old, new] entries. Only set when `includeChanges` is true. */
+  changes?: ["+" | "-" | "~", string, unknown, unknown][];
 }
 
+/**
+ * Query for the annotation change history, mirroring the backend
+ * `/annotation_changes` index endpoint. `entry_id` is always bound by the
+ * driver. Filters use the raw API keys; time values are epoch-ms and are
+ * converted to ISO by the adapter. Include `changes` in `fields` to get the
+ * diff payload.
+ */
 export interface IChangesQuery {
-  annotationIds?: string[];
-  offset?: number;
-  limit?: number;
+  /** Raw API filters (keys mirror the backend's allowed_filters). */
+  filters?: {
+    annotation_id__in?: string[];
+    id__in?: string[];
+    op__in?: IAnnotationChange["op"][];
+    changed_at__gte?: number;
+    changed_at__lte?: number;
+  };
+  /** Sort fields, newest first by default (`-changed_at`). */
+  sort?: string[];
+  /** Page number, 1-based (default 1). */
+  page?: number;
+  /** Page size (default 50, server max 1000). */
+  size?: number;
+  /** Sparse fieldset; include `changes` to get the diff payload. */
+  fields?: IAnnotationChangeField[];
+  /** Request the true total count. */
+  count?: boolean;
 }
+
+/** A selectable field on an annotation change row. */
+export type IAnnotationChangeField =
+  | "annotation_id"
+  | "account_id"
+  | "account_email"
+  | "op"
+  | "version"
+  | "changed_at"
+  | "changes";
 
 export interface IChangesResult {
   items: IAnnotationChange[];

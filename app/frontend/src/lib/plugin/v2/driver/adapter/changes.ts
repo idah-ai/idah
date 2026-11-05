@@ -19,7 +19,24 @@ const HEADER_FIELDS = {
   "dataset:annotation_changes": ["annotation_id", "account_id", "account_email", "op", "version", "changed_at"],
 };
 
-const DEFAULT_SORT = ["-changed_at", "-version", "id"];
+// Full fieldset: headers plus the diff payload.
+const FULL_FIELDS = {
+  "dataset:annotation_changes": [
+    "annotation_id",
+    "account_id",
+    "account_email",
+    "op",
+    "version",
+    "changed_at",
+    "changes",
+  ],
+};
+
+// Sort newest first by changed_at alone. The column stores microsecond
+// precision, so ties are effectively impossible and the order is deterministic
+// without extra tiebreakers. (verse-sequel's multi-key sort only keeps the last
+// key, so adding `-version`/`id` here would silently break the order.)
+const DEFAULT_SORT = ["-changed_at"];
 
 /**
  * Parse the API's `changed_at` value. The backend sends second-precision
@@ -70,21 +87,47 @@ export function mapChange(rec: AnnotationChangeRecord): IAnnotationChange {
 
 export function createChangesAdapter(entryId: string) {
   async function changes(query: IChangesQuery = {}): Promise<IChangesResult> {
-    const { annotationIds, offset = 0, limit = 50 } = query;
-    const filters: Record<string, unknown> = { entry_id: entryId };
-    if (annotationIds?.length) filters["annotation_id__in"] = annotationIds;
+    const {
+      filters = {},
+      sort = DEFAULT_SORT,
+      page = 1,
+      size = 50,
+      fields,
+      count = true,
+    } = query;
+    const apiFilters: Record<string, unknown> = { entry_id: entryId };
+    for (const [key, value] of Object.entries(filters)) {
+      if (value === undefined) continue;
+      // Time filters arrive as epoch-ms; convert to ISO for the API.
+      if (key === "changed_at__gte" || key === "changed_at__lte") {
+        apiFilters[key] = new Date(value as number).toISOString();
+      } else {
+        apiFilters[key] = value;
+      }
+    }
+    const includeChanges = fields?.includes("changes") ?? false;
+    const apiFields = fields ? { "dataset:annotation_changes": fields } : includeChanges ? FULL_FIELDS : HEADER_FIELDS;
 
-    const page = Math.floor(offset / limit) + 1;
+    // The backend returns the true total count in the same paged call (the
+    // repository overrides index_impl to count the full filtered set), so a
+    // single request serves both the page and the total.
     const res = await annotationChangesBackendDataSource.list({
-      filters,
-      sort: DEFAULT_SORT,
-      fields: HEADER_FIELDS,
-      count: true,
+      filters: apiFilters,
+      sort,
+      fields: apiFields,
+      count,
       noCache: true,
-      pagination: { page, itemsPerPage: limit },
+      pagination: { page, itemsPerPage: size },
     });
 
-    return { items: res.data.map(mapChange), total: res.meta?.count ?? res.data.length };
+    return {
+      items: res.data.map((rec) => {
+        const item = mapChange(rec);
+        if (includeChanges) item.changes = (rec.changes ?? []) as IAnnotationChange["changes"];
+        return item;
+      }),
+      total: count ? res.meta?.count ?? res.data.length : res.data.length,
+    };
   }
 
   async function version(id: string, version: number): Promise<AnnotationRecord> {

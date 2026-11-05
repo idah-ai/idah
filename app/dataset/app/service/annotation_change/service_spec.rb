@@ -91,6 +91,18 @@ RSpec.describe AnnotationChange::Service, database: true do
       expect(rows).to be_empty
     end
 
+    it "filters by id__in" do
+      id, = build_history
+      rows = subject.index({ annotation_id: id }, items_per_page: 10_000)
+      target = rows.find { |r| r.version == 3 }
+
+      by_id = subject.index({ id__in: [target.id] }, items_per_page: 10_000)
+      expect(by_id.map(&:id)).to contain_exactly(target.id)
+
+      none = subject.index({ id__in: [UUIDv7.generate] }, items_per_page: 10_000)
+      expect(none).to be_empty
+    end
+
     it "filters by version__gte and version__lte" do
       id, = build_history
 

@@ -16,6 +16,7 @@ class AnnotationChangesExpo < BaseExpo
     index do
       allowed_filters :annotation_id,
                       :annotation_id__in,
+                      :id__in,
                       :entry_id,
                       :account_id,
                       :op__in,
