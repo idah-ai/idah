@@ -615,8 +615,10 @@ RSpec.describe Entry::Service, database: true do
       completed_at = repo.find!(id).completed_at
       expect(completed_at).to be_a(Time)
       date = Date.today + 1
-      record = deserialize(data: { type: Resource::Dataset::Entries, id:,
-        attributes: { name: "Renamed", priority: 3, delivery_date: date } })
+      record = deserialize(
+        data: { type: Resource::Dataset::Entries, id:,
+                attributes: { name: "Renamed", priority: 3, delivery_date: date } }
+      )
 
       result = subject.update(record)
 

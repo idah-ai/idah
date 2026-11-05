@@ -213,7 +213,9 @@ RSpec.describe Entry, database: true do
     end
 
     describe "completion timestamps" do
-      let!(:entry_id) { entry_repo.create(project_id:, dataset_id:, resource: UUIDv7.generate, status: "pending", wf_step: "annotate") }
+      let!(:entry_id) {
+        entry_repo.create(project_id:, dataset_id:, resource: UUIDv7.generate, status: "pending", wf_step: "annotate")
+      }
       let(:forged) { Time.utc(2000, 1, 1) }
 
       def raw_entry(id)
@@ -239,7 +241,16 @@ RSpec.describe Entry, database: true do
       end
 
       it "preserves completion through low-level annotation timestamp cascades" do
-        annotation_id = Annotation::Repository.new(system_auth_context).create(project_id:, dataset_id:, entry_id:, category: "cat", shape_type: "bounding-box", shape_args: {}, properties: {}, created_by_email: "test@example.com")
+        annotation_id = Annotation::Repository.new(system_auth_context).create(
+          project_id:,
+          dataset_id:,
+          entry_id:,
+          category: "cat",
+          shape_type: "bounding-box",
+          shape_args: {},
+          properties: {},
+          created_by_email: "test@example.com"
+        )
         entry_repo.update!(entry_id, { status: "completed", wf_step: "done" })
         completed_at = raw_entry(entry_id)[:completed_at]
         Annotation::Repository.new(system_auth_context).update!(annotation_id, { category: "dog" })

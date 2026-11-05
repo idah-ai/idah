@@ -114,6 +114,8 @@ describe(createBackendDataSource, () => {
   describe("#list", () => {
     const mockList = () => {
       fetch.mockResolvedValue({
+        ok: true,
+        status: 200,
         body: JSON.stringify({
           data: [
             {
@@ -138,7 +140,7 @@ describe(createBackendDataSource, () => {
             },
           ],
         }),
-        json() {
+        async json() {
           return JSON.parse(this.body);
         },
       });
