@@ -123,17 +123,6 @@
             </div>
           {/if}
         </div>
-
-        <div class="flex flex-wrap items-center gap-3">
-          <span class="text-muted-foreground text-xs">
-            {manager.updated
-              ? `Current metrics updated ${manager.updated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-              : "Current metrics not loaded"}
-          </span>
-          <Button variant="outline" size="sm" disabled={manager.loading} onclick={() => void manager.refresh()}>
-            <RefreshCwIcon class={manager.loading ? "animate-spin" : ""} /> Refresh
-          </Button>
-        </div>
       </div>
 
       {#if manager.error}
@@ -260,11 +249,7 @@
         onRetry={() => manager.retryTrend()}
       />
       {#if !detail}<Card
-          ><CardHeader
-            ><CardTitle>Progress by dataset</CardTitle><CardDescription
-              >Use the Dataset Name column menu to filter rows.</CardDescription
-            ></CardHeader
-          ><CardContent class="px-0"
+          ><CardHeader><CardTitle>Progress by dataset</CardTitle></CardHeader><CardContent class="px-0"
             >{#key `${manager.version}-${manager.tableEpoch}`}<DatasetProgressTable
                 stateKey={"dashboard-datasets-" + uid + "-" + manager.tableEpoch}
                 sources={manager.sources}
@@ -276,9 +261,7 @@
       <Card
         ><CardHeader class="flex flex-wrap justify-between gap-3 sm:flex-row"
           ><div class="space-y-1.5">
-            <CardTitle>Open entries</CardTitle><CardDescription
-              >Open entries · oldest created first. Time in status is not recorded.</CardDescription
-            >
+            <CardTitle>Open entries</CardTitle>
           </div>
           {#if detail}
             <Button

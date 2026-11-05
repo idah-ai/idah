@@ -98,9 +98,7 @@
 <Card
   ><CardHeader class="flex flex-wrap items-start justify-between gap-4 md:flex-row"
     ><div class="space-y-1.5">
-      <CardTitle>Completed entries</CardTitle><CardDescription
-        >Currently completed entries by recorded completion date. Reopened entries leave this view.</CardDescription
-      >
+      <CardTitle>Completed entries</CardTitle>
     </div>
     <Popover open={rangeOpen} onOpenChange={openRange}
       ><PopoverTrigger
@@ -157,7 +155,6 @@
             >recorded completions in selected range{trend?.status === "partial" ? " · incomplete" : ""}</span
           >
         </p>
-        <p class="text-muted-foreground mt-1 text-xs">Previous-period comparison unavailable</p>
       </div>
       <div class="flex gap-1">
         {#each ["Day", "Week", "Month"] as value (value)}{@const item = value as Interval}<Tooltip
@@ -295,8 +292,5 @@
         <Button variant="outline" size="sm" onclick={() => void onRetry?.()}>Retry</Button>
       </div>
     {/if}
-    <p class="text-muted-foreground mt-2 text-xs">
-      Live data in {zone}; refresh to update. This is not a history of every completion/reopen event.
-    </p>
   </CardContent></Card
 >
