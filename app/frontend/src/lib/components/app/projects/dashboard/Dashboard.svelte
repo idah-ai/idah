@@ -18,8 +18,10 @@
   import StatusStack from "@/components/app/projects/dashboard/StatusStack.svelte";
   import { deliveryStatus, datasetDeliveryDate } from "@/components/app/projects/dashboard/DashboardStatus";
   import Text from "@/components/ui/text/Text.svelte";
+  import DataDisplay from "@/components/app/texts/data-display.svelte";
 
   import type { Interval } from "@/components/app/projects/dashboard/DashboardHistory";
+  import { format } from "date-fns";
 
   // Props
   let { projectId }: { projectId: string } = $props();
@@ -211,15 +213,16 @@
                   : "Unavailable"
                 : (manager.attention?.toLocaleString() ?? "—")}
             </Text>
-            <Text class="text-muted-foreground" size="sm">
-              {detail
-                ? datasetDeliveryDate(detail)
-                  ? "Based on delivery date and current completion"
-                  : "No due date set"
-                : manager.attention === null
+
+            {#if detail?.delivery_date}
+              <DataDisplay label="Delivery date" value={format(detail?.delivery_date, "MMM dd, yyyy")} />
+            {:else}
+              <Text class="text-muted-foreground" size="sm">
+                {manager.attention === null
                   ? "Overdue count unavailable for this scope"
                   : "Overdue datasets that are not completed"}
-            </Text>
+              </Text>
+            {/if}
           {/snippet}
         </MetricCard>
       </div>

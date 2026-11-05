@@ -104,7 +104,7 @@ export function createProjectDashboardDataSources(
     ["id", "name", "modality", "delivery_date", "entries_total_count", "entries_completed_count", "progress", "status"],
     ["name", "id"],
   );
-  const entries = source(entriesBackendDataSource, ["id"], ["id"]);
+  const entries = source(entriesBackendDataSource, ["id", "delivery_date"], ["id"]);
 
   async function counts(ids: string[]): Promise<Counts> {
     const scope = ids.length ? { dataset_id: [...ids] } : {};
