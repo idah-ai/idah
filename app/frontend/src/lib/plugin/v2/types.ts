@@ -525,8 +525,10 @@ export interface IAnnotationsDriverV2<ShapeArgs = Record<string, unknown>, Prope
   setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 
   /**
-   * Read the entry's annotation change history, newest first. `limit` defaults
-   * to 50. Each call queries the backend directly.
+   * Read the entry's annotation change history, newest first. `size` defaults
+   * to 50. Each call queries the backend directly and returns the page, the
+   * server's count (`total`), and whether rows exist past that count
+   * (`hasMore`).
    */
   changes(query?: IChangesQuery): Promise<IChangesResult>;
 
