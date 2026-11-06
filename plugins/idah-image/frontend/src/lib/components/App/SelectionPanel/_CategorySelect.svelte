@@ -1,7 +1,12 @@
 <script lang="ts">
-  import { Select, SelectContent, SelectItem, SelectTrigger } from "$lib/components/ui/Select";
-  import SelectGroup from "$lib/components/ui/Select/SelectGroup.svelte";
-  import Text from "$lib/components/ui/Text/Text.svelte";
+  import { CheckIcon, ChevronDownIcon } from "@lucide/svelte";
+  import { useId } from "bits-ui";
+  import { tick } from "svelte";
+
+  import { Button } from "$lib/components/ui/Button";
+  import * as Command from "$lib/components/ui/Command";
+  import * as Field from "$lib/components/ui/Field";
+  import * as Popover from "$lib/components/ui/Popover";
 
   import ShapeIcon from "$lib/components/App/SelectionPanel/_ShapeIcon.svelte";
   import { categoryValueToLabel } from "$lib/utils/annotation";
@@ -22,57 +27,86 @@
   };
 
   let { configValues, category, selectedCategory, shapeType, onValueChange, disabled, placeholder, showShapeIcon = true, usedMaskCategories = new Set<string>() }: Props = $props();
+
+  const triggerId = useId();
+  let open = $state(false);
+  let search = $state("");
+  let triggerRef = $state<HTMLButtonElement>(null!);
+
+  function selectCategory(value: string) {
+    onValueChange(value);
+    open = false;
+    search = "";
+    tick().then(() => triggerRef?.focus());
+  }
 </script>
 
-<div class="flex flex-col gap-1">
-  <Text size="sm" weight="semibold">Category</Text>
-  <Select type="single" {onValueChange} {disabled} value={selectedCategory || undefined}>
-    <SelectTrigger
-      class="data-placeholder:text-secondary-foreground bg-background h-auto! w-full truncate py-2 text-xs"
-    >
-      {#if category?.label}
-        {@const parentLabel = categoryValueToLabel(category.id)}
-        <div class="flex flex-col gap-1 text-left">
-          {#if parentLabel.length > 0}
-            <div class="whitespace-break-spaces">{parentLabel}</div>
-          {/if}
-          <div class="flex items-center justify-start gap-1">
-            {#if showShapeIcon}
-            	<ShapeIcon {shapeType} color={category.color} />
-            {/if}
-
-            <b>{category.label}</b>
-          </div>
-        </div>
-      {:else if placeholder}
-        {placeholder}
-      {/if}
-    </SelectTrigger>
-    <SelectContent>
-      <SelectGroup>
-        {#each configValues as { id: value, label, color }, index (`${value}-${index}`)}
-          {@const valueLabel = categoryValueToLabel(value, label)}
-          {@const isMaskCategoryBlocked = shapeType === IMAGE_MASK && usedMaskCategories.has(value) && value !== selectedCategory}
-          {@const isDisabled = disabled || isMaskCategoryBlocked}
-          <SelectItem
-            {value}
-            label={valueLabel}
-            class={"text-xs " + (selectedCategory == value ? "bg-primary/20 opacity-100!" : "")}
-            disabled={isDisabled}
-            title={isMaskCategoryBlocked ? "Already used by another mask on this entry" : undefined}
-          >
-            {#if showShapeIcon}
-            	<ShapeIcon {shapeType} {color} />
-            {/if}
-            {valueLabel}
-            {#if isMaskCategoryBlocked}
-              <span class="text-[0.625rem] text-red-400 dark:text-red-500">
-                Category already in use
+<Field.Field>
+  <Field.Label for={triggerId} class="text-sm font-semibold">Category</Field.Label>
+  <Popover.Root bind:open onOpenChange={(next) => { if (!next) search = ""; }}>
+    <Popover.Trigger bind:ref={triggerRef}>
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          id={triggerId}
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          {disabled}
+          class="bg-background h-auto! min-h-9 w-full min-w-0 justify-between py-2 text-left text-xs font-normal"
+        >
+          {#if category?.label}
+            {@const parentLabel = categoryValueToLabel(category.id)}
+            <span class="flex min-w-0 flex-col gap-1">
+              {#if parentLabel.length > 0}
+                <span class="whitespace-break-spaces">{parentLabel}</span>
+              {/if}
+              <span class="flex min-w-0 items-center gap-1">
+                {#if showShapeIcon}
+                  <ShapeIcon {shapeType} color={category.color} />
+                {/if}
+                <b class="truncate">{category.label}</b>
               </span>
-            {/if}
-          </SelectItem>
-        {/each}
-      </SelectGroup>
-    </SelectContent>
-  </Select>
-</div>
+            </span>
+          {:else}
+            <span class="text-muted-foreground">{placeholder || "Select category"}</span>
+          {/if}
+          <ChevronDownIcon class="text-muted-foreground ml-auto size-4 shrink-0" />
+        </Button>
+      {/snippet}
+    </Popover.Trigger>
+    <Popover.Content align="start" class="w-[var(--bits-popover-anchor-width)] max-w-[calc(100vw-1rem)] p-0">
+      <Command.Root label="Categories">
+        <Command.Input bind:value={search} placeholder="Search categories..." />
+        <Command.List>
+          <Command.Empty>No categories found.</Command.Empty>
+          <Command.Group>
+            {#each configValues as { id: value, label, color }, index (`${value}-${index}`)}
+              {@const valueLabel = categoryValueToLabel(value, label)}
+              {@const isMaskCategoryBlocked = shapeType === IMAGE_MASK && usedMaskCategories.has(value) && value !== selectedCategory}
+              <Command.Item
+                value={value}
+                keywords={[valueLabel, label]}
+                class="text-xs"
+                disabled={disabled || isMaskCategoryBlocked}
+                title={isMaskCategoryBlocked ? "Already used by another mask on this entry" : undefined}
+                onSelect={() => selectCategory(value)}
+              >
+                {#if showShapeIcon}
+                  <ShapeIcon {shapeType} {color} />
+                {/if}
+                <span class="min-w-0 flex-1 whitespace-normal">{valueLabel}</span>
+                {#if selectedCategory === value}
+                  <CheckIcon class="ml-auto size-4 shrink-0" />
+                {/if}
+                {#if isMaskCategoryBlocked}
+                  <span class="text-[0.625rem] text-red-400 dark:text-red-500">Category already in use</span>
+                {/if}
+              </Command.Item>
+            {/each}
+          </Command.Group>
+        </Command.List>
+      </Command.Root>
+    </Popover.Content>
+  </Popover.Root>
+</Field.Field>
