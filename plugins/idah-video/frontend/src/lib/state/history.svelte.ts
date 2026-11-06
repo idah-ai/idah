@@ -188,7 +188,7 @@ class HistoryState {
 
   get scopeLabel(): string {
     const s = this.#scope;
-    if (s.kind === "entry") return "Whole entry";
+    if (s.kind === "entry") return "Video"; // matches the entry:root tagging tab label
     if (s.kind === "annotations") return `${s.ids.length} annotation${s.ids.length === 1 ? "" : "s"}`;
     if (s.kind === "groups") return `${s.ids.length} group${s.ids.length === 1 ? "" : "s"}`;
     return `${s.annotationIds.length} annotation${s.annotationIds.length === 1 ? "" : "s"}, ${s.groupIds.length} group${s.groupIds.length === 1 ? "" : "s"}`;

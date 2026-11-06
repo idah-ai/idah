@@ -85,21 +85,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.orderGroups("review", ["selection"]);
   t.orderGroups("note", ["selection"]);
 
-  // ── History toggle ────────────────────────────────────────────────
-  // The item is hidden when the driver has no `changes()` (an older platform).
-  if (typeof driver.annotations.changes === "function") {
-    t.add({
-      icon: historyIcon,
-      label: "History",
-      name: "idah-video:tool.history",
-      modes: ["editor", "review", "note", "idah-video:bounding-box", "idah-video:polygon"],
-      group: null,
-      visibleWhen: () => true,
-      onClick: () => history.toggle(),
-      whenToggled: () => history.open,
-    });
-  }
-
   // ── Magnetic snap toggle ──────────────────────────────────────────
   t.add({
     icon: magnetIcon,
@@ -114,4 +99,19 @@ export function initToolbar(driver: IIdahDriverV2): void {
     },
     whenToggled: () => magneticSnap.enabled,
   });
+
+  // ── History toggle (registered last so it appears as the last tool) ──
+  // The item is hidden when the driver has no `changes()` (an older platform).
+  if (typeof driver.annotations.changes === "function") {
+    t.add({
+      icon: historyIcon,
+      label: "History",
+      name: "idah-video:tool.history",
+      modes: ["editor", "review", "note", "idah-video:bounding-box", "idah-video:polygon"],
+      group: null,
+      visibleWhen: () => true,
+      onClick: () => history.toggle(),
+      whenToggled: () => history.open,
+    });
+  }
 }

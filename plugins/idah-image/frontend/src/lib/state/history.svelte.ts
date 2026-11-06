@@ -172,7 +172,7 @@ class HistoryState {
 
   get scopeLabel(): string {
     const s = this.#scope;
-    if (s.kind === "entry") return "Whole entry";
+    if (s.kind === "entry") return "Image"; // matches the entry:root tagging tab label
     return `${s.ids.length} annotation${s.ids.length === 1 ? "" : "s"}`;
   }
 

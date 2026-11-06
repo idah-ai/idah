@@ -159,7 +159,21 @@ export function initToolbar(driver: IIdahDriverV2): void {
   t.orderGroups(DEFAULT_MODE, ["selection"]);
   t.orderGroups(NOTE_MODE, ["selection"]);
 
-  // ── History toggle ────────────────────────────────────────────────
+  // ── Magnetic snap toggle (available in all edit modes) ──────────────
+  t.add({
+    icon: magnetIcon,
+    label: "Magnetic snap",
+    name: "idah-image:snap.toggle-magnetic",
+    modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE],
+    group: null,
+    onClick: () => {
+      magneticSnap.toggle();
+      driver.toolbar.invalidate();
+    },
+    whenToggled: () => magneticSnap.enabled,
+  });
+
+  // ── History toggle (registered last so it appears as the last tool) ──
   // The item is hidden when the driver has no `changes()` (an older platform).
   if (typeof driver.annotations.changes === "function") {
     t.add({
@@ -183,20 +197,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
       whenToggled: () => history.open,
     });
   }
-
-  // ── Magnetic snap toggle (available in all edit modes) ──────────────
-  t.add({
-    icon: magnetIcon,
-    label: "Magnetic snap",
-    name: "idah-image:snap.toggle-magnetic",
-    modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE],
-    group: null,
-    onClick: () => {
-      magneticSnap.toggle();
-      driver.toolbar.invalidate();
-    },
-    whenToggled: () => magneticSnap.enabled,
-  });
 
   // Prevent-overlap now lives in the floating mask tool panel (see MaskToolConfigurations).
 }
