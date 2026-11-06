@@ -30,6 +30,7 @@ module Entry
     field :reopened_by_id, type: [Integer, NilClass]
     field :reopened_by_email, type: [String, NilClass]
 
+    field :completed_at, type: [Time, NilClass], readonly: true
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
@@ -70,6 +71,26 @@ module Entry
   class Repository < Verse::Sequel::Repository
     self.table = "entries"
     self.resource = Resource::Dataset::Entries
+
+    custom_filter :completed_at__gte do |collection, value|
+      collection.where(Sequel[:entries][:completed_at] >= completion_filter_time(value))
+    end
+
+    custom_filter :completed_at__lte do |collection, value|
+      collection.where(Sequel[:entries][:completed_at] <= completion_filter_time(value))
+    end
+
+    private def completion_filter_time(value)
+      unless value.is_a?(String) && value.match?(/T.*(?:Z|[+-]\d{2}:?\d{2})\z/)
+        raise Verse::Error::ValidationFailed, "Completion bounds require an ISO timestamp with timezone"
+      end
+
+      # iso8601 can normalize invalid calendar dates; reject those explicitly.
+      Date.iso8601(value.split("T", 2).first)
+      Time.iso8601(value).utc
+    rescue ArgumentError
+      raise Verse::Error::ValidationFailed, "Invalid completion timestamp"
+    end
 
     custom_filter :participated do |collection, value|
       where_fragment = <<-SQL

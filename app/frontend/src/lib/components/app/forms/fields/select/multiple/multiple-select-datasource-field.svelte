@@ -1,7 +1,7 @@
 <script lang="ts" generics="T extends Record">
   import { cn } from "@/utils";
   import { CheckIcon, ChevronsUpDownIcon, CircleXIcon } from "@lucide/svelte";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -25,6 +25,7 @@
   // Props
   interface Props extends MultipleSelectDataSourceFieldBaseProps<T> {
     values: Array<string | number>;
+    maxSelections?: number;
   }
   let {
     displayKey,
@@ -32,6 +33,7 @@
     dataSource,
     listOptions,
     values = [],
+    maxSelections = Infinity,
     name,
     label,
     placeholder = "Select an option",
@@ -72,13 +74,16 @@
   let page = $state(1);
   let itemsPerPage = $state(10);
   let hasMore = $state(true);
-  let selectedChoices = $derived(choices.filter((choice) => values.includes(choice.value)));
+  let loadingChoices = false;
+  let choicesGeneration = 0;
+  let knownChoices: Choice[] = $state([]);
+  let selectedChoices = $derived(knownChoices.filter((choice) => values.includes(choice.value)));
   let allChoicesSelected = $state(false);
   let showClearButton = $derived(clearable && selectedChoices.length > 0);
 
   // Lifecycle
   onMount(async () => {
-    choices = await fetchChoices();
+    await fetchChoices();
 
     /** Get selected choice if value is defined */
     if (values.length > 0) {
@@ -92,9 +97,15 @@
           };
         }),
       );
-      // Assuming we want to set selectedChoice to the first matched choice
-      selectedChoices = fetchedChoices;
+      knownChoices = [
+        ...knownChoices.filter((known) => !fetchedChoices.some((choice) => choice.value === known.value)),
+        ...fetchedChoices,
+      ];
     }
+  });
+
+  onDestroy(() => {
+    choicesGeneration++;
   });
 
   // Functions
@@ -103,56 +114,75 @@
     open = true;
   }
 
-  function closePopover() {
+  function closePopover(): void {
     open = !closeOnSelect;
   }
 
-  async function fetchChoices(): Promise<Choice[]> {
-    if (!dataSource) throw new Error("DataSource is required");
+  async function fetchChoices(append = false): Promise<boolean> {
+    const generation = ++choicesGeneration;
+    const nextPage = append ? page + 1 : 1;
+    loadingChoices = true;
+    try {
+      if (!dataSource) throw new Error("DataSource is required");
 
-    const listOpts: ListOptions = { ...listOptions };
+      const listOpts: ListOptions = { ...listOptions, filters: { ...listOptions?.filters } };
 
-    /** Set default pagination */
-    if (!listOpts.pagination) listOpts.pagination = { page, itemsPerPage };
+      /** Set default pagination */
+      if (!listOpts.pagination) listOpts.pagination = { page: nextPage, itemsPerPage };
 
-    /** Set default sort */
-    if (!listOpts.sort) listOpts.sort = ["-id"];
+      /** Set default sort */
+      if (!listOpts.sort) listOpts.sort = ["-id"];
 
-    if (searchable && searchValue) {
-      if (!listOpts.filters) listOpts.filters = {};
-      listOpts.filters[searchKeyWithOperation] = searchValue;
-    } else {
-      listOpts.filters = { ...listOpts.filters };
+      if (searchable && searchValue) {
+        if (!listOpts.filters) listOpts.filters = {};
+        listOpts.filters[searchKeyWithOperation] = searchValue;
+      } else {
+        listOpts.filters = { ...listOpts.filters };
+      }
+
+      const response = await dataSource.list({ ...listOpts, count: true });
+      if (generation !== choicesGeneration) return false;
+      page = nextPage;
+      hasMore = response.meta?.count ? response.meta?.count > page * itemsPerPage : false;
+
+      // Return filtered choices excluding hiddenChoices
+      const fetched = response.data
+        .map((item) => ({
+          label: item[displayKey],
+          value: item[valueKey],
+          disabled: disabledChoices.includes(item[valueKey]),
+          data: item,
+        }))
+        .filter((choice) => !hiddenChoices.includes(choice.value));
+      knownChoices = [
+        ...knownChoices.filter((known) => !fetched.some((choice) => choice.value === known.value)),
+        ...fetched,
+      ];
+      choices = append ? [...choices, ...fetched] : fetched;
+      return true;
+    } catch (error) {
+      if (generation === choicesGeneration) throw error;
+      return false;
+    } finally {
+      if (generation === choicesGeneration) loadingChoices = false;
     }
-
-    const response = await dataSource.list({ ...listOpts, count: true });
-    hasMore = response.meta?.count ? response.meta?.count > page * itemsPerPage : false;
-
-    // Return filtered choices excluding hiddenChoices
-    return response.data
-      .map((item) => ({
-        label: item[displayKey],
-        value: item[valueKey],
-        disabled: disabledChoices.includes(item[valueKey]),
-        data: item,
-      }))
-      .filter((choice) => !hiddenChoices.includes(choice.value));
   }
 
-  const filterChoices: FormEventHandler<HTMLInputElement> = async (event) => {
+  const filterChoices: FormEventHandler<HTMLInputElement> = async (event): Promise<void> => {
     searchValue = event.currentTarget.value;
-    page = 1;
-    choices = await fetchChoices();
+    allChoicesSelected = false;
+    await fetchChoices();
   };
 
   async function select(choice: LabelValue<string | number>): Promise<void> {
     if (values.find((v) => v == choice.value)) {
       values = values.filter((value) => value != choice.value);
     } else {
+      if (values.length >= maxSelections) return;
       values = [...values, choice.value];
     }
 
-    allChoicesSelected = values.length === choices.length;
+    allChoicesSelected = false;
     closePopover();
     await onSelected?.(selectedChoices);
   }
@@ -161,7 +191,7 @@
     allChoicesSelected = selectedAllChoices;
 
     if (selectedAllChoices) {
-      values = choices.map((choice) => choice.value);
+      values = choices.map((choice) => choice.value).slice(0, maxSelections);
     } else {
       values = [];
     }
@@ -178,7 +208,7 @@
     await onSelected?.(selectedChoices);
   }
 
-  const scrollToPaginate: WheelEventHandler<HTMLDivElement> = async (event: WheelEvent) => {
+  const scrollToPaginate: WheelEventHandler<HTMLDivElement> = async (event: WheelEvent): Promise<void> => {
     if (!event.currentTarget) return;
 
     if (!commandListElement) return;
@@ -193,14 +223,15 @@
       const clientHeight = target.clientHeight;
       const scrollPercentage = (scrollPosition / (scrollHeight - clientHeight)) * 100;
 
-      if (scrollPercentage >= 60 && hasMore) {
-        page = page + 1;
-        const scrollChoices = await fetchChoices();
-
-        choices.push(...scrollChoices);
+      if (scrollPercentage >= 60 && hasMore && !loadingChoices) {
+        if (!(await fetchChoices(true))) return;
 
         if (allChoicesSelected) {
-          values = choices.map((choice) => choice.value);
+          const nextValues = choices.map((choice) => choice.value).slice(0, maxSelections);
+          if (nextValues.length !== values.length || nextValues.some((value, index) => value !== values[index])) {
+            values = nextValues;
+            await onSelected?.(selectedChoices);
+          }
         }
       }
     }
@@ -283,7 +314,10 @@
               {#if slotChoice}
                 {@render slotChoice({ choice, select })}
               {:else}
-                <CommandItem onclick={() => select(choice)}>
+                <CommandItem
+                  disabled={values.length >= maxSelections && !values.includes(choice.value)}
+                  onclick={() => select(choice)}
+                >
                   <CheckIcon
                     class={cn("mr-2 size-4", {
                       "opacity-0": !values.find((v) => v == choice.value),
