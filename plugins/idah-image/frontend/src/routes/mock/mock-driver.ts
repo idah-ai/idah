@@ -344,6 +344,7 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IImageAnnotationS
     return {
       items: pageItems.map((c) => (includeChanges ? c : omitChanges(c))),
       total: count ? total : pageItems.length,
+      hasMore: false,
     };
   }
 

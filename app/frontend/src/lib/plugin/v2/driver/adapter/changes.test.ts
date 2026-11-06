@@ -52,11 +52,11 @@ describe("createChangesAdapter", () => {
   });
 
   // `changes()` makes a single list call that returns both the page and the
-  // true total count in the response meta.
-  function mockList(pageData: unknown[], total: number) {
+  // count in the response meta, plus a `more` flag when rows exist past it.
+  function mockList(pageData: unknown[], total: number, more?: boolean) {
     vi.mocked(annotationChangesBackendDataSource.list).mockResolvedValue({
       data: pageData as never,
-      meta: { count: total },
+      meta: more === undefined ? { count: total } : { count: total, more },
     });
   }
 
@@ -150,6 +150,36 @@ describe("createChangesAdapter", () => {
         filters: { entry_id: entryId, changed_at__lte: "2026-10-30T05:14:55.000Z" },
       }),
     );
+  });
+
+  it("passes through hasMore when meta.more is true", async () => {
+    const adapter = createChangesAdapter(entryId);
+    mockList([makeRecord()], 1000, true);
+
+    const result = await adapter.changes();
+
+    expect(result.total).toBe(1000);
+    expect(result.hasMore).toBe(true);
+  });
+
+  it("passes through hasMore when meta.more is false", async () => {
+    const adapter = createChangesAdapter(entryId);
+    mockList([makeRecord()], 50, false);
+
+    const result = await adapter.changes();
+
+    expect(result.total).toBe(50);
+    expect(result.hasMore).toBe(false);
+  });
+
+  it("defaults hasMore to false when meta.more is absent", async () => {
+    const adapter = createChangesAdapter(entryId);
+    mockList([makeRecord()], 50);
+
+    const result = await adapter.changes();
+
+    expect(result.total).toBe(50);
+    expect(result.hasMore).toBe(false);
   });
 
   it("filters by change ids, ops and changed_at__gte", async () => {

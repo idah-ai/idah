@@ -87,14 +87,7 @@ export function mapChange(rec: AnnotationChangeRecord): IAnnotationChange {
 
 export function createChangesAdapter(entryId: string) {
   async function changes(query: IChangesQuery = {}): Promise<IChangesResult> {
-    const {
-      filters = {},
-      sort = DEFAULT_SORT,
-      page = 1,
-      size = 50,
-      fields,
-      count = true,
-    } = query;
+    const { filters = {}, sort = DEFAULT_SORT, page = 1, size = 50, fields, count = true } = query;
     const apiFilters: Record<string, unknown> = { entry_id: entryId };
     for (const [key, value] of Object.entries(filters)) {
       if (value === undefined) continue;
@@ -108,9 +101,9 @@ export function createChangesAdapter(entryId: string) {
     const includeChanges = fields?.includes("changes") ?? false;
     const apiFields = fields ? { "dataset:annotation_changes": fields } : includeChanges ? FULL_FIELDS : HEADER_FIELDS;
 
-    // The backend returns the true total count in the same paged call (the
-    // repository overrides index_impl to count the full filtered set), so a
-    // single request serves both the page and the total.
+    // The backend counts at most 1,000 rows past the current offset, so the
+    // count is exact only when `more` is false; otherwise it is a lower bound
+    // and `hasMore` tells the pager to keep reading.
     const res = await annotationChangesBackendDataSource.list({
       filters: apiFilters,
       sort,
@@ -126,7 +119,8 @@ export function createChangesAdapter(entryId: string) {
         if (includeChanges) item.changes = (rec.changes ?? []) as IAnnotationChange["changes"];
         return item;
       }),
-      total: count ? res.meta?.count ?? res.data.length : res.data.length,
+      total: count ? (res.meta?.count ?? res.data.length) : res.data.length,
+      hasMore: res.meta?.more ?? false,
     };
   }
 

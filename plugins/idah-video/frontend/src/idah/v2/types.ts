@@ -445,6 +445,8 @@ export type IAnnotationChangeField =
 export interface IChangesResult {
   items: IAnnotationChange[];
   total: number;
+  /** True when the server's count is a lower bound (rows exist past it). */
+  hasMore: boolean;
 }
 
 // ─── V2 Driver — Annotations submodule ────────────────────────────────────
