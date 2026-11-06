@@ -43,6 +43,25 @@ RSpec.describe Account::Service, database: true do
         expect(created_account.email).to eq("test@example.com")
         expect(created_account.enabled).to eq(true)
       end
+
+      it "creates an account with role_scope from a hash" do
+        record = deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              attributes: attributes.merge(
+                email: "org-owner@example.com",
+                role_name: "org_owner",
+                role_scope: { org: ["1"] }
+              ),
+            }
+          }
+        )
+
+        created_account = subject.create(record)
+
+        expect(created_account.role_scope).to eq({ "org" => ["1"] })
+      end
     end
 
     describe "#show" do
@@ -74,6 +93,26 @@ RSpec.describe Account::Service, database: true do
         expect(updated_account.name).to eq("Updated Test Account Name")
       end
 
+      it "updates role_scope from a hash" do
+        account_id = account_repo.create(attributes.merge(role_name: "user"))
+
+        record = deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              id: account_id,
+              attributes: {
+                role_scope: { org: ["1"] }
+              }
+            }
+          }
+        )
+
+        updated_account = subject.update(record)
+
+        expect(updated_account.role_scope).to eq({ "org" => ["1"] })
+      end
+
       context "when updating role from user to org_owner" do
         before do
           expect_any_instance_of(Account::Repository).to receive(:after_commit).and_yield
@@ -83,7 +122,6 @@ RSpec.describe Account::Service, database: true do
               name: "Admin User",
               email: "admin@test.com",
               role_name: "admin",
-              role_scope: "{}",
               enabled: true,
             }
           )
@@ -104,7 +142,7 @@ RSpec.describe Account::Service, database: true do
                     name: "Regular User",
                     email: "user@test.com",
                     role_name: "user",
-                    role_scope: "{}",
+                    role_scope: {},
                     enabled: true,
                   },
                 }
@@ -271,7 +309,6 @@ RSpec.describe Account::Service, database: true do
             name: "Admin User",
             email: "admin@test.com",
             role_name: "admin",
-            role_scope: "{}",
             enabled: true,
           }
         )
@@ -286,7 +323,7 @@ RSpec.describe Account::Service, database: true do
                   name: "User",
                   email: "user@test.com",
                   role_name: "user",
-                  role_scope: "{}",
+                  role_scope: {},
                   enabled: true,
                 },
               }
@@ -303,7 +340,7 @@ RSpec.describe Account::Service, database: true do
                   name: "Org Owner",
                   email: "org_owner@test.com",
                   role_name: "org_owner",
-                  role_scope: '{"org": ["999"]}',
+                  role_scope: { org: ["999"] },
                   enabled: true,
                 },
               }
@@ -462,7 +499,7 @@ RSpec.describe Account::Service, database: true do
                   name: "Testing Org Owner 1",
                   email: "org_owner1@test.com",
                   role_name: "org_owner",
-                  role_scope: { org: ["999"] }.to_json,
+                  role_scope: { org: ["999"] },
                   enabled: true,
                 },
               }
@@ -478,7 +515,7 @@ RSpec.describe Account::Service, database: true do
                   name: "Testing Org Owner 2",
                   email: "org_owner2@test.com",
                   role_name: "org_owner",
-                  role_scope: { org: ["999", "111"] }.to_json,
+                  role_scope: { org: ["999", "111"] },
                   enabled: true,
                 },
               }

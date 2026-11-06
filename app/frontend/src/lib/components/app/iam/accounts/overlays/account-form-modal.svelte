@@ -41,6 +41,7 @@
             name: null,
             email: null,
             role_name: "user",
+            role_scope: null,
             sso_channel: null,
             enabled: true,
           },
@@ -58,6 +59,7 @@
       name: source.name,
       email: source.email,
       role_name: source.role_name,
+      role_scope: source.role_scope,
       enabled: source.enabled,
     };
   }
@@ -90,6 +92,7 @@
           sso_channel: accountRecord?.sso_channel ?? null,
           enabled: draft.enabled,
           role_name: draft.role_name,
+          ...(draft.role_scope ? { role_scope: draft.role_scope } : {}),
         },
       },
       {
@@ -115,6 +118,7 @@
           role_name: draft.role_name,
           sso_channel: accountRecord?.sso_channel ?? null,
           enabled: draft.enabled,
+          ...(draft.role_scope ? { role_scope: draft.role_scope } : {}),
         },
       },
       {
