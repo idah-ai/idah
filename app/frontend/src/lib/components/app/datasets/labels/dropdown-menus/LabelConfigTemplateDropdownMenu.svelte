@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowDownIcon, ChevronsUpDownIcon, FileIcon, FilePlusIcon, SaveIcon } from "@lucide/svelte";
+  import { ArrowDownIcon, ChevronsUpDownIcon, FileIcon, FilePlusIcon, LayersIcon, SaveIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   import LabelConfigTemplateSaveModal from "$lib/components/app/datasets/labels/overlays/LabelConfigTemplateSaveModal.svelte";
@@ -137,7 +137,8 @@
   <DropdownMenus {menus}>
     {#snippet trigger({ props })}
       <Button {...props} variant="outline" class="w-auto">
-        Templates
+        <LayersIcon />
+        Label Templates
         <ChevronsUpDownIcon />
       </Button>
     {/snippet}
