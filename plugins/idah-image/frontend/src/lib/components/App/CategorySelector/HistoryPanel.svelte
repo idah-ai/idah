@@ -20,6 +20,8 @@
   import { data, getDeletedAnnotation } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
   import { resolveAnnotationColor } from "$lib/utils/color";
+  import { groupChangesByDay } from "$lib/utils/history-days";
+  import { shapeBounds } from "$lib/utils/shape-bounds";
   import type { IAnnotationChange } from "$idah/v2/types";
   import type { IImageAnnotationShape } from "$lib/types";
 
@@ -72,67 +74,14 @@
   }
 
   /** Center the viewport on an annotation's shape (live or tombstone). */
-  function centerOnShape(shape: IImageAnnotationShape | undefined) {
-    if (!shape) return;
-    let points = shape.points;
-    if (!points || points.length === 0) return;
-
-    const angle = (shape.angle as number | undefined) ?? 0;
-    const radius = shape.radius as number | undefined;
-
-    // Circles: generate the bounding box from center + radius.
-    if (radius && points.length === 1) {
-      const [cx, cy] = points[0];
-      points = [
-        [cx - radius, cy - radius],
-        [cx + radius, cy - radius],
-        [cx + radius, cy + radius],
-        [cx - radius, cy + radius],
-      ];
-    } else if (points.length === 2) {
-      // Ellipse: points = [[cx, cy], [rx, ry]].
-      const [cx, cy] = points[0];
-      const [rx, ry] = points[1];
-      points = [
-        [cx - rx, cy - ry],
-        [cx + rx, cy - ry],
-        [cx + rx, cy + ry],
-        [cx - rx, cy + ry],
-      ];
-    }
-
-    // For rotated shapes, rotate the AABB corners around their centroid.
-    if (angle !== 0 && points.length >= 3) {
-      let cx = 0,
-        cy = 0;
-      for (const [px, py] of points) {
-        cx += px;
-        cy += py;
-      }
-      cx /= points.length;
-      cy /= points.length;
-      const cos = Math.cos(angle),
-        sin = Math.sin(angle);
-      points = points.map(
-        ([px, py]) =>
-          [cx + (px - cx) * cos - (py - cy) * sin, cy + (px - cx) * sin + (py - cy) * cos] as [number, number],
-      );
-    }
-
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity;
-    for (const [px, py] of points) {
-      if (px < minX) minX = px;
-      if (py < minY) minY = py;
-      if (px > maxX) maxX = px;
-      if (py > maxY) maxY = py;
-    }
-
+  function centerOnShape(shape: IImageAnnotationShape | undefined, shapeType: string | undefined) {
     const mw = media.width,
       mh = media.height;
     if (mw === 0 || mh === 0) return;
+    const b = shapeBounds(shape, shapeType, mw, mh);
+    if (!b) return;
+    const { minX, minY, maxX, maxY } = b;
+
     const sx = minX * mw,
       sy = minY * mh;
     const sw = (maxX - minX) * mw,
@@ -158,12 +107,13 @@
     const ann = liveAnnotation(change);
     const tomb = getDeletedAnnotation(change.annotation_id);
     const shape = (ann?.shape_args ?? tomb?.shape_args) as IImageAnnotationShape | undefined;
+    const shapeType = ann?.shape_type ?? tomb?.shape_type;
     if (ann && !ann.deleted_at) {
-      centerOnShape(ann.shape_args as IImageAnnotationShape);
+      centerOnShape(ann.shape_args as IImageAnnotationShape, ann.shape_type);
       return;
     }
     // Deleted annotation: center on its last known shape (the tombstone).
-    if (shape) centerOnShape(shape);
+    if (shape) centerOnShape(shape, shapeType);
   }
 </script>
 
@@ -200,18 +150,24 @@
       </div>
     {:else}
       <div class="pt-1">
-        {#each history.items as change (change.id)}
-          <HistoryChangeCard
-            {change}
-            categoryLabel={categoryLabel(change)}
-            categoryColor={categoryColor(change)}
-            highlighted={false}
-            diff={history.getDiff(change.id)}
-            diffLoading={history.isDiffLoading(change.id)}
-            open={history.isCardOpen(change.id)}
-            onToggle={() => onCardClick(change)}
-          />
+        {#each groupChangesByDay(history.items, new Date()) as group (group.label)}
+          <div class="text-muted-foreground px-3 pt-2 pb-1 text-[11px] font-medium">{group.label}</div>
+          {#each group.items as change (change.id)}
+            <HistoryChangeCard
+              {change}
+              categoryLabel={categoryLabel(change)}
+              categoryColor={categoryColor(change)}
+              highlighted={false}
+              diff={history.getDiff(change.id)}
+              diffLoading={history.isDiffLoading(change.id)}
+              open={history.isCardOpen(change.id)}
+              onToggle={() => onCardClick(change)}
+            />
+          {/each}
         {/each}
+        {#if history.atStartOfHistory}
+          <div class="text-muted-foreground px-3 pt-2 pb-2 text-center text-[11px]">Start of history</div>
+        {/if}
       </div>
     {/if}
   </SidebarContent>
@@ -238,13 +194,13 @@
           <ChevronLeftIcon class="size-4" />
         </Button>
         <span class="text-muted-foreground">
-          {history.pageStart}–{history.pageEnd} of {history.total}
+          {history.pageStart}–{history.pageEnd} of {history.total}{history.hasMore ? "+" : ""}
         </span>
         <Button
           variant="ghost"
           size="icon"
           title="Older"
-          disabled={history.page === history.pageCount}
+          disabled={history.atStartOfHistory}
           onclick={() => history.goToPage(history.page + 1)}
         >
           <ChevronRightIcon class="size-4" />
@@ -253,7 +209,7 @@
           variant="ghost"
           size="icon"
           title="Oldest"
-          disabled={history.page === history.pageCount}
+          disabled={history.atStartOfHistory}
           onclick={() => history.goToOldest()}
         >
           <ChevronLastIcon class="size-4" />
