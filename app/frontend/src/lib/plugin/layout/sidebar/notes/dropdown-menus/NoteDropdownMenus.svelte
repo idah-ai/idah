@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EllipsisVerticalIcon, LinkIcon, PenSquareIcon, Trash2Icon } from "@lucide/svelte";
+  import { EllipsisVerticalIcon, LinkIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { SvelteURL } from "svelte/reactivity";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
@@ -56,7 +56,7 @@
         },
         {
           label: "Edit",
-          icon: PenSquareIcon,
+          icon: SquarePenIcon,
           disabled: !editable,
           action: async () => {
             onSwitchToEditMode?.();

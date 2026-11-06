@@ -73,7 +73,7 @@
     ]);
 
     if (!canUpdateDataset) {
-      tabs = datasetTabs.filter((tab) => tab.value !== "labels");
+      tabs = datasetTabs.filter((tab) => tab.value !== "labels" && tab.value !== "feedback-configuration");
     }
   });
 
@@ -81,7 +81,7 @@
   async function fetchData() {
     const datasetRes = await datasetsBackendDataSource.get(datasetId, {
       fields: {
-        [DatasetRecord.type]: ["name", "modality", "syncing_stats", "delivery_date"],
+        [DatasetRecord.type]: ["name", "modality", "syncing_stats", "delivery_date", "feedback_configuration"],
       },
       noCache: true,
     });

@@ -20,6 +20,7 @@ import type {
   ISyncEvent,
   IAccountSettingsDriverV2,
   Unsubscribe,
+  IFeedbackConfig,
 } from "../types";
 
 import { AstProcessor } from "../utils/ast-evaluator";
@@ -78,6 +79,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private _project: IProjectInfo;
   private _media: IMediaInfo;
   private _config: IConfig;
+  private _feedbackConfig: IFeedbackConfig;
   private _workflowStep: string;
   private _entryStatus: string;
   private _timeTracking: Record<string, number> | null;
@@ -103,6 +105,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     project: IProjectInfo;
     media: IMediaInfo;
     config: IConfig;
+    feedbackConfig: IFeedbackConfig;
     workflowStep: string;
     entryStatus: string;
     timeTracking: Record<string, number> | null;
@@ -113,6 +116,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this._project = opts.project;
     this._media = opts.media;
     this._config = sortConfigByOrder(opts.config);
+    this._feedbackConfig = opts.feedbackConfig;
     this._workflowStep = opts.workflowStep;
     this._entryStatus = opts.entryStatus;
     this._timeTracking = opts.timeTracking;
@@ -266,6 +270,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   }
   get config(): IConfig {
     return this._config;
+  }
+  get feedbackConfig(): IFeedbackConfig {
+    return this._feedbackConfig;
   }
 
   get accountSettings(): IAccountSettingsDriverV2 {
@@ -501,6 +508,7 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
     project: projectInfo,
     media: mediaInfo,
     config: dataset.labeling_configuration as IConfig,
+    feedbackConfig: dataset.feedback_configuration as IFeedbackConfig,
     workflowStep: entry.wf_step,
     entryStatus: entry.status,
     timeTracking: entry.time_tracking ?? null,
