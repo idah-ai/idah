@@ -208,7 +208,6 @@ export function createProjectDashboardDataSources(
     openEntries(ids: string[], combined = true): ReturnType<ProjectDashboardDataSources["openEntries"]> {
       const selected = [...ids];
       let latest: Promise<CollectionResponse<EntryRecord>>;
-      let latestPagination: { page: number; itemsPerPage: number };
       const contexts = new WeakMap<CollectionResponse<EntryRecord>, { datasetNames: { [id: string]: string } }>();
       return {
         ...entries,
@@ -223,7 +222,6 @@ export function createProjectDashboardDataSources(
               ![10, 25, 50, 100].includes(pagination.itemsPerPage)
             )
               throw new Error("Invalid Open entries page");
-            latestPagination = { ...pagination };
             const response = await entries.list({
               filters: {
                 ...(selected.length ? { dataset_id: selected } : {}),
@@ -267,9 +265,6 @@ export function createProjectDashboardDataSources(
             try {
               const response = await observed;
               if (observed !== latest) continue;
-              // The shared table commits these captured preferences after list/enrichment.
-              if (options.pagination) Object.assign(options.pagination, latestPagination);
-              if (options.sort) options.sort.splice(0, options.sort.length, "created_at", "id");
               return response;
             } catch (error) {
               if (observed === latest) throw error;
@@ -317,7 +312,6 @@ function datasetTableSource(
   let previousName: string | undefined;
   let latest: Promise<CollectionResponse<DatasetRecord>>;
   let latestQuery: ListOptions;
-  const optionsByResponse = new WeakMap<CollectionResponse<DatasetRecord>, ListOptions[]>();
 
   async function currentResponse(): Promise<CollectionResponse<DatasetRecord>> {
     while (true) {
@@ -329,11 +323,6 @@ function datasetTableSource(
         if (observed === latest) throw error;
       }
     }
-  }
-  function syncOptions(options: ListOptions): void {
-    // Keep captured pagination and sorting aligned with the latest response.
-    if (options.pagination) Object.assign(options.pagination, latestQuery.pagination);
-    if (options.sort) options.sort.splice(0, options.sort.length, ...(latestQuery.sort ?? []));
   }
   return {
     ...datasets,
@@ -347,7 +336,6 @@ function datasetTableSource(
     async synchronize(response: CollectionResponse<DatasetRecord>): Promise<void> {
       const current = await currentResponse();
       Object.assign(response, current);
-      for (const options of optionsByResponse.get(response) ?? []) syncOptions(options);
     },
     async list(options: ListOptions = {}): Promise<CollectionResponse<DatasetRecord>> {
       latest = (async (): Promise<CollectionResponse<DatasetRecord>> => {
@@ -358,10 +346,7 @@ function datasetTableSource(
         latestQuery = query;
         return datasets.list(query);
       })();
-      const response = await currentResponse();
-      syncOptions(options);
-      optionsByResponse.set(response, [...(optionsByResponse.get(response) ?? []), options]);
-      return response;
+      return currentResponse();
     },
   };
 }
