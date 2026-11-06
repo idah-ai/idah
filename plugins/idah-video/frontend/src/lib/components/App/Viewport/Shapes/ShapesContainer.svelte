@@ -860,10 +860,12 @@
               points: [ex2, Math.max(sy, y), sx2 - ex2, Math.min(sy2, ey2) - Math.max(sy, y)],
             });
         }
-        ui.coverageMaskShapes = newList;
+        getDriver().command.call("coverage-mask-draw", { before: [...ui.coverageMaskShapes], after: newList });
       } else {
         // Add mode
-        ui.coverageMaskShapes = [...ui.coverageMaskShapes, { type: "bbox", points: [x, y, w, h] }];
+        const before = [...ui.coverageMaskShapes];
+        const after = [...before, { type: "bbox", points: [x, y, w, h] }];
+        getDriver().command.call("coverage-mask-draw", { before, after });
       }
       return;
     }

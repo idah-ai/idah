@@ -16,7 +16,7 @@ class Viewport {
     return this.#mode;
   }
   get isCreationMode() {
-    return ["idah-video:polygon", "idah-video:bounding-box", "note", "idah-video:coverage-mask-bbox"].includes(this.#mode);
+    return ["idah-video:polygon", "idah-video:bounding-box", "note", "idah-video:coverage-mask-bbox", "idah-video:coverage-mask-bbox-remove"].includes(this.#mode);
   }
   get isEditorWorkspace() {
     return this.#mode === EDITOR_MODE;
@@ -25,7 +25,7 @@ class Viewport {
     return this.#mode === REVIEW_MODE || this.#mode === NOTE_MODE;
   }
   get isCoverageMaskMode() {
-    return this.#mode === "idah-video:coverage-mask-bbox";
+    return this.#mode === "idah-video:coverage-mask-bbox" || this.#mode === "idah-video:coverage-mask-bbox-remove";
   }
 
   set mode(val: string) {

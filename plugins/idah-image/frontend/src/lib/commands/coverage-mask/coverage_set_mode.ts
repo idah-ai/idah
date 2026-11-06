@@ -43,7 +43,7 @@ function reg(d: IIdahDriverV2, cmd: any, cb: (o: any) => any) { d.command.regist
 
 export const addCommand = { name: "coverage-mask-add", group: "Coverage Mask", modes: [DEFAULT_MODE, REVIEW_MODE, "idah-image:coverage-mask-bbox", "idah-image:coverage-mask-bbox-remove"] as string[], shortcut: "K" as string | null, shortDescription: "Done Area — Add mode", longDescription: null };
 export const removeCommand = { name: "coverage-mask-remove", group: "Coverage Mask", modes: [DEFAULT_MODE, REVIEW_MODE, "idah-image:coverage-mask-bbox", "idah-image:coverage-mask-bbox-remove"] as string[], shortcut: "Shift+K" as string | null, shortDescription: "Done Area — Remove mode", longDescription: null };
-export const clearCommand = { name: "coverage-mask-clear", group: "Coverage Mask", modes: [DEFAULT_MODE, REVIEW_MODE] as string[], shortcut: "Control+Shift+K" as string | null, shortDescription: "Done Area — Clear all", longDescription: null };
+export const clearCommand = { name: "coverage-mask-clear", group: "Coverage Mask", modes: [DEFAULT_MODE, REVIEW_MODE, "idah-image:coverage-mask-bbox", "idah-image:coverage-mask-bbox-remove"] as string[], shortcut: "Control+Shift+K" as string | null, shortDescription: "Done Area — Clear all", longDescription: null };
 export const modeCommand = { name: "coverage-mask-set-mode", group: "Coverage Mask", modes: [DEFAULT_MODE, REVIEW_MODE] as string[], shortcut: null as string | null, shortDescription: null, longDescription: null };
 export const drawCommand = { name: "coverage-mask-draw", group: "Coverage Mask", modes: [DEFAULT_MODE, REVIEW_MODE, "idah-image:coverage-mask-bbox", "idah-image:coverage-mask-bbox-remove"] as string[], shortcut: null as string | null, shortDescription: null, longDescription: null };
 

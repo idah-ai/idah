@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CheckCheckIcon, ChevronDownIcon, RedoIcon, UndoIcon } from "@lucide/svelte";
+  import { CheckCheckIcon, ChevronDownIcon, RedoIcon, Trash2Icon, UndoIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -8,7 +8,7 @@
   import Separator from "@/components/ui/separator/separator.svelte";
   import * as DropdownMenu from "@/components/ui/dropdown-menu";
   import * as Kbd from "@/components/ui/kbd";
-  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+  // import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
   import { cn } from "@/utils";
@@ -58,9 +58,9 @@
     return mode.includes("coverage-mask");
   }
 
-  function isCoverageMaskAdd(mode: string): boolean {
-    return mode.endsWith("-bbox");
-  }
+  // function isCoverageMaskAdd(mode: string): boolean {
+  //   return mode.endsWith("-bbox");
+  // }
 
   function isCoverageMaskRemove(mode: string): boolean {
     return mode.includes("-remove");
@@ -317,6 +317,7 @@
       </DropdownMenu.Item>
       <Separator />
       <DropdownMenu.Item onclick={clearCoverageMasks}>
+        <Trash2Icon class="size-3" />
         Remove All
       </DropdownMenu.Item>
     </DropdownMenu.Content>
