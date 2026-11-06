@@ -5,8 +5,10 @@ module AnnotationChange
     use changes: AnnotationChange::Repository, annotations: Annotation::Repository
 
     # Default sort for history: an entry's history mixes several annotations, so
-    # `version` alone does not order it; changed_at desc, then version desc.
-    DEFAULT_SORT = ["-changed_at", "-version"].freeze
+    # `version` alone does not order it. Only one key works: verse-sequel's
+    # `prepare_ordering` calls Sequel's `.order` once per key and each call
+    # replaces the previous ordering, so only the last key would apply.
+    DEFAULT_SORT = ["-changed_at"].freeze
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       changes.index(

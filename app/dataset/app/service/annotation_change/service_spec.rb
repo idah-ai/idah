@@ -74,6 +74,41 @@ RSpec.describe AnnotationChange::Service, database: true do
       expect(changed_ats).to eq(changed_ats.sort.reverse)
     end
 
+    it "orders by changed_at across annotations, not by version" do
+      # `a` reaches version 2 before `b` is created, so version order (a2, a1,
+      # b1) disagrees with time order (b1, a2, a1). The default sort must follow
+      # changed_at (newest first), not version.
+      a = annotation_repo.create(
+        project_id: first_project_id,
+        dataset_id: first_dataset_id,
+        entry_id: first_entry_id,
+        shape_type: "bb",
+        shape_args: { x: 1 },
+        category: "cat",
+        properties: {},
+        created_by_email: "reviewer@example.com"
+      )
+      annotation_repo.update(a, { category: "cat2" })
+      b = annotation_repo.create(
+        project_id: first_project_id,
+        dataset_id: first_dataset_id,
+        entry_id: first_entry_id,
+        shape_type: "bb",
+        shape_args: { x: 2 },
+        category: "dog",
+        properties: {},
+        created_by_email: "reviewer@example.com"
+      )
+
+      rows = subject.index({ entry_id: first_entry_id }, items_per_page: 10_000)
+
+      expect(rows.map(&:changed_at)).to eq(rows.map(&:changed_at).sort.reverse)
+      # Newest first: b's created row, then a's v2, then a's created row.
+      expect(rows.map { |r| [r.annotation_id, r.version] }).to eq(
+        [[b, 1], [a, 2], [a, 1]]
+      )
+    end
+
     it "filters by op__in" do
       id, = build_history
 
