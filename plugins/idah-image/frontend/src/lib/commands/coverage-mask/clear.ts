@@ -26,8 +26,8 @@ export function register(driver: IIdahDriverV2): void {
       const before = [...ui.coverageMaskShapes];
       return {
         command: { ...command },
-        do() { ui.coverageMaskShapes = []; doOff(); invalidate(driver); },
-        undo() { ui.coverageMaskShapes = before; invalidate(driver); },
+        do() { ui.coverageMaskShapes = []; doOff(); invalidate(driver); driver.command.call("coverage-mask-save"); },
+        undo() { ui.coverageMaskShapes = before; invalidate(driver); driver.command.call("coverage-mask-save"); },
         isCombinable() { return false; },
         combine(p: any) { return p; },
       };

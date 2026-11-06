@@ -73,6 +73,7 @@ import { register as registerCoverageMaskRemove } from "./coverage-mask/remove";
 import { register as registerCoverageMaskClear } from "./coverage-mask/clear";
 import { register as registerCoverageMaskSetMode } from "./coverage-mask/set-mode";
 import { register as registerCoverageMaskDraw } from "./coverage-mask/draw";
+import { register as registerCoverageMaskSave } from "./coverage-mask/save";
 import { register as registerSnapMagneticToggle } from "./snap/magnetic_toggle";
 import { IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK } from "$lib/types";
 import { hasConfig } from "$idah/v2/utils";
@@ -138,6 +139,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerCoverageMaskClear(driver);
   registerCoverageMaskSetMode(driver);
   registerCoverageMaskDraw(driver);
+  registerCoverageMaskSave(driver);
 
   // ── UI / Display ─────────────────────────────────────────────────────
   registerToggleColorMode(driver);

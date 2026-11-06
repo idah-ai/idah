@@ -45,6 +45,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { snapDebug, ui } from "$lib/state/ui.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
+  import { loadCoverageMasks } from "$lib/commands/coverage-mask/save";
 
   import {
     onPointerDown as maskBrushPointerDown,
@@ -223,6 +224,15 @@
   $effect(() => {
     if (_compRefs.length < visibleAnnotations.length) {
       _compRefs.length = visibleAnnotations.length;
+    }
+  });
+
+  // Load persisted coverage masks once annotations become available
+  $effect(() => {
+    // Access data.annotations?.items to establish reactivity
+    const items = data.annotations?.items;
+    if (items && items.length > 0) {
+      loadCoverageMasks();
     }
   });
 
@@ -984,10 +994,12 @@
             });
         }
         getDriver().command.call("coverage-mask-draw", { before: [...ui.coverageMaskShapes], after: newList });
+        getDriver().command.call("coverage-mask-save");
       } else {
         const before = [...ui.coverageMaskShapes];
         const after = [...before, { type: "bbox", points: [x, y, w, h] }];
         getDriver().command.call("coverage-mask-draw", { before, after });
+        getDriver().command.call("coverage-mask-save");
       }
       return;
     }
