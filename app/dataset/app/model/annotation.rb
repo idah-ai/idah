@@ -488,6 +488,5 @@ module Annotation
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
     end
-
   end
 end
