@@ -47,7 +47,7 @@ module NoteFeed
       attributes[:edited_at] = Time.now if content_edited?(current_feed, attributes)
 
       note_feeds.update!(record.id, attributes)
-      touch_entry(current.entry_id)
+      touch_entry(current_feed.entry_id)
       note_feeds.find!(record.id)
     end
 

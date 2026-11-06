@@ -99,8 +99,6 @@ module NoteComment
       note_feeds.find!(note_feed_id).entry_id
     end
 
-    private
-
     def validate_content!(content)
       return if content.is_a?(String) && !content.strip.empty?
 
