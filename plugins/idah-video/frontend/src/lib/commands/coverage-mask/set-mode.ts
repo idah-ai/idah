@@ -2,7 +2,7 @@
 // coverage-mask/set-mode — Set mask mode (internal, called by toolbar button)
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import { EDITOR_MODE, REVIEW_MODE } from "$lib/state/viewport.svelte";
+import { EDITOR_MODE, REVIEW_MODE } from "$lib/types";
 import { doOff, doAdd, doRemove, invalidate } from "./_shared";
 
 export const command = {

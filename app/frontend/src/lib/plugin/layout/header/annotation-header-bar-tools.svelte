@@ -308,8 +308,8 @@
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" side="bottom">
       <DropdownMenu.Item onclick={enterCoverageAdd}>
-          <CheckCheckIcon class="size-3" style="color:#18835b" />
-          Done Area — Add
+        <CheckCheckIcon class="size-3" style="color:#18835b" />
+        Done Area — Add
       </DropdownMenu.Item>
       <DropdownMenu.Item onclick={enterCoverageRemove}>
         <CheckCheckIcon class="size-3" style="color:#b43239" />

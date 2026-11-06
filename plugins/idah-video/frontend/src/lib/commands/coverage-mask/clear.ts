@@ -3,13 +3,13 @@
 // ---------------------------------------------------------------------------
 import { ui } from "$lib/state/ui.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import { EDITOR_MODE, REVIEW_MODE } from "$lib/state/viewport.svelte";
+import { EDITOR_MODE, REVIEW_MODE, COVERAGE_MASK_BBOX, COVERAGE_MASK_BBOX_REMOVE } from "$lib/types";
 import { doOff, invalidate } from "./_shared";
 
 export const command = {
   name: "coverage-mask-clear",
   group: "Coverage Mask",
-  modes: [EDITOR_MODE, REVIEW_MODE, "idah-video:coverage-mask-bbox", "idah-video:coverage-mask-bbox-remove"] as string[],
+  modes: [EDITOR_MODE, REVIEW_MODE, COVERAGE_MASK_BBOX, COVERAGE_MASK_BBOX_REMOVE] as string[],
   shortcut: "Control+Shift+K" as string | null,
   shortDescription: "Done Area — Clear all",
   longDescription: "Remove all coverage mask shapes",
