@@ -2,13 +2,14 @@ import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource"
 import { clearCache } from "@/data/Cache";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
+import { isOverdue } from "@/utils/date";
 import { showErrorToast } from "@/utils/error/error.toasts";
 
 import { EntryRecord } from "@/data/model/dataset/entries/record";
 import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
-import { type DatasetStatusBadgeProps, datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 import type { DataSourceOptions } from "@/data/DataSource";
+import { type DatasetStatusBadgeProps, datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 import type { RecordResponse } from "@/data/model/types";
 
 import type { Hash } from "@/utils/types";
@@ -25,8 +26,10 @@ export class DatasetRecord extends Record {
   @field() public status!: string;
   @field() public progress!: number;
   @field() public entries_total_count!: number;
+  @field() public readonly syncing_stats!: boolean;
   @field() public updated_at!: Date;
   @field() public created_at!: string;
+  @field() public delivery_date!: string | null;
 
   @relationship() public project!: ProjectRecord;
   @relationship() public entries!: EntryRecord[];
@@ -47,6 +50,10 @@ export class DatasetRecord extends Record {
     if (!this.feedback_configuration) return 0;
 
     return Object.keys(this.feedback_configuration).length;
+  }
+
+  public isOverdueOn(today: Date): boolean {
+    return this.status !== "completed" && isOverdue(this.delivery_date, today);
   }
 }
 

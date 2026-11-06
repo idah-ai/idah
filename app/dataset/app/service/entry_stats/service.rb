@@ -44,13 +44,24 @@ module EntryStats
       !dataset.configured_category_ids.include?(category)
     end
 
+    # Seconds between sweep heartbeats; well under Dataset::SYNCING_STATS_STALE_AFTER.
+    SYNCING_STATS_HEARTBEAT_EVERY = 60
+
     def recompute_all_for_dataset(dataset_id, changed_category_ids: [])
-      system_datasets.no_event { system_datasets.update!(dataset_id, { syncing_stats: true }) }
+      last_heartbeat = Time.now
+      system_datasets.no_event do
+        system_datasets.update!(dataset_id, { syncing_stats: true, syncing_stats_at: last_heartbeat })
+      end
 
       changed_set = changed_category_ids.to_set
 
       entries = system_entries.chunked_index({ dataset_id__eq: dataset_id }, included: [:dataset, :annotations])
       entries.each do |entry|
+        if Time.now - last_heartbeat >= SYNCING_STATS_HEARTBEAT_EVERY
+          last_heartbeat = Time.now
+          system_datasets.no_event { system_datasets.update!(dataset_id, { syncing_stats_at: last_heartbeat }) }
+        end
+
         # Only recompute entries that have annotations matching a changed
         # category. If changed_set is empty (no IDs changed), every entry is
         # skipped and the sweep finishes instantly — no unnecessary recomputes.

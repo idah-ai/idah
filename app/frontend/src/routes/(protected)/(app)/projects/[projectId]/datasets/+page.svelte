@@ -72,7 +72,16 @@
     disabledActiveStateFilterSortKeys={["project_id"]}
     listOptions={{
       fields: {
-        [DatasetRecord.type]: ["id", "name", "status", "modality", "progress", "created_at", "updated_at"],
+        [DatasetRecord.type]: [
+          "id",
+          "name",
+          "status",
+          "modality",
+          "progress",
+          "created_at",
+          "updated_at",
+          "delivery_date",
+        ],
         [ProjectRecord.type]: ["name"],
         [EntryRecord.type]: ["status"],
       },

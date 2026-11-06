@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
 module Dataset
+  # A sweep that hasn't refreshed `syncing_stats_at` for this long is treated as
+  # dead (worker killed, or its event never delivered). Sweeps refresh it every
+  # EntryStats::Service::SYNCING_STATS_HEARTBEAT_EVERY seconds.
+  SYNCING_STATS_STALE_AFTER = 180 # seconds
+
   class Record < Verse::Model::Record::Base
     type Resource::Dataset::Datasets
 
@@ -8,6 +13,7 @@ module Dataset
     field :project_id, type: String, readonly: true
 
     field :name, type: String
+    field :delivery_date, type: [Date, NilClass]
     field :labels, type: Array
     field :modality, type: String, readonly: true
 
@@ -22,7 +28,14 @@ module Dataset
     field :entries_completed_count, type: Integer, readonly: true
     field :entries_in_progress_count, type: Integer, readonly: true
 
-    field :syncing_stats, type: [TrueClass], readonly: true
+    field :syncing_stats_at, type: [Time, NilClass], readonly: true, visible: false
+    # True only while the sweep's heartbeat is recent, so a dead sweep stops
+    # showing as syncing on its own.
+    field :syncing_stats, type: [TrueClass], readonly: true do
+      next false unless @fields[:syncing_stats] && syncing_stats_at
+
+      syncing_stats_at > Time.now - SYNCING_STATS_STALE_AFTER
+    end
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true

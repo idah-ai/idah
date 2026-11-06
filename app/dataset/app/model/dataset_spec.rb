@@ -74,6 +74,29 @@ RSpec.describe Dataset, database: true do
       end
     end
 
+    describe "#syncing_stats" do
+      def record(syncing_stats:, syncing_stats_at:)
+        Dataset::Record.new({ syncing_stats:, syncing_stats_at: })
+      end
+
+      it "is true while the sweep's heartbeat is fresh" do
+        expect(record(syncing_stats: true, syncing_stats_at: Time.now).syncing_stats).to be(true)
+      end
+
+      it "is false once the heartbeat is stale (sweep died or event was lost)" do
+        stale_at = Time.now - Dataset::SYNCING_STATS_STALE_AFTER - 1
+        expect(record(syncing_stats: true, syncing_stats_at: stale_at).syncing_stats).to be(false)
+      end
+
+      it "is false without a heartbeat" do
+        expect(record(syncing_stats: true, syncing_stats_at: nil).syncing_stats).to be(false)
+      end
+
+      it "is false when the flag is off" do
+        expect(record(syncing_stats: false, syncing_stats_at: Time.now).syncing_stats).to be(false)
+      end
+    end
+
     describe "#update_progress!" do
       subject { sys_subject }
 
