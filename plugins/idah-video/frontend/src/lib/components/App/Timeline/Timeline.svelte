@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { onMount, tick, untrack, type Snippet } from "svelte";
+  import { onMount, untrack, type Snippet } from "svelte";
   import { ChevronDownIcon, ChevronRightIcon } from "@lucide/svelte";
 
+  import AnnotationsErrorAlertIcon from "$lib/components/App/SelectionPanel/_AnnotationsErrorAlertIcon.svelte";
   import Caret from "$lib/components/App/Timeline/_Caret.svelte";
   import Ruler from "$lib/components/App/Timeline/_Ruler.svelte";
   import Selection from "$lib/components/App/Timeline/_Selection.svelte";
@@ -20,7 +21,6 @@
   import { getAnnotationGroupId, ENTRY_ROOT, VIDEO_FRAME, type IVideoAnnotationRecord } from "$lib/types";
 
   import type { TimelineItem, TimelineProps, TrackData, Viewport } from "$lib/components/App/Timeline/types";
-  import type { IAnnotationRecord } from "$idah/v2/types";
 
   interface Props extends TimelineProps {
     toolbar?: Snippet;
@@ -739,6 +739,8 @@
 
   <!-- Vertical scroll container: scrolls both group headers and tracks together -->
   <div
+    role="button"
+    tabindex="-1"
     class="timeline-body-scroll"
     bind:this={bodyScrollEl}
     bind:clientHeight={bodyScrollClientHeight}
@@ -766,6 +768,9 @@
                   <ChevronDownIcon class="text-muted-foreground size-4" />
                 {/if}
                 <p class="text-xs font-medium">{row.label}</p>
+                <AnnotationsErrorAlertIcon
+                  annotations={row.group === "tagging" ? taggingAnnotations : annotationItems}
+                />
               </button>
               <div class="ml-auto flex shrink-0 items-center">
                 <BulkActions

@@ -89,10 +89,88 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
     expect(last_response.status).to eq 200
   end
 
+  describe "Delivery Date HTTP contract" do
+    [:post, :patch].each do |verb|
+      context "on #{verb}" do
+        let(:path) { verb == :post ? "/datasets" : "/datasets/#{uuid}" }
+        let(:action) { verb == :post ? :create : :update }
+
+        it "rejects an invalid date before calling the service" do
+          expect(service).not_to receive(action)
+          public_send(
+            verb,
+            path,
+            { data: { type: Resource::Dataset::Datasets,
+                      attributes: { delivery_date: "2030-02-30" } } }
+          )
+          expect(last_response.status).to eq(422)
+        end
+
+        ["2030-01-02", nil].each do |value|
+          it "accepts delivery_date #{value.inspect}" do
+            date = value && Date.iso8601(value)
+            expect(service).to receive(action) do |record|
+              expect(record.attributes).to have_key(:delivery_date)
+              expect(record.attributes[:delivery_date]).to eq(date)
+              Dataset::Record.new(dataset_record.fields.merge(delivery_date: date))
+            end
+            public_send(
+              verb,
+              path,
+              { data: { type: Resource::Dataset::Datasets,
+                        attributes: { delivery_date: value } } }
+            )
+            expect(last_response.status).to eq(verb == :post ? 201 : 200)
+            expect(JSON.parse(last_response.body).dig("data", "attributes", "delivery_date")).to eq(value)
+          end
+        end
+
+        it "does not turn an omitted date into explicit null" do
+          expect(service).to receive(action) do |record|
+            expect(record.attributes).not_to have_key(:delivery_date)
+            dataset_record
+          end
+          public_send(verb, path, { data: { type: Resource::Dataset::Datasets, attributes: { name: "Unrelated" } } })
+          expect(last_response.status).to eq(verb == :post ? 201 : 200)
+        end
+      end
+    end
+  end
+
   it "destroy" do
     expect(service).to receive(:delete).with(uuid).and_return(true)
     delete "/datasets/#{uuid}"
 
     expect(last_response.status).to eq 204
+  end
+
+  describe "PATCH /datasets/:id/feedback_configuration" do
+    it "updates the feedback configuration" do
+      new_config = {
+        key1: { label: "Fix this", description: "It's broken" },
+        key2: { label: "Great work" }
+      }
+
+      expect(service).to receive(:update_feedback_configuration)
+        .with(uuid, new_config)
+        .and_return(new_config)
+
+      patch "/datasets/#{uuid}/feedback_configuration", { feedback_configuration: new_config }
+      expect(last_response.status).to eq 200
+    end
+  end
+
+  describe "GET /datasets/:id/feedback_keys_in_use" do
+    it "returns keys referenced by notes" do
+      expect(service).to receive(:feedback_keys_in_use)
+        .with(uuid)
+        .and_return({ keys: ["key1", "key3"] })
+
+      get "/datasets/#{uuid}/feedback_keys_in_use"
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      expect(body[:data][:keys]).to match_array(%w[key1 key3])
+    end
   end
 end

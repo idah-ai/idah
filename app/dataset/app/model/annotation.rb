@@ -147,6 +147,23 @@ module Annotation
       end
     end
 
+    def update!(id, attributes, scope: scoped(:update))
+      with_metadata do
+        annotation = find!(id)
+        old_category = annotation.category
+
+        add_metadata(
+          project_id: annotation.project_id,
+          dataset_id: annotation.dataset_id,
+          entry_id: annotation.entry_id,
+          old_category: old_category
+        )
+
+        super(id, attributes, scope:)
+      end
+    end
+
+    # Actions                       | Roles
     # Soft-delete an annotation: set `deleted_at` / `deleted_by_email`, bump the
     # version and record a `deleted` history row. A second delete is a no-op —
     # it keeps the original `deleted_at` and `deleted_by_email`, writes nothing
@@ -448,6 +465,16 @@ module Annotation
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
+    end
+
+    # Returns all distinct category IDs currently used by live (non-deleted)
+    # annotations in the given dataset. Used to check if a re-added category
+    # was previously in use.
+    def distinct_annotation_categories(dataset_id)
+      table.db[:annotations]
+           .where(dataset_id: dataset_id, deleted_at: nil)
+           .distinct(:category)
+           .select_map(:category)
     end
   end
 end

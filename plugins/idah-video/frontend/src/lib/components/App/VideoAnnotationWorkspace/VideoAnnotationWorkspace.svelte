@@ -34,10 +34,6 @@
   import ContextMenu from "$lib/components/App/ContextMenu/ContextMenu.svelte";
   import DebugConsole from "$lib/components/App/DebugConsole.svelte";
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
-  // import CategorySelect from "$lib/components/App/SelectionPanel/_CategorySelect.svelte";
-  // import PropertiesSection from "$lib/components/App/SelectionPanel/_PropertiesSection.svelte";
-  // import Text from "$lib/components/ui/Text/Text.svelte";
-  // import Badge from "$lib/components/ui/Badge/Badge.svelte";
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
   import VideoCanvas from "$lib/components/App/Viewport/VideoCanvas.svelte";

@@ -483,16 +483,20 @@ RSpec.describe IdahVideo::Export::Coco::Exporter do
       expect(report).to include(videos: 1, skipped: { videos_without_annotated_frames: 1 })
     end
 
-    it "exports only completed entries unless told otherwise" do
-      entries << FakeExportContext::Entry.new(
-        id: "entry-2",
-        name: "draft.mp4",
-        annotations: [car],
-        meta:,
-        status: "in_progress"
-      )
+    context "with completed_entries: true" do
+      let(:options) { { completed_entries: true } }
 
-      expect(export[:images].map { |i| File.dirname(i[:file_name]) }.uniq).to eq(["street"])
+      it "exports only completed entries" do
+        entries << FakeExportContext::Entry.new(
+          id: "entry-2",
+          name: "draft.mp4",
+          annotations: [car],
+          meta:,
+          status: "in_progress"
+        )
+
+        expect(export[:images].map { |i| File.dirname(i[:file_name]) }.uniq).to eq(["street"])
+      end
     end
 
     context "with completed_entries: false" do

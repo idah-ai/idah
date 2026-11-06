@@ -1,11 +1,14 @@
 // ---------------------------------------------------------------------------
-// annotationsBackendCrud.test.ts — setShape/setShapes transport tests
+// annotationsBackendCrud.test.ts — setShape/setShapes transport + fetch paging
 // ---------------------------------------------------------------------------
 
-import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
-import { createBackendCrudDriver, AnnotationsDriverAdapter } from "./annotationsBackendCrud";
-import { annotationsBackendDataSource } from "@/data/model/dataset/annotations/record";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { JsonRpcDatasource } from "@/data/jsonrpc";
+
+const list = vi.hoisted(() => vi.fn());
+vi.mock("@/data/model/dataset/annotations/record", () => ({ annotationsBackendDataSource: { list } }));
+
+import { createBackendCrudDriver, AnnotationsDriverAdapter } from "./annotationsBackendCrud";
 
 function makeRpc() {
   const call = vi.fn().mockResolvedValue({});
@@ -83,11 +86,8 @@ describe("AnnotationsDriverAdapter", () => {
 
   beforeEach(() => {
     vi.mocked(rpc.call).mockClear();
-    vi.mocked(annotationsBackendDataSource.list).mockClear();
-  });
-
-  beforeAll(() => {
-    vi.spyOn(annotationsBackendDataSource, "list").mockResolvedValue({ data: [] } as never);
+    list.mockReset();
+    list.mockResolvedValue({ data: [] });
   });
 
   it("setShapes with three entries makes one write_shapes call with all three", async () => {
@@ -136,7 +136,7 @@ describe("AnnotationsDriverAdapter", () => {
   it('fetch sends deleted: "false" by default', async () => {
     await driver.fetch();
 
-    expect(annotationsBackendDataSource.list).toHaveBeenCalledWith(
+    expect(list).toHaveBeenCalledWith(
       expect.objectContaining({ filters: expect.objectContaining({ deleted: "false" }) }),
     );
   });
@@ -144,7 +144,7 @@ describe("AnnotationsDriverAdapter", () => {
   it('fetch sends deleted: "true" for deleted: "true"', async () => {
     await driver.fetch({ deleted: "true" });
 
-    expect(annotationsBackendDataSource.list).toHaveBeenCalledWith(
+    expect(list).toHaveBeenCalledWith(
       expect.objectContaining({ filters: expect.objectContaining({ deleted: "true" }) }),
     );
   });
@@ -152,14 +152,42 @@ describe("AnnotationsDriverAdapter", () => {
   it('fetch sends no deleted filter for deleted: "all"', async () => {
     await driver.fetch({ deleted: "all" });
 
-    const call = vi.mocked(annotationsBackendDataSource.list).mock.calls[0][0] as {
-      filters: Record<string, unknown>;
-    };
+    const call = list.mock.calls[0][0] as { filters: Record<string, unknown> };
     expect(call.filters).not.toHaveProperty("deleted");
   });
 
   it("exposes the change-history methods", async () => {
     expect(typeof driver.changes).toBe("function");
     expect(typeof driver.version).toBe("function");
+  });
+
+  it("fetches every page for the current entry", async () => {
+    const record = (id: string) => ({
+      id,
+      shape_type: "idah-video:bounding-box",
+      shape_args: { start: 0, end: 1 },
+      category: "vehicle",
+      properties: {},
+      metadata: { group_id: "track-7" },
+    });
+    list.mockResolvedValueOnce({ data: Array.from({ length: 100 }, (_, index) => record(`ann-${index}`)) });
+    list.mockResolvedValueOnce({ data: [record("off-frame")] });
+
+    const annotations = await driver.fetch();
+
+    expect(annotations).toHaveLength(101);
+    expect(annotations.at(-1)?.id).toBe("off-frame");
+    expect(list).toHaveBeenNthCalledWith(1, {
+      filters: { entry_id: "entry-1", deleted: "false" },
+      pagination: { page: 1, itemsPerPage: 100 },
+      sort: ["id"],
+      noCache: true,
+    });
+    expect(list).toHaveBeenNthCalledWith(2, {
+      filters: { entry_id: "entry-1", deleted: "false" },
+      pagination: { page: 2, itemsPerPage: 100 },
+      sort: ["id"],
+      noCache: true,
+    });
   });
 });

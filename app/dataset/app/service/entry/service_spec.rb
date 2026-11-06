@@ -62,6 +62,291 @@ RSpec.describe Entry::Service, database: true do
     subject.create(record)
   end
 
+  describe "#select_next", as: :admin do
+    let(:claim_service) { described_class.new(current_auth_context) }
+    let(:create_candidate) do
+      lambda do |attrs|
+        repo.no_event do
+          repo.create(attributes.merge(project_id: project_id, resource: UUIDv7.generate).merge(attrs))
+        end
+      end
+    end
+
+    it "claims self-assigned work before unassigned work and reuses service select" do
+      create_candidate.call(assigned_to_id: nil, delivery_date: Date.today)
+      id = create_candidate.call(assigned_to_id: 1, delivery_date: Date.today + 10)
+      expect(claim_service).to receive(:select).with(id).and_call_original
+      result = claim_service.select_next(dataset_id: dataset_id, wf_step: "start")
+      expect(result.id).to eq(id)
+      expect(result.assigned_to_id).to eq(1)
+      expect(result.assigned_to_email).to eq("admin@example.com")
+      expect(result.status).to eq("in_progress")
+      expect(dataset_repo.find!(dataset_id).status).to eq("in_progress")
+    end
+
+    it "orders eligible work by fallback date, priority, creation and ID" do
+      dataset_repo.update!(dataset_id, { delivery_date: Date.today })
+      create_candidate.call(assigned_to_id: nil, delivery_date: Date.today + 10, priority: -2)
+      create_candidate.call(assigned_to_id: nil, delivery_date: nil, priority: 0)
+      create_candidate.call(assigned_to_id: nil, delivery_date: nil, priority: -1, created_at: Time.now)
+      ids = [UUIDv7.generate, UUIDv7.generate].reverse
+      ids.each do |id|
+        create_candidate.call(id: id, assigned_to_id: nil, delivery_date: nil, priority: -1, created_at: Time.now - 100)
+      end
+      # Use the exact same timestamp to exercise the ID tie-breaker.
+      time = Time.now - 200
+      ids.each { |id| repo.update!(id, { created_at: time }) }
+      result = claim_service.select_next(dataset_id: dataset_id, wf_step: "start")
+      expect(result.id).to eq(ids.min)
+      expect(result.delivery_date).to be_nil
+    end
+
+    it "excludes other assignees, wrong workflow and unclaimable unassigned work" do
+      create_candidate.call(assigned_to_id: 2)
+      create_candidate.call(assigned_to_id: nil, wf_step: "review")
+      create_candidate.call(assigned_to_id: nil, status: "processing")
+      expect(claim_service.select_next(dataset_id: dataset_id, wf_step: "start")).to be_nil
+    end
+
+    it "keeps owners out of other assignees' work", as: :project_owner do
+      ProjectMember::Repository.new(auth_context).create(
+        project_id: project_id,
+        account_id: 3,
+        email: "project_owner@example.com",
+        role: "project_owner",
+        invited_by_id: 1
+      )
+      create_candidate.call(assigned_to_id: 4, delivery_date: Date.today)
+      id = create_candidate.call(assigned_to_id: nil, delivery_date: Date.today + 1)
+      expect(claim_service.select_next(dataset_id: dataset_id, wf_step: "start").id).to eq(id)
+    end
+
+    it "does not allow annotators to claim unassigned work", as: :annotator do
+      ProjectMember::Repository.new(auth_context).create(
+        project_id: project_id, account_id: 4, email: "annotator@example.com", role: "annotator", invited_by_id: 1
+      )
+      create_candidate.call(assigned_to_id: 4, wf_step: "review")
+      create_candidate.call(assigned_to_id: nil)
+      expect(claim_service.select_next(dataset_id: dataset_id, wf_step: "start")).to be_nil
+    end
+
+    it "places entries without either date last" do
+      create_candidate.call(assigned_to_id: nil, delivery_date: nil, priority: -2)
+      id = create_candidate.call(assigned_to_id: nil, delivery_date: Date.today + 10, priority: 0)
+      expect(claim_service.select_next(dataset_id: dataset_id, wf_step: "start").id).to eq(id)
+    end
+
+    it "respects reviewer scope and excludes their own submissions", as: :reviewer do
+      ProjectMember::Repository.new(auth_context).create(
+        project_id: project_id, account_id: 5, email: "reviewer@example.com", role: "reviewer", invited_by_id: 1
+      )
+      create_candidate.call(assigned_to_id: nil, wf_step: "review", submitted_by_id: 5)
+      id = create_candidate.call(assigned_to_id: nil, wf_step: "review", submitted_by_id: 4)
+      result = claim_service.select_next(dataset_id: dataset_id, wf_step: "review")
+      expect(result.id).to eq(id)
+      expect(result.assigned_to_id).to eq(5)
+    end
+    it "does not bypass Dataset scope for disabled members", as: :reviewer do
+      ProjectMember::Repository.new(auth_context).create(
+        project_id: project_id,
+        account_id: 5,
+        email: "reviewer@example.com",
+        role: "reviewer",
+        invited_by_id: 1,
+        disabled_at: Time.now
+      )
+      create_candidate.call(assigned_to_id: nil, wf_step: "review", submitted_by_id: 4)
+      expect { claim_service.select_next(dataset_id: dataset_id, wf_step: "review") }
+        .to raise_error(Verse::Error::RecordNotFound)
+    end
+  end
+
+  describe "delivery dates" do
+    before do
+      # Keep media-processing events out of date contract tests.
+      allow(subject.entries).to receive(:create).and_wrap_original do |method, attrs|
+        subject.entries.no_event { method.call(attrs) }
+      end
+    end
+
+    it "rejects an explicitly selected past date on creation" do
+      attributes[:delivery_date] = Date.today - 1
+      expect { entry }.to raise_error(Verse::Error::ValidationFailed)
+    end
+
+    it "rejects a changed past date without persisting unrelated fields" do
+      created = entry
+      record = deserialize(
+        data: { type: Resource::Dataset::Entries, id: created.id,
+                attributes: { name: "must not persist", delivery_date: Date.today - 1 } }
+      )
+      expect { subject.update(record) }.to raise_error(Verse::Error::ValidationFailed)
+      expect(repo.find!(created.id).name).to eq(created.name)
+    end
+
+    it "allows an unchanged past date and unrelated updates" do
+      dataset_repo.update!(dataset_id, { delivery_date: Date.today - 10 })
+      created = entry
+      record = deserialize(
+        data: { type: Resource::Dataset::Entries, id: created.id,
+                attributes: { name: "renamed", delivery_date: created.delivery_date } }
+      )
+      expect(subject.update(record).name).to eq("renamed")
+    end
+
+    it "accepts today using the server date" do
+      attributes[:delivery_date] = Date.today
+      expect(entry.delivery_date).to eq(Date.today)
+    end
+
+    it "sorts displayed Delivery Dates in both directions before pagination without changing stored dates" do
+      expect(subject.entries).to receive(:index_by_delivery_date).at_least(:once).and_call_original
+      dataset_repo.update!(dataset_id, { delivery_date: Date.today + 1 })
+      ids = [Date.today, Date.today + 2, nil].map do |date|
+        repo.no_event do
+          repo.create(attributes.merge(delivery_date: date, project_id: project_id, resource: UUIDv7.generate))
+        end
+      end
+      result = subject.index(
+        { dataset_id: dataset_id },
+        sort: ["delivery_date"],
+        included: [:dataset],
+        query_count: true
+      )
+      expect(result.map(&:id)).to eq([ids[0], ids[2], ids[1]])
+      expect(result.first.dataset.delivery_date).to eq(Date.today + 1)
+      result = subject.index({ dataset_id: dataset_id }, sort: "-delivery_date")
+      expect(result.map(&:id)).to eq([ids[1], ids[2], ids[0]])
+      page = subject.index({ dataset_id: dataset_id }, sort: ["delivery_date"], page: 2, items_per_page: 1)
+      expect(page.map(&:id)).to eq([ids[2]])
+      expect(repo.find!(ids[2]).delivery_date).to be_nil
+      dataset_repo.update!(dataset_id, { delivery_date: nil })
+      expect(subject.index({ dataset_id: dataset_id }, sort: ["-delivery_date"]).last.id).to eq(ids[2])
+    end
+
+    it "uses ID to keep tied Delivery Date pages stable in both directions" do
+      date = Date.today + 1
+      dataset_repo.update!(dataset_id, { delivery_date: date })
+      ids = Array.new(5) { UUIDv7.generate }.reverse
+      ids.each_with_index do |id, i|
+        repo.no_event do
+          repo.create(
+            attributes.merge(
+              id: id,
+              delivery_date: i.even? ? nil : date,
+              project_id: project_id,
+              resource: UUIDv7.generate
+            )
+          )
+        end
+      end
+      ["delivery_date", "-delivery_date"].each do |sort|
+        expected = sort.start_with?("-") ? ids.sort.reverse : ids.sort
+        pages = (1..3).flat_map do |page|
+          subject.index({ dataset_id: dataset_id }, sort: [sort], page: page, items_per_page: 2).map(&:id)
+        end
+        expect(pages).to eq(expected)
+        expect(pages.uniq.length).to eq(ids.length)
+      end
+    end
+
+    it "filters by displayed dates with inclusive bounds before pagination" do
+      dataset_repo.update!(dataset_id, { delivery_date: Date.new(2026, 11, 5) })
+      ids = [nil, Date.new(2026, 11, 1), Date.new(2026, 11, 10), Date.new(2026, 11, 20)].map do |date|
+        repo.no_event do
+          repo.create(attributes.merge(delivery_date: date, project_id: project_id, resource: UUIDv7.generate))
+        end
+      end
+      filters = { dataset_id: dataset_id, delivery_date__gte: "2026-11-01", delivery_date__lte: "2026-11-10" }
+      expect(subject.index(filters).map(&:id)).to match_array(ids.first(3))
+      timestamp_filters = filters.merge(
+        delivery_date__gte: "2026-11-01 00:00:00", delivery_date__lte: "2026-11-10 23:59:59"
+      )
+      expect(subject.index(timestamp_filters).map(&:id)).to match_array(ids.first(3))
+      page = subject.index(filters, sort: ["delivery_date"], page: 2, items_per_page: 1)
+      expect(page.map(&:id)).to eq([ids[0]])
+      expect(repo.find!(ids[0]).delivery_date).to be_nil
+      expect(subject.index({ dataset_id: dataset_id, delivery_date__gte: "2026-11-05" }).map(&:id))
+        .to match_array([ids[0], ids[2], ids[3]])
+      expect(subject.index({ dataset_id: dataset_id, delivery_date__lte: "2026-11-05" }).map(&:id))
+        .to match_array([ids[0], ids[1]])
+      dataset_repo.update!(dataset_id, { delivery_date: nil })
+      expect(subject.index(filters).map(&:id)).to match_array([ids[1], ids[2]])
+    end
+
+    it "keeps non-date list sorting on the framework path" do
+      expect(subject.entries).not_to receive(:index_by_delivery_date)
+      ids = [1, -2].map do |priority|
+        repo.no_event do
+          repo.create(attributes.merge(priority: priority, project_id: project_id, resource: UUIDv7.generate))
+        end
+      end
+      expect(subject.index({ dataset_id: dataset_id }, sort: ["priority"]).map(&:id)).to eq(ids.reverse)
+      expect(subject.index({ dataset_id: dataset_id }, sort: ["-priority"]).map(&:id)).to eq(ids)
+    end
+
+    it "copies the Dataset date only when omitted, including a past date" do
+      date = Date.today - 10
+      dataset_repo.update!(dataset_id, { delivery_date: date })
+      expect(entry.delivery_date).to eq(date)
+    end
+
+    context "with explicit null" do
+      let(:attributes) { super().merge(delivery_date: nil) }
+
+      it "does not replace null with the Dataset date" do
+        dataset_repo.update!(dataset_id, { delivery_date: Date.today + 10 })
+        expect(entry.delivery_date).to be_nil
+      end
+    end
+
+    context "with an explicit future date" do
+      let(:attributes) { super().merge(delivery_date: Date.today + 20) }
+
+      it "allows a date later than the Dataset deadline" do
+        dataset_repo.update!(dataset_id, { delivery_date: Date.today + 1 })
+        expect(entry.delivery_date).to eq(Date.today + 20)
+      end
+    end
+
+    it "keeps existing dates independent after Dataset changes" do
+      date = Date.today + 10
+      dataset_repo.update!(dataset_id, { delivery_date: date })
+      created = entry
+      Dataset::Service.new(auth_context).update(
+        deserialize(
+          data: { type: Resource::Dataset::Datasets, id: dataset_id,
+                  attributes: { delivery_date: Date.today + 1 } }
+        )
+      )
+      expect(repo.find!(created.id).delivery_date).to eq(date)
+    end
+
+    it "clears a deadline without restoring the Dataset date" do
+      dataset_repo.update!(dataset_id, { delivery_date: Date.today + 10 })
+      created = entry
+      result = subject.update(
+        deserialize(
+          data: { type: Resource::Dataset::Entries, id: created.id,
+                  attributes: { delivery_date: nil } }
+        )
+      )
+      expect(result.delivery_date).to be_nil
+    end
+
+    it "leaves a null deadline unchanged on unrelated updates" do
+      created = entry
+      dataset_repo.update!(dataset_id, { delivery_date: Date.today + 10 })
+      result = subject.update(
+        deserialize(
+          data: { type: Resource::Dataset::Entries, id: created.id,
+                  attributes: { name: "renamed" } }
+        )
+      )
+      expect(result.delivery_date).to be_nil
+    end
+  end
+
   describe "#create" do
     context "when job_id is not provided" do
       before do
@@ -954,6 +1239,15 @@ RSpec.describe Entry::Service, database: true do
       expect(duplicated.status).to eq("pending")
       expect(duplicated.job_id).to be_nil
       expect(duplicated.resource).to eq("http://example.com/processed.mp4")
+    end
+
+    it "resets the duplicated deadline even when the destination Dataset has a date" do
+      date = Date.today + 10
+      repo.update!(entry_processed, { delivery_date: date })
+      dataset_repo.update!(new_dataset_id, { delivery_date: date })
+      subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_processed])
+      expect(repo.index({ dataset_id: new_dataset_id }).first.delivery_date).to be_nil
+      expect(repo.find!(entry_processed).delivery_date).to eq(date)
     end
 
     it "skips a source still being processed" do
