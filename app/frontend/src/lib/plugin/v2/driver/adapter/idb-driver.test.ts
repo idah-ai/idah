@@ -229,3 +229,74 @@ describe("IdbBackedAnnotationsDriverAdapter sync sharing", () => {
     expect(backend.list).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("IdbBackedAnnotationsDriverAdapter cache v3 upgrade", () => {
+  const DB_NAME = `idahPlugin::${PLUGIN_ID}`;
+
+  beforeEach(() => {
+    indexedDB.deleteDatabase(DB_NAME);
+  });
+
+  afterEach(() => {
+    indexedDB.deleteDatabase(DB_NAME);
+  });
+
+  /** Create a version 2 database with the two stores and some records. */
+  function createV2Database(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 2);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        const ann = db.createObjectStore("annotations", { keyPath: ["entryId", "id"] });
+        ann.createIndex("entryId", "entryId");
+        const ent = db.createObjectStore("entries", { keyPath: "entryId" });
+        ent.createIndex("lastVisitedAt", "lastVisitedAt");
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  it("upgrades a version 2 cache to version 3, clearing both stores", async () => {
+    const v2db = await createV2Database();
+    await new Promise<void>((resolve, reject) => {
+      const tx = v2db.transaction(["annotations", "entries"], "readwrite");
+      tx.objectStore("annotations").put({ entryId: ENTRY_ID, id: "ann-1", category: "cat" });
+      tx.objectStore("entries").put({ entryId: ENTRY_ID, lastUpdatedAt: new Date("2026-01-01T00:00:00Z") });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    v2db.close();
+
+    const backend = makeBackend();
+    const driver = IdbBackedAnnotationsDriverAdapter<IAnnotationRecord["shape_args"], IAnnotationRecord["properties"]>({
+      entryId: ENTRY_ID,
+      pluginId: PLUGIN_ID,
+      backend,
+      enqueue: () => {},
+    });
+    if (!driver) throw new Error("driver is null");
+
+    await driver.fetch();
+
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    expect(db.version).toBe(3);
+
+    const annCount = await new Promise<number>((resolve, reject) => {
+      const req = db.transaction(["annotations"], "readonly").objectStore("annotations").count();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    db.close();
+
+    // The annotations store was cleared by the upgrade (the backend returned
+    // nothing, so nothing was re-downloaded), and the sync loop re-ran because
+    // the upgrade reset lastUpdatedAt.
+    expect(annCount).toBe(0);
+    expect(backend.list).toHaveBeenCalled();
+  });
+});
