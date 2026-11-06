@@ -22,6 +22,7 @@
 
   import type { Interval } from "@/components/app/projects/dashboard/DashboardHistory";
   import { format } from "date-fns";
+  import { showToast } from "@/components/ui/toast/index.svelte";
 
   // Props
   let { projectId }: { projectId: string } = $props();
@@ -66,7 +67,6 @@
   });
   const scope = $derived(detail?.id ?? (manager.ids.join(",") || "all"));
 
-  let notice = $state("");
   let interval: Interval = $state("Day");
 
   // Initialize
@@ -273,9 +273,13 @@
           {:else}<Button
               variant="link"
               size="sm"
-              onclick={() =>
-                (notice =
-                  "A combined Dataset Entries view is not connected yet. Select one Dataset to open its Entries page.")}
+              onclick={() => {
+                showToast.error({
+                  title: "Unable to open all enties",
+                  description:
+                    "A combined Dataset Entries view is not connected yet. Select one Dataset to open its Entries page.",
+                });
+              }}
             >
               All entries
             </Button>
@@ -290,12 +294,6 @@
             />{/key}
         </CardContent>
       </Card>
-
-      {#if notice}<Alert>
-          <AlertTitle>Dashboard information</AlertTitle><AlertDescription>
-            {notice}<Button variant="ghost" size="sm" onclick={() => (notice = "")}>Dismiss</Button>
-          </AlertDescription>
-        </Alert>{/if}
     {/if}
   </section>
 </TooltipProvider>
