@@ -401,4 +401,17 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
       )
     end
   end
+
+  describe "#activity" do
+    it "calls service.notify_activity with the entry id and returns accepted" do
+      expect(service).to receive(:notify_activity).with(uuid).and_return(
+        { data: { attributes: { accepted: true } } }
+      )
+
+      post "/entries/#{uuid}/activity"
+
+      expect(last_response.status).to eq 200
+      expect(last_response.body).to include("accepted")
+    end
+  end
 end

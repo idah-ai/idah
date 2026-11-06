@@ -142,6 +142,13 @@
         title: "Failed to assign entry to you",
       });
     } finally {
+      // Fire a time-tracking activity ping before navigating — clicking the
+      // entry card is the action that starts the work session.
+      fetch(`/api/v1/dataset/entries/${entryId}/activity`, {
+        method: "POST",
+        headers: { "Content-Type": "application/vnd.api+json" },
+        body: JSON.stringify({}),
+      }).catch(() => {});
       goto(resolve(`/entries/${entryId}/plugin`));
     }
   }
