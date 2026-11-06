@@ -45,10 +45,7 @@ function makeBackend(overrides: Partial<ICrudDriver<IAnnotationRecord>> = {}): I
 /** A driver whose sync loop is pre-seeded so fetch() does not hit the backend. The
  *  production enqueue observes op rejections (driver/index.ts #enqueue), so the
  *  mock enqueue should too when a test rejects a backend op. */
-async function makeSeededDriver(
-  records: IAnnotationRecord[],
-  enqueue: (op: Promise<unknown>) => void = () => {},
-) {
+async function makeSeededDriver(records: IAnnotationRecord[], enqueue: (op: Promise<unknown>) => void = () => {}) {
   const backend = makeBackend();
   const driver = IdbBackedAnnotationsDriverAdapter<IAnnotationRecord["shape_args"], IAnnotationRecord["properties"]>({
     entryId: ENTRY_ID,
