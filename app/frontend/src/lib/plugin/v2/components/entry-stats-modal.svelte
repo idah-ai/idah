@@ -34,6 +34,7 @@
   interface TimeRow {
     label: string;
     value: string;
+    tags?: IStatTag[];
   }
   interface TimeStepGroup {
     step: string;
@@ -52,7 +53,7 @@
   // Time section → step totals with one indented row per author underneath
   const timeGroups = $derived.by(() => {
     const byStep = new SvelteMap<string, { total?: string; authors: TimeRow[] }>();
-    for (const { key, value, label } of stats) {
+    for (const { key, value, label, tags } of stats) {
       const parts = key.split(".");
       if (parts[0] !== "time" || !parts[1]) continue;
       if (!byStep.has(parts[1])) byStep.set(parts[1], { authors: [] });
@@ -60,7 +61,7 @@
       if (parts[2] === "total") {
         g.total = value;
       } else {
-        g.authors.push({ label: label ?? humanizeKey(parts.slice(2)), value });
+        g.authors.push({ label: label ?? humanizeKey(parts.slice(2)), value, tags });
       }
     }
     return [...byStep.entries()].map<TimeStepGroup>(([step, g]) => ({
@@ -185,7 +186,7 @@
         {:else if tab === "annotations"}
           <!-- Annotations tab -->
           <div class="bg-muted/40 my-4 flex items-baseline justify-between rounded-lg px-3 py-2">
-            <span class="text-muted-foreground text-xs">total annotations</span>
+            <span class="text-muted-foreground text-base font-bold">Total annotations</span>
             <span class="text-xl font-bold tabular-nums">{annotationTotal}</span>
           </div>
 
@@ -222,8 +223,8 @@
         {:else}
           <!-- Time tab -->
           <div class="bg-muted/40 my-4 flex items-baseline justify-between rounded-lg px-3 py-2">
-            <span class="text-muted-foreground text-xs">
-              total time ({timeGroups.length}
+            <span class="text-muted-foreground text-base font-bold">
+              Total time ({timeGroups.length}
               {timeGroups.length === 1 ? "step" : "steps"})
             </span>
             <span class="text-xl font-bold tabular-nums">{formatDuration(timeTotal)}</span>
@@ -243,7 +244,12 @@
                   <tbody>
                     {#each authors as author (author.label)}
                       <tr class="border-b last:border-0">
-                        <td class="text-muted-foreground py-1.5 pl-5">{author.label}</td>
+                        <td class="text-muted-foreground py-1.5 pl-5">
+                          {author.label}
+                          {#each author.tags ?? [] as tag (tag.label)}
+                            <Badge variant={tag.variant} class="px-1.5 text-[10px]">{tag.label}</Badge>
+                          {/each}
+                        </td>
                         <td class="text-muted-foreground py-1.5 text-right tabular-nums">{author.value}</td>
                       </tr>
                     {/each}

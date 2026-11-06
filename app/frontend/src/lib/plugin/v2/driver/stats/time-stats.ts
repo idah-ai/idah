@@ -31,14 +31,16 @@ export class TimeStatsProvider implements IStatProvider {
 
     // Per-author rows, one per (step, author) stint
     for (const wt of workTimes) {
-      const showEmail = wt.email && wt.email !== "null" ? wt.email : `Account ${wt.accountId}`;
+      const showEmail = wt.email && wt.email !== "null" ? wt.email : `User ${wt.accountId}`;
+      const unsubmitted = wt.seconds === 0;
       stats.push({
         key: `time.${wt.wfStep}.${wt.accountId}`,
-        value: formatDuration(wt.seconds),
+        value: unsubmitted ? "—" : formatDuration(wt.seconds),
         section: "time",
         sectionHeader: "Time",
         unitHeader: "Duration",
         label: showEmail,
+        ...(unsubmitted ? { tags: [{ label: "unsubmitted", variant: "secondary" as const }] } : {}),
       });
     }
 
