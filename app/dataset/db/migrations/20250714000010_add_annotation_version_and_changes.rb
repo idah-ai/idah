@@ -22,7 +22,7 @@ Sequel.migration do
       column :project_id, :uuid, null: false
       column :account_id, :bigint # null for system writes
       column :account_email, :text # null for system writes (no actor)
-      String :op, null: false                    # created | updated | deleted | restored
+      String :op, null: false                    # baseline | created | updated | deleted | restored
       column :version, :integer, null: false
       column :changes, :jsonb, null: false       # [[op, path, old, new], ...]
       DateTime :changed_at, null: false

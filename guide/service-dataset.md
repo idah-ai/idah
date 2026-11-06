@@ -456,7 +456,7 @@ Every annotation write records who made it, what changed (old and new values) an
 | `-` | removed | value | `null` |
 | `~` | changed | value | value |
 
-**Versions**: `annotations.version` starts at 1. New annotations are created at version 1 with a `created` row; every later write bumps the version and records that number. A write that changes nothing writes nothing and does not bump the version. Annotations created before this feature start at version 1 with no `created` row — their history starts at version 2.
+**Versions**: `annotations.version` starts at 1. New annotations are created at version 1 with a `created` row; every later write bumps the version and records that number. A write that changes nothing writes nothing and does not bump the version. The one-off backfill (`rake annotation_history:backfill`) gives every annotation without a version-1 row a `baseline` row: its state when tracking started, with no author.
 
 **Baseline rows**: the one-off `annotation_history:backfill` rake task inserts a version-1 `baseline` row for every annotation that has none, so every annotation's history starts with a full snapshot without claiming it is the original creation. It rebuilds the state the way `AnnotationChange::Service#rebuild` does (current state with `annotation_shape` tiles merged, then every later row reverted), writes one `+` entry per non-nil tracked field, sets `changed_at` to the run time and both `account_id`/`account_email` to null (the card shows "system"), and is safe to re-run thanks to the unique `(annotation_id, version)` index.
 
