@@ -2,7 +2,7 @@
 // HISTORY_DIFF_SPEC.md worked examples.
 
 import { describe, it, expect } from "vitest";
-import { parsePath, diffLines, firstFrame, type ChangeEntry } from "./diff-lines";
+import { parsePath, diffLines, firstFrame, MAX_LINES, type ChangeEntry } from "./diff-lines";
 
 const text = (changes: ChangeEntry[]) => diffLines(changes).map((l) => `${l.sign}${l.text}`);
 
@@ -113,13 +113,54 @@ describe("diffLines", () => {
     expect(lines[200].text).toContain("more lines");
   });
 
-  it("cuts a single value longer than 2 KB with a Show full value marker", () => {
+  it("leaves commas inside strings untouched", () => {
+    const lines = text([["+", "category", null, "1,000"]]);
+    expect(lines).toContain('+category: "1,000"');
+  });
+
+  it('leaves strings containing ," or ,[ untouched', () => {
+    const value = 'a,"b,[c';
+    const lines = text([["+", "category", null, value]]);
+    expect(lines).toContain('+category: "a,\\"b,[c"');
+  });
+
+  it("formats arrays of numbers and nested point arrays as before", () => {
+    const lines = text([
+      [
+        "+",
+        "points",
+        null,
+        [
+          [0.7, 0.52],
+          [0.78, 0.67],
+        ],
+      ],
+    ]);
+    expect(lines).toContain("+points: [[0.7, 0.52], [0.78, 0.67]]");
+  });
+
+  it("formats an inline object as before", () => {
+    const lines = text([["+", "meta", null, {}]]);
+    expect(lines).toContain("+meta: {}");
+  });
+
+  it("cuts a single value longer than 2 KB and marks the line truncated", () => {
     const big = "x".repeat(3000);
-    const lines = text([["+", "shape_args.rle", null, big]]);
-    const line = lines.find((l) => l.startsWith("+"));
+    const lines = diffLines([["+", "category", null, big]]);
+    const line = lines.find((l) => l.sign === "+");
     expect(line).toBeDefined();
-    expect(line!.length).toBeLessThan(2200);
-    expect(line!).toContain("(Show full value)");
+    expect(line!.truncated).toBe(true);
+    expect(line!.text.length).toBeLessThan(2200);
+    expect(line!.text).not.toContain("(Show full value)");
+  });
+
+  it("prints the same value in full with the fullValues option", () => {
+    const big = "x".repeat(3000);
+    const lines = diffLines([["+", "category", null, big]], MAX_LINES, { fullValues: true });
+    const line = lines.find((l) => l.sign === "+");
+    expect(line).toBeDefined();
+    expect(line!.truncated).toBeFalsy();
+    expect(line!.text).toBe(`category: "${big}"`);
   });
 
   it("aligns array item attributes under the dash content", () => {

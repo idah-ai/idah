@@ -14,6 +14,8 @@ export interface DiffLine {
   sign: "+" | "-" | " ";
   text: string;
   kind: LineKind;
+  /** True when the value was cut by the per-value length cap. */
+  truncated?: boolean;
 }
 
 const INDENT = "  ";
@@ -61,15 +63,38 @@ export function parsePath(path: string): Segment[] {
 
 // ── Value formatting ────────────────────────────────────────────────────────
 
-/** A single value longer than this is cut with a "Show full value" marker. */
+/** A single value longer than this is cut; the line is marked `truncated`. */
 export const MAX_VALUE_CHARS = 2048;
 
-/** Compact JSON with ", " after commas: [[0.7, 0.52], [0.78, 0.67]]. */
-export function inlineValue(v: unknown): string {
-  if (v === undefined) return "null";
-  const s = JSON.stringify(v).replace(/,(?=[[\]{}"\d\-tfn])/g, ", ");
-  if (s.length > MAX_VALUE_CHARS) return `${s.slice(0, MAX_VALUE_CHARS)}… (Show full value)`;
-  return s;
+/**
+ * Build the inline text for a value structurally, so only the separators
+ * between array items / object entries get a space — commas inside strings
+ * (e.g. "1,000") are left untouched. Arrays become `[a, b]`, objects `{"k": v}`.
+ */
+function formatInline(v: unknown): string {
+  if (v === undefined || v === null) return "null";
+  if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return JSON.stringify(v);
+  if (Array.isArray(v)) return `[${v.map(formatInline).join(", ")}]`;
+  if (typeof v === "object") {
+    const entries = Object.entries(v as Record<string, unknown>);
+    return `{${entries.map(([k, val]) => `${JSON.stringify(k)}:${formatInline(val)}`).join(", ")}}`;
+  }
+  return JSON.stringify(v);
+}
+
+/** The inline text for a value, cut to `MAX_VALUE_CHARS` unless `fullValues`. */
+function inlineParts(v: unknown, fullValues: boolean): { text: string; truncated: boolean } {
+  if (v === undefined) return { text: "null", truncated: false };
+  const s = formatInline(v);
+  if (!fullValues && s.length > MAX_VALUE_CHARS) {
+    return { text: `${s.slice(0, MAX_VALUE_CHARS)}…`, truncated: true };
+  }
+  return { text: s, truncated: false };
+}
+
+/** Compact JSON with ", " after separators: [[0.7, 0.52], [0.78, 0.67]]. */
+export function inlineValue(v: unknown, fullValues = false): string {
+  return inlineParts(v, fullValues).text;
 }
 
 const isPlainObject = (v: unknown): v is Record<string, unknown> =>
@@ -82,22 +107,34 @@ function isInline(v: unknown): boolean {
   return Object.keys(v).length === 0;
 }
 
-type Raw = { sign: DiffLine["sign"]; depth: number; text: string };
+type Raw = { sign: DiffLine["sign"]; depth: number; text: string; truncated?: boolean };
 
-function emitValue(out: Raw[], sign: Raw["sign"], depth: number, key: string, v: unknown) {
+function emitValue(out: Raw[], sign: Raw["sign"], depth: number, key: string, v: unknown, fullValues: boolean) {
   if (isInline(v)) {
-    out.push({ sign, depth, text: `${key}: ${inlineValue(v)}` });
+    const { text, truncated } = inlineParts(v, fullValues);
+    out.push({ sign, depth, text: `${key}: ${text}`, truncated });
     return;
   }
   out.push({ sign, depth, text: `${key}:` });
-  if (Array.isArray(v)) v.forEach((item) => emitItem(out, sign, depth + 1, item));
-  else Object.entries(v as Record<string, unknown>).forEach(([k, child]) => emitValue(out, sign, depth + 1, k, child));
+  if (Array.isArray(v)) v.forEach((item) => emitItem(out, sign, depth + 1, item, undefined, fullValues));
+  else
+    Object.entries(v as Record<string, unknown>).forEach(([k, child]) =>
+      emitValue(out, sign, depth + 1, k, child, fullValues),
+    );
 }
 
 /** One array element: `- firstKey: value`, then the other keys one level deeper. */
-function emitItem(out: Raw[], sign: Raw["sign"], depth: number, item: unknown, idKey?: string) {
+function emitItem(
+  out: Raw[],
+  sign: Raw["sign"],
+  depth: number,
+  item: unknown,
+  idKey: string | undefined,
+  fullValues: boolean,
+) {
   if (!isPlainObject(item)) {
-    out.push({ sign, depth, text: `- ${inlineValue(item)}` });
+    const { text, truncated } = inlineParts(item, fullValues);
+    out.push({ sign, depth, text: `- ${text}`, truncated });
     return;
   }
   const keys = Object.keys(item);
@@ -108,32 +145,44 @@ function emitItem(out: Raw[], sign: Raw["sign"], depth: number, item: unknown, i
   const first = idKey && keys.includes(idKey) ? idKey : keys[0];
   const firstVal = item[first];
   if (isInline(firstVal)) {
-    out.push({ sign, depth, text: `- ${first}: ${inlineValue(firstVal)}` });
+    const { text, truncated } = inlineParts(firstVal, fullValues);
+    out.push({ sign, depth, text: `- ${first}: ${text}`, truncated });
   } else {
     // Rare: the first key holds an object or a list of objects. Its content goes two levels deeper.
     out.push({ sign, depth, text: `- ${first}:` });
-    if (Array.isArray(firstVal)) firstVal.forEach((x) => emitItem(out, sign, depth + 2, x));
-    else Object.entries(firstVal as Record<string, unknown>).forEach(([k, c]) => emitValue(out, sign, depth + 2, k, c));
+    if (Array.isArray(firstVal)) firstVal.forEach((x) => emitItem(out, sign, depth + 2, x, undefined, fullValues));
+    else
+      Object.entries(firstVal as Record<string, unknown>).forEach(([k, c]) =>
+        emitValue(out, sign, depth + 2, k, c, fullValues),
+      );
   }
-  keys.filter((k) => k !== first).forEach((k) => emitValue(out, sign, depth + 1, k, item[k]));
+  keys.filter((k) => k !== first).forEach((k) => emitValue(out, sign, depth + 1, k, item[k], fullValues));
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
 
 /** Context lines for the parents of a path. A keyed segment gives two lines: `name:` and `- key: value`. */
-function parentLines(segs: Segment[]): { raw: string; text: string }[] {
+function parentLines(segs: Segment[], fullValues: boolean): { raw: string; text: string }[] {
   const lines: { raw: string; text: string }[] = [];
   for (const s of segs) {
     lines.push({ raw: s.name, text: `${s.name}:` });
     if (s.keyed) {
-      lines.push({ raw: s.raw, text: `- ${s.keyed.key}: ${inlineValue(s.keyed.value)}` });
+      lines.push({ raw: s.raw, text: `- ${s.keyed.key}: ${inlineValue(s.keyed.value, fullValues)}` });
     }
   }
   return lines;
 }
 
-/** `cap`: maximum lines before a "Show N more lines" row; pass Infinity for the full list. */
-export function diffLines(changes: ChangeEntry[], cap: number = MAX_LINES): DiffLine[] {
+/**
+ * `cap`: maximum lines before a "Show N more lines" row; pass Infinity for the full list.
+ * `opts.fullValues`: skip the per-value length cap (used by "Show full value").
+ */
+export function diffLines(
+  changes: ChangeEntry[],
+  cap: number = MAX_LINES,
+  opts: { fullValues?: boolean } = {},
+): DiffLine[] {
+  const fullValues = opts.fullValues ?? false;
   const raw: Raw[] = [];
   let prevParents: string[] = [];
 
@@ -142,7 +191,7 @@ export function diffLines(changes: ChangeEntry[], cap: number = MAX_LINES): Diff
     const leaf = segs[segs.length - 1];
     // Parents = every segment before the leaf, plus the leaf's array name when the leaf is keyed.
     const parentSegs = segs.slice(0, -1);
-    const parents = parentLines(parentSegs);
+    const parents = parentLines(parentSegs, fullValues);
     if (leaf.keyed) parents.push({ raw: leaf.name, text: `${leaf.name}:` });
 
     let common = 0;
@@ -157,9 +206,9 @@ export function diffLines(changes: ChangeEntry[], cap: number = MAX_LINES): Diff
       if (leaf.keyed) {
         // The whole keyed item was added/removed/replaced: identity key on the dash line.
         const item = isPlainObject(v) ? v : { [leaf.keyed.key]: leaf.keyed.value, value: v };
-        emitItem(raw, sign, depth, item, leaf.keyed.key);
+        emitItem(raw, sign, depth, item, leaf.keyed.key, fullValues);
       } else {
-        emitValue(raw, sign, depth, leaf.name, v);
+        emitValue(raw, sign, depth, leaf.name, v, fullValues);
       }
     };
 
@@ -174,6 +223,7 @@ export function diffLines(changes: ChangeEntry[], cap: number = MAX_LINES): Diff
     sign: l.sign,
     text: INDENT.repeat(l.depth) + l.text,
     kind: l.sign === "+" ? "add" : l.sign === "-" ? "del" : "ctx",
+    truncated: l.truncated,
   }));
 
   if (lines.length > cap) {
