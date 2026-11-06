@@ -33,8 +33,16 @@ export interface IVideoFrameSelection {
 
 // ─── Shape constants ─────────────────────────────────────────────────────
 
+export const EDITOR_MODE = "editor";
+export const REVIEW_MODE = "review";
+export const NOTE_MODE = "note";
+
 export const VIDEO_BOUNDING_BOX = "idah-video:bounding-box";
 export const VIDEO_POLYGON = "idah-video:polygon";
+
+/** Coverage mask viewport modes (add and remove). */
+export const COVERAGE_MASK_BBOX = "idah-video:coverage-mask-bbox";
+export const COVERAGE_MASK_BBOX_REMOVE = "idah-video:coverage-mask-bbox-remove";
 
 /**
  * Special, non-drawable shape type holding entry-level (whole video)

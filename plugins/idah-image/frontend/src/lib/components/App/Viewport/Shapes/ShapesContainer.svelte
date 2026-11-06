@@ -44,8 +44,9 @@
   import { maskTool } from "$lib/state/mask-tool.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
-  import { snapDebug } from "$lib/state/ui.svelte";
+  import { snapDebug, ui } from "$lib/state/ui.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
+  import { loadCoverageMasks } from "$lib/commands/coverage-mask/save";
 
   import {
     onPointerDown as maskBrushPointerDown,
@@ -168,11 +169,7 @@
   });
 
   /** Threshold in scene pixels: ~10 screen pixels adjusted for zoom. */
-  let snapThreshold = $derived(
-    viewport.workspace.transform.scale > 0
-      ? 10 / viewport.workspace.transform.scale
-      : 10,
-  );
+  let snapThreshold = $derived(viewport.workspace.transform.scale > 0 ? 10 / viewport.workspace.transform.scale : 10);
 
   // ── Viewport ref ──────────────────────────────────────────────────────
   let zoomableElement = $state<Viewport | undefined>(undefined);
@@ -231,6 +228,15 @@
     }
   });
 
+  // Load persisted coverage masks once annotations become available
+  $effect(() => {
+    // Access data.annotations?.items to establish reactivity
+    const items = data.annotations?.items;
+    if (items && items.length > 0) {
+      loadCoverageMasks();
+    }
+  });
+
   // Derive tool selection from the currently selected annotation's component
   // let selAnnotation = $derived(selection.value);
   // Derive tool selection from the primary (first) selected annotation's component
@@ -242,10 +248,10 @@
   });
 
   let toolSelection = $derived.by(() => {
-  if (!selAnnotation) return undefined;
+    if (!selAnnotation) return undefined;
 
-  const idx = visibleAnnotations.findIndex((a) => a.id === selAnnotation.id);
-  if (idx === -1) return undefined;
+    const idx = visibleAnnotations.findIndex((a) => a.id === selAnnotation.id);
+    if (idx === -1) return undefined;
     return _compRefs[idx]?.getToolSelection();
   });
 
@@ -277,6 +283,11 @@
   let isRectSelecting = $state(false);
   let rectStart: Point | null = $state(null);
   let rectEnd: Point | null = $state(null);
+
+  // ── Mask drawing state ──────────────────────────────────────────────
+  let coverageMaskDrawing = $state(false);
+  let coverageMaskStart: Point = $state([0, 0]);
+  let coverageMaskCurrent: Point = $state([0, 0]);
 
   /** Screen-pixel movement below which a press-and-release still counts as a click, not a drag. */
   const DRAG_SLOP_PX = 4;
@@ -414,7 +425,7 @@
     snapEngine.setTargets(
       anns.map((ann) => ({
         id: ann.id,
-        kind: ann.shape_type as string ?? "",
+        kind: (ann.shape_type as string) ?? "",
         data: ann.shape_args,
       })),
       media.width,
@@ -468,14 +479,14 @@
         polygonDraft.points,
         viewport.workspace.transform.scale,
       )) ||
-    (isMaskPolygonMode &&
-      nearFirstPolygonPoint(
-        snappedCursor,
-        media.width,
-        media.height,
-        maskPolygonDraft.points,
-        viewport.workspace.transform.scale,
-      )),
+      (isMaskPolygonMode &&
+        nearFirstPolygonPoint(
+          snappedCursor,
+          media.width,
+          media.height,
+          maskPolygonDraft.points,
+          viewport.workspace.transform.scale,
+        )),
   );
 
   // ── Cursor class ─────────────────────────────────────────────────────
@@ -483,7 +494,7 @@
     // An active grab (middle-mouse or drag pan) outranks every other cursor.
     if (isPanning) return "cursor-grabbing";
     if (hoveringFirstPoint) return "cursor-target";
-    if (viewport.isCreationMode) return "cursor-crosshair";
+    if (viewport.isCreationMode || viewport.isCoverageMaskMode) return "cursor-crosshair";
     if (isNoteMode) return "cursor-note";
     if (selAnnotation) return "cursor-pointer";
     if (_hoveringMask) return "cursor-pointer";
@@ -576,7 +587,10 @@
    * Uses the canonical implementation from hit-test.ts which sources tile buffers
    * from the shared decode cache rather than decoding RLE inline.
    */
-  function resolveColorForAnnotation(ann: { id: string; value?: Record<string, unknown> }): [number, number, number, number] {
+  function resolveColorForAnnotation(ann: {
+    id: string;
+    value?: Record<string, unknown>;
+  }): [number, number, number, number] {
     // Default color — callers can override via the driver config
     return [255, 0, 0, 100];
   }
@@ -621,6 +635,16 @@
     onMouseUp(e);
   }
 
+  function onMouseMoveCapture(e: MouseEvent) {
+    if (coverageMaskDrawing) {
+      const rect = svgEl?.getBoundingClientRect();
+      if (rect) {
+        mousePosition = [e.clientX - rect.left, e.clientY - rect.top];
+        coverageMaskCurrent = [sceneNormalizedCursor[0] * media.width, sceneNormalizedCursor[1] * media.height];
+      }
+    }
+  }
+
   function onMouseMove(e: MouseEvent) {
     handlePointerMove(e, [e.offsetX, e.offsetY], false);
   }
@@ -642,6 +666,12 @@
     // ── Rectangle selection tracking ───────────────────────────────
     if (isRectSelecting) {
       rectEnd = sceneNormalizedCursor;
+      return;
+    }
+
+    // ── Mask drawing tracking ─────────────────────────────────────
+    if (coverageMaskDrawing) {
+      coverageMaskCurrent = [sceneNormalizedCursor[0] * media.width, sceneNormalizedCursor[1] * media.height];
       return;
     }
 
@@ -716,6 +746,23 @@
     // and Viewport already carries middle-button pans on its own listeners.
     if (e.button !== 1) beginGestureTracking();
 
+    // ── Mask mode — start drawing in capture phase so annotation shapes
+    // cannot stop the event before we begin.
+    if (viewport.isCoverageMaskMode) {
+      if (svgEl) {
+        const rect = svgEl.getBoundingClientRect();
+        mousePosition = [e.clientX - rect.left, e.clientY - rect.top];
+      }
+      coverageMaskDrawing = true;
+      const p0 = sceneNormalizedCursor[0] * media.width;
+      const p1 = sceneNormalizedCursor[1] * media.height;
+      coverageMaskStart = [p0, p1];
+      coverageMaskCurrent = [p0, p1];
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+
     // Anchor a potential group drag at the press point. The dragged shape records
     // its own start here too (its mousedown runs next, in the bubble phase), so
     // letting the first mousemove set the origin instead leaves the rest of the
@@ -757,13 +804,11 @@
       e.stopPropagation();
       // If the selected annotation is a locked mask, refuse to paint at all
       // (no new mask, no edit) — mirroring the vector-shape lock guard.
-      const isLockedSelectedMask =
-        selAnnotation?.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+      const isLockedSelectedMask = selAnnotation?.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
       if (isLockedSelectedMask) return;
 
-      const maskAnnId = selAnnotation?.shape_type === IMAGE_MASK && !annotation.isLocked(selAnnotation)
-        ? selAnnotation.id
-        : undefined;
+      const maskAnnId =
+        selAnnotation?.shape_type === IMAGE_MASK && !annotation.isLocked(selAnnotation) ? selAnnotation.id : undefined;
       maskBrushPointerDown(scenePixelCursor[0], scenePixelCursor[1], maskAnnId);
       return;
     }
@@ -773,8 +818,7 @@
       e.stopPropagation();
       // If the selected annotation is a locked mask, refuse to draw at all
       // (no new mask, no edit) — mirroring the vector-shape lock guard.
-      const isLockedSelectedMask =
-        selAnnotation?.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+      const isLockedSelectedMask = selAnnotation?.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
       if (isLockedSelectedMask) return;
 
       maskPolygonCreateComp?.handleMouseDown(snappedCursor);
@@ -807,6 +851,17 @@
 
     // ── Note mode — defer to mouseup ───────────────────────────────
     if (isNoteMode) {
+      return;
+    }
+
+    // ── Coverage mask mode — prevent panning, let mask shapes render ──
+    if (viewport.isCoverageMaskMode) {
+      // Start drawing in both add and remove mode
+      coverageMaskDrawing = true;
+      const p0 = sceneNormalizedCursor[0] * media.width;
+      const p1 = sceneNormalizedCursor[1] * media.height;
+      coverageMaskStart = [p0, p1];
+      coverageMaskCurrent = [p0, p1];
       return;
     }
 
@@ -886,13 +941,65 @@
       return;
     }
 
+    // ── Mask mode — finalize mask shape ──────────────────────────
+    if (coverageMaskDrawing) {
+      coverageMaskDrawing = false;
+      const ax = coverageMaskStart[0],
+        ay = coverageMaskStart[1];
+      const bx = coverageMaskCurrent[0],
+        by = coverageMaskCurrent[1];
+      const x = Math.min(ax, bx),
+        y = Math.min(ay, by);
+      const w = Math.abs(bx - ax),
+        h = Math.abs(by - ay);
+      if (w < 3 || h < 3) return;
+
+      if (ui.coverageMaskIsRemove) {
+        const newList = [];
+        for (const sh of ui.coverageMaskShapes) {
+          if (sh.type !== "bbox" || sh.points.length < 4) {
+            newList.push(sh);
+            continue;
+          }
+          const [sx, sy, sw, sh2] = sh.points;
+          if (x >= sx + sw || x + w <= sx || y >= sy + sh2 || y + h <= sy) {
+            newList.push(sh);
+            continue;
+          }
+          if (x <= sx && y <= sy && x + w >= sx + sw && y + h >= sy + sh2) {
+            continue;
+          }
+          const ex2 = x + w,
+            ey2 = y + h;
+          const sx2 = sx + sw,
+            sy2 = sy + sh2;
+          if (y > sy) newList.push({ type: "bbox", points: [sx, sy, sw, y - sy] });
+          if (ey2 < sy2) newList.push({ type: "bbox", points: [sx, ey2, sw, sy2 - ey2] });
+          if (x > sx)
+            newList.push({ type: "bbox", points: [sx, Math.max(sy, y), x - sx, Math.min(sy2, ey2) - Math.max(sy, y)] });
+          if (ex2 < sx2)
+            newList.push({
+              type: "bbox",
+              points: [ex2, Math.max(sy, y), sx2 - ex2, Math.min(sy2, ey2) - Math.max(sy, y)],
+            });
+        }
+        getDriver().command.call("coverage-mask-draw", { before: [...ui.coverageMaskShapes], after: newList });
+        getDriver().command.call("coverage-mask-save");
+      } else {
+        const before = [...ui.coverageMaskShapes];
+        const after = [...before, { type: "bbox", points: [x, y, w, h] }];
+        getDriver().command.call("coverage-mask-draw", { before, after });
+        getDriver().command.call("coverage-mask-save");
+      }
+      return;
+    }
+
     // ── Mask brush mode — flush on pointer up ─────────────────────
     if (isMaskBrushMode) {
       // If the selected annotation is a locked mask, don't flush or open the
       // category popover — the mouse-down guard already refused to paint, so
       // there is no session to flush and no new mask to create.
-      const isLockedSelectedMask =
-        selAnnotation?.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
+      const isLockedSelectedMask = selAnnotation?.shape_type === IMAGE_MASK && annotation.isLocked(selAnnotation);
       if (isLockedSelectedMask) return;
       // Save the annotationId BEFORE the flush resets it
       const hadAnnotation = !!maskSession.annotationId;
@@ -966,10 +1073,7 @@
           movedPoints = [[shape.points[0][0] + dragDelta[0], shape.points[0][1] + dragDelta[1]]];
         } else if (ann.shape_type === IMAGE_ELLIPSE) {
           // points = [[cx, cy], [rx, ry]] — only centroid shifts, radii are separate
-          movedPoints = [
-            [shape.points[0][0] + dragDelta[0], shape.points[0][1] + dragDelta[1]],
-            shape.points[1],
-          ];
+          movedPoints = [[shape.points[0][0] + dragDelta[0], shape.points[0][1] + dragDelta[1]], shape.points[1]];
         } else {
           // All points are positional vertices (bbox, polygon, line)
           movedPoints = shape.points.map((p) => [p[0] + dragDelta[0], p[1] + dragDelta[1]] as Point);
@@ -1211,7 +1315,7 @@
   </div>
 
   <!-- Layer 1: Mask canvas overlay -->
-  <MaskCanvasLayer previewColor={previewColor} />
+  <MaskCanvasLayer {previewColor} />
 
   <!-- Layer 2: SVG overlay for shapes -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -1224,6 +1328,7 @@
     onmousedowncapture={onMouseDownCapture}
     onmouseupcapture={onMouseUpCapture}
     onmousedown={onMouseDown}
+    onmousemovecapture={onMouseMoveCapture}
     onmousemove={onMouseMove}
     onwheel={onWheel}
     onclick={onSvgClick}
@@ -1368,9 +1473,7 @@
             // against) a locked mask annotation.
             if (sel && sel.shape_type === IMAGE_MASK && annotation.isLocked(sel)) return;
 
-            const existingId = sel && sel.shape_type === IMAGE_MASK
-              ? sel.id
-              : undefined;
+            const existingId = sel && sel.shape_type === IMAGE_MASK ? sel.id : undefined;
             if (existingId) {
               // Edit existing mask — just flush the session tiles
               getDriver().command.call("idah-image:annotation.mask-shapes.flush");
@@ -1396,8 +1499,8 @@
           text-anchor="middle"
           dominant-baseline="middle"
           font-weight="bold"
-          style:pointer-events="none"
-        >{maskSession.mode === "add" ? "+" : "−"}</text>
+          style:pointer-events="none">{maskSession.mode === "add" ? "+" : "−"}</text
+        >
       {/if}
 
       <!-- Pending annotation (waiting for category in popover) -->
@@ -1416,6 +1519,41 @@
         <NoteMarkers />
       {/if}
     </g>
+
+    <!-- Coverage mask shapes — rendered above annotations but below labels -->
+    {#if ui.coverageMaskShapes.length > 0}
+      <g opacity="0.25">
+        {#each ui.coverageMaskShapes as shape}
+          {#if shape.type === "bbox" && shape.points.length >= 4}
+            <rect
+              x={shape.points[0]}
+              y={shape.points[1]}
+              width={shape.points[2]}
+              height={shape.points[3]}
+              fill="#00b450"
+              pointer-events="none"
+              vector-effect="non-scaling-stroke"
+            />
+          {/if}
+        {/each}
+      </g>
+    {/if}
+
+    {#if coverageMaskDrawing}
+      <rect
+        x={Math.min(coverageMaskStart[0], coverageMaskCurrent[0])}
+        y={Math.min(coverageMaskStart[1], coverageMaskCurrent[1])}
+        width={Math.abs(coverageMaskCurrent[0] - coverageMaskStart[0])}
+        height={Math.abs(coverageMaskCurrent[1] - coverageMaskStart[1])}
+        fill={ui.coverageMaskIsRemove ? "rgba(200,50,50,.25)" : "rgba(0,180,80,.25)"}
+        stroke={ui.coverageMaskIsRemove ? "rgba(200,50,50,.8)" : "rgba(0,180,80,.6)"}
+        stroke-width="2"
+        rx="3"
+        stroke-dasharray="4 2"
+        pointer-events="none"
+        vector-effect="non-scaling-stroke"
+      />
+    {/if}
 
     <!--
       Category labels last, so they sit above every shape. `visibleAnnotations`
@@ -1449,13 +1587,7 @@
         stroke-width={1}
         vector-effect="non-scaling-stroke"
       />
-      <circle
-        cx={px}
-        cy={py}
-        r={2 * invScale}
-        fill="rgba(255,255,255,0.8)"
-        vector-effect="non-scaling-stroke"
-      />
+      <circle cx={px} cy={py} r={2 * invScale} fill="rgba(255,255,255,0.8)" vector-effect="non-scaling-stroke" />
       <text
         x={px}
         y={py - maskTool.brushRadius - 12 * invScale}
@@ -1463,8 +1595,8 @@
         font-size={14 * invScale}
         text-anchor="middle"
         dominant-baseline="middle"
-        font-weight="bold"
-      >{maskSession.mode === "add" ? "+" : "-"}</text>
+        font-weight="bold">{maskSession.mode === "add" ? "+" : "-"}</text
+      >
     </svg>
   {/if}
 </div>
