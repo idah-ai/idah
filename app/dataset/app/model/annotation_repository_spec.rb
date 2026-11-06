@@ -183,6 +183,18 @@ RSpec.describe Annotation::Repository, database: true do
       expect(updated.account_id).to eq(99)
       expect(updated.account_email).to eq("actor@example.com")
     end
+
+    it "records a nil email, not the caller's, when the actor has an id but no email" do
+      subject.send(:with_metadata) do
+        subject.add_metadata(actor_account_id: 99)
+        subject.update(annotation_id, { category: "dog" })
+      end
+
+      rows = change_repo.index({ annotation_id: }, items_per_page: 10_000)
+      updated = rows.find { |r| r.op == "updated" }
+      expect(updated.account_id).to eq(99)
+      expect(updated.account_email).to be_nil
+    end
   end
 
   describe "#soft_delete / #restore" do

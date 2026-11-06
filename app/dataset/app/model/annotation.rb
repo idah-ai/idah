@@ -380,12 +380,20 @@ module Annotation
     # metadata's actor (when the record is created inside `with_actor`) or the
     # auth context's account id; nil on a system context. The id and email
     # always come from the same source — never mix the two.
+    def change_actor
+      if @metadata[:actor_account_id]
+        [@metadata[:actor_account_id], @metadata[:actor_account_email]]
+      else
+        [auth_context.metadata[:id], auth_context.metadata[:email]]
+      end
+    end
+
     def change_actor_id
-      @metadata[:actor_account_id] || auth_context.metadata[:id]
+      change_actor[0]
     end
 
     def change_actor_email
-      @metadata[:actor_account_email] || auth_context.metadata[:email]
+      change_actor[1]
     end
 
     # Actions                       | Roles
