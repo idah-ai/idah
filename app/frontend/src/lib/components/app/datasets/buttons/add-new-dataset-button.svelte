@@ -2,7 +2,7 @@
   import { page } from "$app/state";
   import { PlusIcon } from "@lucide/svelte";
 
-  import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
+  import DatasetFormModal from "@/components/app/datasets/overlays/DatasetFormModal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Can from "@/security/can.svelte";
 

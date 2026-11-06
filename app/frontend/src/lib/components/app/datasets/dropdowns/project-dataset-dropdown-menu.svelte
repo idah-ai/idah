@@ -5,7 +5,7 @@
   import { onMount } from "svelte";
 
   import DatasetDuplicateModal from "@/components/app/datasets/overlays/dataset-duplicate-modal.svelte";
-  import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
+  import DatasetFormModal from "@/components/app/datasets/overlays/DatasetFormModal.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ExportFormModal from "@/components/app/projects/exports/overlays/_ExportFormModal.svelte";
 
