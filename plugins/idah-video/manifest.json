@@ -3,7 +3,7 @@
   "name": "idah-video",
   "version": "0.1.0",
 
-  "idahVersion": "0.2.0",
+  "idahVersion": "0.1.3",
 
   "title": "IDAH Video Annotation",
   "description": "A module for annotating video.",

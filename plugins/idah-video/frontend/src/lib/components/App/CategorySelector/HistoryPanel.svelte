@@ -21,6 +21,7 @@
   import { media } from "$lib/state/media.svelte";
   import { getInterpolatedFrame } from "$lib/utils/interpolation";
   import { resolveAnnotationColor } from "$lib/utils/color";
+  import { groupChangesByDay } from "$lib/utils/history-days";
   import type { IAnnotationChange } from "$idah/v2/types";
   import type { IVideoAnnotationShape } from "$lib/types";
 
@@ -207,19 +208,25 @@
       </div>
     {:else}
       <div class="pt-1">
-        {#each history.items as change (change.id)}
-          <HistoryChangeCard
-            {change}
-            categoryLabel={categoryLabel(change)}
-            categoryColor={categoryColor(change)}
-            frameRange={frameRange(change)}
-            highlighted={false}
-            diff={history.getDiff(change.id)}
-            diffLoading={history.isDiffLoading(change.id)}
-            open={history.isCardOpen(change.id)}
-            onToggle={() => onCardClick(change)}
-          />
+        {#each groupChangesByDay(history.items, new Date()) as group (group.label)}
+          <div class="text-muted-foreground px-3 pt-2 pb-1 text-[11px] font-medium">{group.label}</div>
+          {#each group.items as change (change.id)}
+            <HistoryChangeCard
+              {change}
+              categoryLabel={categoryLabel(change)}
+              categoryColor={categoryColor(change)}
+              frameRange={frameRange(change)}
+              highlighted={false}
+              diff={history.getDiff(change.id)}
+              diffLoading={history.isDiffLoading(change.id)}
+              open={history.isCardOpen(change.id)}
+              onToggle={() => onCardClick(change)}
+            />
+          {/each}
         {/each}
+        {#if history.atStartOfHistory}
+          <div class="text-muted-foreground px-3 pt-2 pb-2 text-center text-[11px]">Start of history</div>
+        {/if}
       </div>
     {/if}
   </SidebarContent>
@@ -246,13 +253,13 @@
           <ChevronLeftIcon class="size-4" />
         </Button>
         <span class="text-muted-foreground">
-          {history.pageStart}–{history.pageEnd} of {history.total}
+          {history.pageStart}–{history.pageEnd} of {history.total}{history.hasMore ? "+" : ""}
         </span>
         <Button
           variant="ghost"
           size="icon"
           title="Older"
-          disabled={history.page === history.pageCount}
+          disabled={history.atStartOfHistory}
           onclick={() => history.goToPage(history.page + 1)}
         >
           <ChevronRightIcon class="size-4" />
@@ -261,7 +268,7 @@
           variant="ghost"
           size="icon"
           title="Oldest"
-          disabled={history.page === history.pageCount}
+          disabled={history.atStartOfHistory}
           onclick={() => history.goToOldest()}
         >
           <ChevronLastIcon class="size-4" />

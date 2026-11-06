@@ -25,6 +25,9 @@ class HistoryState {
   #page = $state(1);
   #items = $state<IAnnotationChange[]>([]);
   #total = $state(0);
+  // True when the server's count is a lower bound (rows exist past it). The
+  // pager keeps reading until this is false, at which point the count is exact.
+  #hasMore = $state(false);
   #loading = $state(false);
   #error = $state<string | null>(null);
   #lastLoadedAt = $state<Date | null>(null);
@@ -37,6 +40,8 @@ class HistoryState {
   // Tombstones from the local cache (deleted annotations), loaded when the
   // panel opens. Group scope includes them so deleted members stay visible.
   #deleted = $state<{ id: string; metadata?: { group_id?: string } }[]>([]);
+  // Monotonic token so an out-of-order response cannot overwrite a newer one.
+  #loadToken = 0;
 
   get open() {
     return this.#open;
@@ -70,6 +75,15 @@ class HistoryState {
 
   get total() {
     return this.#total;
+  }
+
+  get hasMore() {
+    return this.#hasMore;
+  }
+
+  /** True on the last page once the count is exact (no more rows). */
+  get atStartOfHistory() {
+    return this.#page >= this.pageCount && !this.#hasMore;
   }
 
   get loading() {
@@ -212,6 +226,7 @@ class HistoryState {
   async load() {
     const driver = getDriver();
     if (!driver.annotations.changes) return;
+    const token = ++this.#loadToken;
     this.#loading = true;
     this.#error = null;
     try {
@@ -232,6 +247,7 @@ class HistoryState {
           page: 1,
           size: PAGE_SIZE,
         });
+        if (token !== this.#loadToken) return; // superseded by a newer load
         anchor = (first.items[0]?.changed_at ?? Date.now()) + 1000;
         this.#anchor = anchor;
         this.#applyPage(first);
@@ -245,6 +261,7 @@ class HistoryState {
           page: 1,
           size: 1,
         });
+        if (token !== this.#loadToken) return; // superseded by a newer load
         anchor = (first.items[0]?.changed_at ?? Date.now()) + 1000;
         this.#anchor = anchor;
       }
@@ -253,21 +270,26 @@ class HistoryState {
         page: this.#page,
         size: PAGE_SIZE,
       });
+      if (token !== this.#loadToken) return; // superseded by a newer load
       this.#applyPage(result);
     } catch (e) {
+      if (token !== this.#loadToken) return; // superseded by a newer load
       this.#error = e instanceof Error ? e.message : String(e);
     } finally {
-      this.#loading = false;
+      if (token === this.#loadToken) this.#loading = false;
     }
   }
 
   /** Store a fetched page and clamp the page. */
-  #applyPage(result: { items: IAnnotationChange[]; total: number }) {
+  #applyPage(result: { items: IAnnotationChange[]; total: number; hasMore?: boolean }) {
     this.#items = result.items;
     this.#total = result.total;
+    this.#hasMore = result.hasMore ?? false;
     this.#lastLoadedAt = new Date();
-    // Clamp the page to the new last page after a refresh.
-    if (this.#page > this.pageCount) this.#page = this.pageCount;
+    // Clamp the page to the new last page after a refresh, but only once the
+    // count is exact: while hasMore is true the last known page is a lower
+    // bound, so the user may be past it and must not be pulled back.
+    if (!this.#hasMore && this.#page > this.pageCount) this.#page = this.pageCount;
     // Drop the diff cache and opened-card state for changes that are no longer
     // on this page, so browsing history does not accumulate memory unboundedly.
     // Only the current page's cards keep their (lazily fetched) diffs.
@@ -283,7 +305,11 @@ class HistoryState {
   }
 
   goToPage(page: number) {
-    const clamped = Math.max(1, Math.min(page, this.pageCount));
+    // While hasMore is true the last known page is a lower bound, so allow
+    // navigating past it to discover the real end; once the count is exact,
+    // clamp to the last page.
+    const max = this.#hasMore ? Number.POSITIVE_INFINITY : this.pageCount;
+    const clamped = Math.max(1, Math.min(page, max));
     if (clamped === this.#page) return;
     this.#page = clamped;
     void this.load();

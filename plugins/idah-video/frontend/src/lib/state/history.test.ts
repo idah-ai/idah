@@ -212,6 +212,123 @@ describe("history store", () => {
     expect(history.isCardOpen("x-1")).toBe(false);
   });
 
+  it("ignores an out-of-order response from an older load", async () => {
+    const changeA = {
+      id: "a",
+      annotation_id: "a-1",
+      account_id: 1,
+      account_email: "u@example.com",
+      op: "updated",
+      version: 2,
+      changed_at: Date.now() - 1000,
+    };
+    const changeB = {
+      id: "b",
+      annotation_id: "a-1",
+      account_id: 1,
+      account_email: "u@example.com",
+      op: "updated",
+      version: 3,
+      changed_at: Date.now(),
+    };
+    let resolveFirst!: (v: unknown) => void;
+    let resolveSecond!: (v: unknown) => void;
+    mock.annotations.changes
+      .mockImplementationOnce(() => new Promise((r) => (resolveFirst = r)))
+      .mockImplementationOnce(() => new Promise((r) => (resolveSecond = r)));
+
+    history.toggle(); // first load (token 1)
+    const second = history.load(); // second load (token 2, supersedes)
+
+    // Resolve the second load first; the first must not overwrite it.
+    resolveSecond({ items: [changeB], total: 1, hasMore: false });
+    await second;
+    resolveFirst({ items: [changeA], total: 1, hasMore: false });
+
+    // Flush the first load's continuation so it has a chance to (wrongly)
+    // overwrite the page; the token guard must keep the second load's items.
+    await new Promise((r) => setTimeout(r, 0));
+    expect(history.items.map((c) => c.id)).toEqual(["b"]);
+    expect(history.total).toBe(1);
+  });
+
+  it("pager reads hasMore and keeps moving to the real end", async () => {
+    // A mock that behaves like the backend: count = offset + min(1000, remaining),
+    // more when rows remain past that count.
+    const totalRows = 2600;
+    mock.annotations.changes.mockImplementation(({ page = 1, size = 50 } = {}) => {
+      const offset = (page - 1) * size;
+      const remaining = totalRows - offset;
+      const count = offset + Math.min(1000, remaining);
+      const more = count < totalRows;
+      const items = Array.from({ length: Math.min(size, remaining) }, (_, i) => ({
+        id: `c-${offset + i}`,
+        annotation_id: "a-1",
+        account_id: 1,
+        account_email: "u@example.com",
+        op: "updated",
+        version: 1,
+        changed_at: Date.now() - (offset + i),
+      }));
+      return Promise.resolve({ items, total: count, hasMore: more });
+    });
+
+    history.toggle();
+    await vi.waitFor(() => expect(history.items.length).toBe(50));
+    expect(history.total).toBe(1000); // 0 + min(1000, 2600)
+    expect(history.hasMore).toBe(true);
+    expect(history.pageCount).toBe(20);
+    expect(history.atStartOfHistory).toBe(false);
+
+    // Oldest → page 20 (offset 950): reports 1950 with more.
+    history.goToOldest();
+    await vi.waitFor(() => expect(history.page).toBe(20));
+    await vi.waitFor(() => expect(history.total).toBe(1950));
+    expect(history.hasMore).toBe(true);
+    expect(history.pageCount).toBe(39);
+
+    // Oldest → page 39 (offset 1900): reports exactly 2600, so the count is exact.
+    history.goToOldest();
+    await vi.waitFor(() => expect(history.page).toBe(39));
+    await vi.waitFor(() => expect(history.total).toBe(2600));
+    expect(history.hasMore).toBe(false);
+    expect(history.pageCount).toBe(52);
+
+    // Oldest → page 52: start of history.
+    history.goToOldest();
+    await vi.waitFor(() => expect(history.page).toBe(52));
+    expect(history.atStartOfHistory).toBe(true);
+  });
+
+  it("start of history never shows while hasMore is true", async () => {
+    const totalRows = 2600;
+    mock.annotations.changes.mockImplementation(({ page = 1, size = 50 } = {}) => {
+      const offset = (page - 1) * size;
+      const remaining = totalRows - offset;
+      const count = offset + Math.min(1000, remaining);
+      const more = count < totalRows;
+      const items = Array.from({ length: Math.min(size, remaining) }, (_, i) => ({
+        id: `c-${offset + i}`,
+        annotation_id: "a-1",
+        account_id: 1,
+        account_email: "u@example.com",
+        op: "updated",
+        version: 1,
+        changed_at: Date.now() - (offset + i),
+      }));
+      return Promise.resolve({ items, total: count, hasMore: more });
+    });
+
+    history.toggle();
+    await vi.waitFor(() => expect(history.items.length).toBe(50));
+    expect(history.atStartOfHistory).toBe(false);
+
+    history.goToOldest();
+    await vi.waitFor(() => expect(history.page).toBe(20));
+    expect(history.hasMore).toBe(true);
+    expect(history.atStartOfHistory).toBe(false);
+  });
+
   it("empty, error and offline states", async () => {
     history.toggle();
     await vi.waitFor(() => expect(history.items.length).toBe(0));
