@@ -25,17 +25,3 @@ export function invalidate(driver: { settings: { invalidate(): void }; toolbar: 
   driver.settings.invalidate();
   driver.toolbar.invalidate();
 }
-
-export function makeAction(
-  cmd: Record<string, unknown>,
-  doFn: () => void,
-  undoFn?: () => void,
-) {
-  return {
-    command: { ...cmd },
-    do: doFn,
-    undo: undoFn,
-    isCombinable: () => false,
-    combine: (prev: any) => prev,
-  };
-}

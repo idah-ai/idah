@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { EDITOR_MODE, REVIEW_MODE } from "$lib/state/viewport.svelte";
-import { doAdd, invalidate, makeAction } from "./_shared";
+import { doAdd, invalidate } from "./_shared";
 
 export const command = {
   name: "coverage-mask-add",
@@ -21,7 +21,12 @@ export function register(driver: IIdahDriverV2): void {
     shortcut: command.shortcut,
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
-    callback: () => makeAction(command, () => { doAdd(); invalidate(driver); }),
+    callback: () => ({
+      command: { ...command },
+      do() { doAdd(); invalidate(driver); },
+      isCombinable() { return false; },
+      combine(p: any) { return p; },
+    }),
     group: command.group,
   });
 }

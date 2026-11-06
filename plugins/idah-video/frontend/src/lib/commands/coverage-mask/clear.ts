@@ -4,7 +4,7 @@
 import { ui } from "$lib/state/ui.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { EDITOR_MODE, REVIEW_MODE } from "$lib/state/viewport.svelte";
-import { doOff, invalidate, makeAction } from "./_shared";
+import { doOff, invalidate } from "./_shared";
 
 export const command = {
   name: "coverage-mask-clear",
@@ -24,14 +24,13 @@ export function register(driver: IIdahDriverV2): void {
     longDescription: command.longDescription,
     callback: () => {
       const before = [...ui.coverageMaskShapes];
-      return makeAction(command, () => {
-        ui.coverageMaskShapes = [];
-        doOff();
-        invalidate(driver);
-      }, () => {
-        ui.coverageMaskShapes = before;
-        invalidate(driver);
-      });
+      return {
+        command: { ...command },
+        do() { ui.coverageMaskShapes = []; doOff(); invalidate(driver); },
+        undo() { ui.coverageMaskShapes = before; invalidate(driver); },
+        isCombinable() { return false; },
+        combine(p: any) { return p; },
+      };
     },
     group: command.group,
   });
