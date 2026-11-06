@@ -138,7 +138,19 @@ module Annotation
           return true if changes.empty?
 
           version = row[:version] + 1
-          success = super(id, attributes.merge(version:), scope:)
+          # Attach the entry/dataset context to the `updated` event so the
+          # entry-stats listener (which recomputes on annotation changes) can
+          # resolve the entry. `with_metadata` dups `@metadata`, so a
+          # `with_actor` id set outside still reaches `change_actor`.
+          success = with_metadata do
+            add_metadata(
+              project_id: row[:project_id],
+              dataset_id: row[:dataset_id],
+              entry_id: row[:entry_id],
+              old_category: row[:category]
+            )
+            super(id, attributes.merge(version:), scope:)
+          end
           return false unless success
 
           record_change!(id, op:, changes:, version:, entry_id: row[:entry_id], project_id: row[:project_id])
@@ -297,6 +309,16 @@ module Annotation
           true
         end
       end
+    end
+
+    # Returns all distinct category IDs currently used by live (non-deleted)
+    # annotations in the given dataset. Used to check if a re-added category
+    # was previously in use.
+    def distinct_annotation_categories(dataset_id)
+      table.db[:annotations]
+           .where(dataset_id: dataset_id, deleted_at: nil)
+           .distinct(:category)
+           .select_map(:category)
     end
 
     private
@@ -467,14 +489,5 @@ module Annotation
       end
     end
 
-    # Returns all distinct category IDs currently used by live (non-deleted)
-    # annotations in the given dataset. Used to check if a re-added category
-    # was previously in use.
-    def distinct_annotation_categories(dataset_id)
-      table.db[:annotations]
-           .where(dataset_id: dataset_id, deleted_at: nil)
-           .distinct(:category)
-           .select_map(:category)
-    end
   end
 end
