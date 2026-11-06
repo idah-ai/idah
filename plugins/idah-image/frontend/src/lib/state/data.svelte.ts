@@ -147,7 +147,7 @@ export interface AnnotationDriver {
   create(data: Record<string, unknown>): Promise<{ id: string } & Record<string, unknown>>;
   update(id: string, data: Record<string, unknown>): Promise<void>;
   delete(id: string): Promise<void>;
-  restore(id: string): Promise<{ id: string } & Record<string, unknown>>;
+  restore(id: string): Promise<void>;
   setShape(annotationId: string, key: string, value: object | null): Promise<void>;
   setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
@@ -243,39 +243,29 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
 
     async delete(id: string): Promise<void> {
       const item = store.items.find((i) => i.id === id);
-      // Optimistic: remove locally first + deselect if it was selected
+      // Optimistic: remove locally first + deselect if it was selected. Record
+      // the tombstone so note markers and the History panel keep showing it.
+      // A backend failure surfaces via onSyncError (blocking Retry/Reset dialog)
+      // and the local tombstone stays, so we do not roll the map back here.
       syncSelectionOnDelete(id);
       store.remove(id);
-      try {
-        await driver.delete(id);
-        markOccupancyDirty();
-      } catch {
-        // Rollback
-        if (item) originalUpsert(item);
-        throw new Error("Failed to delete annotation");
-      }
+      if (item) setDeletedAnnotation(item);
+      await driver.delete(id);
+      markOccupancyDirty();
     },
 
     async restore(record: AnnotationItem): Promise<AnnotationItem> {
-      // Optimistic: insert locally first so the annotation reappears immediately
-      // (the pre-delete snapshot carries everything needed to redisplay it,
-      // including mask tile data merged into shape_args).
+      // Local-first: forget the tombstone and insert the snapshot immediately so
+      // the annotation reappears (the pre-delete snapshot carries everything
+      // needed to redisplay it, including mask tile data merged into
+      // shape_args). Like every other write, the backend restore is enqueued by
+      // the driver and a failure surfaces via onSyncError; the local record
+      // stays. Returns the snapshot so callers keep a usable record.
+      removeDeletedAnnotation(record.id);
       originalUpsert(record);
       markOccupancyDirty();
-      try {
-        // Reconcile with the backend's authoritative response — replace the
-        // optimistic record with what the backend actually returned.
-        const restored = await driver.restore(record.id);
-        originalUpsert(restored as AnnotationItem);
-        markOccupancyDirty();
-        return restored as AnnotationItem;
-      } catch {
-        // Rollback on failure — remove the optimistically-inserted record so no
-        // phantom "restored" annotation lingers if the backend rejected it.
-        store.remove(record.id);
-        markOccupancyDirty();
-        throw new Error("Failed to restore annotation");
-      }
+      await driver.restore(record.id);
+      return record;
     },
 
     async update(item: AnnotationItem): Promise<void> {
@@ -602,6 +592,45 @@ let _annotations: AnnotationDataStore | null = $state(null);
 let _noteList: INoteRecord[] = $state([]);
 let _unsubNotes: (() => void) | null = null;
 
+// ── Deleted-annotation map ────────────────────────────────────────────────
+// In-memory lookup from annotation id to its last known record (shape,
+// category). Loaded from the local cache at plugin start and updated only when
+// this tab deletes or restores an annotation. Nothing else updates it:
+// deletions by other users appear after a reload, like every other change.
+// History rows are never used for it.
+let _deletedAnnotations = $state<Map<string, AnnotationItem>>(new Map());
+
+/** Load the entry's soft-deleted annotations (tombstones) from the local cache. */
+export async function loadDeletedAnnotations(): Promise<void> {
+  const driver = getDriver();
+  try {
+    const toms = await driver.annotations.fetch({ deleted: "true" });
+    _deletedAnnotations = new Map(toms.map((t) => [t.id, t as AnnotationItem]));
+  } catch {
+    // Offline: keep whatever we have.
+  }
+}
+
+/** The last known record of a soft-deleted annotation, if any. */
+export function getDeletedAnnotation(id: string): AnnotationItem | undefined {
+  return _deletedAnnotations.get(id);
+}
+
+/** Record a soft-deleted annotation (called when this tab deletes one). */
+export function setDeletedAnnotation(item: AnnotationItem): void {
+  const next = new Map(_deletedAnnotations);
+  next.set(item.id, item);
+  _deletedAnnotations = next;
+}
+
+/** Forget a soft-deleted annotation (called when this tab restores one). */
+export function removeDeletedAnnotation(id: string): void {
+  if (!_deletedAnnotations.has(id)) return;
+  const next = new Map(_deletedAnnotations);
+  next.delete(id);
+  _deletedAnnotations = next;
+}
+
 /** Initialise the stores from the global driver. Call once after initDriver(). */
 export function initDataStores(): void {
   const d = getDriver();
@@ -612,6 +641,11 @@ export function initDataStores(): void {
   _unsubNotes = d.notes.onNotesChange((notes: INoteRecord[]) => {
     _noteList = notes;
   });
+
+  // Load the entry's tombstones so note markers and the History panel can keep
+  // showing soft-deleted annotations. Deletions by other users appear after a
+  // reload, like every other change.
+  void loadDeletedAnnotations();
 
   // onFocusNote is registered in NoteMarkers.svelte onMount
 }

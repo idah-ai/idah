@@ -8,6 +8,7 @@ module Resource
     Datasets = "dataset:datasets"
     Entries = "dataset:entries"
     Annotations = "dataset:annotations"
+    AnnotationChanges = "dataset:annotation_changes"
     NoteFeeds = "dataset:note_feeds"
     NoteComments = "dataset:note_comments"
     EntryStats = "dataset:entry_stats"
