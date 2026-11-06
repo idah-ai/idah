@@ -376,9 +376,55 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
   const changesAdapter = config.changes ?? createChangesAdapter(entryId);
 
-  let synced = false;
+  let syncPromise: Promise<void> | null = null;
   let purgeScheduled = false;
   let visitMarked = false;
+
+  // Run the initial sync loop exactly once, sharing the same promise across
+  // concurrent fetch() calls so the backend is not listed twice (e.g. when
+  // initDataStores calls preloadRange and loadDeletedAnnotations together). On
+  // failure the promise is cleared so a later fetch() can retry.
+  const syncOnce = async (db: IDBDatabase) => {
+    if (!syncPromise) {
+      syncPromise = (async () => {
+        const lastUpdated = await idbGetLastUpdated(db, entryId);
+        let currentLastUpdatedAt = lastUpdated;
+        let page = 1,
+          hasMore = true;
+        while (hasMore) {
+          const response = await backend.list({
+            filters: { entry_id: entryId, updated_at__gt: lastUpdated.toISOString() },
+            // Sort by updated_at with `id` as a unique tiebreaker. Without the
+            // tiebreaker, records sharing an updated_at order inconsistently
+            // across the paginated requests, so ~1 record slips through each
+            // page boundary and never gets synced (missing annotations).
+            sort: ["updated_at", "id"],
+            pagination: {
+              page,
+              itemsPerPage: SYNC_PAGE_SIZE,
+            },
+          });
+          response.data.forEach((a) => {
+            const updatedAt = new Date(a.updated_at || 0);
+            if (updatedAt > currentLastUpdatedAt) currentLastUpdatedAt = updatedAt;
+          });
+          // Upsert every record we receive, deleted or not, so tombstones stay
+          // in the cache (the History panel and note markers read them). The
+          // backend returns deleted records by default, so this adds no extra
+          // network traffic.
+          await idbUpsertBatch(db, entryId, response.data);
+          hasMore = response.data.length === SYNC_PAGE_SIZE;
+          page++;
+        }
+        await idbSetLastUpdated(db, entryId, currentLastUpdatedAt);
+      })().catch((err) => {
+        // A failed sync must be retryable by a later fetch().
+        syncPromise = null;
+        throw err;
+      });
+    }
+    await syncPromise;
+  };
 
   return {
     registerField(name, fn) {
@@ -427,39 +473,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
         }
       }
 
-      if (!synced) {
-        const lastUpdated = await idbGetLastUpdated(db, entryId);
-        let currentLastUpdatedAt = lastUpdated;
-        let page = 1,
-          hasMore = true;
-        while (hasMore) {
-          const response = await backend.list({
-            filters: { entry_id: entryId, updated_at__gt: lastUpdated.toISOString() },
-            // Sort by updated_at with `id` as a unique tiebreaker. Without the
-            // tiebreaker, records sharing an updated_at order inconsistently
-            // across the paginated requests, so ~1 record slips through each
-            // page boundary and never gets synced (missing annotations).
-            sort: ["updated_at", "id"],
-            pagination: {
-              page,
-              itemsPerPage: SYNC_PAGE_SIZE,
-            },
-          });
-          response.data.forEach((a) => {
-            const updatedAt = new Date(a.updated_at || 0);
-            if (updatedAt > currentLastUpdatedAt) currentLastUpdatedAt = updatedAt;
-          });
-          // Upsert every record we receive, deleted or not, so tombstones stay
-          // in the cache (the History panel and note markers read them). The
-          // backend returns deleted records by default, so this adds no extra
-          // network traffic.
-          await idbUpsertBatch(db, entryId, response.data);
-          hasMore = response.data.length === SYNC_PAGE_SIZE;
-          page++;
-        }
-        await idbSetLastUpdated(db, entryId, currentLastUpdatedAt);
-        synced = true;
-      }
+      await syncOnce(db);
 
       return await idbFetch<IAnnotationRecord<Shape, Annotation>>(db, entryId, virtualFields, filter);
     },

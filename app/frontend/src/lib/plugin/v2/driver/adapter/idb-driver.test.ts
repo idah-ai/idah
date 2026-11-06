@@ -181,3 +181,51 @@ describe("IdbBackedAnnotationsDriverAdapter tombstones", () => {
     await expect(driver.create(makeRecord({ id: "ann-1" }))).rejects.toThrow(/already exists/);
   });
 });
+
+describe("IdbBackedAnnotationsDriverAdapter sync sharing", () => {
+  beforeEach(() => {
+    indexedDB.deleteDatabase(`idahPlugin::${PLUGIN_ID}`);
+  });
+
+  afterEach(() => {
+    indexedDB.deleteDatabase(`idahPlugin::${PLUGIN_ID}`);
+  });
+
+  it("two concurrent fetch() calls run the backend listing once per page", async () => {
+    const backend = makeBackend();
+    const driver = IdbBackedAnnotationsDriverAdapter<IAnnotationRecord["shape_args"], IAnnotationRecord["properties"]>({
+      entryId: ENTRY_ID,
+      pluginId: PLUGIN_ID,
+      backend,
+      enqueue: () => {},
+    });
+    if (!driver) throw new Error("driver is null");
+
+    vi.mocked(backend.list).mockResolvedValueOnce({ data: [makeRecord({ id: "a" })] });
+
+    await Promise.all([driver.fetch(), driver.fetch()]);
+
+    // One shared sync loop: a single list call, not one per concurrent fetch.
+    expect(backend.list).toHaveBeenCalledTimes(1);
+  });
+
+  it("a failed sync can be retried by a later fetch()", async () => {
+    const backend = makeBackend();
+    const driver = IdbBackedAnnotationsDriverAdapter<IAnnotationRecord["shape_args"], IAnnotationRecord["properties"]>({
+      entryId: ENTRY_ID,
+      pluginId: PLUGIN_ID,
+      backend,
+      enqueue: () => {},
+    });
+    if (!driver) throw new Error("driver is null");
+
+    vi.mocked(backend.list).mockRejectedValueOnce(new Error("offline"));
+    await expect(driver.fetch()).rejects.toThrow(/offline/);
+
+    // A later fetch retries the sync and succeeds.
+    vi.mocked(backend.list).mockResolvedValueOnce({ data: [makeRecord()] });
+    const all = await driver.fetch();
+    expect(all.map((a) => a.id)).toEqual(["ann-1"]);
+    expect(backend.list).toHaveBeenCalledTimes(2);
+  });
+});
