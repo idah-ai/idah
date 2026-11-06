@@ -1,6 +1,5 @@
 <!--
   HistoryChangeCard.svelte — one history row: header + collapsible diff.
-  Reference implementation of HISTORY_DIFF_SPEC.md (Svelte 5, runes).
   Styles are scoped plain CSS on purpose: the diff depends on exact pixel values
   (20px rows, 22px sign column, 11.5px mono) that Tailwind utilities tend to drift from.
 -->
@@ -49,8 +48,11 @@
   }: Props = $props();
 
   let showAll = $state(false);
-  // Built only when opened; recomputed only if the row or showAll changes.
-  let lines: DiffLine[] = $derived(open ? diffLines(diff ?? [], showAll ? Infinity : MAX_LINES) : []);
+  let showFullValues = $state(false);
+  // Built only when opened; recomputed only if the row, showAll or showFullValues changes.
+  let lines: DiffLine[] = $derived(
+    open ? diffLines(diff ?? [], showAll ? Infinity : MAX_LINES, { fullValues: showFullValues }) : [],
+  );
 
   const shortId = $derived(change.annotation_id.slice(0, 8));
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -96,6 +98,12 @@
             <button type="button" class="dl dl-more" onclick={() => (showAll = true)}>
               <span class="dl-sign"></span><span class="dl-text">{line.text}</span>
             </button>
+          {:else if line.truncated}
+            <div class="dl dl-{line.kind}" role="row">
+              <span class="dl-sign">{line.sign}</span>
+              <span class="dl-text">{line.text}</span>
+              <button type="button" class="dl-full" onclick={() => (showFullValues = true)}>Show full value</button>
+            </div>
           {:else}
             <div class="dl dl-{line.kind}" role="row">
               <span class="dl-sign">{line.sign}</span><span class="dl-text">{line.text}</span>
@@ -318,6 +326,18 @@
     cursor: pointer;
   }
   .dl-more:hover .dl-text {
+    text-decoration: underline;
+  }
+  .dl-full {
+    flex: none;
+    border: 0;
+    background: transparent;
+    padding: 0 12px 0 8px;
+    font: inherit;
+    color: #0550ae;
+    cursor: pointer;
+  }
+  .dl-full:hover {
     text-decoration: underline;
   }
 
