@@ -10,11 +10,10 @@ import { data } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { COVERAGE_DONE_AREA } from "$lib/types";
 import { MASK_TILE_SIZE } from "$lib/mask/constants";
-import { encode } from "$lib/mask/rle";
 import { decode } from "$lib/mask/rle";
-import { isEmpty } from "$lib/mask/raster";
-import { writeTileEntries } from "$lib/mask/write-tile-entries";
 import { isTileKey } from "$lib/mask/strip-tile-keys";
+import { buildTileEntries } from "$lib/mask/coverage-mask";
+import { writeTileEntries } from "$lib/mask/write-tile-entries";
 
 export const command = {
   name: "coverage-mask-save",
@@ -24,96 +23,6 @@ export const command = {
   shortDescription: null as string | null,
   longDescription: null as string | null,
 };
-
-// ── Tile helpers ──────────────────────────────────────────────────────────
-
-/** Determine which tiles a rectangle touches. */
-function rectTouchedTiles(x: number, y: number, w: number, h: number): { col: number; row: number }[] {
-  const minCol = Math.max(0, Math.floor(x / MASK_TILE_SIZE));
-  const maxCol = Math.floor((x + w - 1) / MASK_TILE_SIZE);
-  const minRow = Math.max(0, Math.floor(y / MASK_TILE_SIZE));
-  const maxRow = Math.floor((y + h - 1) / MASK_TILE_SIZE);
-  const tiles: { col: number; row: number }[] = [];
-  for (let col = minCol; col <= maxCol; col++) {
-    for (let row = minRow; row <= maxRow; row++) {
-      tiles.push({ col, row });
-    }
-  }
-  return tiles;
-}
-
-/** Paint a rectangle into a per-tile pixel buffer (values 0/1). */
-function paintRectIntoBuffer(
-  buffer: Uint8Array,
-  tileCol: number,
-  tileRow: number,
-  rx: number, ry: number, rw: number, rh: number,
-): void {
-  const originX = tileCol * MASK_TILE_SIZE;
-  const originY = tileRow * MASK_TILE_SIZE;
-
-  const startPx = Math.max(0, Math.floor(rx) - originX);
-  const endPx = Math.min(MASK_TILE_SIZE - 1, Math.ceil(rx + rw) - 1 - originX);
-  const startPy = Math.max(0, Math.floor(ry) - originY);
-  const endPy = Math.min(MASK_TILE_SIZE - 1, Math.ceil(ry + rh) - 1 - originY);
-
-  for (let py = startPy; py <= endPy; py++) {
-    const row = py * MASK_TILE_SIZE;
-    for (let px = startPx; px <= endPx; px++) {
-      buffer[row + px] = 1;
-    }
-  }
-}
-
-/** Collect all touched tile keys for a set of rects. */
-function collectTouchedKeys(rects: number[][]): Set<string> {
-  const keys = new Set<string>();
-  for (const [x, y, w, h] of rects) {
-    for (const { col, row } of rectTouchedTiles(x, y, w, h)) {
-      keys.add(`${col}:${row}`);
-    }
-  }
-  return keys;
-}
-
-/** Build tile entries for a set of rects, including deletions for stale tiles. */
-function buildTileEntries(
-  rects: number[][],
-  existingTileKeys?: Set<string>,
-): Array<{ key: string; value: object | null }> {
-  const touchedKeys = collectTouchedKeys(rects);
-  const entries: Array<{ key: string; value: object | null }> = [];
-
-  // Delete stale tiles that are no longer touched
-  if (existingTileKeys) {
-    for (const key of existingTileKeys) {
-      if (!touchedKeys.has(key)) {
-        const [colStr, rowStr] = key.split(":");
-        const col = parseInt(colStr, 10);
-        const row = parseInt(rowStr, 10);
-        entries.push({ key: `tile-${col}x${row}`, value: null });
-      }
-    }
-  }
-
-  // Upsert current tiles
-  for (const tileKey of touchedKeys) {
-    const [colStr, rowStr] = tileKey.split(":");
-    const col = parseInt(colStr, 10);
-    const row = parseInt(rowStr, 10);
-    const buffer = new Uint8Array(MASK_TILE_SIZE * MASK_TILE_SIZE);
-    for (const [x, y, w, h] of rects) {
-      paintRectIntoBuffer(buffer, col, row, x, y, w, h);
-    }
-    if (isEmpty(buffer)) {
-      entries.push({ key: `tile-${col}x${row}`, value: null });
-    } else {
-      const rle = encode(buffer, MASK_TILE_SIZE, MASK_TILE_SIZE);
-      entries.push({ key: `tile-${col}x${row}`, value: { rle } });
-    }
-  }
-  return entries;
-}
 
 export function register(driver: IIdahDriverV2): void {
   driver.command.register({
