@@ -14,7 +14,7 @@
 
   import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
 
-  import { groupIntoDatasets, pickedItems } from "@/components/app/datasets/upload/dataset-groups";
+  import { groupIntoDatasets } from "@/components/app/datasets/upload/dataset-groups";
   import { selectionSummary } from "@/components/app/datasets/upload/upload-summary";
   import { createUploadItem } from "@/components/app/datasets/upload/upload-item.types";
   import { looseRow, folderRow, rowItems, rowView, type UploadRow } from "@/components/app/datasets/upload/upload-rows";
@@ -106,9 +106,9 @@
   );
   // Local edit buffer holding the current form values.
   let draft: Hash = $state({});
-  // Folders/zips picked; how many datasets they make is only known after upload.
-  const itemsSelected: number = $derived(
-    uploadMode ? pickedItems((draft.picked as PickedFile[] | undefined) ?? []).length : 0,
+  // One dataset per picked folder or zip.
+  const datasetsToCreate: number = $derived(
+    uploadMode ? groupIntoDatasets((draft.picked as PickedFile[] | undefined) ?? []).groups.length : 0,
   );
 
   // Single source of truth for the dirty comparison. Keys MUST be limited to
@@ -215,7 +215,7 @@
     runs = groups.map((group) => {
       const row: UploadRow = group.isZip
         ? { kind: "file", item: createUploadItem(group.files[0].file) }
-        : folderRow(group.name, group.files);
+        : folderRow(group.name, group.files, group.root);
       return { name: group.name, rows: [row], datasetId: null };
     });
     if (loose.length > 0) {
@@ -403,7 +403,7 @@
     <Text>
       {#if uploadMode}
         <DialogDescription>
-          {selectionSummary(itemsSelected, "item", "selected")}
+          {selectionSummary(datasetsToCreate, "dataset", "to create")}
         </DialogDescription>
       {/if}
     </Text>

@@ -51,6 +51,25 @@ describe("uploadAll", () => {
     expect(createEntry).not.toHaveBeenCalled();
   });
 
+  it("names a folder file's entry by its path, and a zip's entries by their path in the zip", async () => {
+    upload.mockResolvedValueOnce(uploaded("0001.jpg")).mockResolvedValueOnce(uploaded("cam_a/1.jpg", "cam_b/1.jpg"));
+    const inFolder = createUploadItem(new File(["x"], "0001.jpg"), "cam_a/0001.jpg");
+
+    await run([inFolder, item("batch.zip")], async () => "ds1");
+
+    expect(entryNames()).toEqual(["cam_a/0001.jpg", "cam_a/1.jpg", "cam_b/1.jpg"]);
+  });
+
+  it("names a nested zip's entries after the zip's location", async () => {
+    upload.mockResolvedValueOnce(uploaded("cam_a/1.jpg"));
+    const nested = createUploadItem(new File(["x"], "frames.zip"), "extra/frames.zip");
+    nested.zipPrefix = "extra/frames/";
+
+    await run([nested], async () => "ds1");
+
+    expect(entryNames()).toEqual(["extra/frames/cam_a/1.jpg"]);
+  });
+
   it("creates the dataset once, on the first upload that produced media", async () => {
     upload
       .mockResolvedValueOnce({ data: [] }) // nothing usable in the first file

@@ -4,11 +4,12 @@ export interface UploadItem {
   uuid: string;
   media: File;
   name: string;
-  path: string; // relative to the picked folder ("clip/1.jpg"); used when reporting the file
+  path: string; // below the dataset's folder (From upload) or as picked (Add Entry); names the entry and reports the file
   uploadedMedias: Array<MediaRecord>; // set once media upload succeeds — skip on retry
   skippedMedias: Array<ZipFileReport>;
   errorMedias: Array<ZipFileReport>; // per-file errors reported by the backend when processing a zip archive
   isZip: boolean;
+  zipPrefix?: string; // a zip inside a folder: its location ("extra/frames/"), put before its entries' paths
   isFolder?: boolean; // a folder summary row (see upload-rows.ts)
   status: "uploading" | "retrying" | "completed";
   retryCount: number; // auto-retry attempts consumed

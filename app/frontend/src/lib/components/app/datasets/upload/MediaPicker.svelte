@@ -5,7 +5,7 @@
 
   import PreviewUploadMediaItem from "./PreviewUploadMediaItem.svelte";
 
-  import { groupIntoDatasets, pickedItems } from "@/components/app/datasets/upload/dataset-groups";
+  import { groupIntoDatasets } from "@/components/app/datasets/upload/dataset-groups";
   import { mergePickedFiles, type PickedFile } from "@/components/app/forms/fields/upload/file-upload.utils";
   import { pluralizeUnit } from "@/utils/unit";
 
@@ -14,7 +14,7 @@
   // Media selection shared by every upload flow: files/folders/zips can be picked
   // or dropped repeatedly; each pick is appended (deduplicated) to `picked`.
   // - "entries": everything is flattened into one dataset (Add Entry)
-  // - "datasets": folders/zips only, each becoming one or more new datasets
+  // - "datasets": folders/zips only, each becoming one new dataset
   interface Props {
     picked: PickedFile[];
     // "datasets" mode: loose files (outside any folder or zip), reported in the summary; deduplicated.
@@ -49,8 +49,7 @@
         {
           kind: "folder",
           label: "Select folder",
-          description:
-            "Each folder becomes one dataset, or one per sub-folder and zip inside it (pick again to add more)",
+          description: "Each folder becomes one dataset, sub-folders included (pick again to add more)",
         },
       ],
       dropHint: "or drag and drop zip files and folders, several at once",
@@ -58,9 +57,8 @@
   };
 
   // Variables
-  // "datasets" mode lists what was picked, not a prediction of the datasets: that is
-  // only known after upload (the summary shows it).
-  const items = $derived(mode === "datasets" ? pickedItems(picked) : []);
+  // "datasets" mode lists the datasets to create: one per picked folder or zip.
+  const items = $derived(mode === "datasets" ? groupIntoDatasets(picked).groups : []);
 
   // Functions
   function handleFilesSelected(added: PickedFile[], unsupported: PickedFile[]): void {

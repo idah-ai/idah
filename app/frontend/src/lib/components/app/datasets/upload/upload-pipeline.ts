@@ -108,7 +108,9 @@ export async function uploadSingleMedia(media: UploadItem, context: UploadContex
             {
               attributes: {
                 resource: uploadedMedia.resource,
-                name: uploadedMedia.filename,
+                // A file is named by its path in the picked folder; a zip's media by their path in the
+                // zip, after the zip's own location when it sat inside a folder.
+                name: media.isZip ? `${media.zipPrefix ?? ""}${uploadedMedia.filename}` : media.path,
                 status: "pending",
                 ...(context.deliveryDate !== undefined ? { delivery_date: context.deliveryDate } : {}),
               },

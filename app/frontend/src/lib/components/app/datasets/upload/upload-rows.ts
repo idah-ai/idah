@@ -11,8 +11,20 @@ export type UploadRow =
 
 const LOOSE = "Not in a folder or zip";
 
-export function folderRow(name: string, files: PickedFile[]): UploadRow {
-  return { kind: "folder", title: name, items: files.map((p) => createUploadItem(p.file, p.path)), skipped: [] };
+// Each file's path is kept relative to `root` (the dataset's folder), and names its entry:
+// "batch/clip_b/cam1/0001.jpg" in dataset "clip_b" becomes "cam1/0001.jpg".
+export function folderRow(name: string, files: PickedFile[], root = ""): UploadRow {
+  const relative = (path: string) => (path.startsWith(root) ? path.slice(root.length) : path);
+  return {
+    kind: "folder",
+    title: name,
+    items: files.map((p) => {
+      const item = createUploadItem(p.file, relative(p.path));
+      if (item.isZip) item.zipPrefix = `${item.path.replace(/\.zip$/i, "")}/`; // entries keep where the zip sat
+      return item;
+    }),
+    skipped: [],
+  };
 }
 
 // Add Entry: loose files and zips get their own row, each picked folder one row.

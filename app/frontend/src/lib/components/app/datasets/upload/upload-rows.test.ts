@@ -23,6 +23,33 @@ describe("buildEntryRows", () => {
   });
 });
 
+describe("folderRow", () => {
+  it("keeps each file's path below the dataset folder, deeper levels included", () => {
+    const row = folderRow(
+      "clip_b",
+      [pick("batch/clip_b/cam1/0001.jpg"), pick("batch/clip_b/0002.jpg")],
+      "batch/clip_b/",
+    );
+    if (row.kind !== "folder") throw new Error("expected a folder row");
+
+    expect(row.items.map((item) => item.path)).toEqual(["cam1/0001.jpg", "0002.jpg"]);
+  });
+
+  it("puts a zip's location before its entries, so they keep where it sat", () => {
+    const row = folderRow("clip", [pick("clip/extra/frames.zip"), pick("clip/top.ZIP")], "clip/");
+    if (row.kind !== "folder") throw new Error("expected a folder row");
+
+    expect(row.items.map((item) => item.zipPrefix)).toEqual(["extra/frames/", "top/"]);
+  });
+
+  it("keeps the full picked path without a root (Add Entry)", () => {
+    const row = folderRow("clip", [pick("clip/sub/1.jpg")]);
+    if (row.kind !== "folder") throw new Error("expected a folder row");
+
+    expect(row.items[0].path).toBe("clip/sub/1.jpg");
+  });
+});
+
 describe("rowView of a folder", () => {
   it("sums its files like a zip: uploaded, created, skipped and failed", () => {
     const row = folderRow("clip", [pick("clip/1.jpg"), pick("clip/2.jpg"), pick("clip/3.jpg")]);
