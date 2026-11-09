@@ -14,10 +14,16 @@
 
   import { FormChangeTracker } from "@/utils/form/form-change-tracker.svelte";
 
-  import { groupIntoDatasets } from "@/components/app/datasets/upload/dataset-groups";
+  import { groupIntoDatasets, type SplitOptions } from "@/components/app/datasets/upload/dataset-groups";
   import { selectionSummary } from "@/components/app/datasets/upload/upload-summary";
   import { createUploadItem } from "@/components/app/datasets/upload/upload-item.types";
-  import { looseRow, folderRow, rowItems, rowView, type UploadRow } from "@/components/app/datasets/upload/upload-rows";
+  import {
+    folderRow,
+    rowItems,
+    rowView,
+    skippedRow,
+    type UploadRow,
+  } from "@/components/app/datasets/upload/upload-rows";
   import {
     MAX_RETRIES,
     once,
@@ -79,13 +85,35 @@
     name: string;
     rows: UploadRow[]; // the dataset's zip, or its folder summed up like a zip
     datasetId: string | null;
-    loose?: true; // report-only section: files outside any folder or zip (nothing to upload)
+    leftOut?: true; // report only: the top-level files of a folder split per sub-folder
   }
   let runs = $state<UploadRun[]>([]);
   let createdDatasets = false; // refresh the datasets list once the modal closes
   let uploading: boolean = $derived(runs.length > 0);
   const allRows: UploadRow[] = $derived(runs.flatMap((run) => run.rows));
   const allRunsCompleted: boolean = $derived(uploading && allRows.every((row) => rowView(row).status === "completed"));
+  const count = (n: number, unit: string, units = `${unit}s`) => `${n} ${n === 1 ? unit : units}`; // "0 entries"
+  // The whole result in one line, e.g. "6 datasets and 9 entries created · 1 file skipped".
+  const uploadResultText = $derived.by<string>(() => {
+    const views = allRows.map(rowView);
+    const datasets = runs.filter((run) => run.datasetId).length;
+    const entries = views.reduce((total, view) => total + view.createdEntryCount, 0);
+    const skipped = views.reduce((total, view) => total + view.skippedMedias.length, 0);
+    const failed = views.reduce((total, view) => total + view.errorMedias.length + (view.errorMessage ? 1 : 0), 0);
+    const parts = [`${count(datasets, "dataset")} and ${count(entries, "entry", "entries")} created`];
+    if (skipped > 0) parts.push(`${count(skipped, "file")} skipped`);
+    if (failed > 0) parts.push(`${count(failed, "file")} failed`);
+    return parts.join(" · ");
+  });
+
+  // A dataset's status line once its upload finished.
+  function runLabel(run: UploadRun): string {
+    const view = rowView(run.rows[0]);
+    if (run.leftOut) return `${count(view.skippedMedias.length, "file")} ignored`;
+    const entries = count(view.createdEntryCount, "entry", "entries");
+    return run.datasetId ? entries : `Not created: ${view.errorMessage ?? "no supported files"}`;
+  }
+
   const uploadProgressText = $derived.by<string>(() => {
     const done = allRows.filter((row) => rowView(row).status === "completed").length;
     return `${done} of ${allRows.length} ${pluralizeUnit(allRows.length, "item")} uploaded`;
@@ -106,9 +134,13 @@
   );
   // Local edit buffer holding the current form values.
   let draft: Hash = $state({});
-  // One dataset per picked folder or zip.
+  const splitOptions: SplitOptions = $derived({
+    split: new Set((draft.split as string[] | undefined) ?? []),
+    looseName: draft.looseName as string | undefined,
+  });
+  // One dataset per picked folder or zip (or per sub-folder of a split folder), plus one for loose files.
   const datasetsToCreate: number = $derived(
-    uploadMode ? groupIntoDatasets((draft.picked as PickedFile[] | undefined) ?? []).groups.length : 0,
+    uploadMode ? groupIntoDatasets((draft.picked as PickedFile[] | undefined) ?? [], splitOptions).groups.length : 0,
   );
 
   // Single source of truth for the dirty comparison. Keys MUST be limited to
@@ -144,6 +176,11 @@
   }
 
   function setValue(value: Hash): void {
+    // The selection's error ("pick something", "name the loose files") is stale once it changes.
+    if (fieldErrors.files && (value.picked !== draft.picked || value.looseName !== draft.looseName)) {
+      const { files: _stale, ...rest } = fieldErrors;
+      fieldErrors = rest;
+    }
     draft = { ...value };
     selectedDatasetId = value.selectedDatasetId;
     changeTracker.update(value);
@@ -203,23 +240,26 @@
   // Each dataset is only created once one of its files actually produced media, so an
   // empty/unsupported/corrupt folder or zip never leaves an empty dataset behind.
   async function createDatasetsFromUpload(): Promise<void> {
-    const { groups } = groupIntoDatasets(draft.picked as PickedFile[]);
+    const { groups, leftOut } = groupIntoDatasets(draft.picked as PickedFile[], splitOptions);
     if (groups.length === 0) {
-      fieldErrors = { files: ["Select at least one folder or zip file"] };
+      fieldErrors = { files: ["Select at least one folder, zip or file"] };
+      return;
+    }
+    if (groups.some((group) => !group.name.trim())) {
+      fieldErrors = { files: ["Name the dataset for the loose files"] };
       return;
     }
 
     // One fetch shared by every dataset, so they all get the same copied configuration.
     const labelConfig = once(getLabelConfig);
-    const loose = (draft.ignored as PickedFile[] | undefined) ?? []; // only loose files are ever ignored here
     runs = groups.map((group) => {
       const row: UploadRow = group.isZip
         ? { kind: "file", item: createUploadItem(group.files[0].file) }
         : folderRow(group.name, group.files, group.root);
       return { name: group.name, rows: [row], datasetId: null };
     });
-    if (loose.length > 0) {
-      runs.push({ name: "Loose files", rows: [looseRow(loose)], datasetId: null, loose: true });
+    for (const { name, files } of leftOut) {
+      runs.push({ name, rows: [skippedRow(name, files, "Ignored, no folder")], datasetId: null, leftOut: true });
     }
     // This upload's runs, so the result below is counted on them even if `runs` is reset meanwhile.
     const current = runs;
@@ -353,25 +393,21 @@
   {/snippet}
 
   {#snippet modalDescription()}
-    <DialogDescription></DialogDescription>
+    <DialogDescription>{allRunsCompleted ? uploadResultText : ""}</DialogDescription>
   {/snippet}
 
   {#if uploading}
-    <section class="flex h-auto max-h-[60vh] flex-col gap-4 overflow-y-auto pr-1">
+    <!-- One row per dataset (a split zip: one row for all of its datasets) -->
+    <section class="max-h-[60vh] divide-y overflow-y-auto rounded-lg border">
       {#each runs as run, runIndex (runIndex)}
-        {@const runCompleted = run.rows.every((row) => rowView(row).status === "completed")}
-        <h3 class="text-sm font-semibold">
-          {run.name}
-          {#if run.datasetId}
-            <span class="text-muted-foreground font-normal">· created</span>
-          {:else if run.loose}
-            <span class="text-muted-foreground font-normal">· not in a folder or zip</span>
-          {:else if runCompleted}
-            <span class="text-destructive font-normal">· not created</span>
-          {/if}
-        </h3>
         {#each run.rows as row, rowIndex (rowIndex)}
-          <UploadMediaItem uploadItem={rowView(row)} maxRetries={MAX_RETRIES} />
+          <UploadMediaItem
+            uploadItem={rowView(row)}
+            maxRetries={MAX_RETRIES}
+            title={run.name}
+            label={runLabel(run)}
+            warning={run.leftOut}
+          />
         {/each}
       {/each}
     </section>
@@ -420,7 +456,14 @@
   </section>
 {/snippet}
 
-<!-- Same as Add Entry: progress only, no Cancel (the upload would keep running behind a closed modal). -->
+<!-- Same as Add Entry: progress only, no Cancel (the upload would keep running behind a closed modal);
+     once done, the result is in the description above and the modal just closes. -->
 {#snippet progressActions()}
-  <DialogDescription>{uploadProgressText}</DialogDescription>
+  {#if allRunsCompleted}
+    <DialogClose class="ml-auto">
+      <Button onclick={resetForm}>Close</Button>
+    </DialogClose>
+  {:else}
+    <DialogDescription>{uploadProgressText}</DialogDescription>
+  {/if}
 {/snippet}

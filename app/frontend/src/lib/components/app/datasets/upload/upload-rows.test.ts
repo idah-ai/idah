@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from "vitest";
 
-import { buildEntryRows, folderRow, looseRow, rowView } from "./upload-rows";
+import { buildEntryRows, folderRow, rowItems, rowView, skippedRow } from "./upload-rows";
 
 import type { UploadItem } from "./upload-item.types";
 
@@ -82,12 +82,15 @@ describe("rowView of a folder", () => {
   });
 });
 
-describe("looseRow", () => {
-  it("lists loose files with their reason", () => {
-    expect(rowView(looseRow([pick("drive_01.mp4")]))).toMatchObject({
-      name: "Loose files",
+describe("skippedRow", () => {
+  it("reports files that were left out, with nothing to upload", () => {
+    const row = skippedRow("batch", [pick("batch/cover.jpg")], "Not in a sub-folder");
+
+    expect(rowItems([row])).toEqual([]);
+    expect(rowView(row)).toMatchObject({
+      name: "batch",
       status: "completed",
-      skippedMedias: [{ filename: "drive_01.mp4", message: "Not in a folder or zip" }],
+      skippedMedias: [{ filename: "batch/cover.jpg", message: "Not in a sub-folder" }],
     });
   });
 });

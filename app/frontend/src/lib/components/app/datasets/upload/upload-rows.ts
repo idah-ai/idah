@@ -9,8 +9,6 @@ export type UploadRow =
   | { kind: "file"; item: UploadItem }
   | { kind: "folder"; title: string; items: UploadItem[]; skipped: ZipFileReport[] };
 
-const LOOSE = "Not in a folder or zip";
-
 // Each file's path is kept relative to `root` (the dataset's folder), and names its entry:
 // "batch/clip_b/cam1/0001.jpg" in dataset "clip_b" becomes "cam1/0001.jpg".
 export function folderRow(name: string, files: PickedFile[], root = ""): UploadRow {
@@ -48,17 +46,12 @@ export function buildEntryRows(picked: PickedFile[]): UploadRow[] {
   return rows.map((row) => (row.kind === "file" ? row : folderRow(row.title, folders.get(row.title)!)));
 }
 
-// New Dataset: files outside any folder or zip, in one zip-style row.
-export function looseRow(loose: PickedFile[]): UploadRow {
-  return {
-    kind: "folder",
-    title: "Loose files",
-    items: [],
-    skipped: loose.map((p) => ({ filename: p.path, message: LOOSE })),
-  };
+// Files not uploaded at all, listed as skipped in a zip-style row (nothing to upload).
+export function skippedRow(title: string, files: PickedFile[], message: string): UploadRow {
+  return { kind: "folder", title, items: [], skipped: files.map((p) => ({ filename: p.path, message })) };
 }
 
-// Items to actually upload (a "Loose files" row has none).
+// Items to actually upload.
 export function rowItems(rows: UploadRow[]): UploadItem[] {
   return rows.flatMap((row) => (row.kind === "folder" ? row.items : [row.item]));
 }

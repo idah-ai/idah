@@ -10,6 +10,7 @@
   import { FieldGroup, FieldSet } from "@/components/ui/field";
   import Text from "@/components/ui/text/Text.svelte";
 
+  import { DEFAULT_LOOSE_NAME } from "@/components/app/datasets/upload/dataset-groups";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
 
@@ -33,7 +34,8 @@
   let { name, modality, delivery_date } = $derived(dataset);
   let selectedDatasetId = $state<string | null>(null);
   let picked = $state<PickedFile[]>([]);
-  let ignored = $state<PickedFile[]>([]);
+  let split = $state<string[]>([]);
+  let looseName = $state(DEFAULT_LOOSE_NAME);
 
   // Functions
   $effect(() => {
@@ -43,7 +45,8 @@
       delivery_date,
       selectedDatasetId,
       picked,
-      ignored,
+      split,
+      looseName,
     });
   });
 
@@ -135,7 +138,14 @@
     <!-- DATASET::MEDIA (create from upload) -->
     {#if uploadMode}
       <div>
-        <MediaPicker class="py-8" mode="datasets" bind:picked bind:ignored />
+        <MediaPicker
+          class="py-6"
+          mode="datasets"
+          bind:picked
+          bind:split
+          bind:looseName
+          showErrors={!!fieldErrors["files"]}
+        />
         {#if fieldErrors["files"]}
           <Text class="text-destructive mt-2" size="sm">{fieldErrors["files"][0]}</Text>
         {/if}

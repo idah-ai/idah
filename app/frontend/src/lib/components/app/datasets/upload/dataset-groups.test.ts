@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { describe, it, expect } from "vitest";
-import { groupIntoDatasets } from "./dataset-groups";
+import { DEFAULT_LOOSE_NAME, groupIntoDatasets, pickedItems } from "./dataset-groups";
 
 const pick = (path: string) => ({ file: new File(["x"], path.split("/").pop()!), path });
 
@@ -41,8 +41,15 @@ describe("groupIntoDatasets", () => {
     ]);
   });
 
-  it("leaves loose media files out", () => {
-    expect(summary(["drive_01.mp4", "photo.jpg", "batch.zip"]).datasets).toEqual([["batch", ["batch.zip"]]]);
+  it("puts the loose files together in one dataset, named by the user", () => {
+    const { groups } = groupIntoDatasets(["drive_01.mp4", "batch.zip", "photo.jpg"].map(pick), {
+      looseName: "  Drives ",
+    });
+    expect(groups.map((g) => [g.name, g.root, g.files.map((f) => f.path)])).toEqual([
+      ["Drives", "", ["drive_01.mp4", "photo.jpg"]],
+      ["batch", "", ["batch.zip"]],
+    ]);
+    expect(groupIntoDatasets(["a.jpg"].map(pick)).groups[0].name).toBe(DEFAULT_LOOSE_NAME);
   });
 
   it("marks zip datasets, and gives folder datasets the prefix their entries are named below", () => {
@@ -52,5 +59,39 @@ describe("groupIntoDatasets", () => {
       ["flat", false, "flat/"],
       ["top", true, ""],
     ]);
+  });
+
+  it("splits a folder into one dataset per sub-folder, leaving out the files at its top", () => {
+    const picked = ["batch/clip_10/1.jpg", "batch/clip_2/a/2.jpg", "batch/cover.jpg", "other/1.jpg"].map(pick);
+    const { groups, leftOut } = groupIntoDatasets(picked, { split: new Set(["batch/"]) });
+
+    expect(groups.map((g) => [g.name, g.root, g.files.map((f) => f.path)])).toEqual([
+      ["clip_2", "batch/clip_2/", ["batch/clip_2/a/2.jpg"]], // natural order: 2 before 10
+      ["clip_10", "batch/clip_10/", ["batch/clip_10/1.jpg"]],
+      ["other", "other/", ["other/1.jpg"]],
+    ]);
+    expect(leftOut.map((l) => [l.name, l.files.map((f) => f.path)])).toEqual([["batch", ["batch/cover.jpg"]]]);
+  });
+
+  it("keeps a folder without sub-folders as one dataset even when asked to split", () => {
+    const { groups } = groupIntoDatasets(["flat/1.jpg"].map(pick), { split: new Set(["flat/"]) });
+    expect(groups.map((g) => g.name)).toEqual(["flat"]);
+  });
+
+  it("never splits a zip: its contents are only known server-side", () => {
+    const { groups } = groupIntoDatasets(["batch.zip"].map(pick), { split: new Set(["batch.zip"]) });
+    expect(groups.map((g) => [g.name, g.isZip, g.root])).toEqual([["batch", true, ""]]);
+  });
+});
+
+describe("pickedItems", () => {
+  it("describes each folder or zip's sub-folders and top files, and the loose files", () => {
+    const items = pickedItems(["batch/b/1.jpg", "batch/a/x/2.jpg", "batch/c.jpg", "z.zip", "l.jpg"].map(pick));
+    expect(items.map((i) => [i.name, i.isLoose, i.subFolders, i.topFiles])).toEqual([
+      ["batch", false, ["a", "b"], 1],
+      ["z", false, [], 0],
+      [DEFAULT_LOOSE_NAME, true, [], 1],
+    ]);
+    expect(items.map((i) => i.subFolderFiles)).toEqual([{ a: 1, b: 1 }, {}, {}]);
   });
 });
