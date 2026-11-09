@@ -208,7 +208,8 @@
 <!-- A folder or the loose files: the entries they become. -->
 {#snippet fileList(names: string[])}
   <ul class="flex max-h-40 flex-col gap-0.5 overflow-y-auto">
-    {#each names.slice(0, MAX_LISTED_FILES) as name (name)}
+    <!-- by position: two different loose files can share a name -->
+    {#each names.slice(0, MAX_LISTED_FILES) as name, index (index)}
       <li class="flex min-w-0 items-center gap-2 text-xs">
         <FileIcon class="text-muted-foreground size-3.5 shrink-0" />
         <span class="min-w-0 truncate" title={name}>{name}</span>
