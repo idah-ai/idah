@@ -37,6 +37,10 @@ export const command = {
   longDescription: null as string | null,
 };
 
+// Track the last annotation that was soft-deleted via clear-all.
+// On the next draw, we restore it instead of creating a new one.
+let _clearedAnnId: string | null = null;
+
 export function register(driver: IIdahDriverV2): void {
   driver.command.register({
     name: command.name,
@@ -50,6 +54,13 @@ export function register(driver: IIdahDriverV2): void {
         const existing = data.annotations?.items.find(a => a.shape_type === COVERAGE_DONE_AREA);
         const rects = ui.coverageMaskShapes.map(s => s.points);
 
+        if (existing && rects.length === 0) {
+          // Clear all — soft-delete the annotation so it can be restored later
+          _clearedAnnId = existing.id;
+          await data.annotations!.delete(existing.id);
+          return;
+        }
+
         if (existing) {
           // Collect existing tile keys from the annotation's shape_args
           const existingTileKeys = new Set<string>();
@@ -60,22 +71,34 @@ export function register(driver: IIdahDriverV2): void {
           }
           // Build entries: upsert current tiles + delete stale ones
           const entries = buildTileEntries(rects, existingTileKeys);
-          await writeTiles(existing.id, entries);
-        } else if (rects.length > 0) {
-          // First save: create annotation + store tiles
+          if (entries.length > 0) await writeTiles(existing.id, entries);
+        }
+        else if (rects.length > 0) {
+          // First save: create fresh or restore soft-deleted
           const meta = driver.media.meta as Record<string, unknown>;
           const totalFrames = Math.floor((meta.duration as number) * (meta.fps as number)) - 1;
-          const ann = await data.annotations!.create({
-            shape_type: COVERAGE_DONE_AREA,
-            category: "done_area",
-            shape_args: { start: 0, end: Math.max(0, totalFrames) },
-            resource: driver.media.resource,
-          });
+
+          let ann: { id: string };
+          if (_clearedAnnId) {
+            ann = await data.annotations!.restore({
+              id: _clearedAnnId,
+              shape_type: COVERAGE_DONE_AREA,
+              category: "done_area",
+              shape_args: { start: 0, end: Math.max(0, totalFrames) },
+              properties: {},
+            } as any);
+            _clearedAnnId = null;
+          } else {
+            ann = await data.annotations!.create({
+              shape_type: COVERAGE_DONE_AREA,
+              category: "done_area",
+              shape_args: { start: 0, end: Math.max(0, totalFrames) },
+              resource: driver.media.resource,
+            });
+          }
 
           const entries = buildTileEntries(rects);
-          if (entries.length > 0) {
-            await writeTiles(ann.id, entries);
-          }
+          if (entries.length > 0) await writeTiles(ann.id, entries);
         }
       },
       isCombinable() { return false; },

@@ -24,7 +24,12 @@ export const command = {
   longDescription: null as string | null,
 };
 
+// Track the last annotation soft-deleted via clear-all, so the next draw
+// can restore it instead of creating a new one.
+let _clearedAnnId: string | null = null;
+
 export function register(driver: IIdahDriverV2): void {
+// export function register(driver: IIdahDriverV2): void {
   driver.command.register({
     name: command.name,
     modes: command.modes,
@@ -36,6 +41,13 @@ export function register(driver: IIdahDriverV2): void {
       async do() {
         const existing = data.annotations?.items.find(a => a.shape_type === COVERAGE_DONE_AREA);
         const rects = ui.coverageMaskShapes.map(s => s.points);
+
+        // Clear all — soft-delete so inventory logic accounts correctly
+        if (existing && rects.length === 0) {
+          _clearedAnnId = existing.id;
+          await data.annotations!.delete(existing.id);
+          return;
+        }
 
         if (existing) {
           // Collect existing tile keys from the annotation's shape_args
@@ -53,13 +65,26 @@ export function register(driver: IIdahDriverV2): void {
             entries,
           );
         } else if (rects.length > 0) {
-          // First save: create annotation + store tiles
-          const ann = await data.annotations!.create({
-            shape_type: COVERAGE_DONE_AREA,
-            category: "done_area",
-            shape_args: {},
-            resource: driver.media.resource,
-          });
+          // First save: create fresh or restore soft-deleted
+          let ann: { id: string };
+          if (_clearedAnnId) {
+            ann = await data.annotations!.restore({
+              id: _clearedAnnId,
+              shape_type: COVERAGE_DONE_AREA,
+              category: "done_area",
+              shape_args: {},
+              properties: {},
+            } as any);
+            _clearedAnnId = null;
+          } else {
+            ann = await data.annotations!.create({
+              shape_type: COVERAGE_DONE_AREA,
+              category: "done_area",
+              shape_args: {},
+              resource: driver.media.resource,
+            });
+          }
+
           const entries = buildTileEntries(rects);
           if (entries.length > 0) {
             await writeTileEntries(
