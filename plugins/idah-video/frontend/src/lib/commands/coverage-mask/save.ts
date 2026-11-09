@@ -62,7 +62,7 @@ export function register(driver: IIdahDriverV2): void {
           const entries = buildTileEntries(rects, existingTileKeys);
           await writeTiles(existing.id, entries);
         } else if (rects.length > 0) {
-// First save: create annotation + store tiles
+          // First save: create annotation + store tiles
           const meta = driver.media.meta as Record<string, unknown>;
           const totalFrames = Math.floor((meta.duration as number) * (meta.fps as number)) - 1;
           const ann = await data.annotations!.create({

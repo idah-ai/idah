@@ -58,10 +58,6 @@
     return mode.includes("coverage-mask");
   }
 
-  // function isCoverageMaskAdd(mode: string): boolean {
-  //   return mode.endsWith("-bbox");
-  // }
-
   function isCoverageMaskRemove(mode: string): boolean {
     return mode.includes("-remove");
   }

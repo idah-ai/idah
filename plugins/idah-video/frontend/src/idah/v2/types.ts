@@ -408,6 +408,15 @@ export interface IAnnotationsDriverV2<ShapeArgs = Record<string, unknown>, Prope
 
   /** Create a new annotation (id is auto-generated via uuidv7). */
   create(data: IAnnotationRecord<ShapeArgs, Properties>): Promise<IAnnotationRecord<ShapeArgs, Properties>>;
+
+  /**
+   * Write (upsert) or delete a single child-record (annotation_shape) row.
+   * `value` must be a non-null object (upsert) or `null` (delete).
+   */
+  setShape(annotationId: string, key: string, value: object | null): Promise<void>;
+
+  /** Batch-write or delete multiple annotation_shape rows in one call. */
+  setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
 
 // ─── V2 Driver — Notes submodule ──────────────────────────────────────────
