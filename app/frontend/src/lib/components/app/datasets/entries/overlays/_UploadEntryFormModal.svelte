@@ -227,7 +227,7 @@
   {/if}
 
   {#if view.isUpload()}
-    <section class="flex h-auto max-h-[70vh] flex-col gap-4 overflow-y-auto pr-1">
+    <section class="max-h-[70vh] divide-y overflow-y-auto rounded-lg border">
       {#each rows as row, rowIndex (rowIndex)}
         <UploadMediaItem uploadItem={rowView(row)} maxRetries={MAX_RETRIES} />
       {/each}
@@ -241,12 +241,18 @@
           <DialogDescription>{selectionSummary(picked.length, "item", "to upload")}</DialogDescription>
         {/if}
 
-        {#if view.isUpload()}
+        {#if view.isUpload() && !allItemsCompleted}
           <DialogDescription>
             {uploadProgressText}
           </DialogDescription>
         {/if}
       </Text>
+
+      {#if view.isUpload() && allItemsCompleted}
+        <DialogClose class="ml-auto">
+          <Button onclick={resetForm}>Close</Button>
+        </DialogClose>
+      {/if}
 
       {#if view.isSelect()}
         <div class="ml-auto flex items-center gap-2">
