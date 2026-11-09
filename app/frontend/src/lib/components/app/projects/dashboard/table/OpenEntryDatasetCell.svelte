@@ -6,4 +6,4 @@
   let { record, contexts }: { record: EntryRecord; contexts?: { datasetNames?: { [id: string]: string } } } = $props();
 </script>
 
-<Text size="xs">{contexts?.datasetNames?.[record.dataset_id] ?? "Unavailable"}</Text>
+<Text size="sm">{contexts?.datasetNames?.[record.dataset_id] ?? "Unavailable"}</Text>
