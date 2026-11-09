@@ -291,8 +291,8 @@ export class NotesDriverAdapter implements INotesDriverV2 {
   }
 
   /** Create a note — persists, updates cache, emits onNotesChange. */
-  async createNote(data: { content_md: string; anchor: INoteAnchor }): Promise<INoteRecord> {
-    const { anchor, content_md } = data;
+  async createNote(data: { content_md: string; feedbackKeys: string[]; anchor: INoteAnchor }): Promise<INoteRecord> {
+    const { anchor, content_md, feedbackKeys } = data;
     const flat = flattenAnchorToBackend(anchor);
 
     const result = await noteFeedsBackendDataSource.create({
@@ -302,6 +302,7 @@ export class NotesDriverAdapter implements INotesDriverV2 {
         anchor_type: flat.anchor_type,
         position: flat.position,
         content_md,
+        feedback_keys: feedbackKeys,
         status: "pending",
       },
     });
@@ -345,11 +346,18 @@ export class NotesDriverAdapter implements INotesDriverV2 {
   /** Update a note — persists, updates cache, emits onNotesChange. */
   async updateNote(
     id: string,
-    data: { anchor?: INoteAnchor; content_md?: string; status?: string; [key: string]: unknown },
+    data: {
+      anchor?: INoteAnchor;
+      content_md?: string;
+      feedback_keys?: string[];
+      status?: string;
+      [key: string]: unknown;
+    },
   ): Promise<INoteRecord> {
     const payload: Record<string, unknown> = {};
 
     if (data.content_md !== undefined) payload.content_md = data.content_md;
+    if (data.feedback_keys !== undefined) payload.feedback_keys = data.feedback_keys;
     if (data.status !== undefined) payload.status = data.status;
     if (data.anchor !== undefined) {
       const flat = flattenAnchorToBackend(data.anchor!);

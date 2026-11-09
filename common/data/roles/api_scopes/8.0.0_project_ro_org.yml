@@ -13,6 +13,8 @@ api/project_ro_org:
     - "dataset:annotations.read.as_org_owner"
     - "dataset:note_feeds.read.as_org_owner"
     - "dataset:note_comments.read.as_org_owner"
+    - "dataset:label_config_templates.read.as_org_owner"
+    - "dataset:feedback_config_templates.read.as_org_owner"
 
     # Media Service - Read Only (Project level)
     - "media:medias.read.as_org_owner"
