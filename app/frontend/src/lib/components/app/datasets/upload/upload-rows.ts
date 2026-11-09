@@ -1,4 +1,4 @@
-import { createUploadItem, type UploadItem, type UploadItemView } from "./upload-item.types";
+import { createUploadItem, entryName, type UploadItem, type UploadItemView } from "./upload-item.types";
 
 import type { PickedFile } from "@/components/app/forms/fields/upload/file-upload.utils";
 import type { ZipFileReport } from "@/data/model/media/medias/medias-record";
@@ -49,6 +49,13 @@ export function buildEntryRows(picked: PickedFile[]): UploadRow[] {
 // Files not uploaded at all, listed as skipped in a zip-style row (nothing to upload).
 export function skippedRow(title: string, files: PickedFile[], message: string): UploadRow {
   return { kind: "folder", title, items: [], skipped: files.map((p) => ({ filename: p.path, message })) };
+}
+
+// The names of the entries a row created, in creation order.
+export function createdEntryNames(row: UploadRow): string[] {
+  return rowItems([row]).flatMap((item) =>
+    item.uploadedMedias.slice(0, item.createdEntryCount).map((media) => entryName(item, media)),
+  );
 }
 
 // Items to actually upload.

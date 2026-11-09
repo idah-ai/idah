@@ -1,5 +1,12 @@
 import type { MediaRecord, ZipFileReport } from "@/data/model/media/medias/medias-record";
 
+// The name of the entry made from one uploaded media: a file is named by its path in the
+// picked folder; a zip's media by their path in the zip, after the zip's own location when
+// it sat inside a folder.
+export function entryName(item: UploadItem, media: MediaRecord): string {
+  return item.isZip ? `${item.zipPrefix ?? ""}${media.filename}` : item.path;
+}
+
 export interface UploadItem {
   uuid: string;
   media: File;

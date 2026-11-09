@@ -18,6 +18,7 @@
   import { selectionSummary } from "@/components/app/datasets/upload/upload-summary";
   import { createUploadItem } from "@/components/app/datasets/upload/upload-item.types";
   import {
+    createdEntryNames,
     folderRow,
     rowItems,
     rowView,
@@ -407,6 +408,7 @@
             title={run.name}
             label={runLabel(run)}
             warning={run.leftOut}
+            entries={createdEntryNames(row)}
           />
         {/each}
       {/each}

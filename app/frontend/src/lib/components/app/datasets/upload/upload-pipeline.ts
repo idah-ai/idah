@@ -3,7 +3,7 @@ import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
 import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
 import { pluralizeUnit } from "@/utils/unit";
 
-import type { UploadItem, UploadItemView } from "./upload-item.types";
+import { entryName, type UploadItem, type UploadItemView } from "./upload-item.types";
 import type { JsonApiErrorResponse } from "@/data/model/types";
 
 export interface UploadContext {
@@ -108,9 +108,7 @@ export async function uploadSingleMedia(media: UploadItem, context: UploadContex
             {
               attributes: {
                 resource: uploadedMedia.resource,
-                // A file is named by its path in the picked folder; a zip's media by their path in the
-                // zip, after the zip's own location when it sat inside a folder.
-                name: media.isZip ? `${media.zipPrefix ?? ""}${uploadedMedia.filename}` : media.path,
+                name: entryName(media, uploadedMedia),
                 status: "pending",
                 ...(context.deliveryDate !== undefined ? { delivery_date: context.deliveryDate } : {}),
               },

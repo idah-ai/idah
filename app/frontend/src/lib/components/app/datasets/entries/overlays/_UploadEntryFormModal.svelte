@@ -12,7 +12,7 @@
   import MediaPicker from "@/components/app/datasets/upload/MediaPicker.svelte";
   import UploadMediaItem from "@/components/app/datasets/upload/UploadMediaItem.svelte";
 
-  import { buildEntryRows, rowItems, rowView } from "@/components/app/datasets/upload/upload-rows";
+  import { buildEntryRows, createdEntryNames, rowItems, rowView } from "@/components/app/datasets/upload/upload-rows";
   import { MAX_RETRIES, showUploadSummaryToast, uploadAll } from "@/components/app/datasets/upload/upload-pipeline";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { resourcePath } from "@/data/BackendDataSource";
@@ -229,7 +229,7 @@
   {#if view.isUpload()}
     <section class="max-h-[70vh] divide-y overflow-y-auto rounded-lg border">
       {#each rows as row, rowIndex (rowIndex)}
-        <UploadMediaItem uploadItem={rowView(row)} maxRetries={MAX_RETRIES} />
+        <UploadMediaItem uploadItem={rowView(row)} maxRetries={MAX_RETRIES} entries={createdEntryNames(row)} />
       {/each}
     </section>
   {/if}

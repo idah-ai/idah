@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronDownIcon, ChevronRightIcon } from "@lucide/svelte";
+  import { ChevronDownIcon, ChevronRightIcon, FileIcon } from "@lucide/svelte";
 
   import Spinner from "@/components/ui/spinner/spinner.svelte";
 
@@ -20,8 +20,9 @@
     title?: string; // replaces the item's name, e.g. with the dataset it went to
     label?: string; // replaces the status line once completed
     warning?: boolean; // shows a warning once completed, e.g. for files left out on purpose
+    entries?: string[]; // a zip or folder: the entries it created, listed behind its status line
   }
-  let { uploadItem, maxRetries = 3, title, label, warning = false }: Props = $props();
+  let { uploadItem, maxRetries = 3, title, label, warning = false, entries = [] }: Props = $props();
 
   // Variables
   const { name, uploadedMedias, skippedMedias, errorMedias, isZip, status } = $derived(uploadItem);
@@ -38,6 +39,11 @@
   const canExpand = $derived(status === "completed" && isZip && !!issues);
 
   let expanded = $state(false);
+
+  // A single file's entry is its own name; a zip or folder lists its entries on demand.
+  const MAX_LISTED_ENTRIES = 200;
+  const listsEntries = $derived(status === "completed" && isZip && entries.length > 0);
+  let entriesOpen = $state(false);
 </script>
 
 <div class="px-3 py-2">
@@ -60,7 +66,23 @@
 
     <div class="min-w-0 flex-1">
       <p class="truncate text-sm font-medium" title={title ?? name}>{title ?? name}</p>
-      <p class="text-muted-foreground truncate text-xs" title={statusLabel}>{statusLabel}</p>
+      {#if listsEntries}
+        <button
+          type="button"
+          class="text-muted-foreground hover:text-foreground flex max-w-full cursor-pointer items-center gap-0.5 text-xs"
+          aria-expanded={entriesOpen}
+          onclick={() => (entriesOpen = !entriesOpen)}
+        >
+          <span class="truncate">{statusLabel}</span>
+          {#if entriesOpen}
+            <ChevronDownIcon class="size-3.5 shrink-0" />
+          {:else}
+            <ChevronRightIcon class="size-3.5 shrink-0" />
+          {/if}
+        </button>
+      {:else}
+        <p class="text-muted-foreground truncate text-xs" title={statusLabel}>{statusLabel}</p>
+      {/if}
     </div>
 
     {#if canExpand}
@@ -79,6 +101,27 @@
       </button>
     {/if}
   </div>
+
+  {#if listsEntries && entriesOpen}
+    <ul class="mt-1.5 ml-7 flex max-h-40 flex-col gap-0.5 overflow-y-auto">
+      <!-- by position: entry names may repeat -->
+      {#each entries.slice(0, MAX_LISTED_ENTRIES) as entry, index (index)}
+        <li class="flex min-w-0 items-center gap-2 text-xs">
+          <FileIcon class="text-muted-foreground size-3.5 shrink-0" />
+          <span class="min-w-0 truncate" title={entry}>{entry}</span>
+        </li>
+      {/each}
+      {#if entries.length > MAX_LISTED_ENTRIES}
+        <li class="text-muted-foreground text-xs">
+          and {entries.length - MAX_LISTED_ENTRIES} more {pluralizeUnit(
+            entries.length - MAX_LISTED_ENTRIES,
+            "entry",
+            "entries",
+          )}
+        </li>
+      {/if}
+    </ul>
+  {/if}
 
   {#if canExpand && expanded}
     <div class="mt-2 ml-7 flex flex-col gap-2">

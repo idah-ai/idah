@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from "vitest";
 
-import { buildEntryRows, folderRow, rowItems, rowView, skippedRow } from "./upload-rows";
+import { buildEntryRows, createdEntryNames, folderRow, rowItems, rowView, skippedRow } from "./upload-rows";
 
 import type { UploadItem } from "./upload-item.types";
 
@@ -92,5 +92,20 @@ describe("skippedRow", () => {
       status: "completed",
       skippedMedias: [{ filename: "batch/cover.jpg", message: "Not in a sub-folder" }],
     });
+  });
+});
+
+describe("createdEntryNames", () => {
+  const media = (filename: string) => ({ filename }) as UploadItem["uploadedMedias"][number];
+
+  it("names the entries a folder and its nested zip created, leaving out those not created", () => {
+    const row = folderRow("clip", [pick("clip/a.jpg"), pick("clip/b.jpg"), pick("clip/extra/frames.zip")], "clip/");
+    if (row.kind !== "folder") throw new Error("expected a folder row");
+    const [a, b, zip] = row.items;
+    Object.assign(a, { uploadedMedias: [media("a.jpg")], createdEntryCount: 1 });
+    Object.assign(b, { uploadedMedias: [media("b.jpg")], createdEntryCount: 0 }); // entry not created
+    Object.assign(zip, { uploadedMedias: [media("1.jpg"), media("cam/2.jpg")], createdEntryCount: 2 });
+
+    expect(createdEntryNames(row)).toEqual(["a.jpg", "extra/frames/1.jpg", "extra/frames/cam/2.jpg"]);
   });
 });
