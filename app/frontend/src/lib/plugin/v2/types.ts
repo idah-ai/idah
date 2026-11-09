@@ -939,6 +939,7 @@ export interface IStatsDriverV2 {
 export interface IIdahDriverV2<ShapeArgs = Record<string, unknown>, Properties = Record<string, unknown>> {
   // ── Activity context ──────────────────────────────────────────────────
   readonly id: string;
+  readonly entryName: string;
   readonly dataset: IDatasetInfo;
   readonly project: IProjectInfo;
   readonly media: IMediaInfo;

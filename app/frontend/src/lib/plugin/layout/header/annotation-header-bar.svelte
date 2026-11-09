@@ -4,7 +4,7 @@
   import Separator from "@/components/ui/separator/separator.svelte";
   import AnnotationHeaderBarActions from "./annotation-header-bar-actions.svelte";
   import AnnotationHeaderBarBackButton from "./annotation-header-bar-back-button.svelte";
-  import AnnotationHeaderBarMediaName from "./annotation-header-bar-media-name.svelte";
+  import AnnotationHeaderBarMediaName from "./annotation-header-bar-entry-name.svelte";
   import AnnotationHeaderBarStateBadge from "./annotation-header-bar-state-badge.svelte";
   import AnnotationHeaderBarTools from "./annotation-header-bar-tools.svelte";
 
@@ -36,7 +36,7 @@
 
     <Separator orientation="vertical" />
     <!-- MEDIA NAME -->
-    <AnnotationHeaderBarMediaName name={driver.media.filename} />
+    <AnnotationHeaderBarMediaName name={driver.entryName} />
 
     <AnnotationHeaderBarStateBadge {driver} />
   </div>
