@@ -135,7 +135,8 @@
   }
 
   async function submit(): Promise<void> {
-    if (uploading) return;
+    // FormModal also submits on Enter: never start again while running or on the summary.
+    if (uploading || view.isUpload()) return;
     if (canEditDeliveryDate && !sameAsDatasetDeliveryDate && !selectedDeliveryDate) {
       dateErrors = ["Select a Delivery Date or use the Dataset delivery date."];
       return;
@@ -166,6 +167,7 @@
   description="Import media from your computer"
   loading={uploading}
   closeOnOutsideClick={false}
+  preventClose={uploading}
   onCancel={resetForm}
   onConfirm={submit}
   bind:open

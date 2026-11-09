@@ -275,6 +275,8 @@
   }
 
   async function submit(): Promise<void> {
+    // FormModal also submits on Enter: never start again while running or on the summary.
+    if (submitting || uploading) return;
     fieldErrors = {};
     submitting = true;
     // Upload mode names datasets after the folders/zips, so only the modality is validated.
@@ -331,6 +333,7 @@
   onCancel={resetForm}
   onConfirm={submit}
   closeOnOutsideClick={!uploading}
+  preventClose={submitting}
   actions={uploading ? progressActions : newRecord ? createActions : undefined}
   bind:open
 >
