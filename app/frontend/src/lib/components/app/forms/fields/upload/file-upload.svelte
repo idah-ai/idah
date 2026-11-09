@@ -4,6 +4,7 @@
 
   import Button from "@/components/ui/button/button.svelte";
   import Text from "@/components/ui/text/Text.svelte";
+  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
   import { showToast } from "@/components/ui/toast/index.svelte";
   import {
@@ -92,29 +93,37 @@
   ondragleave={handleDragLeave}
   ondrop={handleDrop}
 >
-  <div class="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2">
-    {#each pickers as picker, index (picker.kind)}
-      {@const Icon = iconFor(picker)}
-      {#if picker.kind === "folder"}
-        <input bind:this={inputs[index]} webkitdirectory type="file" class="hidden" onchange={handleChooseFile} />
-      {:else}
-        <input
-          bind:this={inputs[index]}
-          multiple
-          type="file"
-          class="hidden"
-          accept={(picker.accept ?? acceptedFileTypes)?.join(", ") ?? null}
-          onchange={handleChooseFile}
-        />
-      {/if}
+  <!-- One row: the buttons explain themselves on hover, so the zone stays small. -->
+  <TooltipProvider>
+    <div class="flex flex-wrap items-center justify-center gap-2">
+      {#each pickers as picker, index (picker.kind)}
+        {@const Icon = iconFor(picker)}
+        {#if picker.kind === "folder"}
+          <input bind:this={inputs[index]} webkitdirectory type="file" class="hidden" onchange={handleChooseFile} />
+        {:else}
+          <input
+            bind:this={inputs[index]}
+            multiple
+            type="file"
+            class="hidden"
+            accept={(picker.accept ?? acceptedFileTypes)?.join(", ") ?? null}
+            onchange={handleChooseFile}
+          />
+        {/if}
 
-      <Button type="button" variant="outline" size="sm" class="justify-start" onclick={() => inputs[index]?.click()}>
-        <Icon />
-        {picker.label}
-      </Button>
-      <Text class="text-muted-foreground" size="sm">{picker.description}</Text>
-    {/each}
-  </div>
-
-  <Text class="text-muted-foreground" size="sm">{dropHint}</Text>
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger>
+            {#snippet child({ props })}
+              <Button {...props} type="button" variant="outline" size="sm" onclick={() => inputs[index]?.click()}>
+                <Icon />
+                {picker.label}
+              </Button>
+            {/snippet}
+          </TooltipTrigger>
+          <TooltipContent>{picker.description}</TooltipContent>
+        </Tooltip>
+      {/each}
+      <Text class="text-muted-foreground" size="sm">{dropHint}</Text>
+    </div>
+  </TooltipProvider>
 </div>

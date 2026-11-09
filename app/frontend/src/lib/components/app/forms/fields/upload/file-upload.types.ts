@@ -1,6 +1,6 @@
 import type { PickedFile } from "@/components/app/forms/fields/upload/file-upload.utils";
 
-// One "Select …" button with the line describing what it does.
+// One "Select …" button, with what it does shown on hover.
 export interface FileUploadPicker {
   kind: "files" | "folder";
   label: string;
