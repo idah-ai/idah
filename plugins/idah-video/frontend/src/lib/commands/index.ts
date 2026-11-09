@@ -85,6 +85,7 @@ import { register as registerCategoryDelete } from "./category/delete";
 import { register as registerCategoryToggleEditability } from "./category/toggle_editability";
 import { register as registerCategoryToggleVisibility } from "./category/toggle_visibility";
 import { register as registerCategoryToggleVisibilitySolo } from "./category/toggle_visibility_solo";
+import { register as registerCategoryReuseLast } from "./category/reuse_last";
 
 import { register as registerModeSelect } from "./mode/select";
 import { register as registerModeBoundingBox } from "./mode/bounding_box";
@@ -150,6 +151,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerCategoryToggleVisibility(driver);
   registerCategoryToggleVisibilitySolo(driver);
   registerCategoryDelete(driver);
+  registerCategoryReuseLast(driver);
 
   // ── Mode ──────────────────────────────────────────────────────
   registerModeSelect(driver);
