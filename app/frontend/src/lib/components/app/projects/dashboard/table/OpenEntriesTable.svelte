@@ -7,8 +7,8 @@
   import { Button } from "@/components/ui/button";
   import { Badge } from "@/components/ui/badge";
   import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-  import OpenEntryRow from "./OpenEntryRow.svelte";
-  import { openEntryColumns } from "./OpenEntry.columns";
+  import OpenEntryRow from "@/components/app/projects/dashboard/table/OpenEntryRow.svelte";
+  import { openEntryColumns } from "@/components/app/projects/dashboard/table/OpenEntry.columns";
   import {
     entryTabs,
     entryTab,
