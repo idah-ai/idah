@@ -221,8 +221,10 @@
     if (loose.length > 0) {
       runs.push({ name: "Loose files", rows: [looseRow(loose)], datasetId: null, loose: true });
     }
+    // This upload's runs, so the result below is counted on them even if `runs` is reset meanwhile.
+    const current = runs;
 
-    for (const run of runs) {
+    for (const run of current) {
       await uploadAll(rowItems(run.rows), {
         projectId: projectId!,
         modality: draft.modality,
@@ -231,13 +233,16 @@
     }
 
     // Like Add Entry, the modal stays open on the summary; the user closes it.
-    const created = runs.filter((run) => run.datasetId).length;
+    const created = current.filter((run) => run.datasetId).length;
     if (created === 0) {
       showToast.error({ title: "No datasets created", description: "No supported files could be uploaded." });
       return;
     }
 
-    showUploadSummaryToast(allRows.map(rowView), created);
+    showUploadSummaryToast(
+      current.flatMap((run) => run.rows.map(rowView)),
+      created,
+    );
     createdDatasets = true;
   }
 
