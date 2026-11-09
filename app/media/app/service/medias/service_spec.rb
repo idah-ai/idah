@@ -137,7 +137,7 @@ RSpec.describe Medias::Service, as: :system, database: true do
       FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
     end
 
-    it "flattens nested folders at any depth, naming each media by its file name" do
+    it "keeps nested folders at any depth, naming each media by its path in the zip" do
       require "zip"
 
       zip_path = Tempfile.create(["nested", ".zip"]).tap(&:close).path
@@ -163,9 +163,58 @@ RSpec.describe Medias::Service, as: :system, database: true do
 
       result = subject.upload(zip_file, resource: "res", project_id: "pid")
 
-      # duplicate names across folders are fine: each media still gets its own resource
-      expect(result[:processed].map(&:filename)).to contain_exactly("root.jpg", "0001.jpg", "0001.jpg", "0002.jpg")
+      # same basename in different folders stays apart, and each media gets its own resource
+      expect(result[:processed].map(&:filename)).to contain_exactly(
+        "root.jpg", "clip_a/0001.jpg", "clip_b/0001.jpg", "clip_b/deep/er/0002.jpg"
+      )
       expect(result[:processed].map(&:resource).uniq.length).to eq(4)
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    def zip_with(*names)
+      path = Tempfile.create(["wrapped", ".zip"]).tap(&:close).path
+      Zip::OutputStream.open(path) do |zip|
+        names.each do |name|
+          zip.put_next_entry(name)
+          zip.write("x") unless name.end_with?("/")
+        end
+      end
+      path
+    end
+
+    def upload_zip(path)
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        { filename: "clip.zip", type: "application/zip", tempfile: File.open(path, "rb") }
+      )
+      subject.upload(zip_file, resource: "res", project_id: "pid")
+    end
+
+    it "drops the single folder a zipped folder wraps everything in, like the folder itself" do
+      require "zip"
+
+      # as made by "Compress" on macOS, artifacts included
+      zip_path = zip_with(
+        "clip/",
+        "clip/cam_a/0001.jpg",
+        "clip/cam_b/0001.jpg",
+        "clip/0002.jpg",
+        "__MACOSX/clip/._0002.jpg"
+      )
+
+      expect(upload_zip(zip_path)[:processed].map(&:filename)).to contain_exactly(
+        "cam_a/0001.jpg", "cam_b/0001.jpg", "0002.jpg"
+      )
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "keeps the top folders when there are several of them" do
+      require "zip"
+
+      zip_path = zip_with("cam_a/0001.jpg", "cam_b/0001.jpg")
+
+      expect(upload_zip(zip_path)[:processed].map(&:filename)).to contain_exactly("cam_a/0001.jpg", "cam_b/0001.jpg")
     ensure
       FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
     end
