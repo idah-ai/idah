@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FileArchiveIcon, FolderIcon } from "@lucide/svelte";
+  import { FileArchiveIcon, FileIcon, FolderIcon } from "@lucide/svelte";
 
   import FileUpload from "@/components/app/forms/fields/upload/file-upload.svelte";
 
@@ -7,6 +7,7 @@
 
   import { groupIntoDatasets, pickedItems } from "@/components/app/datasets/upload/dataset-groups";
   import { mergePickedFiles, type PickedFile } from "@/components/app/forms/fields/upload/file-upload.utils";
+  import { pluralizeUnit } from "@/utils/unit";
 
   import type { FileUploadPicker } from "@/components/app/forms/fields/upload/file-upload.types";
 
@@ -84,7 +85,7 @@
 <!-- No media-type filter here: the server decides per file and reports what it skipped. -->
 <FileUpload class={className} {...PICKERS[mode]} onFilesSelected={handleFilesSelected} />
 
-{#if mode === "datasets" && items.length > 0}
+{#if mode === "datasets" && (items.length > 0 || ignored.length > 0)}
   <section class="mt-4 flex h-auto max-h-80 flex-col gap-4 overflow-y-auto pr-1">
     {#each items as item (item.key)}
       <PreviewUploadMediaItem
@@ -93,6 +94,14 @@
         onDelete={() => remove(item.files)}
       />
     {/each}
+    <!-- Shown so they can be cleared; otherwise they'd be reported with a later selection. -->
+    {#if ignored.length > 0}
+      <PreviewUploadMediaItem
+        name={`${ignored.length} ${pluralizeUnit(ignored.length, "loose file")}, not uploaded`}
+        icon={FileIcon}
+        onDelete={() => (ignored = [])}
+      />
+    {/if}
   </section>
 {:else if mode === "entries" && picked.length > 0}
   <section class="mt-4 flex h-auto max-h-80 flex-col gap-4 overflow-y-auto pr-1">

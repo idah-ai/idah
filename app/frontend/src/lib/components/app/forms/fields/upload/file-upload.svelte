@@ -5,6 +5,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import {
     collectDroppedFiles,
     fromInputFiles,
@@ -58,7 +59,17 @@
     const items = event.dataTransfer?.items;
     if (!items || items.length === 0) return;
 
-    select(allowFolders ? await collectDroppedFiles(items) : fromInputFiles(event.dataTransfer!.files));
+    if (!allowFolders) {
+      select(fromInputFiles(event.dataTransfer!.files));
+      return;
+    }
+
+    try {
+      select(await collectDroppedFiles(items));
+    } catch {
+      // e.g. a folder the browser isn't allowed to read
+      showToast.error({ title: "Could not read the dropped files", description: "Try selecting them instead." });
+    }
   }
 
   const handleChooseFile: ChangeEventHandler<HTMLInputElement> = (event) => {
