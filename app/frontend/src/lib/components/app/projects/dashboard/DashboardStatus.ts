@@ -4,9 +4,11 @@ import { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
 import type { Counts } from "@/components/app/projects/dashboard/DashboardData";
 
+export const completedStatusColor = "bg-emerald-500";
+
 export function statusGroups(d: Counts): { label: string; value: number; bgColor: string; textColor?: string }[] {
   return [
-    { label: "Completed", value: d.completed, bgColor: "bg-emerald-500" },
+    { label: "Completed", value: d.completed, bgColor: completedStatusColor },
     { label: "Reviewing", value: d.reviewing, bgColor: "bg-blue-500" },
     { label: "Pending review", value: d.pendingReview, bgColor: "bg-blue-200", textColor: "text-foreground" },
     { label: "Annotating", value: d.annotating, bgColor: "bg-amber-500" },

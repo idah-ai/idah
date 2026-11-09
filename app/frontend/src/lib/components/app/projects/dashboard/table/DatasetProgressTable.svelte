@@ -10,7 +10,11 @@
   import { Button } from "@/components/ui/button";
   import DateText from "@/components/app/texts/date-text.svelte";
   import DeliveryBadge from "@/components/app/projects/dashboard/DeliveryBadge.svelte";
-  import { deliveryDate, datasetDeliveryDate } from "@/components/app/projects/dashboard/DashboardStatus";
+  import {
+    completedStatusColor,
+    deliveryDate,
+    datasetDeliveryDate,
+  } from "@/components/app/projects/dashboard/DashboardStatus";
 
   import type { ProjectDashboardDataSources } from "@/components/app/projects/dashboard/DashboardData";
   import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
@@ -134,7 +138,12 @@
         <TableCell>
           {#if percentage !== null}
             <div class="min-w-44 space-y-1.5">
-              <Progress value={percentage} class="bg-muted h-2" aria-label={record.name + " completed entries"} />
+              <Progress
+                value={percentage}
+                indicatorClass={completedStatusColor}
+                class="bg-muted h-2"
+                aria-label={record.name + " completed entries"}
+              />
               <div class="flex justify-between gap-3 text-xs tabular-nums">
                 <span class="text-muted-foreground">
                   {completed.toLocaleString()} / {total.toLocaleString()}
