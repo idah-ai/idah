@@ -90,15 +90,10 @@
   let haveSomeHidableColumns: boolean = $derived(Object.values(columns).some((column) => column.hidable));
   let isFiltering: boolean = $derived(Object.keys(tablePreferences.filters).length > 0);
 
-  let destroyed = false;
   let currentPage: number = $state(1);
   let itemsPerPage: number = $state(10);
 
   // Lifecycle
-  onDestroy(() => {
-    destroyed = true;
-  });
-
   onMount(() => {
     fetchData();
   });
@@ -117,7 +112,6 @@
 
   // Functions
   async function fetchData() {
-    if (destroyed) return;
     /** Set TableData status to 'loading' */
     tableState.tableData.update((state) => ({ ...state, status: "loading" }));
 
@@ -142,9 +136,7 @@
       listOpts.count = true;
 
       const response = await dataSource.list(listOpts);
-      if (destroyed) return;
       const contexts = await onLoadSetContexts(response);
-      if (destroyed) return;
 
       /** Update TableData */
       tableState.tableData.update((state) => ({
@@ -172,7 +164,6 @@
         sort: mergedSort,
       }));
     } catch (error) {
-      if (destroyed) return;
       /** Set TableData status to 'error'*/
       tableState.tableData.update((state) => ({ ...state, status: "error", error: error }));
       throw error;
