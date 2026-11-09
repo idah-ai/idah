@@ -30,7 +30,7 @@
   // Variables
   const uid = $props.id();
   const datasetPreferences = getTablePreferences("dashboard-datasets-" + uid);
-  const entryPreferences = getTablePreferences("dashboard-open-entries-" + uid);
+  const entryPreferences = getTablePreferences("dashboard-progress-by-entry-" + uid);
   const manager = untrack(
     () =>
       new DashboardManager(projectId, () => {
@@ -260,7 +260,7 @@
       <Card>
         <CardHeader class="flex flex-wrap justify-between gap-3 sm:flex-row">
           <div class="space-y-1.5">
-            <CardTitle>Open entries</CardTitle>
+            <CardTitle>Progress by entry</CardTitle>
           </div>
           {#if detail}
             <Button
@@ -288,6 +288,7 @@
         <CardContent class="px-0">
           {#key `${!!detail}-${scope}-${manager.version}-${manager.tableEpoch}`}<OpenEntriesTable
               preferences={entryPreferences}
+              {counts}
               sources={manager.sources}
               ids={detail ? [detail.id] : manager.ids}
               combined={!detail && manager.ids.length !== 1 && (manager.poolCount === null || manager.poolCount > 1)}

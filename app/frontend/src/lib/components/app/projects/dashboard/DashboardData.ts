@@ -1,3 +1,4 @@
+import { entryTab, entryTabFilters } from "./EntryTable";
 import { completionBounds, completionDay, type DashboardRange } from "./DashboardHistory";
 import { datasetsBackendDataSource, DatasetRecord } from "@/data/model/dataset/dataset-record";
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
@@ -215,18 +216,19 @@ export function createProjectDashboardDataSources(
           contexts.get(response) ?? {},
         async list(options: ListOptions = {}): Promise<CollectionResponse<EntryRecord>> {
           latest = (async (): Promise<CollectionResponse<EntryRecord>> => {
+            const tab = entryTab(options.filters ?? {});
+            if (!tab) throw new Error("Invalid Entry table filter");
             const pagination = options.pagination ?? { page: 1, itemsPerPage: 10 };
             if (
               !Number.isInteger(pagination.page) ||
               pagination.page < 1 ||
               ![10, 25, 50, 100].includes(pagination.itemsPerPage)
             )
-              throw new Error("Invalid Open entries page");
+              throw new Error("Invalid Entry table page");
             const response = await entries.list({
               filters: {
                 ...(selected.length ? { dataset_id: selected } : {}),
-                status__in: ["pending", "in_progress"],
-                wf_step__in: ["annotate", "review"],
+                ...entryTabFilters(tab),
               },
               included: ["assigned_to"],
               fields: {
