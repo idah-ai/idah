@@ -44,6 +44,9 @@ export const VIDEO_POLYGON = "idah-video:polygon";
 export const COVERAGE_MASK_BBOX = "idah-video:coverage-mask-bbox";
 export const COVERAGE_MASK_BBOX_REMOVE = "idah-video:coverage-mask-bbox-remove";
 
+/** Coverage mask annotation shape type. */
+export const COVERAGE_DONE_AREA = "idah-video:done-area";
+
 /**
  * Special, non-drawable shape type holding entry-level (whole video)
  * category + properties. Not namespaced under a modality.
@@ -64,7 +67,7 @@ export const VIDEO_FRAME = "idah-video:frame";
  * excluded from the left-sidebar tool list, the on-canvas layer, the generic
  * annotation list, and the per-shape timeline tracks.
  */
-export const NON_DRAWABLE_SHAPE_TYPES = new Set<string>([ENTRY_ROOT, VIDEO_FRAME]);
+export const NON_DRAWABLE_SHAPE_TYPES = new Set<string>([ENTRY_ROOT, VIDEO_FRAME, COVERAGE_DONE_AREA]);
 
 // ─── Video annotation shape ──────────────────────────────────────────────
 

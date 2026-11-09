@@ -50,6 +50,7 @@
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
   import { rotatePointN } from "./BoundingBox/utils";
+  import { loadCoverageMasks } from "$lib/commands/coverage-mask/save";
   import type { IAnnotationRecord } from "$idah/v2/types";
   import {
     NON_DRAWABLE_SHAPE_TYPES,
@@ -212,6 +213,14 @@
   $effect(() => {
     if (_compRefs.length < visibleAnnotations.length) {
       _compRefs.length = visibleAnnotations.length;
+    }
+  });
+
+  // Load persisted coverage masks once annotations finish loading
+  $effect(() => {
+    const store = data.annotations;
+    if (store && !store.pending && store.items.length > 0) {
+      loadCoverageMasks();
     }
   });
 
@@ -861,11 +870,13 @@
             });
         }
         getDriver().command.call("coverage-mask-draw", { before: [...ui.coverageMaskShapes], after: newList });
+        getDriver().command.call("coverage-mask-save");
       } else {
         // Add mode
         const before = [...ui.coverageMaskShapes];
         const after = [...before, { type: "bbox", points: [x, y, w, h] }];
         getDriver().command.call("coverage-mask-draw", { before, after });
+        getDriver().command.call("coverage-mask-save");
       }
       return;
     }
