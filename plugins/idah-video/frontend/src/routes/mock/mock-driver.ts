@@ -456,13 +456,10 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IVideoAnnotationS
   async create(data: Annot): Promise<Annot> {
     return this.store.create(data);
   }
-async create(data: Annot): Promise<Annot> {
-    return this.store.create(data);
-  }
 
   async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
     // Mock: update the annotation's shape_args in-memory
-    const annot = this.store.findById(annotationId);
+    const annot = this.store.find(annotationId);
     if (!annot) return;
     const shape = { ...((annot as any).shape_args || {}) };
     if (value === null) {
