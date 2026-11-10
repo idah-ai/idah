@@ -5,6 +5,9 @@
   import MultipleSelectDatasourceField from "@/components/app/forms/fields/select/multiple/multiple-select-datasource-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
   import AccountEntries from "@/components/app/projects/entries/account-entries.svelte";
+  import { CheckIcon } from "@lucide/svelte";
+  import { CommandItem } from "@/components/ui/command";
+  import { cn } from "@/utils";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
 
   import { roles } from "@/data/model/iam/accounts/constants";
@@ -79,19 +82,36 @@
     {#if isOrgOwner}
       <MultipleSelectDatasourceField
         name="{resource}/role_scope"
-        label="Organization"
-        placeholder="Select organization"
+        label="Organizations"
+        placeholder="Select organizations"
         dataSource={organizationsBackendDataSource}
         displayKey="name"
-        searchKeyWithOperation="id"
+        searchKeyWithOperation="name__match"
+        searchable
+        required
         errors={fieldErrors["role_scope"]}
         values={role_scope?.org ?? []}
-        onSelected={(selectedValues) => {
-          role_scope = {
-            org: selectedValues.map((item) => item.value),
-          };
-        }}
       >
+        {#snippet slotChoice({ choice })}
+          <CommandItem
+            onclick={() => {
+              const org = role_scope?.org ?? [];
+              role_scope = {
+                ...role_scope,
+                org: org.some((id: string | number) => id == choice.value)
+                  ? org.filter((id: string | number) => id != choice.value)
+                  : [...org, choice.value],
+              };
+            }}
+          >
+            <CheckIcon
+              class={cn("mr-2 size-4", {
+                "opacity-0": !role_scope?.org?.some((id: string | number) => id == choice.value),
+              })}
+            />
+            {choice.label}
+          </CommandItem>
+        {/snippet}
         {#snippet slotTriggerValues({ selectedChoices })}
           <ComboboxTriggerValueBadges
             values={selectedChoices.map((choice) => choice.value)}

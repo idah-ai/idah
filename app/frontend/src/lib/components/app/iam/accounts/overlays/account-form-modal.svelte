@@ -92,7 +92,7 @@
           sso_channel: accountRecord?.sso_channel ?? null,
           enabled: draft.enabled,
           role_name: draft.role_name,
-          ...(draft.role_scope ? { role_scope: draft.role_scope } : {}),
+          role_scope: draft.role_name === "org_owner" ? draft.role_scope : {},
         },
       },
       {
@@ -118,7 +118,7 @@
           role_name: draft.role_name,
           sso_channel: accountRecord?.sso_channel ?? null,
           enabled: draft.enabled,
-          ...(draft.role_scope ? { role_scope: draft.role_scope } : {}),
+          role_scope: draft.role_name === "org_owner" ? draft.role_scope : {},
         },
       },
       {
@@ -150,6 +150,7 @@
         name: draft.name,
         email: draft.email,
         role_name: draft.role_name,
+        role_scope: draft.role_scope,
         sso_channel: accountRecord?.sso_channel ?? null,
         enabled: draft.enabled,
       });
