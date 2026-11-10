@@ -1,7 +1,6 @@
 <script lang="ts">
   import { CheckIcon, ChevronDownIcon } from "@lucide/svelte";
   import { useId } from "bits-ui";
-  import { tick } from "svelte";
 
   import { Button } from "$lib/components/ui/Button";
   import * as Command from "$lib/components/ui/Command";
@@ -41,20 +40,18 @@
   const triggerId = useId();
   let open = $state(false);
   let search = $state("");
-  let triggerRef = $state<HTMLButtonElement>(null!);
 
   function selectCategory(value: string) {
-    onValueChange(value);
+    if (value !== selectedCategory) onValueChange(value);
     open = false;
     search = "";
-    tick().then(() => triggerRef?.focus());
   }
 </script>
 
 <Field.Field>
   <Field.Label for={triggerId} class="text-sm font-semibold">Category</Field.Label>
   <Popover.Root bind:open onOpenChange={(next) => { if (!next) search = ""; }}>
-    <Popover.Trigger bind:ref={triggerRef}>
+    <Popover.Trigger>
       {#snippet child({ props })}
         <Button
           {...props}
@@ -86,7 +83,7 @@
       {/snippet}
     </Popover.Trigger>
     <Popover.Content align="start" class="w-[var(--bits-popover-anchor-width)] max-w-[calc(100vw-1rem)] p-0">
-      <Command.Root label="Categories">
+      <Command.Root label="Categories" value={selectedCategory}>
         <Command.Input bind:value={search} placeholder="Search categories..." />
         <Command.List>
           <Command.Empty>No categories found.</Command.Empty>
@@ -97,7 +94,7 @@
                 value={value}
                 keywords={[valueLabel, label]}
                 class="text-xs"
-                disabled={selectedCategory === value || disabledValues?.has(value)}
+                disabled={value !== selectedCategory && (disabledValues?.has(value) ?? false)}
                 onSelect={() => selectCategory(value)}
               >
                 {#if showShapeIcon}
