@@ -25,5 +25,5 @@ RecordFactory.registerTypes(NoteCommentRecord);
 
 export const noteCommentsBackendDataSource = createBackendDataSource(
   NoteCommentRecord,
-  `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/note_comments`,
+  `/api/v1/dataset/note_comments`,
 );

@@ -204,16 +204,16 @@ If you're developing the CLI tool itself:
 ```bash
 # Install dependencies
 cd plugins_dev
-npm install
+pnpm install
 
 # Link for local development
-npm link
+pnpm link --global
 
 # Use the CLI
 idah-plugin create test-plugin
 
 # Unlink when done
-npm unlink -g idah-plugin
+pnpm unlink --global idah-plugin
 ```
 
 ## 📝 Additional Resources

@@ -1,9 +1,9 @@
 # IDAH - Ingedata Annotation Hub
 
-[![CI](https://github.com/idah-ai/idah/actions/workflows/ci.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci.yml)
-[![CI - Docs](https://github.com/idah-ai/idah/actions/workflows/ci-docs.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci-docs.yml)
+[![CI - App](https://github.com/idah-ai/idah/actions/workflows/ci-app.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci-app.yml)
+[![CI - Common](https://github.com/idah-ai/idah/actions/workflows/ci-common.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci-common.yml)
 [![License](https://img.shields.io/badge/license-FSL-blue)](LICENSE.md)
-[![Docker](https://img.shields.io/badge/docker-supported-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
+[![Docker](https://img.shields.io/badge/docker-supported-2496ED?logo=docker&logoColor=white)](compose.yml)
 
 **An open-source platform for collaborative data annotation**, designed to streamline the creation of high-quality training datasets for machine learning models.
 
@@ -38,15 +38,16 @@
    cd idah
    ```
 
-2. **Start databases** (PostgreSQL & Redis)
-   ```bash
-   docker compose -f docker-compose-db.yml up -d
-   ```
+2. **Databases** (PostgreSQL & Redis)
+
+   They start with the stack as containers, so there is nothing to do. To use the ones on your machine instead, copy `.env.example` to `.env` and uncomment the local-database block.
 
 3. **Start IDAH services**
    ```bash
    docker compose up -d --build
    ```
+
+   For changes only you need, add a gitignored `compose.override.yml`.
 
 4. **Initialize setup** (first time only)
    ```bash
@@ -180,7 +181,7 @@ We welcome contributions from the community!
 
 ## 📄 License
 
-This project is licensed under the **[Functional Source License (FSL)](LICENSE)**.
+This project is licensed under the **[Functional Source License (FSL)](LICENSE.md)**.
 
 ---
 

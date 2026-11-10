@@ -7,6 +7,18 @@ module PluginSystem
 
   @plugins = {}
 
+  # The repository root, as the parent of common/: the checkout locally and in
+  # CI, / in the container images.
+  ROOT = File.expand_path("../..", __dir__)
+
+  # Where plugins are found when IDAH_PLUGIN_PATH is not set: plugins/ at the
+  # root, plus plugins_dev/plugins in development.
+  def default_path
+    dirs = ["plugins"]
+    dirs << "plugins_dev/plugins" if ENV["APP_ENVIRONMENT"] == "development"
+    dirs.map{ |dir| File.join(ROOT, dir, "**") }.join(";")
+  end
+
   def init(context_class, registry_class = PluginSystem::Registry)
     Verse.on_boot do
       PluginSystem::Exposition.register

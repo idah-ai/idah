@@ -19,6 +19,7 @@ import type {
   ISyncEvent,
   IAccountSettingsDriverV2,
   Unsubscribe,
+  IFeedbackConfig,
 } from "../types";
 
 import { AstProcessor } from "../utils/ast-evaluator";
@@ -57,7 +58,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private readonly commandMgr = new CommandManagerV2();
   private readonly toolbarMgr = new ToolbarManagerV2();
   private readonly accountSettingsMgr: AccountSettingsManager;
-  private readonly rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);
+  private readonly rpc = new JsonRpcDatasource(`/api/v1/dataset/annotations/_rpc`);
 
   private pendingCount = 0;
 
@@ -77,6 +78,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private _project: IProjectInfo;
   private _media: IMediaInfo;
   private _config: IConfig;
+  private _feedbackConfig: IFeedbackConfig;
   private _workflowStep: string;
   private _entryStatus: string;
   private _mode = "editor";
@@ -100,6 +102,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     project: IProjectInfo;
     media: IMediaInfo;
     config: IConfig;
+    feedbackConfig: IFeedbackConfig;
     workflowStep: string;
     entryStatus: string;
   }) {
@@ -108,6 +111,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this._project = opts.project;
     this._media = opts.media;
     this._config = sortConfigByOrder(opts.config);
+    this._feedbackConfig = opts.feedbackConfig;
     this._workflowStep = opts.workflowStep;
     this._entryStatus = opts.entryStatus;
     this.accountSettingsMgr = new AccountSettingsManager(this._dataset.modality);
@@ -250,6 +254,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   }
   get config(): IConfig {
     return this._config;
+  }
+  get feedbackConfig(): IFeedbackConfig {
+    return this._feedbackConfig;
   }
 
   get accountSettings(): IAccountSettingsDriverV2 {
@@ -442,8 +449,8 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
       // TODO: this is a hack to get the correct media URL for video vs image.
       // We should have a better way to determine the media type and URL.
       entry.dataset.modality === "idah-video"
-        ? `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`
-        : `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/processed.webp`,
+        ? `/api/v1/media/medias/files/${entry.resource}/master.m3u8`
+        : `/api/v1/media/medias/files/${entry.resource}/processed.webp`,
   };
 
   const driver = new IdahDriverV2({
@@ -452,6 +459,7 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
     project: projectInfo,
     media: mediaInfo,
     config: dataset.labeling_configuration as IConfig,
+    feedbackConfig: dataset.feedback_configuration as IFeedbackConfig,
     workflowStep: entry.wf_step,
     entryStatus: entry.status,
   });

@@ -1,7 +1,9 @@
 {
   "type": "idah-plugin",
   "name": "idah-video",
-  "version": "1.0.0",
+  "version": "0.1.0",
+
+  "idahVersion": "0.1.0",
 
   "title": "IDAH Video Annotation",
   "description": "A module for annotating video.",

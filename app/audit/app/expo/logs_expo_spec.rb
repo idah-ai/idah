@@ -244,7 +244,7 @@ RSpec.describe LogsExpo, type: :exposition, as: :system do
       }
     end
 
-    %w[created updated deleted assigned unassigned submitted].each do |event|
+    %w[created updated deleted assigned unassigned reopened submitted].each do |event|
       it "processes entry #{event} event" do
         expect_any_instance_of(LogsExpo).to receive(:log_attributes)
         expect(service).to receive(:create)
@@ -256,6 +256,30 @@ RSpec.describe LogsExpo, type: :exposition, as: :system do
           payload: @content
         )
       end
+    end
+
+    it "ignores entry submitted event without submission_type" do
+      @content[:metadata].delete(:submission_type)
+      expect(service).not_to receive(:create)
+
+      Verse.publish_resource_event(
+        resource_type: @resource_type,
+        resource_id: @resource_id,
+        event: "submitted",
+        payload: @content
+      )
+    end
+
+    it "ignores entry submitted event with start submission_type" do
+      @content[:metadata][:submission_type] = "start"
+      expect(service).not_to receive(:create)
+
+      Verse.publish_resource_event(
+        resource_type: @resource_type,
+        resource_id: @resource_id,
+        event: "submitted",
+        payload: @content
+      )
     end
   end
 end

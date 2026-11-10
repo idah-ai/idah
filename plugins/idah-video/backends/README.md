@@ -9,7 +9,7 @@ This directory contains backend services for the **IDAH Video Annotation** plugi
 This plugin includes the following backend services:
 
 - **Media Service** - Media file processing (if `media/` directory exists)
-- **Sync Service** - Data export and synchronization (if `sync/` directory exists)
+- **Sync Service** - Data export: COCO and YOLO exports of video datasets (see [sync/idah_video/export/README.md](sync/idah_video/export/README.md))
 
 ## Quick Start
 

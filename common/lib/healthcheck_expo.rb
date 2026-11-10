@@ -11,7 +11,8 @@ class HealthcheckExpo < Verse::Exposition::Base
     desc <<~MD
       ## Health check
 
-      Returns the status of dependencies such as Redis and PostgreSQL.
+      Returns the version this service was built from, and the status of
+      dependencies such as Redis and PostgreSQL.
       If any dependency is down, it returns a failure status
       with a message indicating the issue,
       and sets the response status to 500.
@@ -23,7 +24,7 @@ class HealthcheckExpo < Verse::Exposition::Base
 
     server.response.status = 500 unless output.success?
 
-    output.status.to_json
+    IdahVersion.to_h.merge(output.status).to_json
   end
 
   # Need verse-periodic gem.

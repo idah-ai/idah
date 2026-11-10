@@ -1,19 +1,10 @@
 #!/bin/sh
 
-mkdir -p /app/frontend/build/plugins
+set -e
 
-# Remove old symlinks from previous runs
-find /app/frontend/build/plugins -maxdepth 1 -type l -delete
-
-# Create symlinks for all plugins
-for plugin_dir in /app/plugins/*; do
-  [ -d "$plugin_dir" ] && ln -s "$plugin_dir" /app/frontend/build/plugins/
-done
-
-for plugin_dir in /app/plugins_dev/plugins/*; do
-  [ -d "$plugin_dir" ] && ln -s "$plugin_dir" /app/frontend/build/plugins/
-done
-
+# node_modules is a volume: install what the lockfile says on every start, as
+# the Ruby services run `bundle`, so a dependency change needs no rebuild.
+pnpm install --frozen-lockfile --config.confirmModulesPurge=false
 pnpm svelte-kit sync
 pnpm run build:parser
 

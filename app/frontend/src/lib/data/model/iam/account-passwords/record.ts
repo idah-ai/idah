@@ -7,7 +7,7 @@ import { parseSingleElementError } from "@/data/model/json_api";
 import type { JsonApiErrorResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
 
-const accountPasswordsBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/iam/account/passwords`;
+const accountPasswordsBasePath: string = `/api/v1/iam/account/passwords`;
 
 export const accountPasswordsBackendDataSource = createBackendDataSource(AccountRecord, accountPasswordsBasePath, {
   request_reset: async (params: { email: string }): Promise<void | JsonApiErrorResponse> => {

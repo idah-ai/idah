@@ -1,27 +1,29 @@
 import * as Sentry from "@sentry/sveltekit";
 
+import { env } from "$env/dynamic/public";
+
 import { authStatus } from "@/security/AuthContext";
 
 // Resource spans (asset loads) below this duration are dropped as noise; set
 // above the normal worst-case load so only slow outliers surface. Env-tunable.
-const SLOW_RESOURCE_THRESHOLD_MS = Number(import.meta.env.VITE_SENTRY_SLOW_RESOURCE_MS || 3000);
+const SLOW_RESOURCE_THRESHOLD_MS = Number(env.PUBLIC_SENTRY_SLOW_RESOURCE_MS || 3000);
 
 Sentry.init({
-  dsn: import.meta.env.VITE_SENTRY_DSN,
-  environment: import.meta.env.MODE,
-  tracesSampleRate: Number(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || 1.0),
+  dsn: env.PUBLIC_SENTRY_DSN,
+  environment: env.PUBLIC_SENTRY_ENVIRONMENT || import.meta.env.MODE,
+  tracesSampleRate: Number(env.PUBLIC_SENTRY_TRACES_SAMPLE_RATE || 1.0),
   integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration(), Sentry.browserProfilingIntegration()],
-  // Backend calls go to `${VITE_IDAH_HOST}/api/v1/<service>` through nginx;
+  // Backend calls go to `/api/v1/<service>` on this origin, through nginx;
   // matching them attaches sentry-trace/baggage headers so backend traces
   // continue the browser trace.
-  tracePropagationTargets: [/^\/api\//, import.meta.env.VITE_IDAH_HOST].filter(Boolean),
+  tracePropagationTargets: [/^\/api\//],
 
   // Session replay: sample a slice of normal sessions, keep every errored one.
-  replaysSessionSampleRate: Number(import.meta.env.VITE_SENTRY_REPLAY_SAMPLE_RATE || 0.1),
-  replaysOnErrorSampleRate: Number(import.meta.env.VITE_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE || 1.0),
+  replaysSessionSampleRate: Number(env.PUBLIC_SENTRY_REPLAY_SAMPLE_RATE || 0.1),
+  replaysOnErrorSampleRate: Number(env.PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE || 1.0),
 
   // Relative to tracesSampleRate (effective rate = traces × profiles).
-  profilesSampleRate: Number(import.meta.env.VITE_SENTRY_PROFILE_SAMPLE_RATE || 0.1),
+  profilesSampleRate: Number(env.PUBLIC_SENTRY_PROFILE_SAMPLE_RATE || 0.1),
 
   // Drop fast resource spans (see SLOW_RESOURCE_THRESHOLD_MS); keep the slow ones.
   beforeSendTransaction(event) {

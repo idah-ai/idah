@@ -116,7 +116,7 @@ class LogsExpo < BaseExpo
   end
 
   # Entry events
-  %w[created updated deleted assigned unassigned].each do |event|
+  %w[created updated deleted assigned unassigned reopened].each do |event|
     expose on_resource_event(Resource::Dataset::Entries, event)
     def on_entry_event
       return unless message.content[:metadata][:actor_account_id] # excluding entries updated by background worker
@@ -135,7 +135,10 @@ class LogsExpo < BaseExpo
 
   expose on_resource_event(Resource::Dataset::Entries, "submitted")
   def on_entry_submitted
-    return unless message.content[:metadata][:submission_type] # process only actual submission from annotation/review
+    submission_type = message.content[:metadata][:submission_type]
+
+    return unless submission_type # process only actual submission from annotation/review
+    return if submission_type == "start" # initial stage of the entry, not an actual submission
 
     service.create(
       log_attributes(

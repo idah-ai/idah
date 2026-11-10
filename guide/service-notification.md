@@ -154,7 +154,9 @@ Builds a `Mail::Message` (via the `mail` gem) with:
 
 **Step 4: Delivery**
 
-Uses SMTP configuration from the service's config (MailHog in development, SMTP relay in production).
+Uses the SMTP server set by `MAIL_SMTP_HOST`, `MAIL_SMTP_PORT`, `MAIL_SMTP_USER` and `MAIL_SMTP_PASSWORD` (MailHog in development).
+
+Without `MAIL_SMTP_HOST` the email is not sent. After the account lookup and the preference check, `Email::Service` writes it to the log at `info` level instead: recipient, subject and the plain-text body. An administrator can then pass on an invitation or password reset link from `docker compose logs notification`. The links in those logs work like one-time passwords.
 
 ### Email::Renderer
 

@@ -54,7 +54,8 @@ module Medias
 
               entry_io = StreamWithPath.new(
                 zip_entry.get_input_stream,
-                File.basename(zip_entry.name)
+                File.basename(zip_entry.name),
+                zip_entry.size # from the central directory, always filled in
               )
 
               begin
@@ -62,7 +63,7 @@ module Medias
                   io: entry_io, # Stream directly from zip entry to storage - no tempfiles
                   filename: File.basename(zip_entry.name),
                   size: zip_entry.size,
-                  mime_type: Rack::Mime.mime_type(ext, "application/octet-stream"),
+                  mime_type: mime_type_for(ext) || "application/octet-stream",
                   resource: "#{SecureRandom.hex(8)}#{ext}",
                   key:,
                   project_id:,
@@ -97,7 +98,7 @@ module Medias
           result = store_media(
             io: file.tempfile,
             filename: file.filename,
-            mime_type: file.type,
+            mime_type: detect_mime_type(file),
             resource:,
             key:,
             project_id:,
@@ -116,6 +117,19 @@ module Medias
     end
 
     private
+
+    # Prefer the extension-based type, as zip entries do: browsers report some
+    # extensions inconsistently (e.g. .ts as TypeScript or Qt Linguist instead
+    # of an MPEG transport stream). Fall back to the browser type when unknown.
+    def detect_mime_type(file)
+      ext = File.extname(file.filename.to_s).downcase
+      mime_type_for(ext) || file.type.to_s.then { |t| t.empty? ? "application/octet-stream" : t }
+    end
+
+    # MIME type for a lowercase extension (".mp4"), or nil when unknown.
+    def mime_type_for(ext)
+      UploadConstants::MIME_TYPE_OVERRIDES[ext] || Rack::Mime.mime_type(ext, nil)
+    end
 
     # Returns true when the file is a zip archive.
     def zip_file?(file)
@@ -212,17 +226,15 @@ module Medias
   end
 
   # Wrapper to provide path metadata for streams (Shrine needs this to determine file extension)
-  StreamWithPath = Struct.new(:io, :path) do
-    def respond_to_missing?(method, include_all = false)
-      io.respond_to?(method, include_all) || super
-    end
+  # and their size: S3 storage uploads exactly `io.size` bytes, and a zip entry stream reports
+  # the size from its local header, which is 0 when the zip uses data descriptors.
+  class StreamWithPath < SimpleDelegator
+    attr_reader :path, :size
 
-    def method_missing(method, *args, &block)
-      if io.respond_to?(method)
-        io.send(method, *args, &block)
-      else
-        super
-      end
+    def initialize(io, path, size)
+      super(io)
+      @path = path
+      @size = size
     end
   end
 end

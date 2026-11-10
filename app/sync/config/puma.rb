@@ -13,7 +13,7 @@ else
     GC.compact
   end
 
-  on_worker_boot do
+  before_worker_boot do
     # Reconnect to the event manager
     Verse.event_manager.restart
   end

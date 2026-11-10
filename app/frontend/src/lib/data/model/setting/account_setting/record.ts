@@ -21,7 +21,7 @@ export const organizationActivitiesKey = "notification:organization:activities";
 export const projectActivitiesKey = "notification:project:activities";
 export const commandShortcutKey = "command:shortcut";
 
-export const accountSettingsBasePath = `${import.meta.env.VITE_IDAH_HOST}/api/v1/setting/account_settings`;
+export const accountSettingsBasePath = `/api/v1/setting/account_settings`;
 
 export const accountSettingBackendDataSource = createBackendDataSource(AccountSettingRecord, accountSettingsBasePath, {
   // Create-or-update a setting by its natural key (account_id is derived
