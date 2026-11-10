@@ -24,14 +24,6 @@
  */
 export type IShortcut = string;
 
-// ─── Dataset info ─────────────────────────────────────────────────────────
-
-export interface IDatasetInfo {
-  id: string;
-  name: string;
-  modality: string;
-}
-
 // ─── Media ────────────────────────────────────────────────────────────────
 
 export interface IMediaInfo {
@@ -727,7 +719,6 @@ export interface IAccountSettingsDriverV2 {
 export interface IIdahDriverV2<ShapeArgs = Record<string, unknown>, Properties = Record<string, unknown>> {
   // ── Activity context ──────────────────────────────────────────────────
   readonly id: string;
-  readonly dataset: IDatasetInfo;
   readonly media: IMediaInfo;
   readonly workflowStep: string;
   readonly entryStatus: string;

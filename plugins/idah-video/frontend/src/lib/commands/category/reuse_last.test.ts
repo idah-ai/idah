@@ -27,10 +27,9 @@ vi.mock("$lib/components/ui/Toast/index.svelte", () => ({
 
 const box = "idah-video:bounding-box";
 
-function setup(datasetId = "ds-1") {
+function setup() {
   let callback: () => any = () => undefined;
   const driver: any = {
-    dataset: { id: datasetId },
     command: { register: (opts: any) => (callback = opts.callback) },
   };
   register(driver);
@@ -62,26 +61,16 @@ describe("idah-video:category.reuse-last", () => {
   });
 
   it("clears the selection and picks the category used last", () => {
-    recentCategory.record(ctx.driver, "person/adult", box);
-    recentCategory.record(ctx.driver, "vehicle/car", box);
+    recentCategory.record("person/adult", box);
+    recentCategory.record("vehicle/car", box);
     ctx.run();
     expect(mockDeselect).toHaveBeenCalledOnce();
     expect(mockDeselect.mock.invocationCallOrder[0]).toBeLessThan(ctx.apply.mock.invocationCallOrder[0]);
     expect(ctx.apply).toHaveBeenCalledWith("vehicle/car", box);
   });
 
-  it("ignores a category used in another dataset", () => {
-    const other = setup("ds-2");
-    recentCategory.record(other.driver, "vehicle/car", box);
-    other.detach();
-    ctx = setup("ds-1");
-    ctx.run();
-    expect(ctx.apply).not.toHaveBeenCalled();
-    expect(mockToastInfo).toHaveBeenCalledOnce();
-  });
-
   it("warns when the category is no longer in the label configuration", () => {
-    recentCategory.record(ctx.driver, "vehicle/car", box);
+    recentCategory.record("vehicle/car", box);
     ctx.apply.mockReturnValue(false);
     ctx.run();
     expect(mockToastWarning).toHaveBeenCalledWith(
@@ -91,7 +80,7 @@ describe("idah-video:category.reuse-last", () => {
 
   it("does nothing when the workflow step is read-only", () => {
     mockIsEditable.mockReturnValue(false);
-    recentCategory.record(ctx.driver, "vehicle/car", box);
+    recentCategory.record("vehicle/car", box);
     ctx.run();
     expect(mockDeselect).not.toHaveBeenCalled();
     expect(ctx.apply).not.toHaveBeenCalled();

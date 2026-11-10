@@ -3,7 +3,6 @@
 // ---------------------------------------------------------------------------
 import type {
   IIdahDriverV2,
-  IDatasetInfo,
   IMediaInfo,
   IConfig,
   IShapeConfig,
@@ -837,10 +836,6 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
 
   get id(): string {
     return this._id;
-  }
-
-  get dataset(): IDatasetInfo {
-    return { id: "mock-dataset", name: "Mock dataset", modality: "video" };
   }
 
   get media(): IMediaInfo {

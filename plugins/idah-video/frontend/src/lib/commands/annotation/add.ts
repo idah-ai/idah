@@ -80,7 +80,7 @@ export function register(driver: IIdahDriverV2): void {
             });
           }
           hasRun = true;
-          if (!NON_DRAWABLE_SHAPE_TYPES.has(shapeType)) recentCategory.record(driver, props.category, shapeType);
+          if (!NON_DRAWABLE_SHAPE_TYPES.has(shapeType)) recentCategory.record(props.category, shapeType);
           // Select the newly created annotation
           selection.selectAnnotation(created as any);
           // Seek to the frame the annotation was created on

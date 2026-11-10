@@ -128,7 +128,7 @@ export function register(driver: IIdahDriverV2): void {
 
           // Painting into an existing mask creates no annotation, so record its
           // category here for category.reuse-last.
-          recentCategory.record(driver, existingRecord?.category, IMAGE_MASK);
+          recentCategory.record(existingRecord?.category, IMAGE_MASK);
 
           // Don't reset the session here — let beginSession() handle cleanup
           // when the next gesture starts. This ensures the pending rAF redraw

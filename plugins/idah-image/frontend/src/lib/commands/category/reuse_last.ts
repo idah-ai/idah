@@ -2,7 +2,7 @@
 // idah-image:category.reuse-last — Reuse the category of the last annotation created.
 //
 // Clears the selection and picks the category of the annotation the user
-// created last in this dataset (see recent-category.ts) for the next one, like
+// created last (see recent-category.ts) for the next one, like
 // clicking it in the sidebar. It never changes an existing annotation.
 //
 // Not undoable: picking a category is UI state.
@@ -46,7 +46,7 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => {
       if (!isEditable()) return noopAction(command);
 
-      const last = recentCategory.get(driver);
+      const last = recentCategory.get();
       if (!last) {
         showToast.info({ title: "No category to reuse", description: "Draw an annotation first." });
         return noopAction(command);

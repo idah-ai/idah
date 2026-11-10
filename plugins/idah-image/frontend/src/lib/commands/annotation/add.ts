@@ -119,7 +119,7 @@ export function register(driver: IIdahDriverV2): void {
             });
           }
           hasRun = true;
-          if (!NON_DRAWABLE_SHAPE_TYPES.has(shapeType)) recentCategory.record(driver, props.category, shapeType);
+          if (!NON_DRAWABLE_SHAPE_TYPES.has(shapeType)) recentCategory.record(props.category, shapeType);
           selection.selectAnnotation(created as any);
 
           if (shapeType === IMAGE_MASK && dirtyTileKeys.length > 0) {

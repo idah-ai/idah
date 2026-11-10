@@ -13,7 +13,6 @@ import type {
   IConfig,
   IFilter,
   IIdahDriverV2,
-  IDatasetInfo,
   IMediaInfo,
   IModeEvent,
   INoteAnchor,
@@ -564,10 +563,6 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
 
   get id(): string {
     return this._id;
-  }
-
-  get dataset(): IDatasetInfo {
-    return { id: "mock-dataset", name: "Mock dataset", modality: "image" };
   }
 
   get media(): IMediaInfo {

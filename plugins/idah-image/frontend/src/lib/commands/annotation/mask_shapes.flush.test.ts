@@ -165,16 +165,11 @@ describe("idah-image:annotation.mask-shapes.flush", () => {
       _mockAnnotationId = "ann-123";
       _mockDirtyTiles = ["0:0"];
       _mockTileBuffers.set("0:0", createFullBuffer());
-
-      const driver = {
-        ...mockDriver,
-        dataset: { id: "ds-1" },
-      };
-      register(driver);
+      register(mockDriver);
       const registered = mockDriver.command.register.mock.calls[0][0];
       await registered.callback().do();
 
-      expect(recentCategory.get(driver)).toEqual({ category: "road/lane", shapeType: "idah-image:mask" });
+      expect(recentCategory.get()).toEqual({ category: "road/lane", shapeType: "idah-image:mask" });
     });
 
     it("undo restores prior tile values", async () => {
