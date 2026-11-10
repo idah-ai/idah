@@ -14,6 +14,7 @@
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { data } from "$lib/state/data.svelte";
 import { maskSession } from "$lib/state/mask-session.svelte";
+import { recentCategory } from "$lib/state/recent-category";
 import { IMAGE_MASK } from "$lib/types";
 import { flushDirtyTiles } from "$lib/mask/flush-tiles";
 import { encode, decode } from "$lib/mask/rle";
@@ -124,6 +125,10 @@ export function register(driver: IIdahDriverV2): void {
             (annId, key, value) => data.annotations!.setShape(annId, key, value),
             (annId, entries) => data.annotations!.setShapes(annId, entries),
           );
+
+          // Painting into an existing mask creates no annotation, so record its
+          // category here for category.reuse-last.
+          recentCategory.record(driver, existingRecord?.category, IMAGE_MASK);
 
           // Don't reset the session here — let beginSession() handle cleanup
           // when the next gesture starts. This ensures the pending rAF redraw
