@@ -8,56 +8,33 @@
 // an existing annotation does not count. It is never read from the records:
 // those can come from other annotators, imports or pre-labelling.
 //
-// Saved in the browser's localStorage, one key per dataset, so it survives a
-// reload and carries over to the next entry. The in-memory copy keeps it working
-// when storage is unavailable (private browsing, quota).
+// Kept in memory only, per dataset. It is forgotten whenever the plugin is
+// loaded again: on a reload, and when the entry page is opened again (the core
+// loads the plugin with a script tag, and Submit moves to the next entry with a
+// full page load).
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 
 export type RecentCategory = { category: string; shapeType: string };
 
-const KEY_PREFIX = "idah-image:recent-category:";
-const memory = new Map<string, RecentCategory>();
+const byDataset = new Map<string, RecentCategory>();
 
-function keyFor(driver: IIdahDriverV2): string {
-  return KEY_PREFIX + (driver.dataset?.id ?? "");
-}
-
-function isRecentCategory(value: unknown): value is RecentCategory {
-  const v = value as RecentCategory | null | undefined;
-  return typeof v?.category === "string" && v.category !== "" && typeof v.shapeType === "string";
-}
-
-function readStored(key: string): unknown {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw === null ? undefined : JSON.parse(raw);
-  } catch {
-    return undefined;
-  }
+function datasetKey(driver: IIdahDriverV2): string {
+  return driver.dataset?.id ?? "";
 }
 
 export const recentCategory = {
   /** The category created last in this dataset, if any. */
   get(driver: IIdahDriverV2): RecentCategory | undefined {
-    const key = keyFor(driver);
-    const value = memory.get(key) ?? readStored(key);
-    return isRecentCategory(value) ? { category: value.category, shapeType: value.shapeType } : undefined;
+    const value = byDataset.get(datasetKey(driver));
+    return value ? { ...value } : undefined;
   },
   /** Remember `category` (of `shapeType`) as created last in this dataset. */
   record(driver: IIdahDriverV2, category: string | null | undefined, shapeType: string): void {
-    if (!category) return;
-    const key = keyFor(driver);
-    const value: RecentCategory = { category, shapeType };
-    memory.set(key, value);
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      // Storage unavailable: the in-memory copy still works until the page reloads.
-    }
+    if (category) byDataset.set(datasetKey(driver), { category, shapeType });
   },
-  /** Forget the in-memory copies (tests). */
+  /** Forget everything (tests). */
   reset(): void {
-    memory.clear();
+    byDataset.clear();
   },
 };

@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // reuse_last.test.ts — category.reuse-last against mocked selection/editor/toast
-// stores, the real recent-category store (in memory: tests have no
-// localStorage), and a category picker with a spy handler attached.
+// stores, the real recent-category store, and a category picker with a spy
+// handler attached.
 // ---------------------------------------------------------------------------
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { register, command } from "./reuse_last";
