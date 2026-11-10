@@ -161,6 +161,15 @@ describe("annotation.add (mask path)", () => {
     expect(_mockResetCalled).toBe(false);
   });
 
+  it("records the category for category.reuse-last", async () => {
+    const { recentCategory } = await import("$lib/state/recent-category");
+    recentCategory.reset();
+    register(mockDriver);
+    const registered = mockDriver.command.register.mock.calls[0][0];
+    await registered.callback({ shape: {}, shape_type: "idah-image:mask", category: "cat" }).do();
+    expect(recentCategory.get()).toEqual({ category: "cat", shapeType: "idah-image:mask" });
+  });
+
   it("redo of a mask add calls restore (not create) and re-flushes tiles", async () => {
     _mockDirtyTiles = ["0:0", "0:1"];
     _mockTileBuffers.set("0:0", createFullBuffer());
