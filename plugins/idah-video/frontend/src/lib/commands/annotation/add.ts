@@ -12,7 +12,8 @@ import { data } from "$lib/state/data.svelte";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import { VIDEO_POLYGON, type IVideoAnnotationShape } from "$lib/types";
+import { NON_DRAWABLE_SHAPE_TYPES, VIDEO_POLYGON, type IVideoAnnotationShape } from "$lib/types";
+import { recentCategory } from "$lib/state/recent-category";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 import { draft as polygonDraft } from "./polygon.add_point.svelte";
@@ -79,6 +80,7 @@ export function register(driver: IIdahDriverV2): void {
             });
           }
           hasRun = true;
+          if (!NON_DRAWABLE_SHAPE_TYPES.has(shapeType)) recentCategory.record(driver, props.category, shapeType);
           // Select the newly created annotation
           selection.selectAnnotation(created as any);
           // Seek to the frame the annotation was created on

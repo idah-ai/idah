@@ -12,7 +12,15 @@ import type { IIdahDriverV2 } from "$idah/v2/types";
 import { data } from "$lib/state/data.svelte";
 import type { AnnotationItem } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
-import { DEFAULT_MODE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK, type IImageAnnotationShape } from "$lib/types";
+import {
+  DEFAULT_MODE,
+  IMAGE_POLYGON,
+  IMAGE_LINE,
+  IMAGE_MASK,
+  NON_DRAWABLE_SHAPE_TYPES,
+  type IImageAnnotationShape,
+} from "$lib/types";
+import { recentCategory } from "$lib/state/recent-category";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 import { uuidv7 } from "uuidv7";
@@ -111,6 +119,7 @@ export function register(driver: IIdahDriverV2): void {
             });
           }
           hasRun = true;
+          if (!NON_DRAWABLE_SHAPE_TYPES.has(shapeType)) recentCategory.record(driver, props.category, shapeType);
           selection.selectAnnotation(created as any);
 
           if (shapeType === IMAGE_MASK && dirtyTileKeys.length > 0) {
