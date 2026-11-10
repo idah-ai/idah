@@ -306,26 +306,14 @@
           $state.snapshot(effectiveProperties),
         );
     } else if (valueMode !== ENTRY_ROOT) {
-      // ── Resolve the actual shape type from config ────────────────────
-      // The valueMode may be DEFAULT_MODE (popover/right sidebar flow), but
-      // the category might belong to a mask config. Resolve by checking if
-      // the category ID exists in the IMAGE_MASK config values.
-      const effectiveShapeType = (() => {
-        if (valueMode === IMAGE_MASK) return IMAGE_MASK;
-        if (category) {
-          const maskConfig = getDriver().config[IMAGE_MASK];
-          if (maskConfig?.values?.some((v: any) => v.id === category)) {
-            return IMAGE_MASK;
-          }
-        }
-        return valueMode;
-      })();
-
       // ── Mask category: prevent duplicates ───────────────────────────
       // If a mask annotation with this category already exists, select it
       // instead of entering drawing mode, and enter mask mode with brush
       // so the user can continue editing. Only one mask per category.
-      if (effectiveShapeType === IMAGE_MASK && category) {
+      // valueMode is always the shape type the category was picked under;
+      // category IDs may be shared across shape types, so never infer mask
+      // from the category ID alone.
+      if (valueMode === IMAGE_MASK && category) {
         const existingMask = data.annotations?.items.find(
           (a) => a.shape_type === IMAGE_MASK && a.category === category,
         );
