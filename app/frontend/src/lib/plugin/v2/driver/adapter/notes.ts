@@ -39,7 +39,7 @@ function liftAnchorFromBackend(
   };
 }
 
-function noteFeedToV2(rec: NoteFeedRecord): INoteRecord {
+export function noteFeedToV2(rec: NoteFeedRecord): INoteRecord {
   return {
     id: rec.id,
     anchor: liftAnchorFromBackend(rec.annotation_id, rec.anchor_type, rec.position),
