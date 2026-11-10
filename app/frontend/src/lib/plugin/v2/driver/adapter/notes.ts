@@ -39,11 +39,12 @@ function liftAnchorFromBackend(
   };
 }
 
-function noteFeedToV2(rec: NoteFeedRecord): INoteRecord {
+export function noteFeedToV2(rec: NoteFeedRecord): INoteRecord {
   return {
     id: rec.id,
     anchor: liftAnchorFromBackend(rec.annotation_id, rec.anchor_type, rec.position),
     content_md: rec.content_md,
+    feedback_keys: rec.feedback_keys,
     status: rec.status,
     resolved: rec.status === "resolved",
     created_by_email: rec.created_by_email,

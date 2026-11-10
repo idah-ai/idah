@@ -27,6 +27,7 @@
   import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
   import { noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
+  import { noteFeedToV2 } from "@/plugin/v2/driver/adapter/notes";
   import { deleteNoteFeed } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
   import { refetches } from "@/utils/refetch";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -126,22 +127,7 @@
             if (!adapter.getNote(feed.id)) {
               await adapter.fetchForEntry();
             }
-            adapter.focusNote({
-              id: feed.id,
-              anchor: {
-                annotation_id: feed.annotation_id,
-                anchor_type: feed.anchor_type,
-                position: feed.position,
-              },
-              content_md: feed.content_md,
-              feedback_keys: feed.feedback_keys,
-              status: feed.status,
-              resolved: feed.status === "resolved",
-              created_by_email: feed.created_by_email,
-              created_at: feed.created_at?.toString(),
-              updated_at: feed.updated_at?.toString(),
-              edited_at: feed.edited_at?.toString() ?? null,
-            });
+            adapter.focusNote(noteFeedToV2(feed));
           }
         }
       }
@@ -172,22 +158,7 @@
         // Not a general note — hand off to the plugin so it can seek to the anchor
         const adapter = driver.notesAdapter;
         if (adapter) {
-          adapter.focusNote({
-            id: noteFeed.id,
-            anchor: {
-              annotation_id: noteFeed.annotation_id,
-              anchor_type: noteFeed.anchor_type,
-              position: noteFeed.position,
-            },
-            content_md: noteFeed.content_md,
-            feedback_keys: noteFeed.feedback_keys,
-            status: noteFeed.status,
-            resolved: noteFeed.status === "resolved",
-            created_by_email: noteFeed.created_by_email,
-            created_at: noteFeed.created_at?.toString(),
-            updated_at: noteFeed.updated_at?.toString(),
-            edited_at: noteFeed.edited_at?.toString() ?? null,
-          });
+          adapter.focusNote(noteFeedToV2(noteFeed));
         }
         break;
       }
