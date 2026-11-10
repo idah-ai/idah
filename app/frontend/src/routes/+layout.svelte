@@ -3,8 +3,8 @@
   import { ModeWatcher } from "mode-watcher";
 
   import favicon from "@/components/app/brand/idah-logo-favicon.svg";
-  import HelpDrawer from "@/components/app/help/HelpDrawer.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+  import AppSheet from "@/components/app/overlays/sheets/AppSheet.svelte";
 
   import { Toaster } from "@/components/ui/sonner";
 
@@ -19,9 +19,9 @@
   <link rel="icon" href={favicon} />
 </svelte:head>
 
-<!-- the help drawer, when open on a wide screen, takes --help-drawer-width on the right -->
+<!-- an open side panel (AppSheet), on a wide screen, takes --app-panel-width on the right -->
 <main
-  class="bg-background relative flex min-h-screen flex-col pr-[var(--help-drawer-width,0px)] transition-[padding] duration-200"
+  class="bg-background relative flex min-h-screen flex-col pr-[var(--app-panel-width,0px)] transition-[padding] duration-200"
 >
   <ModeWatcher />
 
@@ -44,7 +44,7 @@
   </Toaster>
 
   <ConfirmModal />
-  <HelpDrawer />
+  <AppSheet />
 
   {@render children?.()}
 </main>

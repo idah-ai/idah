@@ -1,30 +1,41 @@
-// The help drawer's state, shared app-wide: which topic is shown, if any. Any component
-// opens a topic with openHelp("dataset-upload"); HelpDrawer (mounted once in the root
-// layout) shows it on the right of the screen, beside the page and any open modal. It
-// closes by itself once no HelpLink for its topic is left on the page.
+import HelpTopic from "./HelpTopic.svelte";
+import { helpTopics } from "./help-topics";
 
-const state = $state<{ topic: string | null }>({ topic: null });
+import { closeSheet, getSheet, openSheet } from "@/components/app/overlays/sheets/sheet.service.svelte";
+
+// Help is shown in the app's side panel (see sheet.service.svelte.ts): any component opens a
+// topic with openHelp("dataset-upload"), or drops a <HelpLink topic="..." /> next to what needs
+// explaining. The panel closes by itself once no HelpLink for its topic is left on the page.
+
+const HELP = "help"; // the panel's sheet id
 
 export const help = {
   get topic(): string | null {
-    return state.topic;
+    return (getSheet(HELP)?.props?.topic as string | undefined) ?? null;
   },
   get open(): boolean {
-    return state.topic !== null;
+    return this.topic !== null;
   },
 };
 
 export function openHelp(topic: string): void {
-  state.topic = topic;
+  openSheet({
+    id: HELP,
+    kind: "panel",
+    title: helpTopics[topic]?.title ?? "Help",
+    component: HelpTopic,
+    props: { topic },
+  });
 }
 
-// Opens the topic, or closes the drawer when that topic is already shown.
+// Opens the topic, or closes the panel when that topic is already shown.
 export function toggleHelp(topic: string): void {
-  state.topic = state.topic === topic ? null : topic;
+  if (help.topic === topic) closeHelp();
+  else openHelp(topic);
 }
 
 export function closeHelp(): void {
-  state.topic = null;
+  closeSheet(HELP);
 }
 
 // How many HelpLinks for each topic are on the page. When the last one for the open topic
@@ -38,7 +49,7 @@ export function registerHelpLink(topic: string): () => void {
     linksOnPage[topic] = (linksOnPage[topic] ?? 1) - 1;
     // Checked after the current update: a link that is only re-rendered remounts right away.
     setTimeout(() => {
-      if (state.topic === topic && !linksOnPage[topic]) closeHelp();
+      if (help.topic === topic && !linksOnPage[topic]) closeHelp();
     });
   };
 }

@@ -5,8 +5,8 @@
 
   import { help, registerHelpLink, toggleHelp } from "./help.svelte";
 
-  // A small "Info" link that opens a help topic in the drawer; drop it next to anything
-  // that needs explaining. Clicking it again closes the drawer.
+  // A small "Info" link that opens a help topic in the side panel; drop it next to anything
+  // that needs explaining. Clicking it again closes the panel.
   interface Props {
     topic: string; // a file in ./topics, without ".md"
     label?: string;
@@ -16,7 +16,7 @@
 
   const active = $derived(help.topic === topic);
 
-  // While this link is on the page its topic stays relevant; the drawer closes once it's gone.
+  // While this link is on the page its topic stays relevant; the panel closes once it's gone.
   $effect(() => registerHelpLink(topic));
 </script>
 
