@@ -1,6 +1,8 @@
 <script lang="ts">
   import { InfoIcon } from "@lucide/svelte";
 
+  import { Button } from "@/components/ui/button";
+
   import { cn } from "@/utils";
 
   import { help, registerHelpLink, toggleHelp } from "./help.svelte";
@@ -20,16 +22,14 @@
   $effect(() => registerHelpLink(topic));
 </script>
 
-<button
+<Button
   type="button"
-  class={cn(
-    "text-primary inline-flex cursor-pointer items-center gap-1 rounded-sm text-xs font-medium hover:underline",
-    active && "underline",
-    className,
-  )}
+  variant="link"
+  size="sm"
+  class={cn("h-auto gap-1 px-0 has-[>svg]:px-0", active && "underline", className)}
   aria-expanded={active}
   onclick={() => toggleHelp(topic)}
 >
-  <InfoIcon class="size-3.5" />
+  <InfoIcon />
   {label}
-</button>
+</Button>
