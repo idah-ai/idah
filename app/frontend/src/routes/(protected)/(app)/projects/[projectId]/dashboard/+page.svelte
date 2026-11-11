@@ -6,6 +6,4 @@
   const projectId = $derived(page.params.projectId as string);
 </script>
 
-{#key projectId}
-  <ProjectDashboard {projectId} />
-{/key}
+<ProjectDashboard {projectId} />
