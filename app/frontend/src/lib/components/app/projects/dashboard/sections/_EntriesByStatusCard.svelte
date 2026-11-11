@@ -7,6 +7,7 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Text from "@/components/ui/text/Text.svelte";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
+  import Button from "@/components/ui/button/button.svelte";
 
   // Variables
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
@@ -61,7 +62,17 @@
         description={controller.summaryError ||
           controller.workflowError ||
           "Workflow counts changed while loading. Please retry."}
-      ></ResponseBlock>
+      >
+        {#snippet actions()}
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={() => void (controller.summary ? controller.retryWorkflowCounts() : controller.retrySummary())}
+          >
+            Retry
+          </Button>
+        {/snippet}
+      </ResponseBlock>
     {/if}
   </Card.Content>
 </Card.Root>
