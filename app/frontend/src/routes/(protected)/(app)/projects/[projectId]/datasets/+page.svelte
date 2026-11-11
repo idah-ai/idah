@@ -81,7 +81,6 @@
           "updated_at",
           "delivery_date",
         ],
-        [ProjectRecord.type]: ["name"],
       },
       filters: {
         project_id: projectId,
