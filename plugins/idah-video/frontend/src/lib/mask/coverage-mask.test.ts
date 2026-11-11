@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 import { describe, it, expect } from "vitest";
 import { MASK_TILE_SIZE } from "./constants";
-import { buildTileEntries } from "./coverage-mask";
+import { buildTileEntries, clampRect, subtractRectFromShapes } from "./coverage-mask";
 import { decode } from "./rle";
 
 describe("buildTileEntries", () => {
@@ -100,4 +100,76 @@ describe("buildTileEntries", () => {
     const painted = buffer.reduce((sum: number, v: number) => sum + v, 0);
     expect(painted).toBeGreaterThan(0);
   });
+describe("clampRect", () => {
+  it("clamps negative x/y to 0", () => {
+    const [cx, cy, cw, ch] = clampRect(-10, -20, 100, 200, 640, 480);
+    expect(cx).toBe(0);
+    expect(cy).toBe(0);
+    expect(cw).toBe(100);
+    expect(ch).toBe(200);
+  });
+
+  it("clamps width/height to media bounds", () => {
+    const [cx, cy, cw, ch] = clampRect(600, 400, 100, 200, 640, 480);
+    expect(cx).toBe(600);
+    expect(cy).toBe(400);
+    expect(cw).toBe(40);  // 640 - 600
+    expect(ch).toBe(80);  // 480 - 400
+  });
+
+  it("returns 0 width/height when fully outside", () => {
+    const [cx, cy, cw, ch] = clampRect(700, 500, 100, 200, 640, 480);
+    expect(cx).toBe(640);
+    expect(cy).toBe(480);
+    expect(cw).toBe(0);
+    expect(ch).toBe(0);
+  });
+
+  it("passes through valid rect unchanged", () => {
+    const [cx, cy, cw, ch] = clampRect(10, 20, 100, 200, 640, 480);
+    expect(cx).toBe(10);
+    expect(cy).toBe(20);
+    expect(cw).toBe(100);
+    expect(ch).toBe(200);
+  });
+});
+
+describe("subtractRectFromShapes", () => {
+  it("returns empty for empty input", () => {
+    expect(subtractRectFromShapes([], 0, 0, 10, 10)).toEqual([]);
+  });
+
+  it("keeps shapes not overlapping the eraser", () => {
+    const shapes = [{ type: "bbox", points: [0, 0, 10, 10] }, { type: "bbox", points: [100, 100, 10, 10] }];
+    const result = subtractRectFromShapes(shapes, 50, 50, 10, 10);
+    expect(result).toHaveLength(2);
+  });
+
+  it("removes a shape fully covered by the eraser", () => {
+    const shapes = [{ type: "bbox", points: [5, 5, 10, 10] }];
+    const result = subtractRectFromShapes(shapes, 0, 0, 100, 100);
+    expect(result).toHaveLength(0);
+  });
+
+  it("splits a shape when eraser overlaps the middle", () => {
+    const shapes = [{ type: "bbox", points: [0, 0, 100, 100] }];
+    const result = subtractRectFromShapes(shapes, 25, 25, 50, 50);
+    // Should produce up to 4 pieces: top, bottom, left, right
+    expect(result.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("splits a shape when eraser overlaps the top edge", () => {
+    const shapes = [{ type: "bbox", points: [0, 0, 100, 100] }];
+    const result = subtractRectFromShapes(shapes, 0, 0, 50, 30);
+    // Should produce bottom piece + left/right
+    expect(result.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("handles non-bbox shapes by keeping them", () => {
+    const shapes = [{ type: "bbox", points: [0, 0, 10, 10] }, { type: "circle", points: [50, 50, 10] }];
+    const result = subtractRectFromShapes(shapes, 0, 0, 100, 100);
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe("circle");
+  });
+});
 });

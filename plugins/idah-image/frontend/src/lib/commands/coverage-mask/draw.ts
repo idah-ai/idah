@@ -5,6 +5,7 @@ import { ui } from "$lib/state/ui.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { DEFAULT_MODE, REVIEW_MODE, COVERAGE_MASK_BBOX, COVERAGE_MASK_BBOX_REMOVE } from "$lib/types";
 import { invalidate } from "./_shared";
+import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
   name: "coverage-mask-draw",
@@ -23,11 +24,20 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts) => {
+      if (!isEditable()) {
+        return {
+          command: { ...command },
+          do() {},
+          isCombinable() { return false; },
+          combine(p) { return p; },
+        };
+      }
+
       const { before, after } = opts ?? {};
       return {
         command: { ...command },
-        do() { if (after) ui.coverageMaskShapes = after as any; invalidate(driver); },
-        undo() { if (before) ui.coverageMaskShapes = before as any; invalidate(driver); },
+        do() { if (after) ui.coverageMaskShapes = after as any; invalidate(driver); driver.command.call("coverage-mask-save"); },
+        undo() { if (before) ui.coverageMaskShapes = before as any; invalidate(driver); driver.command.call("coverage-mask-save"); },
         isCombinable() { return false; },
         combine(p: any) { return p; },
       };

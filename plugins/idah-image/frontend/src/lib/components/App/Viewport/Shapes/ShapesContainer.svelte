@@ -46,6 +46,7 @@
   import { snapDebug, ui } from "$lib/state/ui.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
   import { loadCoverageMasks } from "$lib/commands/coverage-mask/save";
+  import { clampRect, subtractRectFromShapes } from "$lib/mask/coverage-mask";
 
   import {
     onPointerDown as maskBrushPointerDown,
@@ -231,7 +232,7 @@
   $effect(() => {
     // Access data.annotations?.items to establish reactivity
     const items = data.annotations?.items;
-    if (items && items.length > 0) {
+    if (items) {
       loadCoverageMasks();
     }
   });
@@ -963,43 +964,15 @@
       const w = Math.abs(bx - ax),
         h = Math.abs(by - ay);
       if (w < 3 || h < 3) return;
+      const [cx, cy, cw, ch] = clampRect(x, y, w, h, media.width, media.height);
 
       if (ui.coverageMaskIsRemove) {
-        const newList = [];
-        for (const sh of ui.coverageMaskShapes) {
-          if (sh.type !== "bbox" || sh.points.length < 4) {
-            newList.push(sh);
-            continue;
-          }
-          const [sx, sy, sw, sh2] = sh.points;
-          if (x >= sx + sw || x + w <= sx || y >= sy + sh2 || y + h <= sy) {
-            newList.push(sh);
-            continue;
-          }
-          if (x <= sx && y <= sy && x + w >= sx + sw && y + h >= sy + sh2) {
-            continue;
-          }
-          const ex2 = x + w,
-            ey2 = y + h;
-          const sx2 = sx + sw,
-            sy2 = sy + sh2;
-          if (y > sy) newList.push({ type: "bbox", points: [sx, sy, sw, y - sy] });
-          if (ey2 < sy2) newList.push({ type: "bbox", points: [sx, ey2, sw, sy2 - ey2] });
-          if (x > sx)
-            newList.push({ type: "bbox", points: [sx, Math.max(sy, y), x - sx, Math.min(sy2, ey2) - Math.max(sy, y)] });
-          if (ex2 < sx2)
-            newList.push({
-              type: "bbox",
-              points: [ex2, Math.max(sy, y), sx2 - ex2, Math.min(sy2, ey2) - Math.max(sy, y)],
-            });
-        }
+        const newList = subtractRectFromShapes(ui.coverageMaskShapes, cx, cy, cw, ch);
         getDriver().command.call("coverage-mask-draw", { before: [...ui.coverageMaskShapes], after: newList });
-        getDriver().command.call("coverage-mask-save");
       } else {
         const before = [...ui.coverageMaskShapes];
         const after = [...before, { type: "bbox", points: [x, y, w, h] }];
         getDriver().command.call("coverage-mask-draw", { before, after });
-        getDriver().command.call("coverage-mask-save");
       }
       return;
     }

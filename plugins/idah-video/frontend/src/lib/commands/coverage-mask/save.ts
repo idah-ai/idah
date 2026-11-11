@@ -6,27 +6,12 @@
 // ---------------------------------------------------------------------------
 import { ui } from "$lib/state/ui.svelte";
 import { data } from "$lib/state/data.svelte";
-import { getDriver } from "$lib/state/driver.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { COVERAGE_DONE_AREA } from "$lib/types";
 import { MASK_TILE_SIZE } from "$lib/mask/constants";
 import { decode } from "$lib/mask/rle";
 import { isTileKey } from "$lib/mask/strip-tile-keys";
 import { buildTileEntries } from "$lib/mask/coverage-mask";
-
-/** Write tile entries via the shared driver's setShape/setShapes. */
-async function writeTiles(
-  annotationId: string,
-  entries: Array<{ key: string; value: object | null }>,
-): Promise<void> {
-  const driver = getDriver();
-  if (!driver?.annotations) return;
-  if (entries.length === 1) {
-    await driver.annotations.setShape(annotationId, entries[0].key, entries[0].value);
-  } else if (entries.length > 1) {
-    await driver.annotations.setShapes(annotationId, entries);
-  }
-}
 
 export const command = {
   name: "coverage-mask-save",
@@ -39,8 +24,6 @@ export const command = {
 
 // Track the last annotation that was soft-deleted via clear-all.
 // On the next draw, we restore it instead of creating a new one.
-let _clearedAnnId: string | null = null;
-
 export function register(driver: IIdahDriverV2): void {
   driver.command.register({
     name: command.name,
@@ -48,15 +31,49 @@ export function register(driver: IIdahDriverV2): void {
     shortcut: command.shortcut,
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
-    callback: () => ({
+    callback: (opts) => ({
       command: { ...command },
       async do() {
         const existing = data.annotations?.items.find(a => a.shape_type === COVERAGE_DONE_AREA);
         const rects = ui.coverageMaskShapes.map(s => s.points);
 
+        // Undo clear-all: restore annotation + nullify leftover tiles + write new
+        if (opts && opts.restoreAnnId) {
+          const meta = driver.media.meta as Record<string, unknown>;
+          const totalFrames = Math.floor((meta.duration as number) * (meta.fps as number)) - 1;
+          const _id = opts.restoreAnnId;
+          const restored = await data.annotations!.restore({
+            id: _id,
+            shape_type: COVERAGE_DONE_AREA,
+            category: "done_area",
+            shape_args: { start: 0, end: Math.max(0, totalFrames) },
+            properties: {},
+          } as any);
+          const staleKeys: Array<{ key: string; value: object | null }> = [];
+          if (restored.shape_args) {
+            for (const key of Object.keys(restored.shape_args as Record<string, unknown>)) {
+              if (key.startsWith("tile-")) staleKeys.push({ key, value: null });
+            }
+          }
+          if (staleKeys.length > 0) {
+            await data.annotations!.setShapes(restored.id, staleKeys);
+          }
+          const entries = buildTileEntries(rects);
+          if (entries.length > 0) await data.annotations!.setShapes(restored.id, entries);
+          return;
+        }
+
         if (existing && rects.length === 0) {
-          // Clear all — soft-delete the annotation so it can be restored later
-          _clearedAnnId = existing.id;
+          // Clear all — nullify tiles first, then soft-delete
+          const tileKeys: Array<{ key: string; value: object | null }> = [];
+          if (existing.shape_args) {
+            for (const key of Object.keys(existing.shape_args as Record<string, unknown>)) {
+              if (isTileKey(key)) tileKeys.push({ key, value: null });
+            }
+          }
+          if (tileKeys.length > 0) {
+            await data.annotations!.setShapes(existing.id, tileKeys);
+          }
           await data.annotations!.delete(existing.id);
           return;
         }
@@ -71,34 +88,20 @@ export function register(driver: IIdahDriverV2): void {
           }
           // Build entries: upsert current tiles + delete stale ones
           const entries = buildTileEntries(rects, existingTileKeys);
-          if (entries.length > 0) await writeTiles(existing.id, entries);
+          if (entries.length > 0) await data.annotations!.setShapes(existing.id, entries);
         }
         else if (rects.length > 0) {
-          // First save: create fresh or restore soft-deleted
           const meta = driver.media.meta as Record<string, unknown>;
           const totalFrames = Math.floor((meta.duration as number) * (meta.fps as number)) - 1;
-
-          let ann: { id: string };
-          if (_clearedAnnId) {
-            ann = await data.annotations!.restore({
-              id: _clearedAnnId,
-              shape_type: COVERAGE_DONE_AREA,
-              category: "done_area",
-              shape_args: { start: 0, end: Math.max(0, totalFrames) },
-              properties: {},
-            } as any);
-            _clearedAnnId = null;
-          } else {
-            ann = await data.annotations!.create({
-              shape_type: COVERAGE_DONE_AREA,
-              category: "done_area",
-              shape_args: { start: 0, end: Math.max(0, totalFrames) },
-              resource: driver.media.resource,
-            });
-          }
+          const ann = await data.annotations!.create({
+            shape_type: COVERAGE_DONE_AREA,
+            category: "done_area",
+            shape_args: { start: 0, end: Math.max(0, totalFrames) },
+            resource: driver.media.resource,
+          });
 
           const entries = buildTileEntries(rects);
-          if (entries.length > 0) await writeTiles(ann.id, entries);
+          if (entries.length > 0) await data.annotations!.setShapes(ann.id, entries);
         }
       },
       isCombinable() { return false; },
@@ -116,11 +119,12 @@ export function register(driver: IIdahDriverV2): void {
  * Falls back to legacy shape_args.rects format.
  */
 export function loadCoverageMasks(): void {
-  if (!data.annotations) return;
+
+  if (!data.annotations) { ui.coverageMaskShapes = []; return; }
   const items = data.annotations.items;
   const ann = items.find(a => a.shape_type === COVERAGE_DONE_AREA);
 
-  if (!ann) return
+  if (!ann) { ui.coverageMaskShapes = []; return; }
   const args = ann.shape_args as Record<string, unknown>;
 
   // Extract tile entries from shape_args (merged from annotation_shape table)

@@ -51,6 +51,7 @@
   import { nearFirstPolygonPoint } from "./Polygon/utils";
   import { rotatePointN } from "./BoundingBox/utils";
   import { loadCoverageMasks } from "$lib/commands/coverage-mask/save";
+  import { clampRect, subtractRectFromShapes } from "$lib/mask/coverage-mask";
   import type { IAnnotationRecord } from "$idah/v2/types";
   import {
     NON_DRAWABLE_SHAPE_TYPES,
@@ -219,7 +220,7 @@
   // Load persisted coverage masks once annotations finish loading
   $effect(() => {
     const store = data.annotations;
-    if (store && !store.pending && store.items.length > 0) {
+    if (store && !store.pending) {
       loadCoverageMasks();
     }
   });
@@ -830,53 +831,17 @@
       const w = Math.abs(bx - ax),
         h = Math.abs(by - ay);
       if (w < 3 || h < 3) return;
+      const [cx, cy, cw, ch] = clampRect(x, y, w, h, media.width, media.height);
 
       if (ui.coverageMaskIsRemove) {
-        // Erase mode — subtract the drawn rectangle from each mask shape,
-        // splitting into up to 4 pieces so only the overlapping area disappears
-        const newList = [];
-        for (const sh of ui.coverageMaskShapes) {
-          if (sh.type !== "bbox" || sh.points.length < 4) {
-            newList.push(sh);
-            continue;
-          }
-          const [sx, sy, sw, sh2] = sh.points;
-          // No overlap → keep entire shape
-          if (x >= sx + sw || x + w <= sx || y >= sy + sh2 || y + h <= sy) {
-            newList.push(sh);
-            continue;
-          }
-          // Complete coverage → remove entirely
-          if (x <= sx && y <= sy && x + w >= sx + sw && y + h >= sy + sh2) {
-            continue;
-          }
-          // Partial overlap — split into remaining rectangles around the erase area
-          const ex2 = x + w,
-            ey2 = y + h;
-          const sx2 = sx + sw,
-            sy2 = sy + sh2;
-          // Top
-          if (y > sy) newList.push({ type: "bbox", points: [sx, sy, sw, y - sy] });
-          // Bottom
-          if (ey2 < sy2) newList.push({ type: "bbox", points: [sx, ey2, sw, sy2 - ey2] });
-          // Left (between the top/bottom of the erase rect)
-          if (x > sx)
-            newList.push({ type: "bbox", points: [sx, Math.max(sy, y), x - sx, Math.min(sy2, ey2) - Math.max(sy, y)] });
-          // Right
-          if (ex2 < sx2)
-            newList.push({
-              type: "bbox",
-              points: [ex2, Math.max(sy, y), sx2 - ex2, Math.min(sy2, ey2) - Math.max(sy, y)],
-            });
-        }
+        // Erase mode — subtract the drawn rectangle from each mask shape
+        const newList = subtractRectFromShapes(ui.coverageMaskShapes, cx, cy, cw, ch);
         getDriver().command.call("coverage-mask-draw", { before: [...ui.coverageMaskShapes], after: newList });
-        getDriver().command.call("coverage-mask-save");
       } else {
         // Add mode
         const before = [...ui.coverageMaskShapes];
-        const after = [...before, { type: "bbox", points: [x, y, w, h] }];
+        const after = [...before, { type: "bbox", points: [cx, cy, cw, ch] }];
         getDriver().command.call("coverage-mask-draw", { before, after });
-        getDriver().command.call("coverage-mask-save");
       }
       return;
     }

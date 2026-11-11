@@ -38,7 +38,7 @@ export const ENTRY_ROOT = "entry:root";
  * excluded from the left-sidebar tool list, the on-canvas layer, and the
  * generic annotation list.
  */
-export const NON_DRAWABLE_SHAPE_TYPES = new Set<string>([ENTRY_ROOT]);
+export const NON_DRAWABLE_SHAPE_TYPES = new Set<string>([ENTRY_ROOT, COVERAGE_DONE_AREA]);
 
 // ─── Image annotation shape ──────────────────────────────────────────────
 
