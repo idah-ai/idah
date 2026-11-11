@@ -2,9 +2,9 @@
 // state/history.svelte.ts — History panel state for the video plugin.
 //
 // History is plugin state, not a driver mode: while it is open the driver mode
-// stays whatever it was. `open` is keyed by entry id so moving to another entry
-// starts fresh. Closing keeps the current page, scope and opened cards;
-// reopening shows them at once and re-queries the backend.
+// stays whatever it was. Each open resets to page 1, clears the anchor and
+// re-queries the backend; opened cards survive a close. The scope always
+// follows the current selection.
 // ---------------------------------------------------------------------------
 import { getDriver } from "./driver.svelte";
 import { selection } from "./selection.svelte";
@@ -51,16 +51,13 @@ class HistoryState {
     return this.#page;
   }
 
-  /** The scope follows the selection reactively: selection is `$state`, so
-   *  this recomputes whenever the selected annotation or group ids change. */
   #scope = $derived(this.#computeScope());
 
   get scope() {
     return this.#scope;
   }
 
-  /** The annotation ids the current selection resolves to (live, from the
-   *  selection store). Used by load() so the filter always matches the current
+  /** Live selection ids, read directly so load() filters on the current
    *  selection even if the derived scope has not recomputed yet. */
   get selectionAnnotationIds(): string[] {
     const annIds = Array.from(selection.selectedAnnotationIds);
@@ -122,7 +119,6 @@ class HistoryState {
     return this.#diffs.get(id);
   }
 
-  /** True while a card's diff is being fetched. */
   isDiffLoading(id: string): boolean {
     return this.#diffLoading.has(id);
   }
@@ -146,8 +142,6 @@ class HistoryState {
     if (this.#diffLoading.has(id)) return;
     this.#diffLoading = new Set(this.#diffLoading).add(id);
     try {
-      // Fetch just this change's diff via the list endpoint, filtered to the
-      // change id, with the diff payload included.
       const res = await driver.annotations.changes({
         filters: { id__in: [id] },
         size: 1,
@@ -247,7 +241,7 @@ class HistoryState {
           page: 1,
           size: PAGE_SIZE,
         });
-        if (token !== this.#loadToken) return; // superseded by a newer load
+        if (token !== this.#loadToken) return;
         anchor = (first.items[0]?.changed_at ?? Date.now()) + 1000;
         this.#anchor = anchor;
         this.#applyPage(first);
@@ -261,7 +255,7 @@ class HistoryState {
           page: 1,
           size: 1,
         });
-        if (token !== this.#loadToken) return; // superseded by a newer load
+        if (token !== this.#loadToken) return;
         anchor = (first.items[0]?.changed_at ?? Date.now()) + 1000;
         this.#anchor = anchor;
       }
@@ -270,10 +264,10 @@ class HistoryState {
         page: this.#page,
         size: PAGE_SIZE,
       });
-      if (token !== this.#loadToken) return; // superseded by a newer load
+      if (token !== this.#loadToken) return;
       this.#applyPage(result);
     } catch (e) {
-      if (token !== this.#loadToken) return; // superseded by a newer load
+      if (token !== this.#loadToken) return;
       this.#error = e instanceof Error ? e.message : String(e);
     } finally {
       if (token === this.#loadToken) this.#loading = false;

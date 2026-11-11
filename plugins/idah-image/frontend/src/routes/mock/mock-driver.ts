@@ -277,8 +277,6 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IImageAnnotationS
   }
 
   async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
-    // Record a change row and keep the store in sync, like the backend does:
-    // write_shapes records one `shape_args.<tile key>` entry per tile written.
     const before = this.store.find(annotationId);
     if (!before) return;
     const shape = { ...(before.shape_args as Record<string, unknown>) };

@@ -444,7 +444,7 @@ export interface INoteRecord {
 
 // ─── V2 Driver — Annotation change history ────────────────────────────────
 
-/** One recorded annotation change. `changes` is present when requested via `includeChanges`. */
+/** One recorded annotation change. `changes` is present when `fields` includes "changes". */
 export interface IAnnotationChange {
   id: string;
   annotation_id: string;
@@ -454,7 +454,7 @@ export interface IAnnotationChange {
   version: number;
   /** Epoch ms, parsed explicitly from the API value (second precision, not ISO). */
   changed_at: number;
-  /** Diff payload: [op, path, old, new] entries. Only set when `includeChanges` is true. */
+  /** Diff payload: [op, path, old, new] entries. Only set when `fields` includes "changes". */
   changes?: ["+" | "-" | "~", string, unknown, unknown][];
 }
 

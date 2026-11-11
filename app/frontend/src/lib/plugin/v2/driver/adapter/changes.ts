@@ -2,8 +2,8 @@
 // changes.ts — annotation change history for the annotations driver.
 //
 // A thin proxy over the backend annotation_changes endpoints. No local store:
-// each call re-queries the backend, relying on the data source's existing
-// cache. Both annotation drivers (the IDB driver and the fallback in
+// every call hits the backend with noCache, so nothing is served from the data
+// source's cache. Both annotation drivers (the IDB driver and the fallback in
 // annotationsBackendCrud.ts) delegate to it.
 // ---------------------------------------------------------------------------
 
@@ -34,8 +34,8 @@ const FULL_FIELDS = {
 
 // Sort newest first by changed_at alone. The column stores microsecond
 // precision, so ties are effectively impossible and the order is deterministic
-// without extra tiebreakers. (verse-sequel's multi-key sort only keeps the last
-// key, so adding `-version`/`id` here would silently break the order.)
+// without extra tiebreakers. (verse-sequel applies only the last sort key —
+// see AnnotationChange::Service::DEFAULT_SORT.)
 const DEFAULT_SORT = ["-changed_at"];
 
 /**
@@ -72,7 +72,6 @@ export function parseChangedAt(value: string | Date): number {
   return base - offsetMs + fracMs;
 }
 
-/** Map a backend record to the driver's IAnnotationChange. */
 export function mapChange(rec: AnnotationChangeRecord): IAnnotationChange {
   return {
     id: rec.id,

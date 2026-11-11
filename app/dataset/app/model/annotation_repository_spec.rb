@@ -2,8 +2,6 @@
 
 require "spec_helper"
 
-# Repository-level write behavior: write_shape/write_shapes own the SQL and the
-# locks; service-level guards are covered by service_spec.rb.
 RSpec.describe Annotation::Repository, database: true do
   let(:admin) { Verse::Spec.users.fetch(:admin) }
   let(:auth_context) do

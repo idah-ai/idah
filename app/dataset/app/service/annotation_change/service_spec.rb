@@ -103,7 +103,6 @@ RSpec.describe AnnotationChange::Service, database: true do
       rows = subject.index({ entry_id: first_entry_id }, items_per_page: 10_000)
 
       expect(rows.map(&:changed_at)).to eq(rows.map(&:changed_at).sort.reverse)
-      # Newest first: b's created row, then a's v2, then a's created row.
       expect(rows.map { |r| [r.annotation_id, r.version] }).to eq(
         [[b, 1], [a, 2], [a, 1]]
       )
@@ -220,7 +219,6 @@ RSpec.describe AnnotationChange::Service, database: true do
         expect(rebuilt.deleted_by_email).to eq(expected.deleted_by_email)
         expect(rebuilt.version).to eq(version)
 
-        # The rebuilt updated_at equals the changed_at of that version's row.
         target_row = subject.index({ annotation_id: id, version: }, items_per_page: 1).first
         expect(rebuilt.updated_at).to eq(target_row.changed_at)
       end
@@ -246,7 +244,6 @@ RSpec.describe AnnotationChange::Service, database: true do
         )
       end
 
-      # First recorded change is version 2.
       annotation_service.update(
         deserialize(data: { type: "annotations", id: id, attributes: { category: "dog" } })
       )

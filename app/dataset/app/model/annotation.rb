@@ -100,15 +100,12 @@ module Annotation
       restored: %i[deleted_at deleted_by_email],
     }.freeze
 
-    # Update an annotation. Enforces the fields this op may write, rejects a
+    # Update an annotation: enforces the fields this op may write, rejects a
     # blank category, and keeps `annotation_shape` keys out of the `shape_args`
-    # column — the rules JSON:API update and RPC update now share, because they
-    # live below both entry points.
-    #
-    # Records one `updated` history row with the exact diff at `version + 1`.
-    # A write that changes nothing (after the field filter, blank-category
-    # check and tile stripping) writes nothing, does not bump the version and
-    # records nothing.
+    # column — the rules JSON:API and RPC update share, because they live below
+    # both entry points. Records one `updated` history row with the exact diff
+    # at `version + 1`; a write that changes nothing writes nothing and does
+    # not bump the version.
     #
     # `op` selects which read-only fields the write may still touch (the
     # soft_delete / restore ops) and names the history row; it is not passed
@@ -140,8 +137,7 @@ module Annotation
           version = row[:version] + 1
           # Attach the entry/dataset context to the `updated` event so the
           # entry-stats listener (which recomputes on annotation changes) can
-          # resolve the entry. `with_metadata` dups `@metadata`, so a
-          # `with_actor` id set outside still reaches `change_actor`.
+          # resolve the entry.
           success = with_metadata do
             add_metadata(
               project_id: row[:project_id],
@@ -175,7 +171,6 @@ module Annotation
       end
     end
 
-    # Actions                       | Roles
     # Soft-delete an annotation: set `deleted_at` / `deleted_by_email`, bump the
     # version and record a `deleted` history row. A second delete is a no-op —
     # it keeps the original `deleted_at` and `deleted_by_email`, writes nothing
@@ -219,11 +214,9 @@ module Annotation
       write_shapes(annotation_id, [{ key:, value: }])
     end
 
-    # Write (upsert) or delete several annotation_shape rows as one write:
-    # entries is [{ key: String, value: Hash | nil }]. Upserts rows with a
-    # Hash value, deletes rows with a nil value (idempotent for keys with no
-    # row). Locks the annotation row, so a concurrent soft-delete cannot slip
-    # between the service's guard and this write. Publishes no event.
+    # Write (upsert) or delete several annotation_shape rows as one write.
+    # Locks the annotation row, so a concurrent soft-delete cannot slip between
+    # the service's guard and this write. Publishes no event.
     def write_shapes(annotation_id, entries)
       with_db_mode(:rw) do
         transaction do
@@ -325,10 +318,9 @@ module Annotation
 
     # Remove keys from `attributes[:shape_args]` that exist in annotation_shape
     # for this annotation — tile keys must live only in the child table, never
-    # in the parent's jsonb column. Keys that already sit in the column (sent
-    # by the editor through RPC update before this change) are dropped on the
-    # next write, with no history entry, since reads already show the
-    # annotation_shape values; the live tile values are unaffected.
+    # in the parent's jsonb column. Keys that already sit in the column are
+    # dropped on the next write, with no history entry, since reads already
+    # show the annotation_shape values; the live tile values are unaffected.
     def strip_shape_store_keys(id, attributes)
       return unless attributes[:shape_args].is_a?(Hash)
 
@@ -416,9 +408,9 @@ module Annotation
     end
 
     # The only place that decides the actor of a history row: the repository
-    # metadata's actor (when the record is created inside `with_actor`) or the
-    # auth context's account id; nil on a system context. The id and email
-    # always come from the same source — never mix the two.
+    # metadata's actor if present, else the auth context's account id; nil on
+    # a system context. The id and email always come from the same source —
+    # never mix the two.
     def change_actor
       if @metadata[:actor_account_id]
         [@metadata[:actor_account_id], @metadata[:actor_account_email]]

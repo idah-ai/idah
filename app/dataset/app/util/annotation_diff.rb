@@ -26,10 +26,10 @@ module AnnotationDiff
 
   # Returns [[op, path, old, new], ...].
   #
-  # For each key present in `new_hash` it compares the whole old value with the
-  # whole new value, because a jsonb column write replaces the column. Keys
-  # present only in `old_hash` are recorded as `-` (removed); keys present only
-  # in `new_hash` as `+` (added).
+  # Recursive diff: hashes and keyed arrays are recursed into; non-keyed
+  # arrays and type changes are compared whole. Keys present only in
+  # `old_hash` are recorded as `-` (removed); keys present only in `new_hash`
+  # as `+` (added).
   #
   # `identity_keys` maps array paths inside `shape_args` to the key that
   # identifies their items, e.g. { "frames" => "frame" }. With `{}`, and for
@@ -86,11 +86,11 @@ module AnnotationDiff
   # ── Normalization ────────────────────────────────────────────────────────
 
   # Deep-stringify keys on both sides (shape_args arrives with symbol keys,
-  # Postgres returns string keys, and rows read with `for_update` hold Sequel
-  # JSONB* wrappers). Convert Time values to ISO 8601 UTC strings with
-  # microseconds, so `deleted_at` is stored and compared the same way on both
-  # sides. Values are otherwise compared with Ruby `==`, so `1 == 1.0` is
-  # unchanged.
+  # Postgres returns string keys, and raw reads through Sequel's pg_json
+  # extension hold JSONB* wrappers). Convert Time values to ISO 8601 UTC
+  # strings with microseconds, so `deleted_at` is stored and compared the same
+  # way on both sides. Values are otherwise compared with Ruby `==`, so
+  # `1 == 1.0` is unchanged.
   def normalize(value)
     case value
     when Hash
@@ -102,7 +102,7 @@ module AnnotationDiff
     when Time
       value.utc.iso8601(6)
     when ::Sequel::Postgres::JSONObject, ::Sequel::Postgres::JSONBObject
-      # A JSON/JSONB primitive wrapper (String/Integer/Float/True/False/Null).
+      # Unwrap JSON/JSONB wrappers (Hash/Array/primitive).
       normalize(value.__getobj__)
     else
       value
@@ -164,9 +164,9 @@ module AnnotationDiff
     changes << ["~", path, old_array, new_array] unless old_array == new_array
   end
 
-  # Fallback (rule 5): if on either side any item of a keyed array is not a
-  # Hash, lacks the key, or shares its key value with another item, the array
-  # is compared whole.
+  # Fallback: if on either side any item of a keyed array is not a Hash,
+  # lacks the key, or shares its key value with another item, the array is
+  # compared whole.
   def keyed_items(array, identity_key)
     keys = []
     items = []
@@ -325,7 +325,9 @@ module AnnotationDiff
   end
 
   # After a deletion, walk the ancestor chain back up and drop containers that
-  # became empty, so a reverted `+` restores the exact prior state.
+  # became empty, so a reverted `+` restores an equivalent state: an empty
+  # container that existed before the `+` is pruned, and keyed items are
+  # re-inserted in ascending key order.
   def prune_empty_containers(chain)
     chain.reverse_each do |parent, segment, child|
       if keyed?(segment)

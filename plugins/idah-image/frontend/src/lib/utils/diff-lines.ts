@@ -233,7 +233,7 @@ export function diffLines(
   return lines;
 }
 
-/** First `[frame=N]` in a row's paths, for seeking the video. */
+/** First `[frame=N]` key in a row's paths. */
 export function firstFrame(changes: ChangeEntry[]): number | null {
   for (const [, path] of changes) {
     for (const s of parsePath(path)) {

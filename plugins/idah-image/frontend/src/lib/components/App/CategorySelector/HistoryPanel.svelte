@@ -112,7 +112,6 @@
       centerOnShape(ann.shape_args as IImageAnnotationShape, ann.shape_type);
       return;
     }
-    // Deleted annotation: center on its last known shape (the tombstone).
     if (shape) centerOnShape(shape, shapeType);
   }
 </script>

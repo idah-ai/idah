@@ -2,9 +2,9 @@
 
 module AnnotationDiff
   # Reads which arrays inside `shape_args` are keyed, and by what, from the
-  # plugin manifests (each shape and tagging entry may declare an `args` Hash;
-  # only `type: "array"` entries with a non-empty String `x-identity-key` are
-  # read). A shape type is `"<modality id>:<shape name>"`.
+  # plugin manifests (only `type: "array"` entries with a non-empty String
+  # `x-identity-key` are read — see PluginSystem::Manifest). A shape type is
+  # `"<modality id>:<shape name>"`.
   #
   # `for` reads the loaded plugins live on every call — a few plugins with a
   # few shapes is cheap, and reading live keeps the result right if a plugin is
@@ -64,9 +64,6 @@ module AnnotationDiff
 
     def identity_keys_for(modality_id, shape_name, args)
       args.each_with_object({}) do |(key, entry), out|
-        # The parsed manifest's `args` is an open Hash: its own top-level keys
-        # are symbols, but the nested entries keep the manifest's String keys
-        # ({"type" => ..., "x-identity-key" => ...}).
         entry = entry.to_h if entry.respond_to?(:to_h)
         entry = entry.transform_keys(&:to_s) if entry.is_a?(Hash)
         identity_key = entry["x-identity-key"] if entry.is_a?(Hash)

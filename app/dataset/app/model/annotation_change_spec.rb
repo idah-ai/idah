@@ -69,7 +69,6 @@ RSpec.describe AnnotationChange::Repository, database: true do
 
   describe "scoped visibility" do
     it "hides all history for a context that cannot read annotations" do
-      # A context with no rights for dataset:annotations.read.
       nobody = described_class.new(Verse::Auth::Context.new([]))
 
       expect { nobody.scoped(:read).first }.to raise_error(Verse::Error::Unauthorized)

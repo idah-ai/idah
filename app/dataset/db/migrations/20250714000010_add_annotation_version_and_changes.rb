@@ -4,9 +4,8 @@
 #
 # `annotation_changes` has no foreign keys by design: history outlives the
 # annotation row (purging an entry cascades to its annotations but not to its
-# history), and it keeps `account_id` after an account is removed. A retention
-# and anonymization policy for those rows is an open question (see the
-# annotation-change-history PR description).
+# history), and it keeps `account_id` after an account is removed. Retention
+# and anonymization of these rows is not decided yet.
 Sequel.migration do
   up do
     # A constant default is a metadata-only change in Postgres, so this is safe

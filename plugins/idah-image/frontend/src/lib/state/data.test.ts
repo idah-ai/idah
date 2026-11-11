@@ -361,8 +361,6 @@ describe("createAnnotationStore", () => {
 
     expect(driver.restore).toHaveBeenCalledWith("ann-1");
     expect(result).toEqual(snapshot);
-    // The snapshot is present locally; the backend restore is enqueued and a
-    // failure surfaces via onSyncError, so the local record stays.
     expect(store.items.find((i) => i.id === "ann-1")).toEqual(snapshot);
   });
 });
@@ -415,9 +413,6 @@ describe("deleted-annotation map", () => {
     await store.delete("ann-1");
     expect(getDeletedAnnotation("ann-1")).toEqual(ann);
 
-    // The backend restore rejects, but the local record stays restored: no
-    // tombstone rollback, the failure surfaces via onSyncError like every
-    // other write.
     await expect(store.restore(ann as any)).rejects.toThrow("offline");
     expect(getDeletedAnnotation("ann-1")).toBeUndefined();
     expect(store.items.find((i) => i.id === "ann-1")).toEqual(ann);
@@ -435,7 +430,6 @@ describe("deleted-annotation map", () => {
     store.upsert(ann as any);
 
     await expect(store.delete("ann-1")).rejects.toThrow("offline");
-    // The tombstone stays; the backend failure is surfaced via onSyncError.
     expect(getDeletedAnnotation("ann-1")).toEqual(ann);
   });
 });

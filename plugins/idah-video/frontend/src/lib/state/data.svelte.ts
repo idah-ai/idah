@@ -230,8 +230,6 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
       const item = store.items.find((i) => i.id === id);
       // Optimistic: remove locally first + deselect if it was selected. Record
       // the tombstone so note markers and the History panel keep showing it.
-      // A backend failure surfaces via onSyncError (blocking Retry/Reset dialog)
-      // and the local tombstone stays, so we do not roll the map back here.
       syncSelectionOnDelete(id);
       store.remove(id);
       if (item) setDeletedAnnotation(item);
@@ -241,9 +239,8 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
     async restore(record: AnnotationItem): Promise<AnnotationItem> {
       // Local-first: forget the tombstone and insert the snapshot immediately so
       // the annotation reappears (the pre-delete snapshot carries everything
-      // needed to redisplay it). Like every other write, the backend restore is
-      // enqueued by the driver and a failure surfaces via onSyncError; the local
-      // record stays. Returns the snapshot so callers keep a usable record.
+      // needed to redisplay it). The backend restore is enqueued like every
+      // other write; see the IAnnotationsDriverV2.restore contract.
       removeDeletedAnnotation(record.id);
       originalUpsert(record);
       await driver.restore(record.id);
@@ -542,9 +539,8 @@ let _unsubNotes: (() => void) | null = null;
 // ── Deleted-annotation map ────────────────────────────────────────────────
 // In-memory lookup from annotation id to its last known record (shape,
 // category, group). Loaded from the local cache at plugin start and updated
-// only when this tab deletes or restores an annotation. Nothing else updates
-// it: deletions by other users appear after a reload, like every other change.
-// History rows are never used for it.
+// only when this tab deletes or restores an annotation. Deletions by other
+// users appear after a reload, like every other change.
 let _deletedAnnotations = $state<Map<string, AnnotationItem>>(new Map());
 
 /** Load the entry's soft-deleted annotations (tombstones) from the local cache. */
@@ -628,8 +624,7 @@ export function initDataStores(): void {
   });
 
   // Load the entry's tombstones so note markers and the History panel can keep
-  // showing soft-deleted annotations. Deletions by other users appear after a
-  // reload, like every other change.
+  // showing soft-deleted annotations.
   void loadDeletedAnnotations();
 
   // onFocusNote is registered in NoteMarkers.svelte onMount

@@ -192,8 +192,7 @@
           selection.selectAnnotation(ann);
           driver.command.call("idah-image:selection.center");
         } else if (tomb) {
-          // Deleted annotation: open the note without selecting anything. There
-          // is no seek in the image plugin.
+          // Deleted annotation: open the note without selecting anything.
         } else {
           // Annotations not loaded yet — defer until they are
           const stop = $effect.root(() => {

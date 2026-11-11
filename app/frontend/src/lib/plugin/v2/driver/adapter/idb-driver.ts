@@ -105,11 +105,11 @@ const openIdb = (pluginId: string): Promise<IDBDatabase> => {
           os.createIndex("lastVisitedAt", "lastVisitedAt");
         }
       }
-      // Version 3: tombstones are now kept in the cache (soft-deleted
-      // annotations stay visible to the History panel and note markers), but
-      // older caches already threw tombstones away. Clear both stores through
-      // the upgrade transaction and reset lastUpdatedAt so the sync loop
-      // performs a full resync and re-downloads the deleted records.
+      // Version 3 keeps tombstones in the cache (soft-deleted annotations stay
+      // visible to the History panel and note markers), but older caches threw
+      // them away. Clear both stores through the upgrade transaction and reset
+      // lastUpdatedAt so the sync loop performs a full resync and re-downloads
+      // the deleted records.
       if (e.oldVersion < 3) {
         clearStoresThroughUpgrade(db);
       }
@@ -166,9 +166,6 @@ const idbFetch = <T extends { id: string }>(
       const rec = c.value;
       const isTombstone = !!rec.deleted_at;
 
-      // The `deleted` filter is virtual: it selects on the tombstone state
-      // rather than a stored field. "true" returns only tombstones, "all"
-      // returns everything, and anything else (or no filter) hides tombstones.
       const deletedMode = filter?.deleted;
       if (deletedMode === "true" && !isTombstone) {
         c.continue();
@@ -381,9 +378,8 @@ export const IdbBackedAnnotationsDriverAdapter = <
   let visitMarked = false;
 
   // Run the initial sync loop exactly once, sharing the same promise across
-  // concurrent fetch() calls so the backend is not listed twice (e.g. when
-  // initDataStores calls preloadRange and loadDeletedAnnotations together). On
-  // failure the promise is cleared so a later fetch() can retry.
+  // concurrent fetch() calls so the backend is not listed twice when they
+  // overlap. On failure the promise is cleared so a later fetch() can retry.
   const syncOnce = async (db: IDBDatabase) => {
     if (!syncPromise) {
       syncPromise = (async () => {
@@ -394,10 +390,10 @@ export const IdbBackedAnnotationsDriverAdapter = <
         while (hasMore) {
           const response = await backend.list({
             filters: { entry_id: entryId, updated_at__gt: lastUpdated.toISOString() },
-            // verse-sequel applies only the last sort key (`prepare_ordering`
-            // calls `.order` once per key, each replacing the previous one), so
-            // this listing is ordered by `id` alone. That is still a stable
-            // order for offset paging.
+            // verse-sequel applies only the last sort key (see
+            // AnnotationChange::Service::DEFAULT_SORT), so this listing is
+            // ordered by `id` alone. That is still a stable order for offset
+            // paging.
             sort: ["updated_at", "id"],
             pagination: {
               page,
@@ -503,9 +499,8 @@ export const IdbBackedAnnotationsDriverAdapter = <
     async restore(id: string): Promise<void> {
       const db = await getDb();
       // Local-first: clear the tombstone immediately so undo does not hang
-      // offline. Like every other write, the backend restore is enqueued and
-      // any failure surfaces via onSyncError with the local record kept (the
-      // same pattern as create/update/delete).
+      // offline. The backend restore is enqueued like every other write; see
+      // the IAnnotationsDriverV2.restore contract.
       const existing = await idbGet<IAnnotationRecord<Shape, Annotation>>(db, entryId, id);
       if (existing) {
         await idbUpsertBatch(db, entryId, [{ ...existing, deleted_at: null, deleted_by_id: null }]);

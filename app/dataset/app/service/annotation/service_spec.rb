@@ -151,7 +151,6 @@ RSpec.describe Annotation::Service, database: true do
         end
 
         it "returns the existing annotation when a duplicate create matches the stored row" do
-          # First create persists the row; the re-send hits the duplicate key.
           in_savepoint { subject.create(build_record) }
           duplicate = in_savepoint { subject.create(build_record) }
 
@@ -338,8 +337,8 @@ RSpec.describe Annotation::Service, database: true do
       it "drops a shape key that already sits in the column on its next update" do
         annotation_id = repo.create(attributes)
 
-        # Simulate a tile key that leaked into the column through the old RPC
-        # update path, where reads showed the annotation_shape value.
+        # A tile key that leaked into the column through the old RPC update
+        # path, where reads showed the annotation_shape value.
         subject.write_shape(annotation_id, "tile-0x0", { rle: "OLD" })
         leaked_args = attributes[:shape_args].merge("tile-0x0" => { "rle" => "OLD" })
         subject.annotations.client do |db|
@@ -1083,9 +1082,9 @@ RSpec.describe Annotation::Service, database: true do
     # ─── Change history (annotation_changes) ────────────────────────────
 
     describe "change history" do
-      # Reads go through AnnotationChange::Repository, whose `changes` encoder
-      # decodes the jsonb column into plain values (symbol-keyed hashes), so
-      # assertions can compare against plain Ruby values.
+      # The `changes` encoder decodes the jsonb column into plain values
+      # (symbol-keyed hashes), so assertions can compare against plain Ruby
+      # values.
       let(:change_repo) { AnnotationChange::Repository.new(Verse::Auth::Context[:system]) }
 
       def history_rows(annotation_id)
@@ -1154,17 +1153,14 @@ RSpec.describe Annotation::Service, database: true do
       end
 
       it "version is never client-settable" do
-        # Repository create with version: 7 stores 1.
         id = subject.annotations.create(attributes.merge(version: 7))
         expect(subject.annotations.client { |db| db[:annotations].where(id:).get(:version) }).to eq(1)
 
-        # JSON:API update with a version attribute leaves it as the repository sets it.
         subject.update(
           deserialize(data: { type: "annotations", id: annotation_id, attributes: { version: 99, category: "dog" } })
         )
         expect(subject.annotations.client { |db| db[:annotations].where(id: annotation_id).get(:version) }).to eq(2)
 
-        # RPC update with a version param leaves it as the repository sets it.
         subject.update_attr(annotation_id, { version: 99, category: "cat" })
         expect(subject.annotations.client { |db| db[:annotations].where(id: annotation_id).get(:version) }).to eq(3)
       end
@@ -1361,8 +1357,6 @@ RSpec.describe Annotation::Service, database: true do
             deserialize(data: { type: "annotations", id: annotation_id, attributes: { category: "cat3" } })
           )
 
-          # `let!` created the annotation before the stub, so only the four
-          # writes above are captured: updated + deleted + restored + updated.
           expect(captured.size).to eq(4)
           captured.each do |payload|
             expect { payload.to_msgpack }.not_to raise_error
@@ -1376,10 +1370,6 @@ RSpec.describe Annotation::Service, database: true do
 
           allow_any_instance_of(Annotation::Repository).to receive(:record_change!).and_raise("boom")
 
-          # The spec harness wraps each example in an outer transaction without
-          # auto_savepoint, so the service's transactions would join it and a
-          # caught exception would not roll back. A real savepoint mirrors
-          # production, where the service's transaction is a real transaction.
           expect {
             subject.annotations.client do |db|
               db.transaction(savepoint: true, auto_savepoint: true) do
@@ -1407,7 +1397,6 @@ RSpec.describe Annotation::Service, database: true do
           rows = history_rows(annotation_id)
           expect(rows.map(&:version)).to eq([1, 2, 3, 4, 5])
 
-          # Revert from the current state (version 5) back to the created state.
           # The created row's `+` entries describe what v1 added; reverting it
           # would remove the fields, so only rows 2..5 are reverted.
           current = {

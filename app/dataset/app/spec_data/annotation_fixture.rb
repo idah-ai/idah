@@ -30,7 +30,6 @@ module AnnotationFixture
     ]
   }.freeze
 
-  # Moving keyframe 57: same as VIDEO_SHAPE_ARGS with new points for frame 57.
   VIDEO_SHAPE_ARGS_MOVED_FRAME_57 = {
     "end" => 119,
     "range" => [1, 1],

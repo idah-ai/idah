@@ -40,9 +40,6 @@ RSpec.describe AnnotationDiff do
     end
 
     it "compares only the keys present in the new hash (partial update)" do
-      # A caller that wants an untouched field ignored passes old and new
-      # hashes sliced to the keys it writes (the repository's `update` does
-      # exactly that).
       expect(AnnotationDiff.call({ b: 2 }, { b: 5 })).to eq([["~", "b", 2, 5]])
 
       # An old-only key in the input, present in old but absent in new, is
@@ -287,8 +284,6 @@ RSpec.describe AnnotationDiff do
       end
 
       it "re-inserts a removed keyed item in ascending key order" do
-        # Reverting a `-` (removal) re-adds the item: from `base` (which no
-        # longer has frame 57) back to `added`.
         changes = [["-", "shape_args.frames[frame=57]", { "frame" => 57, "points" => [[2, 2]] }, nil]]
         expect(AnnotationDiff.revert(base, changes)).to eq(AnnotationDiff.normalize(added))
       end

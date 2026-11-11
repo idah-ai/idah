@@ -222,8 +222,6 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
   }
 
   async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
-    // One write_shapes call per up-to-1000-entry chunk (same batching as
-    // createBackendCrudDriver): a stroke becomes one server-side change.
     for (let i = 0; i < entries.length; i += ENTRIES_PER_WRITE) {
       const chunk = entries.slice(i, i + ENTRIES_PER_WRITE);
       await this.rpc.call({

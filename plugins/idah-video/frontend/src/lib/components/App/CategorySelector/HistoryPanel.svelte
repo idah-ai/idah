@@ -165,9 +165,7 @@
       centerOnShape(ann.shape_args as IVideoAnnotationShape, ann.shape_type, frame);
       return;
     }
-    // Deleted annotation: center on its last known shape (the tombstone). This
-    // is the shape we can still associate with it, and it may coincide with a
-    // merged group.
+    // Deleted annotation: center on its last known shape (the tombstone).
     if (shapeType && shape) {
       viewport.video.currentFrame.value = frame;
       centerOnShape(shape, shapeType, frame);

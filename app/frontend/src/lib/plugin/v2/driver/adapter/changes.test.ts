@@ -31,7 +31,6 @@ function makeRecord(id = "change-1", overrides: Partial<Record<string, unknown>>
 
 describe("parseChangedAt", () => {
   it("parses the backend's second-precision format", () => {
-    // "2026-10-30 05:14:55 +0000" is UTC.
     expect(parseChangedAt("2026-10-30 05:14:55 +0000")).toBe(Date.UTC(2026, 9, 30, 5, 14, 55));
   });
 
@@ -51,8 +50,6 @@ describe("createChangesAdapter", () => {
     vi.mocked(annotationChangesBackendDataSource.list).mockClear();
   });
 
-  // `changes()` makes a single list call that returns both the page and the
-  // count in the response meta, plus a `more` flag when rows exist past it.
   function mockList(pageData: unknown[], total: number, more?: boolean) {
     vi.mocked(annotationChangesBackendDataSource.list).mockResolvedValue({
       data: pageData as never,

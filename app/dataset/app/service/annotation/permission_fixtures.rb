@@ -13,7 +13,6 @@ RSpec.shared_context "annotation permission fixtures" do
   let(:entry_repo) { Entry::Repository.new(system_context) }
   let(:annotation_repo) { Annotation::Repository.new(system_context) }
 
-  # Projects
   let(:first_project_id) {
     project_repo.create(name: "Project 1", created_by_email: "system@example.com", organization_id: 1)
   }
@@ -24,13 +23,11 @@ RSpec.shared_context "annotation permission fixtures" do
     project_repo.create(name: "Project 3", created_by_email: "system@example.com", organization_id: 1)
   }
 
-  # Accounts IDs
   let(:project_owner_account_id) { 3 }
   let(:annotator_account_id) { 4 }
   let(:reviewer_account_id) { 5 }
   let(:another_annotator_account_id) { 6 }
 
-  # Project Members
   let(:project_owner_member_id) {
     project_member_repo.create(
       project_id: first_project_id,
@@ -68,7 +65,6 @@ RSpec.shared_context "annotation permission fixtures" do
     )
   }
 
-  # Datasets
   let(:first_dataset_id) {
     dataset_repo.create(
       name: "Dataset 1",
@@ -97,7 +93,6 @@ RSpec.shared_context "annotation permission fixtures" do
     )
   }
 
-  # Entries
   let(:first_entry_id) {
     entry_repo.create(
       project_id: first_project_id,
@@ -132,7 +127,6 @@ RSpec.shared_context "annotation permission fixtures" do
     )
   }
 
-  # Annotations
   let(:first_annotation_id) {
     annotation_repo.create(
       project_id: first_project_id,

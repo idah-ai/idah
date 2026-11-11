@@ -42,7 +42,6 @@ describe("history store", () => {
       version: 2,
       changed_at: Date.UTC(2026, 9, 30, 5, 14, 55),
     };
-    // First open fetches page 1 unanchored in a single call.
     mock.annotations.changes.mockResolvedValue({ items: [change], total: 1 });
 
     history.toggle();
@@ -66,7 +65,6 @@ describe("history store", () => {
     history.toggle();
     await vi.waitFor(() => expect(history.total).toBe(200));
 
-    // Nothing selected: whole entry.
     expect(history.scope.kind).toBe("entry");
     expect(history.scopeAnnotationIds).toEqual([]);
 
@@ -74,7 +72,6 @@ describe("history store", () => {
     await vi.waitFor(() => expect(history.scope.kind).toBe("annotations"));
     expect(history.scopeAnnotationIds).toEqual(["a-1"]);
 
-    // Deselecting returns to the whole entry.
     selection.deselect();
     await vi.waitFor(() => expect(history.scope.kind).toBe("entry"));
   });
@@ -84,7 +81,6 @@ describe("history store", () => {
     history.toggle();
     await vi.waitFor(() => expect(history.total).toBe(200));
 
-    // Select an annotation, then reload: the query must filter to it.
     selection.selectAnnotation({ id: "a-1" } as never);
     await vi.waitFor(() => expect(history.scope.kind).toBe("annotations"));
     mock.annotations.changes.mockClear();
@@ -95,14 +91,12 @@ describe("history store", () => {
   });
 
   it("refresh keeps the page, clamped", async () => {
-    // Anchor call returns an empty list (no changes), then the page call.
     mock.annotations.changes.mockResolvedValue({ items: [], total: 1000 });
     history.toggle();
     await vi.waitFor(() => expect(history.total).toBe(1000));
     history.goToPage(5);
     expect(history.page).toBe(5);
 
-    // refresh() re-anchors (first call) then loads the page (second call).
     mock.annotations.changes
       .mockResolvedValueOnce({ items: [], total: 100 })
       .mockResolvedValueOnce({ items: [], total: 100 });
@@ -120,21 +114,18 @@ describe("history store", () => {
       version: 2,
       changed_at: Date.now(),
     };
-    // First call loads the page (headers only); second fetches the diff.
     mock.annotations.changes
       .mockResolvedValueOnce({ items: [change], total: 1 })
       .mockResolvedValueOnce({ items: [{ ...change, changes: [["~", "category", "cat", "dog"]] }], total: 1 });
     history.toggle();
     await vi.waitFor(() => expect(history.items.length).toBe(1));
 
-    // The page load does not request the diff payload.
     expect(mock.annotations.changes).toHaveBeenNthCalledWith(
       1,
       expect.not.objectContaining({ fields: expect.arrayContaining(["changes"]) }),
     );
     expect(history.getDiff("c-1")).toBeUndefined();
 
-    // Opening the card fetches just that change's diff.
     history.toggleCard("c-1");
     await vi.waitFor(() => expect(history.getDiff("c-1")).toEqual([["~", "category", "cat", "dog"]]));
     expect(mock.annotations.changes).toHaveBeenNthCalledWith(
@@ -162,7 +153,6 @@ describe("history store", () => {
       version: 3,
       changed_at: Date.now(),
     };
-    // Page load (x-1), then diff fetch for x-1.
     mock.annotations.changes
       .mockResolvedValueOnce({ items: [c1], total: 100 })
       .mockResolvedValueOnce({ items: [{ ...c1, changes: [["~", "category", "cat", "dog"]] }], total: 100 });
@@ -250,21 +240,18 @@ describe("history store", () => {
     expect(history.pageCount).toBe(20);
     expect(history.atStartOfHistory).toBe(false);
 
-    // Oldest → page 20 (offset 950): reports 1950 with more.
     history.goToOldest();
     await vi.waitFor(() => expect(history.page).toBe(20));
     await vi.waitFor(() => expect(history.total).toBe(1950));
     expect(history.hasMore).toBe(true);
     expect(history.pageCount).toBe(39);
 
-    // Oldest → page 39 (offset 1900): reports exactly 2600, so the count is exact.
     history.goToOldest();
     await vi.waitFor(() => expect(history.page).toBe(39));
     await vi.waitFor(() => expect(history.total).toBe(2600));
     expect(history.hasMore).toBe(false);
     expect(history.pageCount).toBe(52);
 
-    // Oldest → page 52: start of history.
     history.goToOldest();
     await vi.waitFor(() => expect(history.page).toBe(52));
     expect(history.atStartOfHistory).toBe(true);

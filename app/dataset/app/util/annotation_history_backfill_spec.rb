@@ -13,8 +13,8 @@ RSpec.describe AnnotationHistoryBackfill, database: true do
 
   subject { described_class.new }
 
-  # Insert an annotation with a raw insert and no history row, as a pre-#682
-  # row. `version` defaults to 1.
+  # Insert an annotation with a raw insert and no history row, as a
+  # pre-migration row. `version` defaults to 1.
   def insert_annotation(overrides = {})
     id = UUIDv7.generate
     annotation_repo.client do |db|

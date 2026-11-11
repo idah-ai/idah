@@ -23,7 +23,7 @@ export type Point = [number, number];
  * - line: the bounds of its 2 points;
  * - ellipse: `points[0]` ± `points[1]`;
  * - circle: `points[0]` ± `radius × min(width, height)`, converted per axis;
- * - a rotated shape: as today (AABB corners rotated around their centroid);
+ * - a rotated shape: AABB corners rotated around their centroid;
  * - a mask with no points: null (no viewport change).
  */
 export function shapeBoundsPoints(

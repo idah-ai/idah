@@ -9,8 +9,8 @@
 # does it: the current state (with annotation_shape tiles merged) with every
 # later row reverted. `changes` holds one `+` entry per non-nil tracked field,
 # exactly as a `created` row does. `changed_at` is when the task runs and both
-# `account_id` and `account_email` are null, so the card shows "system": for an
-# annotation edited before #682 the state is not one person's work.
+# `account_id` and `account_email` are null, so the card shows "system": the
+# state predates change tracking and is not one person's work.
 #
 # The rows to revert are capped at the version that was read (`version <=
 # current.version`), so a write that commits between the state read and this
@@ -55,13 +55,10 @@ class AnnotationHistoryBackfill
   def insert_baseline_row(annotation_id)
     current = @annotation_service.show(annotation_id)
 
-    # Page through every later row up to the version we read (a mask-heavy
-    # annotation can have more than 10,000 of them) instead of capping at a
-    # single page. `chunked_index` returns an Enumerator; `lazy.flat_map` chains
-    # it into a lazy stream of change entries that `AnnotationDiff.revert` (it
-    # calls `each`) consumes without materializing the whole history into
-    # memory. The `version__lte` cap keeps the state and the reverted rows
-    # consistent if a write commits between the state read and this read.
+    # Page through every later row up to the version we read, as in
+    # `AnnotationChange::Service#rebuild` (see its comment on lazy paging). The
+    # `version__lte` cap keeps the state and the reverted rows consistent if a
+    # write commits between the state read and this read.
     rows = @change_repo.chunked_index(
       { annotation_id:, version__gt: 1, version__lte: current.version },
       sort: ["-version"]

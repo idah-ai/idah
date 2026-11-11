@@ -38,8 +38,8 @@ module AnnotationChange
               "version #{version} is above the current version #{current.version}"
       end
 
-      # Page through every later row (a mask-heavy annotation can have more
-      # than 10,000 of them) instead of capping at a single page. `chunked_index`
+      # Page through every later row (history can span several pages; the page
+      # size is 1,000) instead of capping at a single page. `chunked_index`
       # returns an Enumerator; `lazy.flat_map` chains it into a lazy stream of
       # change entries that `AnnotationDiff.revert` (it calls `each`) consumes
       # without materializing the whole history into memory.

@@ -89,7 +89,7 @@ export class InMemoryStore<T extends { id: string }> {
       result = result.filter((rec) => {
         const record = rec as Record<string, unknown>;
         for (const [field, filterValue] of Object.entries(filter)) {
-          if (field === "deleted") continue; // handled above
+          if (field === "deleted") continue;
           // Resolve value — dotted paths then virtual fields
           let fieldValue: unknown = this.resolvePath(record, field);
           if (fieldValue === undefined && this.virtualFields.has(field)) {

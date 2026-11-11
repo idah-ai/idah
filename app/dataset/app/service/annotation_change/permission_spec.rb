@@ -126,7 +126,6 @@ RSpec.describe AnnotationChange::Service, database: true do
   end
 
   context "as Another Annotator" do
-    # A second annotator account (6) in third_project_id.
     before do
       another_annotator_member_id # assign account 6 to third_project_id
     end
@@ -155,8 +154,6 @@ RSpec.describe AnnotationChange::Service, database: true do
     it "is rejected exactly as reading annotations is rejected" do
       all_annotation_ids
 
-      # Annotation::Service#index raises Unauthorized for anonymous callers
-      # (no role); history follows the same rule.
       expect { Annotation::Service.new(current_auth_context).index({}) }
         .to raise_error(Verse::Error::Unauthorized)
       expect { subject.index({}) }

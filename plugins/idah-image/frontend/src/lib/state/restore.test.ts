@@ -75,11 +75,9 @@ describe("annotation store restore()", () => {
     const record = makeAnn("ann-001");
     const result = await store.restore(record);
 
-    // The snapshot is present locally.
     expect(store.items.some((i) => i.id === "ann-001")).toBe(true);
     expect(driver.restore).toHaveBeenCalledWith("ann-001");
     expect(result).toEqual(record);
-    // The insert marks occupancy dirty.
     expect(mockMarkOccupancyDirty).toHaveBeenCalled();
   });
 
@@ -89,8 +87,6 @@ describe("annotation store restore()", () => {
     });
     const store = createAnnotationStore(driver);
 
-    // The snapshot is inserted locally, and the rejection propagates but does
-    // not roll the local record back — the failure surfaces via onSyncError.
     await expect(store.restore(makeAnn("ann-001"))).rejects.toThrow("check_entry_not_completed!");
     expect(store.items.some((i) => i.id === "ann-001")).toBe(true);
   });
