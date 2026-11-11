@@ -11,7 +11,6 @@
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
-  import { EntryRecord } from "@/data/model/dataset/entries/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
@@ -83,12 +82,10 @@
           "delivery_date",
         ],
         [ProjectRecord.type]: ["name"],
-        [EntryRecord.type]: ["status"],
       },
       filters: {
         project_id: projectId,
       },
-      included: ["entries"],
       sort: ["-created_at"],
     }}
     selectable
