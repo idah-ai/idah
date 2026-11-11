@@ -1,11 +1,9 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { authStatus } from "@/security/AuthContext";
-  import Dashboard from "@/components/app/projects/dashboard/Dashboard.svelte";
+
+  import ProjectDashboard from "@/components/app/projects/dashboard/ProjectDashboard.svelte";
+
+  const projectId = page.params.projectId as string;
 </script>
 
-{#key $authStatus.authContext}
-  {#key page.params.projectId}
-    <Dashboard projectId={page.params.projectId as string} />
-  {/key}
-{/key}
+<ProjectDashboard {projectId} />
