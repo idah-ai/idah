@@ -7,7 +7,10 @@ import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/d
 import { EntryRecord, entriesBackendDataSource } from "@/data/model/dataset/entries/record";
 import { datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 import { today } from "@/utils/date";
-import { PROJECT_DASHBOARD_DELIVERY_LABELS } from "@/components/app/projects/dashboard/projectDashboard.constants";
+import {
+  PROJECT_DASHBOARD_DELIVERY_LABELS,
+  PROJECT_DASHBOARD_WORKFLOW_GROUPS,
+} from "@/components/app/projects/dashboard/projectDashboard.constants";
 import type { Filters } from "@/data/filtering";
 import type { JsonApiMeta } from "@/data/model/types";
 
@@ -223,6 +226,9 @@ export class ProjectDashboardController {
     this.attentionBreakdown = null;
     this.attentionLoading = false;
     this.attentionError = "";
+    this.workflowCounts = null;
+    this.workflowLoading = false;
+    this.workflowError = "";
   }
 
   private loadMetrics(): void {
@@ -230,6 +236,7 @@ export class ProjectDashboardController {
     this.clearMetrics();
     void this.loadSummary();
     void this.loadAttention();
+    void this.loadWorkflowCounts();
   }
 
   async retrySummary(): Promise<void> {
@@ -302,6 +309,72 @@ export class ProjectDashboardController {
     if (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0) throw new Error("Count unavailable.");
     if (meta?.more !== false) throw new Error("An exact count is unavailable for this scope.");
     return count;
+  }
+
+  // ==================== Entries by Status ====================
+
+  public workflowCounts: { reviewing: number; annotating: number } | null = $state.raw(null);
+  public workflowLoading = $state(false);
+  public workflowError = $state("");
+  private workflowGeneration = 0;
+
+  public get workflowDistribution(): {
+    total: number;
+    residual: number;
+    groups: { label: string; value: number; bgColor: string }[];
+  } | null {
+    const summary = this.summary;
+    const counts = this.workflowCounts;
+    if (!summary || !counts) return null;
+
+    const values = {
+      completed: summary.completed,
+      reviewing: counts.reviewing,
+      pendingReview: summary.review - counts.reviewing,
+      annotating: counts.annotating,
+      pendingAnnotation: summary.annotation - counts.annotating,
+    };
+    const residual = summary.total - summary.completed - summary.review - summary.annotation;
+    if (values.pendingReview < 0 || values.pendingAnnotation < 0 || residual < 0) return null;
+    return {
+      total: summary.total,
+      residual,
+      groups: PROJECT_DASHBOARD_WORKFLOW_GROUPS.map((group) => ({ ...group, value: values[group.key] })),
+    };
+  }
+
+  async retryWorkflowCounts(): Promise<void> {
+    if (this.disposed || this.denied || !this.scopeReady || this.workflowLoading) return;
+    await this.loadWorkflowCounts();
+  }
+
+  private async loadWorkflowCounts(): Promise<void> {
+    const scope = this.generation;
+    const request = ++this.workflowGeneration;
+    const ids = this.effectiveDatasetIds;
+    const current = (): boolean => this.isCurrent(scope) && request === this.workflowGeneration;
+    this.workflowCounts = null;
+    this.workflowLoading = true;
+    this.workflowError = "";
+    try {
+      const [reviewing, annotating] = await Promise.all([
+        this.countEntries(
+          ids,
+          { status__in: ["pending", "in_progress"], wf_step__in: ["review"], assigned: true },
+          current,
+        ),
+        this.countEntries(
+          ids,
+          { status__in: ["pending", "in_progress"], wf_step__in: ["annotate"], assigned: true },
+          current,
+        ),
+      ]);
+      if (current()) this.workflowCounts = { reviewing, annotating };
+    } catch (reason) {
+      if (current()) this.workflowError = reason instanceof Error ? reason.message : "Workflow counts unavailable.";
+    } finally {
+      if (current()) this.workflowLoading = false;
+    }
   }
 
   // ==================== Attention & Local Reporting Day ====================
