@@ -221,6 +221,33 @@ RSpec.describe Annotation::Repository, database: true do
         .with(hash_including(event: "updated")).exactly(0).times
     end
 
+    it "attaches the entry context to the deleted event" do
+      allow(Verse).to receive(:publish_resource_event).and_call_original
+
+      subject.soft_delete(annotation_id, deleted_by_email: "admin@example.com")
+
+      expect(Verse).to have_received(:publish_resource_event).with(
+        hash_including(
+          event: "deleted",
+          payload: hash_including(metadata: hash_including(entry_id:, dataset_id:))
+        )
+      ).once
+    end
+
+    it "attaches the entry context and category to the restored event" do
+      subject.soft_delete(annotation_id, deleted_by_email: "admin@example.com")
+      allow(Verse).to receive(:publish_resource_event).and_call_original
+
+      subject.restore(annotation_id)
+
+      expect(Verse).to have_received(:publish_resource_event).with(
+        hash_including(
+          event: "restored",
+          payload: hash_including(metadata: hash_including(entry_id:, dataset_id:, category: "cat"))
+        )
+      ).once
+    end
+
     it "soft_delete twice is a no-op on the second call: no event, unchanged state" do
       subject.soft_delete(annotation_id, deleted_by_email: "admin@example.com")
       state_after_first = subject.client { |db| db[:annotations].where(id: annotation_id).first }

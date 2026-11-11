@@ -181,6 +181,8 @@ module Annotation
         row = scoped(:delete).where(id:).for_update.first or raise Verse::Error::RecordNotFound, id
         next false if row[:deleted_at] # already deleted: no write, no history row, no event
 
+        # Context for the `deleted` event (entry-stats listener).
+        add_metadata(entry_id: row[:entry_id], dataset_id: row[:dataset_id])
         update(id, { deleted_at: Time.now.utc, deleted_by_email: }, scope: scoped(:delete), op: :deleted) or
           raise Verse::Error::RecordNotFound, id
       end
@@ -195,6 +197,9 @@ module Annotation
         row = scoped(:update).where(id:).for_update.first or raise Verse::Error::RecordNotFound, id
         next false if row[:deleted_at].nil? # live annotation: no write, no history row, no event
 
+        # Context for the `restored` event: the entry-stats listener needs the
+        # category, since a restored annotation counts again.
+        add_metadata(entry_id: row[:entry_id], dataset_id: row[:dataset_id], category: row[:category])
         update(id, { deleted_at: nil, deleted_by_email: nil }, scope: scoped(:update), op: :restored) or
           raise Verse::Error::RecordNotFound, id
       end
