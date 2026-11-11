@@ -1,5 +1,17 @@
 <script lang="ts">
-  import DatasetMetric from "$lib/components/app/projects/dashboard/metrics/_DatasetMetric.svelte";
+  import DatasetMetric from "@/components/app/projects/dashboard/metrics/_DatasetMetric.svelte";
+  import {
+    PROJECT_DASHBOARD_CONTROLLER_KEY,
+    getProjectDashboardController,
+  } from "@/components/app/projects/dashboard/project-dashboard-controller.svelte";
+
+  // Variables
+  const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
 </script>
 
-<DatasetMetric order={1} title="Total entries" value="1,240" description="across 8 datasets"></DatasetMetric>
+<DatasetMetric
+  order={1}
+  title="Total entries"
+  value={controller.totalEntries?.toLocaleString() ?? "—"}
+  description={controller.datasetCaption}
+/>

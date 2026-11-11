@@ -1,7 +1,15 @@
 import { getContext, setContext } from "svelte";
 import { SvelteSet } from "svelte/reactivity";
+import { addDays, differenceInCalendarDays, format, isSameDay, isValid, parseISO } from "date-fns";
+import { get, type Unsubscriber } from "svelte/store";
 
 import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+import { EntryRecord, entriesBackendDataSource } from "@/data/model/dataset/entries/record";
+import { datasetsStatuses } from "@/data/model/dataset/datasets/constants";
+import { today } from "@/utils/date";
+import { PROJECT_DASHBOARD_DELIVERY_LABELS } from "@/components/app/projects/dashboard/projectDashboard.constants";
+import type { Filters } from "@/data/filtering";
+import type { JsonApiMeta } from "@/data/model/types";
 
 export const PROJECT_DASHBOARD_CONTROLLER_KEY = Symbol("project-dashboard-controller");
 
@@ -16,23 +24,42 @@ export function getProjectDashboardController(key: symbol): ProjectDashboardCont
   return controller;
 }
 
+type DeliveryBreakdown = {
+  overdue: number;
+  dueToday: number;
+  dueTomorrow: number;
+  upcoming: { date: string; count: number } | null;
+};
+
 export class ProjectDashboardController {
   // ==================== Lifecycle ====================
 
   private started = false;
   private disposed = false;
+  private unsubscribeToday: Unsubscriber | undefined;
 
   constructor(public readonly projectId: string) {}
 
   async start(): Promise<void> {
     if (this.started || this.disposed) return;
     this.started = true;
+    this.unsubscribeToday = today.subscribe((day) => {
+      const changed = !isSameDay(day, this.reportingDay);
+      this.reportingDay = day;
+
+      if (changed && this.scopeReady && !this.denied) {
+        void this.loadAttention();
+      }
+    });
     await this.select([]);
   }
 
   dispose(): void {
     this.disposed = true;
     this.generation++;
+    this.clearMetrics();
+    this.unsubscribeToday?.();
+    this.unsubscribeToday = undefined;
   }
 
   // ==================== Shared Scope ====================
@@ -59,6 +86,7 @@ export class ProjectDashboardController {
       this.error = "Select up to 100 datasets.";
       return;
     }
+    this.clearMetrics();
     this.selectedDatasetIds = selected;
     this.focused = null;
     this.selectedDatasets = [];
@@ -69,6 +97,7 @@ export class ProjectDashboardController {
       this.loading = false;
       this.error = "";
       this.denied = false;
+      this.loadMetrics();
       return;
     }
     await this.loadSelectedDatasets();
@@ -81,19 +110,27 @@ export class ProjectDashboardController {
   }
 
   showAllDatasets(): void {
-    if (this.disposed || this.denied || this.loading) return;
+    if (this.disposed || this.denied || this.loading || !this.focused) return;
+    this.generation++;
     this.focused = null;
+    this.loadMetrics();
   }
 
   step(delta: -1 | 1): void {
     if (this.disposed || this.denied || this.loading || !this.scopeReady || !this.selectedDatasets.length) return;
     const records = this.selectedDatasets;
     if (!this.focused) {
+      this.generation++;
       this.focused = delta === 1 ? records[0] : records[records.length - 1];
+      this.loadMetrics();
       return;
     }
     const index = records.findIndex((record) => record.id === this.focused?.id);
-    this.focused = records[(index + delta + records.length) % records.length];
+    const next = records[(index + delta + records.length) % records.length];
+    if (next.id === this.focused.id) return;
+    this.generation++;
+    this.focused = next;
+    this.loadMetrics();
   }
 
   async retry(): Promise<void> {
@@ -101,12 +138,356 @@ export class ProjectDashboardController {
     await this.loadSelectedDatasets();
   }
 
+  // ==================== Summary & Metrics ====================
+
+  public summary: { total: number; completed: number; review: number; annotation: number } | null = $state.raw(null);
+  public summaryLoading = $state(false);
+  public summaryError = $state("");
+
+  private get datasetTotal(): number | null {
+    const records = this.focused
+      ? [this.focused]
+      : this.selectedDatasetIds.length > 0 && this.selectedDatasets.length === this.selectedDatasetIds.length
+        ? this.selectedDatasets
+        : null;
+    if (!records) return null;
+
+    let total = 0;
+    for (const record of records) {
+      if (!Number.isSafeInteger(record.entries_total_count) || record.entries_total_count < 0) return null;
+      total += record.entries_total_count;
+      if (!Number.isSafeInteger(total)) return null;
+    }
+    return total;
+  }
+
+  public get totalEntries(): number | null {
+    return this.scopeReady && !this.denied ? (this.summary?.total ?? this.datasetTotal) : null;
+  }
+
+  public get progress(): number | null {
+    return this.summary
+      ? this.summary.total
+        ? Math.round((this.summary.completed / this.summary.total) * 100)
+        : 0
+      : null;
+  }
+
+  public get openEntriesCount(): number | null {
+    return this.summary ? this.summary.total - this.summary.completed : null;
+  }
+
+  public get openEntriesDescription(): string {
+    if (this.summaryLoading) return "";
+    const summary = this.summary;
+    if (!summary) return "Workflow breakdown unavailable";
+    const parts = [
+      `${summary.review.toLocaleString()} in review`,
+      `${summary.annotation.toLocaleString()} in annotation`,
+    ];
+    const outsideWorkflow = summary.total - summary.completed - summary.review - summary.annotation;
+    if (outsideWorkflow) parts.push(`${outsideWorkflow.toLocaleString()} outside active workflow`);
+    return parts.join(" · ");
+  }
+
+  public get datasetCaption(): string {
+    if (this.focused) return "in this dataset";
+    const count = this.selectedDatasetIds.length;
+    return count ? `across ${count} selected dataset${count === 1 ? "" : "s"}` : "across all datasets";
+  }
+
+  public get focusedDeliveryDate(): Date | null {
+    return this.focused?.delivery_date ? parseISO(this.focused.delivery_date) : null;
+  }
+
+  public get focusedDeliveryLabel(): string | null {
+    if (!this.focused || !this.summary) return null;
+
+    const labels = PROJECT_DASHBOARD_DELIVERY_LABELS;
+    if (this.summary.total > 0 && this.summary.completed === this.summary.total) return labels.completed;
+
+    const date = this.focusedDeliveryDate;
+    if (!date) return labels.noDueDate;
+
+    const days = differenceInCalendarDays(date, this.reportingDay);
+    if (days < 0) return labels.overdue;
+    if (days === 0) return labels.dueToday;
+    if (days === 1) return labels.dueTomorrow;
+    return `Due in ${days} days`;
+  }
+
+  private clearMetrics(): void {
+    this.summary = null;
+    this.summaryLoading = false;
+    this.summaryError = "";
+    this.attentionBreakdown = null;
+    this.attentionLoading = false;
+    this.attentionError = "";
+  }
+
+  private loadMetrics(): void {
+    if (this.disposed || this.denied || !this.scopeReady) return;
+    this.clearMetrics();
+    void this.loadSummary();
+    void this.loadAttention();
+  }
+
+  async retrySummary(): Promise<void> {
+    if (this.disposed || this.denied || !this.scopeReady || this.summaryLoading) return;
+    await this.loadSummary();
+  }
+
+  private async loadSummary(): Promise<void> {
+    const scope = this.generation;
+    const ids = this.effectiveDatasetIds;
+    const datasetTotal = this.datasetTotal;
+    const current = (): boolean => this.isCurrent(scope);
+
+    this.summary = null;
+    this.summaryLoading = true;
+    this.summaryError = "";
+    try {
+      const results = await Promise.allSettled([
+        datasetTotal === null ? this.countEntries(ids, {}, current) : Promise.resolve(datasetTotal),
+        this.countEntries(ids, { status__in: ["completed"] }, current),
+        this.countEntries(ids, { status__in: ["pending", "in_progress"], wf_step__in: ["review"] }, current),
+        this.countEntries(ids, { status__in: ["pending", "in_progress"], wf_step__in: ["annotate"] }, current),
+      ]);
+      if (!current()) return;
+
+      const [initialTotal, completed, review, annotation] = results.map((result) => {
+        if (result.status === "rejected") throw result.reason;
+        return result.value;
+      });
+      let total = initialTotal;
+      const minimumTotal = completed + review + annotation;
+
+      if (datasetTotal !== null && minimumTotal > total) {
+        total = await this.countEntries(ids, {}, current);
+      }
+      if (!current()) return;
+      if (minimumTotal > total) {
+        throw new Error("Dashboard counts changed while loading. Please try again.");
+      }
+      this.summary = { total, completed, review, annotation };
+    } catch (reason) {
+      if (current()) this.summaryError = reason instanceof Error ? reason.message : "Dashboard counts unavailable.";
+    } finally {
+      if (current()) this.summaryLoading = false;
+    }
+  }
+
+  private async countEntries(ids: string[], filters: Filters, current: () => boolean): Promise<number> {
+    if (!current()) throw new Error("Dashboard request retired");
+    try {
+      const response = await entriesBackendDataSource.list({
+        filters: { ...filters, project_id: this.projectId, ...(ids.length ? { dataset_id: ids } : {}) },
+        fields: { [EntryRecord.type]: ["id"] },
+        sort: ["id"],
+        pagination: { page: 1, itemsPerPage: 1 },
+        count: true,
+        noCache: true,
+      });
+
+      if (!current()) throw new Error("Dashboard request retired");
+      return this.exactCount(response.meta);
+    } catch (reason) {
+      if (current()) this.handleAccessError(reason);
+      throw reason;
+    }
+  }
+
+  private exactCount(meta: JsonApiMeta | undefined): number {
+    const count = meta?.count;
+    if (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0) throw new Error("Count unavailable.");
+    if (meta?.more !== false) throw new Error("An exact count is unavailable for this scope.");
+    return count;
+  }
+
+  // ==================== Attention & Local Reporting Day ====================
+
+  public attentionBreakdown: DeliveryBreakdown | null = $state.raw(null);
+
+  public get attention(): number | null {
+    const breakdown = this.attentionBreakdown;
+    return breakdown
+      ? breakdown.overdue + breakdown.dueToday + breakdown.dueTomorrow + (breakdown.upcoming?.count ?? 0)
+      : null;
+  }
+
+  public get deliveryDescription(): string {
+    if (this.focused) {
+      const date = this.focused.formattedDeliveryDate;
+      return date ? `Delivery date: ${date}` : "Delivery date not set";
+    }
+    if (this.attentionLoading) return "";
+
+    const breakdown = this.attentionBreakdown;
+    if (!breakdown) return "Delivery breakdown unavailable for this scope";
+
+    const parts: string[] = [];
+    if (breakdown.overdue) parts.push(`${breakdown.overdue.toLocaleString()} overdue`);
+    if (breakdown.dueToday) parts.push(`${breakdown.dueToday.toLocaleString()} due today`);
+    if (breakdown.dueTomorrow) parts.push(`${breakdown.dueTomorrow.toLocaleString()} due tomorrow`);
+    if (breakdown.upcoming) {
+      const days = differenceInCalendarDays(parseISO(breakdown.upcoming.date), this.reportingDay);
+      parts.push(`${breakdown.upcoming.count.toLocaleString()} due in ${days} days`);
+    }
+    return parts.join(" · ") || "No overdue or upcoming delivery dates";
+  }
+  public attentionLoading = $state(false);
+  public attentionError = $state("");
+  public reportingDay: Date = $state.raw(get(today));
+  private attentionGeneration = 0;
+
+  async retryAttention(): Promise<void> {
+    if (this.disposed || this.denied || !this.scopeReady || this.attentionLoading || this.focused) return;
+    await this.loadAttention();
+  }
+
+  private async loadAttention(): Promise<void> {
+    if (this.disposed || this.denied || !this.scopeReady) return;
+
+    const scope = this.generation;
+    const request = ++this.attentionGeneration;
+    const day = this.reportingDay;
+    const current = (): boolean => this.isCurrent(scope) && request === this.attentionGeneration;
+    this.attentionBreakdown = null;
+    this.attentionError = "";
+    this.attentionLoading = true;
+    try {
+      if (this.focused) return;
+      if (this.selectedDatasetIds.length) {
+        if (this.selectedDatasets.length !== this.selectedDatasetIds.length)
+          throw new Error("Selected Dataset metadata is incomplete. Please reload the selection.");
+        const breakdown: DeliveryBreakdown = { overdue: 0, dueToday: 0, dueTomorrow: 0, upcoming: null };
+
+        for (const record of this.selectedDatasets) {
+          if (record.status === "completed" || !record.delivery_date) continue;
+
+          const date = parseISO(record.delivery_date);
+          if (!isValid(date)) throw new Error("Dataset delivery date is invalid.");
+
+          const days = differenceInCalendarDays(date, day);
+          if (days < 0) breakdown.overdue++;
+          else if (days === 0) breakdown.dueToday++;
+          else if (days === 1) breakdown.dueTomorrow++;
+          else if (!breakdown.upcoming || record.delivery_date < breakdown.upcoming.date)
+            breakdown.upcoming = { date: record.delivery_date, count: 1 };
+          else if (record.delivery_date === breakdown.upcoming.date) breakdown.upcoming.count++;
+        }
+        this.attentionBreakdown = breakdown;
+        return;
+      }
+      const todayDate = format(day, "yyyy-MM-dd");
+      const tomorrowDate = format(addDays(day, 1), "yyyy-MM-dd");
+      const [overdue, dueToday, dueTomorrow, upcoming] = await Promise.all([
+        this.countDatasets({ delivery_date__lte: format(addDays(day, -1), "yyyy-MM-dd") }, current),
+        this.countDatasets({ delivery_date__gte: todayDate, delivery_date__lte: todayDate }, current),
+        this.countDatasets({ delivery_date__gte: tomorrowDate, delivery_date__lte: tomorrowDate }, current),
+        this.upcomingDelivery(day, current),
+      ]);
+
+      if (!current()) return;
+      this.attentionBreakdown = { overdue, dueToday, dueTomorrow, upcoming };
+    } catch (reason) {
+      if (current())
+        this.attentionError =
+          reason instanceof Error ? reason.message : "Delivery breakdown unavailable for this scope.";
+    } finally {
+      if (current()) this.attentionLoading = false;
+    }
+  }
+
+  private attentionFilters(filters: Filters): Filters {
+    return {
+      ...filters,
+      project_id: this.projectId,
+      status__in: datasetsStatuses.filter((status) => status.value !== "completed").map((status) => status.value),
+    };
+  }
+
+  private async countDatasets(filters: Filters, current: () => boolean): Promise<number> {
+    if (!current()) throw new Error("Dashboard request retired");
+    try {
+      const response = await datasetsBackendDataSource.list({
+        filters: this.attentionFilters(filters),
+        fields: { [DatasetRecord.type]: ["id"] },
+        sort: ["id"],
+        pagination: { page: 1, itemsPerPage: 1 },
+        count: true,
+        noCache: true,
+      });
+      if (!current()) throw new Error("Dashboard request retired");
+      return this.exactCount(response.meta);
+    } catch (reason) {
+      if (current()) this.handleAccessError(reason);
+      throw reason;
+    }
+  }
+
+  private async upcomingDelivery(day: Date, current: () => boolean): Promise<DeliveryBreakdown["upcoming"]> {
+    if (!current()) throw new Error("Dashboard request retired");
+    const from = format(addDays(day, 2), "yyyy-MM-dd");
+    try {
+      const nearest = await datasetsBackendDataSource.list({
+        filters: this.attentionFilters({ delivery_date__gte: from }),
+        fields: { [DatasetRecord.type]: ["id", "delivery_date"] },
+        sort: ["delivery_date"],
+        pagination: { page: 1, itemsPerPage: 1 },
+        count: false,
+        noCache: true,
+      });
+
+      if (!current()) throw new Error("Dashboard request retired");
+      if (!nearest.data.length) return null;
+      const date = nearest.data[0].delivery_date;
+      if (!date || !isValid(parseISO(date))) throw new Error("Upcoming delivery date is invalid. Please retry.");
+      const response = await datasetsBackendDataSource.list({
+        // Recheck the earliest date while counting: if a new earlier date appeared,
+        // reject the result instead of presenting this range count as a single-date count.
+        filters: this.attentionFilters({ delivery_date__gte: from, delivery_date__lte: date }),
+        fields: { [DatasetRecord.type]: ["id", "delivery_date"] },
+        sort: ["delivery_date"],
+        pagination: { page: 1, itemsPerPage: 1 },
+        count: true,
+        noCache: true,
+      });
+
+      if (!current()) throw new Error("Dashboard request retired");
+      const count = this.exactCount(response.meta);
+      if (!count || response.data[0]?.delivery_date !== date)
+        throw new Error("Upcoming delivery date changed. Please retry.");
+      return { date, count };
+    } catch (reason) {
+      if (current()) this.handleAccessError(reason);
+      throw reason;
+    }
+  }
+
+  private handleAccessError(reason: unknown): boolean {
+    const status = reason !== null && typeof reason === "object" && "status" in reason ? reason.status : undefined;
+    if (status !== 401 && status !== 403 && status !== 404) return false;
+    this.denyAccess(status);
+    return true;
+  }
+
+  private denyAccess(status: number): void {
+    this.generation++;
+    this.clearMetrics();
+    this.denied = true;
+    this.scopeReady = false;
+    this.loading = false;
+    this.error =
+      status === 404 ? "This Project or Dataset is no longer available." : "Dashboard access is no longer available.";
+  }
+
   // ==================== Request Lifecycle ====================
 
   private generation = 0;
 
   private isCurrent(generation: number): boolean {
-    return !this.disposed && generation === this.generation;
+    return !this.disposed && !this.denied && generation === this.generation;
   }
 
   private async loadSelectedDatasets(): Promise<void> {
@@ -153,18 +534,11 @@ export class ProjectDashboardController {
         throw new Error("Selected Dataset results could not be validated. Please try again.");
       this.selectedDatasets = response.data;
       this.scopeReady = true;
+      this.loadMetrics();
     } catch (reason) {
       if (!this.isCurrent(generation)) return;
-      const status = reason !== null && typeof reason === "object" && "status" in reason ? reason.status : undefined;
-      if (status === 401 || status === 403 || status === 404) {
-        this.denied = true;
-        this.error =
-          status === 404
-            ? "This Project or Dataset is no longer available."
-            : "Dashboard access is no longer available.";
-      } else {
+      if (!this.handleAccessError(reason))
         this.error = reason instanceof Error ? reason.message : "Unable to load datasets.";
-      }
     } finally {
       if (this.isCurrent(generation)) this.loading = false;
     }

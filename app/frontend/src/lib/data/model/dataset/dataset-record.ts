@@ -1,3 +1,4 @@
+import { format, parseISO } from "date-fns";
 import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
@@ -34,6 +35,10 @@ export class DatasetRecord extends Record {
 
   @relationship() public project!: ProjectRecord;
   @relationship() public entries!: EntryRecord[];
+
+  public get formattedDeliveryDate(): string | null {
+    return this.delivery_date ? format(parseISO(this.delivery_date), "MMM dd, yyyy") : null;
+  }
 
   public get statusBadge(): DatasetStatusBadgeProps {
     const defaultBadgeProps: DatasetStatusBadgeProps = {
