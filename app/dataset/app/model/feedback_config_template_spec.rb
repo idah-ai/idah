@@ -120,6 +120,59 @@ RSpec.describe FeedbackConfigTemplate, database: true do
         end
       end
 
+      context "As Org Owner who owns a project in another org", as: :org_owner do
+        subject { described_class.new(current_auth_context) }
+
+        let!(:foreign_project) do
+          project_repo.create(
+            name: "Foreign Project",
+            description: "Project in another organization",
+            organization_id: 999,
+            created_by_email: "admin@example.com"
+          )
+        end
+
+        let!(:pm_org_owner_foreign) do
+          project_member_repo.create(
+            project_id: foreign_project,
+            account_id: 2,
+            name: "Org Owner User",
+            email: "org_owner@example.com",
+            role: "project_owner",
+            invited_by_id: 1
+          )
+        end
+
+        let!(:template_foreign_org) do
+          template_repo.create(
+            organization_id: 999,
+            name: "Foreign Org Template",
+            feedback_configuration: {},
+            modality: "idah-video",
+            created_by_id: 1,
+            updated_by_id: 1
+          )
+        end
+
+        it "can read templates in an org where they own a project" do
+          result = subject.scoped(:read).all
+
+          expect(result.map { |r| r[:name] }).to include("Foreign Org Template")
+        end
+
+        context "without a membership in that org" do
+          before do
+            project_member_repo.delete(pm_org_owner_foreign)
+          end
+
+          it "cannot read templates in that org" do
+            result = subject.scoped(:read).all
+
+            expect(result.map { |r| r[:name] }).not_to include("Foreign Org Template")
+          end
+        end
+      end
+
       context "As project_owner user", as: :project_owner do
         subject { described_class.new(current_auth_context) }
 

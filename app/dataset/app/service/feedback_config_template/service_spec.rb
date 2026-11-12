@@ -190,6 +190,44 @@ RSpec.describe FeedbackConfigTemplate::Service, database: true do
         expect(template_repo.find!(template_org2_id)).not_to be_nil
       end
     end
+
+    describe "as org_owner who owns a project in another org" do
+      let!(:foreign_project) do
+        project_repo.create(name: "Foreign Project", created_by_email: "system@example.com", organization_id: 999)
+      end
+
+      let!(:pm_org_owner_foreign) do
+        project_member_repo.create(
+          project_id: foreign_project,
+          account_id: 2,
+          role: "project_owner",
+          name: "Org Owner User",
+          email: "org_owner@example.com",
+          invited_by_id: 1
+        )
+      end
+
+      it "can create a template in an org where they own a project" do
+        create_data[:data][:attributes][:organization_id] = 999
+
+        record = subject.create(deserialize(create_data))
+
+        expect(record.organization_id).to eq(999)
+        expect(record.created_by_id).to eq(2)
+      end
+
+      context "without a membership in that org" do
+        before do
+          project_member_repo.delete(pm_org_owner_foreign)
+        end
+
+        it "cannot create a template in that org" do
+          create_data[:data][:attributes][:organization_id] = 999
+
+          expect { subject.create(deserialize(create_data)) }.to raise_error(Verse::Error::Unauthorized)
+        end
+      end
+    end
   end
 
   # Permission: project_owner user — scoped via project ownership (org 1)
