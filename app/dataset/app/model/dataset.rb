@@ -212,7 +212,7 @@ module Dataset
 
     def create(attributes)
       with_metadata do
-        add_event_metadata(
+        add_metadata(
           project_id: attributes[:project_id]
         )
 
@@ -224,7 +224,7 @@ module Dataset
       with_metadata do
         dataset = find!(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: attributes[:project_id] || dataset.project_id,
           dataset_id: id
         )
@@ -252,7 +252,7 @@ module Dataset
       with_metadata do
         dataset = find!(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: dataset.project_id,
           dataset_id: id
         )
@@ -290,17 +290,11 @@ module Dataset
     event(name: "labeling_configuration_updated")
     def labeling_configuration_updated(dataset_id, changed_category_ids: [])
       no_event do
-        add_event_metadata(
+        add_metadata(
           dataset_id: dataset_id,
           changed_category_ids: changed_category_ids
         )
       end
-    end
-
-    private
-
-    def add_event_metadata(**opts)
-      add_metadata(**opts)
     end
   end
 end

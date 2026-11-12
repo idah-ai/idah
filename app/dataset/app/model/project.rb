@@ -99,7 +99,7 @@ module Project
 
     def create(attributes)
       with_metadata do
-        add_event_metadata(
+        add_metadata(
           organization_id: attributes[:organization_id],
           project_id: attributes[:id]
         )
@@ -121,7 +121,7 @@ module Project
           metadata[:previous_organization_id] = project.organization_id
         end
 
-        add_event_metadata(**metadata)
+        add_metadata(**metadata)
 
         super(id, attributes, scope:)
       end
@@ -131,19 +131,13 @@ module Project
       with_metadata do
         project = find!(id)
 
-        add_event_metadata(
+        add_metadata(
           organization_id: project.organization_id,
           project_id: id
         )
 
         super(id)
       end
-    end
-
-    private
-
-    def add_event_metadata(**opts)
-      add_metadata(**opts)
     end
   end
 end

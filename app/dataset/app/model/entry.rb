@@ -263,7 +263,7 @@ module Entry
 
     def create(attributes)
       with_metadata do
-        add_event_metadata(
+        add_metadata(
           project_id: attributes[:project_id],
           dataset_id: attributes[:dataset_id]
         )
@@ -276,7 +276,7 @@ module Entry
       with_metadata do
         entry = find!(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: attributes[:project_id] || entry.project_id,
           dataset_id: attributes[:dataset_id] || entry.dataset_id,
           entry_id: id
@@ -290,7 +290,7 @@ module Entry
       with_metadata do
         entry = find!(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: entry.project_id,
           dataset_id: entry.dataset_id,
           entry_id: id
@@ -325,7 +325,7 @@ module Entry
     def assign(id, assigned_to_id, assigned_to_email)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: entry.project_id,
         dataset_id: entry.dataset_id,
         entry_id: id
@@ -342,7 +342,7 @@ module Entry
     def unassign(id)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: entry.project_id,
         dataset_id: entry.dataset_id,
         entry_id: id
@@ -359,7 +359,7 @@ module Entry
     def reopen(id, attributes)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: entry.project_id,
         dataset_id: entry.dataset_id,
         entry_id: id
@@ -376,7 +376,7 @@ module Entry
     def submit(id, attributes)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: attributes[:project_id] || entry.project_id,
         dataset_id: attributes[:dataset_id] || entry.dataset_id,
         entry_id: id,
@@ -395,7 +395,7 @@ module Entry
     def error(id, attributes)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: attributes[:project_id] || entry.project_id,
         dataset_id: attributes[:dataset_id] || entry.dataset_id,
         entry_id: id
@@ -414,12 +414,6 @@ module Entry
       transaction do
         update!(entry.id, { status: })
       end
-    end
-
-    private
-
-    def add_event_metadata(**opts)
-      add_metadata(**opts)
     end
   end
 end
