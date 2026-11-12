@@ -85,3 +85,17 @@ export function rowView(row: UploadRow): UploadItemView {
     ]),
   };
 }
+
+// The summary once done: failed rows first, then rows with skipped files, the rest after,
+// each group in selection order. A long list then shows its problems without scrolling.
+export function problemsFirst(rows: UploadRow[]): UploadRow[] {
+  const rank = (row: UploadRow) => {
+    const view = rowView(row);
+    if (view.errorMessage || view.errorMedias.length > 0) return 0;
+    return view.skippedMedias.length > 0 ? 1 : 2;
+  };
+  return rows
+    .map((row, index) => ({ row, index, rank: rank(row) }))
+    .sort((a, b) => a.rank - b.rank || a.index - b.index)
+    .map(({ row }) => row);
+}

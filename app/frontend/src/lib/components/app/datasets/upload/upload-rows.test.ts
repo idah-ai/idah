@@ -5,7 +5,15 @@
 
 import { describe, it, expect } from "vitest";
 
-import { buildEntryRows, createdEntryNames, folderRow, rowItems, rowView, skippedRow } from "./upload-rows";
+import {
+  buildEntryRows,
+  createdEntryNames,
+  folderRow,
+  problemsFirst,
+  rowItems,
+  rowView,
+  skippedRow,
+} from "./upload-rows";
 
 import type { UploadItem } from "./upload-item.types";
 
@@ -107,5 +115,37 @@ describe("createdEntryNames", () => {
     Object.assign(zip, { uploadedMedias: [media("1.jpg"), media("cam/2.jpg")], createdEntryCount: 2 });
 
     expect(createdEntryNames(row)).toEqual(["a.jpg", "extra/frames/1.jpg", "extra/frames/cam/2.jpg"]);
+  });
+});
+
+describe("problemsFirst", () => {
+  const fileRow = (name: string, problem?: "failed" | "skipped") => {
+    const [row] = buildEntryRows([pick(name)]);
+    if (row.kind !== "file") throw new Error("expected a file row");
+    if (problem === "failed") row.item.errorMessage = "Upload failed";
+    if (problem === "skipped") row.item.skippedMedias.push({ filename: name, message: "Unsupported file type" });
+    return row;
+  };
+  const names = (rows: ReturnType<typeof problemsFirst>) => rows.map((row) => rowView(row).name);
+
+  it("lists failed rows, then rows with skipped files, then the rest, keeping each group's order", () => {
+    const rows = [
+      fileRow("a.jpg"),
+      fileRow("b.txt", "skipped"),
+      fileRow("c.jpg", "failed"),
+      fileRow("d.jpg"),
+      fileRow("e.jpg", "failed"),
+    ];
+
+    expect(names(problemsFirst(rows))).toEqual(["c.jpg", "e.jpg", "b.txt", "a.jpg", "d.jpg"]);
+    expect(names(rows)).toEqual(["a.jpg", "b.txt", "c.jpg", "d.jpg", "e.jpg"]); // a copy: the rows are left as they were
+  });
+
+  it("counts a folder with a failed file inside as failed", () => {
+    const folder = folderRow("clip", [pick("clip/1.jpg"), pick("clip/2.jpg")], "clip/");
+    if (folder.kind !== "folder") throw new Error("expected a folder row");
+    folder.items[1].errorMessage = "Upload failed";
+
+    expect(names(problemsFirst([fileRow("a.jpg"), folder]))).toEqual(["clip", "a.jpg"]);
   });
 });

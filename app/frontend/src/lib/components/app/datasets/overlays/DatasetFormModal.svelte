@@ -407,7 +407,7 @@
 
   {#if uploading}
     <!-- One row per dataset (a split zip: one row for all of its datasets) -->
-    <section class="max-h-[60vh] divide-y overflow-y-auto rounded-lg border">
+    <section class="max-h-[50vh] divide-y overflow-y-auto rounded-lg border">
       {#each runs as run, runIndex (runIndex)}
         {#each run.rows as row, rowIndex (rowIndex)}
           <UploadMediaItem

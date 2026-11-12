@@ -68,6 +68,7 @@ The media service names a zip's media and drops its single wrapping folder (`wra
   - It resumes where it stopped: media already uploaded (`uploadedMedias`) aren't sent again, and entries already created (`createdEntryCount`) aren't created again.
 - **Failures stay local.** A failing file never stops the others, with one exception: when its dataset can't be created (`DatasetCreationError`), the run's remaining files are marked "not uploaded".
 - **Server reports.** The media service returns `meta.skipped` (unsupported or too large) and `meta.errored` (failed to process) for a zip's files. They end up in the item's `skippedMedias` and `errorMedias`, shown under its row.
+- **Problems first.** Once an Add Entry upload is done, its summary lists failed rows first, then rows with skipped files (`problemsFirst` in `upload-rows.ts`). Both summaries scroll past half the screen height.
 - **Sequential.** Files go one at a time, and every file is a rendered row. See the `ponytail:` note in `uploadAll` before handling batches of thousands.
 - **Leaving the page.** The upload runs in the page, so leaving stops it halfway. While it runs, `guardLeavingDuringUpload` (`upload-leave-guard.svelte.ts`) makes the browser ask before closing or reloading the tab, and refuses in-app navigation such as Back with a toast. Both modals also say so up front (`UploadKeepOpenNote.svelte`), since the browser prompt can only use its own generic text.
 
