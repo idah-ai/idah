@@ -134,4 +134,14 @@ describe("uploadAll", () => {
     expect(items[0].errorMessage).toBeTruthy();
     expect(entryNames()).toEqual(["ok.jpg"]);
   });
+
+  it("reports a zip that failed every retry once, not once per attempt", async () => {
+    upload.mockRejectedValue(new Error("down"));
+    const zip = createUploadItem(new File(["x"], "batch.zip"));
+
+    await run([zip], async () => "ds1");
+
+    expect(zip.errorMessage).toBe("Upload failed");
+    expect(zip.errorMedias).toEqual([{ filename: "batch.zip", message: "Upload failed" }]);
+  });
 });

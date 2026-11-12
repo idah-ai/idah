@@ -104,7 +104,11 @@
     const datasets = runs.filter((run) => run.datasetId).length;
     const entries = views.reduce((total, view) => total + view.createdEntryCount, 0);
     const skipped = views.reduce((total, view) => total + view.skippedMedias.length, 0);
-    const failed = views.reduce((total, view) => total + view.errorMedias.length + (view.errorMessage ? 1 : 0), 0);
+    // A zip that failed lists itself in errorMedias; one whose dataset could not be created only has errorMessage.
+    const failed = views.reduce(
+      (total, view) => total + view.errorMedias.length + (view.errorMessage && view.errorMedias.length === 0 ? 1 : 0),
+      0,
+    );
     const parts = [`${count(datasets, "dataset")} and ${count(entries, "entry", "entries")} created`];
     if (skipped > 0) parts.push(`${count(skipped, "file")} skipped`);
     if (failed > 0) parts.push(`${count(failed, "file")} failed`);
