@@ -142,6 +142,6 @@ describe("uploadAll", () => {
     await run([zip], async () => "ds1");
 
     expect(zip.errorMessage).toBe("Upload failed");
-    expect(zip.errorMedias).toEqual([{ filename: "batch.zip", message: "Upload failed" }]);
+    expect(zip.errorMedias).toEqual([]); // the summary row lists the zip itself, once (see rowView)
   });
 });

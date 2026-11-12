@@ -134,10 +134,6 @@ export async function uploadSingleMedia(media: UploadItem, context: UploadContex
     }
   }
 
-  // A zip's row lists its failed files: the whole zip is one, reported once, not once per attempt.
-  if (media.isZip && media.errorMessage) {
-    media.errorMedias.push({ filename: media.media.name, message: media.errorMessage });
-  }
   media.status = "completed"; // exhausted retries, process finished
 }
 

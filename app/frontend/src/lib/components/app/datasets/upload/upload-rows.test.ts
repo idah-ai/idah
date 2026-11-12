@@ -81,6 +81,26 @@ describe("rowView of a folder", () => {
     expect(rowView(row).uploadedMedias).toHaveLength(1);
   });
 
+  it("names a zip's skipped and failed files after the zip, and a zip that failed by itself", () => {
+    const row = folderRow("image", [pick("image/parent.zip"), pick("image/extra/other.zip")], "image/");
+    if (row.kind !== "folder") throw new Error("expected a folder row");
+    const [parent, other] = row.items;
+    Object.assign(parent, {
+      status: "completed",
+      skippedMedias: [{ filename: "parent/inner.zip", message: "File type is not supported" }],
+      errorMedias: [{ filename: "parent/broken.png", message: "Corrupt image" }],
+    });
+    Object.assign(other, { status: "completed", errorMessage: "Upload failed" });
+
+    expect(rowView(row)).toMatchObject({
+      skippedMedias: [{ filename: "parent.zip › parent/inner.zip", message: "File type is not supported" }],
+      errorMedias: [
+        { filename: "parent.zip › parent/broken.png", message: "Corrupt image" },
+        { filename: "extra/other.zip", message: "Upload failed" },
+      ],
+    });
+  });
+
   it("is uploading until every file is done", () => {
     const row = folderRow("clip", [pick("clip/1.jpg"), pick("clip/2.jpg")]);
     if (row.kind !== "folder") throw new Error("expected a folder row");
@@ -147,5 +167,22 @@ describe("problemsFirst", () => {
     folder.items[1].errorMessage = "Upload failed";
 
     expect(names(problemsFirst([fileRow("a.jpg"), folder]))).toEqual(["clip", "a.jpg"]);
+  });
+});
+
+describe("rowView of a zip", () => {
+  it("keeps its files' paths in the zip, and lists the zip once when it failed", () => {
+    const [row] = buildEntryRows([pick("batch.zip")]);
+    if (row.kind !== "file") throw new Error("expected a file row");
+    Object.assign(row.item, {
+      status: "completed",
+      errorMessage: "Upload failed",
+      skippedMedias: [{ filename: "notes.txt", message: "File type is not supported" }],
+    });
+
+    expect(rowView(row)).toMatchObject({
+      skippedMedias: [{ filename: "notes.txt", message: "File type is not supported" }],
+      errorMedias: [{ filename: "batch.zip", message: "Upload failed" }],
+    });
   });
 });

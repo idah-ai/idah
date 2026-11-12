@@ -63,8 +63,28 @@ export function rowItems(rows: UploadRow[]): UploadItem[] {
   return rows.flatMap((row) => (row.kind === "folder" ? row.items : [row.item]));
 }
 
+// What the server reported for one item, named so the summary says where each file was:
+// a zip's own files after the zip ("extra/frames.zip › cam/1.jpg"), and a failed upload
+// (the whole file or zip) by its own path.
+function itemReports(item: UploadItem): { skipped: ZipFileReport[]; failed: ZipFileReport[] } {
+  const inZip = (report: ZipFileReport) => ({ ...report, filename: `${item.path} › ${report.filename}` });
+  const own = item.isZip ? (reports: ZipFileReport[]) => reports.map(inZip) : (reports: ZipFileReport[]) => reports;
+  return {
+    skipped: own(item.skippedMedias),
+    failed: [
+      ...(item.errorMessage ? [{ filename: item.path, message: item.errorMessage }] : []),
+      ...own(item.errorMedias),
+    ],
+  };
+}
+
 export function rowView(row: UploadRow): UploadItemView {
-  if (row.kind === "file") return row.item;
+  // A zip has its own row, named after it: its files keep their path in the zip.
+  if (row.kind === "file") {
+    const { item } = row;
+    if (!item.isZip || !item.errorMessage) return item;
+    return { ...item, errorMedias: [{ filename: item.path, message: item.errorMessage }, ...item.errorMedias] };
+  }
 
   const { items } = row;
   const pending = items.filter((item) => item.status !== "completed");
@@ -78,11 +98,8 @@ export function rowView(row: UploadRow): UploadItemView {
     retryCount: 0,
     uploadedMedias: items.flatMap((item) => item.uploadedMedias),
     createdEntryCount: items.reduce((total, item) => total + item.createdEntryCount, 0),
-    skippedMedias: [...row.skipped, ...items.flatMap((item) => item.skippedMedias)],
-    errorMedias: items.flatMap((item) => [
-      ...(item.errorMessage && !item.isZip ? [{ filename: item.path, message: item.errorMessage }] : []),
-      ...item.errorMedias,
-    ]),
+    skippedMedias: [...row.skipped, ...items.flatMap((item) => itemReports(item).skipped)],
+    errorMedias: items.flatMap((item) => itemReports(item).failed),
   };
 }
 
