@@ -1,4 +1,4 @@
-import type { COMPLETION_GROUPINGS } from "@/components/app/projects/dashboard/projectDashboard.constants";
+import type { COMPLETION_GROUPINGS } from "@/components/app/projects/dashboard/project-dashboard.constants";
 
 export type CompletionGrouping = (typeof COMPLETION_GROUPINGS)[number];
 export type CompletionRange = { start: string; end: string };

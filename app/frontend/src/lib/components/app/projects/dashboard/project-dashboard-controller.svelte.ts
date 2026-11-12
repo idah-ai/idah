@@ -27,7 +27,7 @@ import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/d
 import { EntryRecord, entriesBackendDataSource } from "@/data/model/dataset/entries/record";
 import { datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 import { getDeliveryStatusBadge, today } from "@/utils/date";
-import { PROJECT_DASHBOARD_WORKFLOW_GROUPS } from "@/components/app/projects/dashboard/projectDashboard.constants";
+import { PROJECT_DASHBOARD_WORKFLOW_GROUPS } from "@/components/app/projects/dashboard/project-dashboard.constants";
 import type { Filters } from "@/data/filtering";
 import type { JsonApiMeta } from "@/data/model/types";
 import type {
@@ -35,7 +35,7 @@ import type {
   CompletionRange,
   CompletionHistoryResult,
   CompletionBucket,
-} from "@/components/app/projects/dashboard/projectDashboard.types";
+} from "@/components/app/projects/dashboard/project-dashboard.types";
 
 export const PROJECT_DASHBOARD_CONTROLLER_KEY = Symbol("project-dashboard-controller");
 

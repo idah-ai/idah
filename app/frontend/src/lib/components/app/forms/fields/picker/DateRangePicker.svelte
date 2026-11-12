@@ -12,7 +12,7 @@
     COMPLETION_DATE_PRESETS,
     getPresetValue,
     type DateRangeValue,
-  } from "@/components/app/forms/fields/picker/date-range-picker.constants";
+  } from "@/components/app/forms/fields/picker/constants";
   import Text from "@/components/ui/text/Text.svelte";
 
   // Props

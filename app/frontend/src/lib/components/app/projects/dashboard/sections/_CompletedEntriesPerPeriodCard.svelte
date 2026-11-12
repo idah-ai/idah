@@ -11,8 +11,8 @@
     PROJECT_DASHBOARD_CONTROLLER_KEY,
     getProjectDashboardController,
   } from "@/components/app/projects/dashboard/project-dashboard-controller.svelte";
-  import { COMPLETION_GROUPINGS } from "@/components/app/projects/dashboard/projectDashboard.constants";
-  import DateRangePicker from "@/components/app/forms/fields/picker/date-range-picker.svelte";
+  import { COMPLETION_GROUPINGS } from "@/components/app/projects/dashboard/project-dashboard.constants";
+  import DateRangePicker from "@/components/app/forms/fields/picker/DateRangePicker.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
   // Variables
