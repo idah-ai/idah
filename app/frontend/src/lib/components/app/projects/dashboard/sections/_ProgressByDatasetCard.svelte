@@ -1,58 +1,57 @@
 <script lang="ts">
   import * as Card from "$lib/components/ui/card/index";
   import DataTable from "@/components/app/data-table/DataTable.svelte";
+  import Link from "@/components/ui/text/Link.svelte";
+  import Button from "@/components/ui/button/button.svelte";
+  import Spinner from "@/components/ui/spinner/spinner.svelte";
+  import ResponseBlock from "@/components/app/blocks/response-block.svelte";
+  import {
+    PROJECT_DASHBOARD_CONTROLLER_KEY,
+    getProjectDashboardController,
+  } from "@/components/app/projects/dashboard/project-dashboard-controller.svelte";
+  import { columns } from "@/components/app/projects/dashboard/sections/_ProgressByDatasetCard.table";
+  import ScrollArea from "@/components/ui/scroll-area/scroll-area.svelte";
 
-  import type { DataTableColumnSettings, DataTableRows } from "@/components/app/data-table/types";
-  import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
-  import DatasetNameCell from "./data-table-cells/_DatasetNameCell.svelte";
-
-  const columns: DataTableColumnSettings<DatasetRecord> = {
-    dataset: {
-      key: "name",
-      title: "Dataset",
-      cellComponent: DatasetNameCell,
-    },
-    entries: {
-      key: "entries",
-      title: "Entries",
-      align: "right",
-    },
-    progress: {
-      key: "progress",
-      title: "Progress",
-    },
-    annotations: {
-      key: "annotation_count",
-      title: "Annotations",
-      align: "right",
-    },
-    delivery_date: {
-      key: "delivery_date",
-      title: "Delivery date",
-    },
-  };
-
-  const rows: DataTableRows = [
-    {
-      name: "Video 1",
-      entries: 160,
-      progress: 1,
-      annotation_count: 651,
-      delivery_date: "2026-09-22",
-    },
-  ];
+  // Variables
+  const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
+  const rows = $derived(controller.datasetProgressRows);
 </script>
 
 <Card.Root>
   <Card.Header>
     <Card.Title>Progress by dataset</Card.Title>
-
-    <Card.Action>
-      <Card.Description>Click a dataset to view it on its own</Card.Description>
-    </Card.Action>
+    {#if controller.focused}
+      <Card.Action>
+        <Link href={`/projects/${controller.projectId}/datasets/${controller.focused.id}/entries`}>All entries</Link>
+      </Card.Action>
+    {/if}
   </Card.Header>
-
   <Card.Content>
-    <DataTable {columns} {rows} caption="Showing the 8 longest waiting of 558" />
+    {#if controller.datasetProgressError}
+      <ResponseBlock size="sm" title="Dataset progress unavailable" description={controller.datasetProgressError}>
+        {#snippet actions()}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={controller.denied || controller.loading || controller.datasetProgressLoading}
+            onclick={() => void controller.retryDatasetProgress()}>Retry</Button
+          >
+        {/snippet}
+      </ResponseBlock>
+    {:else if controller.loading || controller.datasetProgressLoading || !controller.scopeReady}
+      <div class="flex min-h-32 items-center justify-center" role="status" aria-label="Loading dataset progress">
+        <Spinner size="sm" />
+      </div>
+    {:else if !rows.length}
+      <ResponseBlock
+        size="sm"
+        title="No datasets to display"
+        description="No datasets were returned for this page and scope."
+      />
+    {:else}
+      <ScrollArea class="max-h-[80vh]">
+        <DataTable {columns} {rows} caption={controller.datasetProgressCaption} />
+      </ScrollArea>
+    {/if}
   </Card.Content>
 </Card.Root>

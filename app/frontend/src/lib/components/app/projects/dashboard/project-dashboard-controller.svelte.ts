@@ -29,7 +29,8 @@ import { datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 import { getDeliveryStatusBadge, today } from "@/utils/date";
 import { PROJECT_DASHBOARD_WORKFLOW_GROUPS } from "@/components/app/projects/dashboard/project-dashboard.constants";
 import type { Filters } from "@/data/filtering";
-import type { JsonApiMeta } from "@/data/model/types";
+import type { Pagination } from "@/data/DataSource";
+import type { CollectionResponse, JsonApiMeta } from "@/data/model/types";
 import type {
   CompletionGrouping,
   CompletionRange,
@@ -87,6 +88,7 @@ export class ProjectDashboardController {
     this.generation++;
     this.clearMetrics();
     this.clearCompletionHistory();
+    this.clearDatasetProgress();
     this.unsubscribeToday?.();
     this.unsubscribeToday = undefined;
   }
@@ -117,6 +119,7 @@ export class ProjectDashboardController {
     }
     this.clearMetrics();
     this.clearCompletionHistory();
+    this.clearDatasetProgress();
     this.selectedDatasetIds = selected;
     this.focused = null;
     this.selectedDatasets = [];
@@ -252,6 +255,7 @@ export class ProjectDashboardController {
     void this.loadAttention();
     void this.loadWorkflowCounts();
     void this.loadCompletionHistory();
+    void this.loadDatasetProgress(true);
   }
 
   async retrySummary(): Promise<void> {
@@ -816,6 +820,115 @@ export class ProjectDashboardController {
     }
   }
 
+  // ==================== Dataset Progress ====================
+
+  public datasetProgressResponse: CollectionResponse<DatasetRecord> | null = $state.raw(null);
+  public datasetProgressPagination: Pagination | undefined = $state.raw();
+  public datasetProgressLoading = $state(false);
+  public datasetProgressError = $state("");
+  private datasetProgressGeneration = 0;
+
+  public get datasetProgressRows(): DatasetRecord[] {
+    if (this.disposed || this.denied || !this.scopeReady) return [];
+    if (this.focused) return [this.focused];
+    if (!this.selectedDatasetIds.length) return this.datasetProgressResponse?.data ?? [];
+
+    const pagination = this.datasetProgressPagination;
+    if (!pagination) return this.selectedDatasets;
+    const start = (pagination.page - 1) * pagination.itemsPerPage;
+    return this.selectedDatasets.slice(start, start + pagination.itemsPerPage);
+  }
+
+  public get datasetProgressCaption(): string {
+    if (!this.scopeReady || this.denied || this.datasetProgressLoading || this.datasetProgressError) return "";
+
+    const shown = this.datasetProgressRows.length;
+    const meta = this.focused
+      ? { count: 1, more: false }
+      : this.selectedDatasetIds.length
+        ? { count: this.selectedDatasets.length, more: false }
+        : this.datasetProgressResponse?.meta;
+    const count = meta?.count;
+    if (typeof count === "number" && Number.isSafeInteger(count) && count >= 0) {
+      if (meta?.more === false)
+        return `Showing ${shown.toLocaleString()} of ${count.toLocaleString()} ${count === 1 ? "dataset" : "datasets"}`;
+      if (meta?.more === true)
+        return `Showing ${shown.toLocaleString()} ${shown === 1 ? "dataset" : "datasets"} · ${count.toLocaleString()}+ matching`;
+    }
+    return `Showing ${shown.toLocaleString()} ${shown === 1 ? "dataset" : "datasets"}`;
+  }
+
+  async changeDatasetProgressPage(pagination: Pagination): Promise<void> {
+    if (this.disposed || this.denied || !this.scopeReady) return;
+    if (
+      !Number.isSafeInteger(pagination.page) ||
+      pagination.page < 1 ||
+      !Number.isSafeInteger(pagination.itemsPerPage) ||
+      pagination.itemsPerPage < 1
+    )
+      return;
+    this.datasetProgressPagination = { ...pagination };
+    await this.loadDatasetProgress();
+  }
+
+  async retryDatasetProgress(): Promise<void> {
+    if (this.disposed || this.denied || this.datasetProgressLoading) return;
+    if (this.scopeReady) await this.loadDatasetProgress();
+    else await this.retry();
+  }
+
+  private clearDatasetProgress(): void {
+    this.datasetProgressGeneration++;
+    this.datasetProgressResponse = null;
+    this.datasetProgressLoading = false;
+    this.datasetProgressError = "";
+  }
+
+  private async loadDatasetProgress(resetPage = false): Promise<void> {
+    if (this.disposed || this.denied || !this.scopeReady) return;
+    if (resetPage && this.datasetProgressPagination)
+      this.datasetProgressPagination = { ...this.datasetProgressPagination, page: 1 };
+
+    const scope = this.generation;
+    const request = ++this.datasetProgressGeneration;
+    const current = (): boolean => this.isCurrent(scope) && request === this.datasetProgressGeneration;
+    this.datasetProgressResponse = null;
+    this.datasetProgressError = "";
+    this.datasetProgressLoading = false;
+    if (this.focused || this.selectedDatasetIds.length) return;
+
+    this.datasetProgressLoading = true;
+    const pagination = this.datasetProgressPagination ? { ...this.datasetProgressPagination } : undefined;
+    try {
+      const response = await datasetsBackendDataSource.list({
+        filters: { project_id: this.projectId },
+        fields: {
+          [DatasetRecord.type]: [
+            "id",
+            "name",
+            "entries_total_count",
+            "entries_completed_count",
+            "progress",
+            "delivery_date",
+            "status",
+          ],
+        },
+        sort: ["name", "id"],
+        ...(pagination ? { pagination } : {}),
+        count: true,
+        noCache: true,
+      });
+      if (!current()) return;
+      if (!Array.isArray(response.data)) throw new Error("Dataset results are unavailable. Please retry.");
+      this.datasetProgressResponse = response;
+    } catch (reason) {
+      if (!current() || this.handleAccessError(reason)) return;
+      this.datasetProgressError = reason instanceof Error ? reason.message : "Dataset progress is unavailable.";
+    } finally {
+      if (current()) this.datasetProgressLoading = false;
+    }
+  }
+
   private handleAccessError(reason: unknown): boolean {
     const status = reason !== null && typeof reason === "object" && "status" in reason ? reason.status : undefined;
     if (status !== 401 && status !== 403 && status !== 404) return false;
@@ -827,12 +940,14 @@ export class ProjectDashboardController {
     this.generation++;
     this.clearMetrics();
     this.clearCompletionHistory();
+    this.clearDatasetProgress();
     this.denied = true;
     this.scopeReady = false;
     this.loading = false;
     this.error =
       status === 404 ? "This Project or Dataset is no longer available." : "Dashboard access is no longer available.";
     this.completionHistory = { ...this.completionHistory, status: "unavailable", error: this.error };
+    this.datasetProgressError = this.error;
   }
 
   // ==================== Request Lifecycle ====================
@@ -894,6 +1009,7 @@ export class ProjectDashboardController {
       if (!this.handleAccessError(reason)) {
         this.error = reason instanceof Error ? reason.message : "Unable to load datasets.";
         this.completionHistory = { ...this.completionHistory, status: "unavailable", error: this.error };
+        this.datasetProgressError = this.error;
       }
     } finally {
       if (this.isCurrent(generation)) this.loading = false;
