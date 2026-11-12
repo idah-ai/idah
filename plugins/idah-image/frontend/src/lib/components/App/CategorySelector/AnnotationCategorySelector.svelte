@@ -9,12 +9,14 @@
   import { cn } from "$lib/utils";
 
   import CategoryTree from "$lib/components/App/CategorySelector/_CategoryTree.svelte";
+  import HistoryPanel from "$lib/components/App/CategorySelector/HistoryPanel.svelte";
 
   import { getDriver } from "$lib/state/driver.svelte";
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { categorySearch } from "$lib/state/category-search.svelte";
+  import { history } from "$lib/state/history.svelte";
 
   import type { IConfigValue } from "$idah/v2/types";
 
@@ -111,6 +113,9 @@
   }
 </script>
 
+{#if view === "sidebar" && history.open}
+  <HistoryPanel {sidebarWidthRem} />
+{:else}
 <Sidebar variant="inset" collapsible="none" class={cn(className)} style="width: ${sidebarWidthRem}rem">
   {#if !tools.has(mode) || selAnnotation}
     <SidebarHeader>
@@ -148,3 +153,4 @@
     {/each}
   </SidebarContent>
 </Sidebar>
+{/if}

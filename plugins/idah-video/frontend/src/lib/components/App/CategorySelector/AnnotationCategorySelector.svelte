@@ -9,12 +9,14 @@
   import { cn } from "$lib/utils";
 
   import CategoryTree from "$lib/components/App/CategorySelector/_CategoryTree.svelte";
+  import HistoryPanel from "$lib/components/App/CategorySelector/HistoryPanel.svelte";
 
   import { getDriver } from "$lib/state/driver.svelte";
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { categorySearch } from "$lib/state/category-search.svelte";
+  import { history } from "$lib/state/history.svelte";
 
   import type { IConfigValue } from "$idah/v2/types";
 
@@ -115,41 +117,45 @@
   }
 </script>
 
-<Sidebar variant="inset" collapsible="none" class={cn(className)} style="width: ${sidebarWidthRem}rem">
-  {#if !tools.has(mode) || selAnnotation}
-    <SidebarHeader>
-      <InputField
-        name="input/plugin/search"
-        placeholder="Search"
-        value={categorySearch.value}
-        oninput={(e) => searchCategory(e)}
-      >
-        {#snippet suffixIcon()}
-          {#if categorySearch.value}
-            <CircleXIcon class="hover:cursor-pointer" onclick={clearSearch} />
-          {/if}
-        {/snippet}
-      </InputField>
-    </SidebarHeader>
-  {/if}
+  {#if view === "sidebar" && history.open}
+    <HistoryPanel {sidebarWidthRem} />
+  {:else}
+  <Sidebar variant="inset" collapsible="none" class={cn(className)} style="width: ${sidebarWidthRem}rem">
+    {#if !tools.has(mode) || selAnnotation}
+      <SidebarHeader>
+        <InputField
+          name="input/plugin/search"
+          placeholder="Search"
+          value={categorySearch.value}
+          oninput={(e) => searchCategory(e)}
+        >
+          {#snippet suffixIcon()}
+            {#if categorySearch.value}
+              <CircleXIcon class="hover:cursor-pointer" onclick={clearSearch} />
+            {/if}
+          {/snippet}
+        </InputField>
+      </SidebarHeader>
+    {/if}
 
-  <SidebarContent>
-    {#each filteredTools as [tool, categories] (tool)}
-      {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == "entry:root"}
-        <CategoryTree
-          {view}
-          {db}
-          {items}
-          modalityShape={tool}
-          {categories}
-          selectedCategory={tool == "entry:root" && !(tool == mode)
-            ? entryRoot.value?.category
-            : annotationValue.category}
-          onSelectCategory={(selected) => categorySelection(tool, selected)}
-          {onSelectAnnotationGroup}
-          {onDeleteAnnotation}
-        />
-      {/if}
-    {/each}
-  </SidebarContent>
-</Sidebar>
+    <SidebarContent>
+      {#each filteredTools as [tool, categories] (tool)}
+        {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == "entry:root"}
+          <CategoryTree
+            {view}
+            {db}
+            {items}
+            modalityShape={tool}
+            {categories}
+            selectedCategory={tool == "entry:root" && !(tool == mode)
+              ? entryRoot.value?.category
+              : annotationValue.category}
+            onSelectCategory={(selected) => categorySelection(tool, selected)}
+            {onSelectAnnotationGroup}
+            {onDeleteAnnotation}
+          />
+        {/if}
+      {/each}
+    </SidebarContent>
+  </Sidebar>
+  {/if}

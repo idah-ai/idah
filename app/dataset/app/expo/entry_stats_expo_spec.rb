@@ -112,6 +112,52 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
     end
   end
 
+  describe "#compute_stats_on_annotation_deleted" do
+    let(:annotation_id) { UUIDv7.generate }
+
+    it "calls service.recompute_from_annotation with no category" do
+      expect(service).to receive(:recompute_from_annotation).with(
+        entry_id: entry_id,
+        dataset_id: dataset_id,
+        new_category: nil
+      )
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Annotations,
+        resource_id: annotation_id,
+        event: "deleted",
+        payload: {
+          resource_id: annotation_id,
+          metadata: { entry_id: entry_id, dataset_id: dataset_id },
+          args: [{ deleted_by_email: "user@example.com" }]
+        }
+      )
+    end
+  end
+
+  describe "#compute_stats_on_annotation_restored" do
+    let(:annotation_id) { UUIDv7.generate }
+
+    it "calls service.recompute_from_annotation with the annotation's category" do
+      expect(service).to receive(:recompute_from_annotation).with(
+        entry_id: entry_id,
+        dataset_id: dataset_id,
+        new_category: "cat"
+      )
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Annotations,
+        resource_id: annotation_id,
+        event: "restored",
+        payload: {
+          resource_id: annotation_id,
+          metadata: { entry_id: entry_id, dataset_id: dataset_id, category: "cat" },
+          args: []
+        }
+      )
+    end
+  end
+
   describe "#recompute_stats_on_labeling_config_updated" do
     let(:dataset_id) { UUIDv7.generate }
 

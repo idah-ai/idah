@@ -1,6 +1,14 @@
 <script lang="ts">
   import { getDriver } from "$lib/state/driver.svelte";
-  import { activeNoteId, data, notes, pendingNoteScene, setPendingNoteScene } from "$lib/state/data.svelte";
+  import {
+    activeNoteId,
+    data,
+    getDeletedAnnotation,
+    notes,
+    pendingNoteScene,
+    setPendingNoteScene,
+    type AnnotationItem,
+  } from "$lib/state/data.svelte";
   import { viewport, NOTE_MODE } from "$lib/state/viewport.svelte";
   import { media } from "$lib/state/media.svelte";
   import { selection } from "$lib/state/selection.svelte";
@@ -25,6 +33,26 @@
 
   let invScale = $derived(1 / viewport.workspace.transform.scale);
 
+  /** True when a note is anchored to a soft-deleted annotation (a tombstone). */
+  function isNoteOnDeletedAnnotation(note: INoteRecord): boolean {
+    if (note.anchor.anchor_type !== "annotation" || !note.anchor.annotation_id) return false;
+    const annId = note.anchor.annotation_id;
+    const ann = data.annotations?.items?.find((a) => a.id === annId);
+    if (ann) return false; // live
+    return !!getDeletedAnnotation(annId);
+  }
+
+  /** A deleted annotation's marker is hidden when its id/group is hidden, or
+   *  when every live annotation of its category is hidden. */
+  function isDeletedMarkerHidden(tomb: AnnotationItem): boolean {
+    if (annotation.isHidden(tomb)) return true;
+    const live = (data.annotations?.items ?? []).filter(
+      (a) => a.category === tomb.category && a.shape_type === tomb.shape_type,
+    );
+    if (live.length === 0) return false;
+    return live.every((a) => annotation.isHidden(a));
+  }
+
   function noteScenePosition(note: INoteRecord): { x: number; y: number } | null {
     const currentFrame = viewport.video.currentFrame.value;
     if (note.anchor.anchor_type === "entry") {
@@ -37,15 +65,21 @@
       const annId = note.anchor.annotation_id;
       if (!annId) return null;
       const ann = data.annotations?.items?.find(a => a.id === annId);
-      if (!ann) return null;
+      const tomb = getDeletedAnnotation(annId);
+      const record = ann ?? tomb;
+      if (!record) return null;
       // Skip markers on hidden annotations
-      if (annotation.isHidden(ann)) return null;
-      const shape = ann.shape_args as IVideoAnnotationShape | undefined;
+      if (ann) {
+        if (annotation.isHidden(ann)) return null;
+      } else if (tomb) {
+        if (isDeletedMarkerHidden(tomb)) return null;
+      }
+      const shape = record.shape_args as IVideoAnnotationShape | undefined;
       if (!shape || shape.start == null || shape.end == null) return null;
       if (currentFrame < shape.start || currentFrame > shape.end) return null;
       let centroid: [number, number];
       if (shape.frames && shape.frames.length > 0) {
-        const interp = getInterpolatedFrame(shape, currentFrame, true, ann.shape_type);
+        const interp = getInterpolatedFrame(shape, currentFrame, true, record.shape_type);
         if (!interp || !interp.points?.length) return null;
         centroid = centroidUtil(interp.points);
       } else {
@@ -62,10 +96,10 @@
   }
 
   let markers = $derived.by(() => {
-    const result: Array<{ note: INoteRecord; x: number; y: number }> = [];
+    const result: Array<{ note: INoteRecord; x: number; y: number; deleted: boolean }> = [];
     for (const note of notes.list) {
       const pos = noteScenePosition(note);
-      if (pos) result.push({ note, ...pos });
+      if (pos) result.push({ note, ...pos, deleted: isNoteOnDeletedAnnotation(note) });
     }
     return result;
   });
@@ -169,15 +203,22 @@
       if (pos?.frame !== undefined) viewport.video.currentFrame.value = pos.frame;
 
       if (note.anchor.anchor_type === "annotation" && note.anchor.annotation_id) {
-        const ann = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
+        const annId = note.anchor.annotation_id;
+        const ann = data.annotations?.items?.find(a => a.id === annId);
+        const tomb = getDeletedAnnotation(annId);
         if (ann) {
           selection.selectAnnotation(ann);
           driver.command.call("idah-video:selection.center");
+        } else if (tomb) {
+          // Deleted annotation: open the note without selecting anything, and
+          // seek to the tombstone's start frame so the marker is on screen.
+          const shape = tomb.shape_args as IVideoAnnotationShape | undefined;
+          if (shape?.start != null) viewport.video.currentFrame.value = shape.start;
         } else {
           // Annotations not loaded yet — defer until they are
           const stop = $effect.root(() => {
             $effect(() => {
-              const found = data.annotations?.items?.find(a => a.id === note.anchor.annotation_id);
+              const found = data.annotations?.items?.find(a => a.id === annId);
               if (!found) return;
               selection.selectAnnotation(found);
               driver.command.call("idah-video:selection.center");
@@ -216,13 +257,14 @@
       class:cursor-pointer={!isNoteMode}
       class:cursor-note={isNoteMode}
       class:pointer-events-none={isNoteMode}
+      class:opacity-50={marker.deleted}
       style="transform: translate({marker.x}px, {marker.y - 24 * invScale}px)"
       onclick={() => handleMarkerClick(marker.note, marker.x, marker.y)}
       onkeypress={(e) => { if (e.key === 'Enter') handleMarkerClick(marker.note, marker.x, marker.y); }}
       role="button"
       tabindex="0"
     >
-      <title>{marker.note.content_md ?? "Note marker"}</title>
+      <title>{marker.deleted ? `${marker.note.content_md ?? "Note marker"} — Annotation deleted` : (marker.note.content_md ?? "Note marker")}</title>
       <g style="transform: scale({invScale}); transform-origin: 0 0;">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="drop-shadow-md">
           <path

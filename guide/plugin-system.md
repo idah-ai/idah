@@ -68,6 +68,20 @@ Each modality object describes an annotation mode:
 | `label` | `string` | Human-readable modality name |
 | `shapes` | `object` | Map of shape types this modality supports |
 
+Each shape (and tagging entry) may declare an optional `args` object describing its `shape_args` keys. The syntax follows JSON Schema (`type`, with an `x-` extension for the identity key):
+
+```json
+"bounding-box": {
+  "label": "Bounding Box",
+  "icon": "api/v1/plugins/idah-video/assets/bounding-box-icon.svg",
+  "args": {
+    "frames": { "type": "array", "x-identity-key": "frame" }
+  }
+}
+```
+
+Only `type: "array"` entries with a non-empty String `x-identity-key` are read today: they tell the dataset service which arrays inside `shape_args` are keyed by that identity key, so annotation change history diffs keyed arrays by item rather than by position (the video plugin's `frames` is keyed by `frame`). A non-Hash `args` fails the manifest schema and stops the service from booting; any other malformed entry is ignored with a warning. The image plugin declares no `args`. The setting service returns `args` to the frontend (see "Modality Shapes" below).
+
 ### Entry Points
 
 | Key | Type | Purpose |
@@ -260,7 +274,7 @@ Returns all modalities across all plugins, mapped to their owning plugin names. 
 GET /plugins/modalities/:name
 ```
 
-Returns the available shape types for a specific modality (identified by its `name` parameter). Each shape includes a label and any shape-specific configuration.
+Returns the available shape types for a specific modality (identified by its `name` parameter). Each shape includes a label, an icon, and — when the manifest declares it — its `args` (see "Modality Objects" above). The frontend types this as `ModalityShape` with an optional `args` field.
 
 ### Plugin Assets
 
