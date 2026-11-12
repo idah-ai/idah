@@ -190,7 +190,8 @@
     displayKey="name"
     searchable
     searchKeyWithOperation="name__match"
-    placeholder="Select template"
+    placeholder="Select label template"
+    searchPlaceholder="Search a template"
     valueKey="id"
     dataSource={labelConfigTemplateDataSource}
     listOptions={{
@@ -214,7 +215,7 @@
 
     {#key $refetches.labelConfigTemplates.list}
       {#await refreshSheetData() then}
-        <div class="flex h-full flex-col gap-4 px-4 pb-4">
+        <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
           {#if isSelected && loaded}
             <section class="flex items-center">
               <EditableTextField

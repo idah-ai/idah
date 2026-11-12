@@ -28,6 +28,7 @@ admin:
     - "dataset:entry_stats.read.*"
     - "dataset:entry_category_counts.read.*"
     - "dataset:label_config_templates.*.*"
+    - "dataset:feedback_config_templates.*.*"
 
     # Media Service
     - "media:medias.*.*"

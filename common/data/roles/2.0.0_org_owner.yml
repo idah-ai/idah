@@ -34,6 +34,7 @@ org_owner:
     - "dataset:entry_stats.read.as_org_owner"
     - "dataset:entry_category_counts.read.as_org_owner"
     - "dataset:label_config_templates.*.as_org_owner"
+    - "dataset:feedback_config_templates.*.as_org_owner"
 
     # Media Service
     - "media:medias.*.as_org_owner"

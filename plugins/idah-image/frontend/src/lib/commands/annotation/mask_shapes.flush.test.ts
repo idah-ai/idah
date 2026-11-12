@@ -155,6 +155,23 @@ describe("idah-image:annotation.mask-shapes.flush", () => {
       );
     });
 
+    it("records the existing mask's category for category.reuse-last", async () => {
+      const dataModule = await import("$lib/state/data.svelte");
+      (dataModule.data.annotations as any).items = [
+        { id: "ann-123", shape_type: "idah-image:mask", category: "road/lane", shape_args: {} },
+      ];
+      const { recentCategory } = await import("$lib/state/recent-category");
+      recentCategory.reset();
+      _mockAnnotationId = "ann-123";
+      _mockDirtyTiles = ["0:0"];
+      _mockTileBuffers.set("0:0", createFullBuffer());
+      register(mockDriver);
+      const registered = mockDriver.command.register.mock.calls[0][0];
+      await registered.callback().do();
+
+      expect(recentCategory.get()).toEqual({ category: "road/lane", shapeType: "idah-image:mask" });
+    });
+
     it("undo restores prior tile values", async () => {
       // Set up an existing annotation with prior tile data
       const existingData = {

@@ -14,6 +14,8 @@ api/project_ro_all:
     - "dataset:annotations.read.*"
     - "dataset:note_feeds.read.*"
     - "dataset:note_comments.read.*"
+    - "dataset:label_config_templates.read.*"
+    - "dataset:feedback_config_templates.read.*"
     - "dataset:entry_stats.read.*"
 
     # Media Service - Read Only (Project level)

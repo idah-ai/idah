@@ -8,27 +8,29 @@
     SquareIcon,
     XIcon,
   } from "@lucide/svelte";
-  import { onMount } from "svelte";
+  import { onMount, setContext } from "svelte";
   import { SvelteURL } from "svelte/reactivity";
   import { slide } from "svelte/transition";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import { Spinner } from "@/components/ui/spinner";
+  import NoteCommentCard from "@/plugin/layout/sidebar/notes/cards/NoteCommentCard.svelte";
+  import NoteForm from "@/plugin/layout/sidebar/notes/inputs/NoteForm.svelte";
+  import NoteFeedCard from "@/plugin/layout/sidebar/notes/cards/NoteFeedCard.svelte";
+  import NoteCardLoading from "@/plugin/layout/sidebar/notes/cards/NoteCardLoading.svelte";
+  import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/NoteDropdownMenus.svelte";
+  import ResolveNoteFeedButton from "@/plugin/layout/sidebar/notes/buttons/ResolveNoteFeedButton.svelte";
   import Text from "@/components/ui/text/Text.svelte";
-  import ResolveNoteFeedButton from "@/plugin/layout/sidebar/notes/buttons/resolve-note-feed-button.svelte";
-  import NoteCommentCard from "@/plugin/layout/sidebar/notes/cards/note-comment-card.svelte";
-  import NoteFeedCard from "@/plugin/layout/sidebar/notes/cards/note-feed-card.svelte";
-  import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
-  import NoteInputField from "@/plugin/layout/sidebar/notes/inputs/note-input-field.svelte";
 
   import { AuthContext } from "@/security/AuthContext";
   import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
   import { noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
+  import { noteFeedToV2 } from "@/plugin/v2/driver/adapter/notes";
   import { deleteNoteFeed } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
   import { refetches } from "@/utils/refetch";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { Hash } from "@/utils/types";
@@ -42,6 +44,8 @@
   }
   let { driver, open, onSidebarClose }: Props = $props();
 
+  setContext("driver", driver);
+
   // Variables
   let selectedNoteFeed: NoteFeedRecord | null = $state(null);
   let selectedNoteCommentId: string | null = $state(null);
@@ -50,8 +54,10 @@
   let isDetailView = $derived(!!selectedNoteFeed);
   let noteFeedFilters = $state<Hash>({ status__in: ["pending"] });
   let isFilteringResolved = $derived(noteFeedFilters.status__in.includes("resolved"));
+  let isSubmitting = $state<boolean>(false);
   let isHidingOutdated = $state(false);
   let contentMd = $state<string>("");
+  let feedbackKeys = $state<string[]>([]);
 
   let isSelectedFeedOwner = $derived(AuthContext.currentAuthContext?.email === selectedNoteFeed?.created_by_email);
 
@@ -121,21 +127,7 @@
             if (!adapter.getNote(feed.id)) {
               await adapter.fetchForEntry();
             }
-            adapter.focusNote({
-              id: feed.id,
-              anchor: {
-                annotation_id: feed.annotation_id,
-                anchor_type: feed.anchor_type,
-                position: feed.position,
-              },
-              content_md: feed.content_md,
-              status: feed.status,
-              resolved: feed.status === "resolved",
-              created_by_email: feed.created_by_email,
-              created_at: feed.created_at?.toString(),
-              updated_at: feed.updated_at?.toString(),
-              edited_at: feed.edited_at?.toString() ?? null,
-            });
+            adapter.focusNote(noteFeedToV2(feed));
           }
         }
       }
@@ -149,8 +141,16 @@
   // Functions
   function selectNoteFeed(noteFeed: NoteFeedRecord) {
     switch (noteFeed.noteType) {
-      case "general": {
+      case "entry": {
+        // Clear any previously focused/selected anchor note in the plugin overlay
+        driver.notesAdapter?.selectNote(null);
+
+        // Reset viewport zoom/pan to fit the full media
+        driver.command.call(`${driver.dataset.modality}:viewport.reset`);
+
         selectedNoteFeed = noteFeed;
+        feedbackKeys = [];
+        contentMd = "";
         break;
       }
 
@@ -158,21 +158,7 @@
         // Not a general note — hand off to the plugin so it can seek to the anchor
         const adapter = driver.notesAdapter;
         if (adapter) {
-          adapter.focusNote({
-            id: noteFeed.id,
-            anchor: {
-              annotation_id: noteFeed.annotation_id,
-              anchor_type: noteFeed.anchor_type,
-              position: noteFeed.position,
-            },
-            content_md: noteFeed.content_md,
-            status: noteFeed.status,
-            resolved: noteFeed.status === "resolved",
-            created_by_email: noteFeed.created_by_email,
-            created_at: noteFeed.created_at?.toString(),
-            updated_at: noteFeed.updated_at?.toString(),
-            edited_at: noteFeed.edited_at?.toString() ?? null,
-          });
+          adapter.focusNote(noteFeedToV2(noteFeed));
         }
         break;
       }
@@ -181,6 +167,8 @@
 
   function backToNoteFeedList() {
     selectedNoteFeed = null;
+    feedbackKeys = [];
+    contentMd = "";
     $refetches.noteFeeds.list = new Date();
 
     // Remove hash from url if exists
@@ -235,41 +223,51 @@
   }
 
   async function createNote() {
-    if (!contentMd.trim()) return;
+    if (!isAllowToCreateNewNote || (isDetailView ? !contentMd.trim() : !contentMd.trim() && feedbackKeys.length === 0))
+      return;
 
-    if (isListView) {
-      /** Create a general note feed, if current view is list */
-      await noteFeedsBackendDataSource.create({
-        attributes: {
-          entry_id: driver.id,
-          annotation_id: undefined,
-          anchor_type: "entry",
-          content_md: contentMd,
-        },
-      });
-      $refetches.noteFeeds.list = new Date();
-    }
+    isSubmitting = true;
+    try {
+      if (isListView) {
+        /** Create a general note feed, if current view is list */
+        await noteFeedsBackendDataSource.create({
+          attributes: {
+            entry_id: driver.id,
+            annotation_id: undefined,
+            anchor_type: "entry",
+            content_md: contentMd,
+            feedback_keys: feedbackKeys,
+          },
+        });
+        $refetches.noteFeeds.list = new Date();
+      }
 
-    if (isDetailView && selectedNoteFeed) {
-      /** Create a note comment under the selected note feed, if current view is detail */
-      await noteCommentsBackendDataSource.create({
-        attributes: {
-          note_feed_id: selectedNoteFeed.id,
-          content_md: contentMd,
-        },
-        relationships: {
-          note_feed: {
-            data: {
-              id: selectedNoteFeed.id,
-              type: "dataset:note_feeds",
+      if (isDetailView && selectedNoteFeed) {
+        /** Create a note comment under the selected note feed, if current view is detail */
+        await noteCommentsBackendDataSource.create({
+          attributes: {
+            note_feed_id: selectedNoteFeed.id,
+            content_md: contentMd,
+          },
+          relationships: {
+            note_feed: {
+              data: {
+                id: selectedNoteFeed.id,
+                type: "dataset:note_feeds",
+              },
             },
           },
-        },
-      });
-      $refetches.noteComments.list = new Date();
-    }
+        });
+        $refetches.noteComments.list = new Date();
+      }
 
-    contentMd = "";
+      contentMd = "";
+      feedbackKeys = [];
+    } catch (err) {
+      showActionFailedToast(err);
+    } finally {
+      isSubmitting = false;
+    }
   }
 
   async function deleteNote() {
@@ -344,7 +342,9 @@
         <!-- CONTENT::LIST VIEW -->
         {#if isListView}
           {#await loadNoteFeeds()}
-            <Spinner />
+            {#each Array.from({ length: 8 }) as _, i (i)}
+              <NoteCardLoading />
+            {/each}
           {:then noteFeeds}
             {@const visibleFeeds = isHidingOutdated ? noteFeeds.filter((nf) => !nf.isAnchorDeleted) : noteFeeds}
             {#each visibleFeeds as noteFeed (noteFeed.id)}
@@ -372,6 +372,7 @@
           {#await loadNoteComments() then { noteFeed, noteComments }}
             {#if noteFeed}
               <NoteFeedCard
+                highlighted={selectedNoteFeed.id === noteFeed.id}
                 noteFeedRecord={noteFeed}
                 onNoteFeedUpdated={(updatedFeed) => {
                   selectedNoteFeed = updatedFeed;
@@ -389,14 +390,23 @@
     </div>
 
     <!-- FOOTER -->
-    <section class="bg-background sticky bottom-0 mt-auto flex border-t p-2">
-      <NoteInputField
+    <section
+      class="bg-background sticky bottom-0 mt-auto flex flex-col gap-4 border-t p-2 shadow-[0_-8px_20px_-6px_rgba(0,0,0,0.15)]"
+    >
+      <NoteForm
+        showFeedbackField={isListView}
+        feedbackValues={feedbackKeys}
+        onFeedbackSelected={(selected) => (feedbackKeys = selected)}
+        contentValue={contentMd}
+        onContentChange={(newValue) => (contentMd = newValue)}
+        contentLabel={isListView ? "Comment" : "Reply"}
+        contentPlaceholder={isListView ? "Leave a comment here" : "Leave a reply here"}
+        submitLabel={isListView ? "Add Note" : "Reply"}
+        loading={isSubmitting}
+        loadingLabel={isListView ? "Commenting..." : "Replying..."}
         disabled={!isAllowToCreateNewNote}
-        placeholder={isListView ? "Write your note" : "Reply"}
-        value={contentMd}
-        onInput={(e) => (contentMd = e.currentTarget.value)}
         onSubmit={createNote}
-      ></NoteInputField>
+      />
     </section>
   </div>
 {/if}
