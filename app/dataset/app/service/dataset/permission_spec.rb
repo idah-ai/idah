@@ -265,6 +265,100 @@ RSpec.describe Dataset::Service, database: true do
     end
   end
 
+  # Permission: Organization Owner acting through a membership on a FOREIGN project
+  # ------------------------------------------------
+  # An org_owner of Org A who is a member of a project in Org B is evaluated on
+  # that project with their membership role, not org_owner powers. Creating a
+  # dataset requires effective rank >= project_owner.
+  context "as Organization Owner with a membership on a foreign project", as: :org_owner do
+    subject { described_class.new(current_auth_context) }
+
+    let(:foreign_project_id) do
+      project_repo.create(name: "Foreign Project", created_by_email: "system@example.com", organization_id: 999)
+    end
+    let(:foreign_dataset_id) do
+      dataset_repo.create(
+        name: "Foreign Dataset",
+        project_id: foreign_project_id,
+        modality: "video",
+        workflow_configuration: {},
+        labeling_configuration: {}
+      )
+    end
+
+    describe "as a project_owner member of the foreign project" do
+      before do
+        project_member_repo.create(
+          project_id: foreign_project_id,
+          account_id: current_auth_context.metadata[:id],
+          role: "project_owner",
+          email: "org_owner@example.com",
+          invited_by_id: 1
+        )
+      end
+
+      it "can create a dataset on the foreign project (project_owner rank)" do
+        create_data[:data][:relationships][:project][:data][:id] = foreign_project_id
+
+        record = subject.create(deserialize(create_data))
+
+        expect(record.project_id).to eq foreign_project_id
+      end
+    end
+
+    describe "as a reviewer member of the foreign project" do
+      before do
+        project_member_repo.create(
+          project_id: foreign_project_id,
+          account_id: current_auth_context.metadata[:id],
+          role: "reviewer",
+          email: "org_owner@example.com",
+          invited_by_id: 1
+        )
+      end
+
+      it "rejects dataset creation on the foreign project (reviewer rank < project_owner)" do
+        create_data[:data][:relationships][:project][:data][:id] = foreign_project_id
+
+        expect {
+          subject.create(deserialize(create_data))
+        }.to raise_error(
+          Verse::Error::Unauthorized,
+          "You do not have permission to create dataset on this project"
+        )
+      end
+
+      it "can index the foreign dataset (reviewer read access via membership)" do
+        foreign_dataset_id
+        entry_repo.create(
+          project_id: foreign_project_id,
+          dataset_id: foreign_dataset_id,
+          priority: 1,
+          resource: "http://example.com/foreign.mp4",
+          wf_step: "start",
+          status: "pending",
+          assigned_to_id: current_auth_context.metadata[:id]
+        )
+
+        result = subject.index({})
+
+        expect(result.map(&:id)).to include(foreign_dataset_id)
+      end
+
+      it "grants nothing on the foreign project when the membership is disabled" do
+        member = project_member_repo.find_by!(
+          { project_id: foreign_project_id, account_id: current_auth_context.metadata[:id] }
+        )
+        project_member_repo.delete(member.id) # soft delete
+        foreign_dataset_id
+
+        result = subject.index({})
+
+        expect(result.map(&:id)).not_to include(foreign_dataset_id)
+      end
+    end
+  end
+
   # Permission: Project Owner
   # ------------------------------------------------
   # Datasets      | index | create | update | delete

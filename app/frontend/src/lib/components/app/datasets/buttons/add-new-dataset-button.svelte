@@ -16,19 +16,7 @@
   }
 </script>
 
-<Can
-  action="create"
-  resource="dataset:datasets"
-  scopes={[
-    "as_org_owner",
-    {
-      as_user: {
-        projectId,
-        projectMemberRoles: ["project_owner"],
-      },
-    },
-  ]}
->
+<Can action="create" resource="dataset:datasets" {projectId} minRole="project_owner">
   <Button onclick={openNewDatasetDialog}>
     <PlusIcon />
     New Dataset

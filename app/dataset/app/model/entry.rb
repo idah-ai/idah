@@ -68,6 +68,8 @@ module Entry
   end
 
   class Repository < Verse::Sequel::Repository
+    include ActorEventMetadata
+
     self.table = "entries"
     self.resource = Resource::Dataset::Entries
 
@@ -159,23 +161,15 @@ module Entry
         scope.all? { table }
 
         scope.as_org_owner? do
-          org_ids = auth_context.custom_scopes[:org]
-          project_ids = auth_context.custom_scopes[:project]
-          if org_ids
-            table.where(
-              table.db[:projects]
-                .where(organization_id: org_ids)
-                .where(id: Sequel[:entries][:project_id])
-                .select(1).exists
-            )
-          elsif project_ids
-            table.where(project_id: project_ids)
+          if auth_context.custom_scopes[:project]
+            # API-key project scope: no membership union.
+            table.where(project_id: auth_context.custom_scopes[:project])
           else
-            table.where(Sequel.lit("false"))
+            table.where(org_projects_condition | user_project_scoped_condition(action))
           end
         end
 
-        scope.as_user? { user_project_scoped_query(action) }
+        scope.as_user? { table.where(user_project_scoped_condition(action)) }
       end
     end
 
@@ -186,10 +180,21 @@ module Entry
     # Info:
     # 1. project_owner can create, update and delete entries
     # 2. annotator and reviewer can only read entries assigned to them
+
+    def org_projects_condition
+      org_ids = auth_context.custom_scopes[:org]
+      return Sequel.lit("false") unless org_ids&.any?
+
+      table.db[:projects]
+           .where(organization_id: org_ids)
+           .where(id: Sequel[:entries][:project_id])
+           .select(1).exists
+    end
+
     query
-    def user_project_scoped_query(action)
+    def user_project_scoped_condition(action)
       # Ignore create action as it will be handled in service layer
-      return table if action == :create
+      return Sequel.lit("true") if action == :create
 
       account_id = auth_context.metadata[:id]
 
@@ -226,14 +231,12 @@ module Entry
           )
         SQL
 
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            with_roles: %w[project_owner],
-            annotator_roles: %w[annotator],
-            reviewer_roles: %w[reviewer]
-          )
+        Sequel.lit(
+          scoped_fragment,
+          account_id:,
+          with_roles: %w[project_owner],
+          annotator_roles: %w[annotator],
+          reviewer_roles: %w[reviewer]
         )
       when :update, :delete
         scoped_fragment = <<-SQL
@@ -247,12 +250,10 @@ module Entry
           )
         SQL
 
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            roles: %w[project_owner]
-          )
+        Sequel.lit(
+          scoped_fragment,
+          account_id:,
+          roles: %w[project_owner]
         )
       else
         raise Verse::Error::Unauthorized,
@@ -262,7 +263,7 @@ module Entry
 
     def create(attributes)
       with_metadata do
-        add_event_metadata(
+        add_metadata(
           project_id: attributes[:project_id],
           dataset_id: attributes[:dataset_id]
         )
@@ -275,7 +276,7 @@ module Entry
       with_metadata do
         entry = find!(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: attributes[:project_id] || entry.project_id,
           dataset_id: attributes[:dataset_id] || entry.dataset_id,
           entry_id: id
@@ -289,7 +290,7 @@ module Entry
       with_metadata do
         entry = find!(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: entry.project_id,
           dataset_id: entry.dataset_id,
           entry_id: id
@@ -324,7 +325,7 @@ module Entry
     def assign(id, assigned_to_id, assigned_to_email)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: entry.project_id,
         dataset_id: entry.dataset_id,
         entry_id: id
@@ -341,7 +342,7 @@ module Entry
     def unassign(id)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: entry.project_id,
         dataset_id: entry.dataset_id,
         entry_id: id
@@ -358,7 +359,7 @@ module Entry
     def reopen(id, attributes)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: entry.project_id,
         dataset_id: entry.dataset_id,
         entry_id: id
@@ -375,7 +376,7 @@ module Entry
     def submit(id, attributes)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: attributes[:project_id] || entry.project_id,
         dataset_id: attributes[:dataset_id] || entry.dataset_id,
         entry_id: id,
@@ -394,7 +395,7 @@ module Entry
     def error(id, attributes)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: attributes[:project_id] || entry.project_id,
         dataset_id: attributes[:dataset_id] || entry.dataset_id,
         entry_id: id
@@ -413,17 +414,6 @@ module Entry
       transaction do
         update!(entry.id, { status: })
       end
-    end
-
-    private
-
-    def add_event_metadata(**opts)
-      add_metadata(
-        actor_account_id: auth_context.metadata[:id],
-        actor_account_email: auth_context.metadata[:email],
-        actor_account_role_name: auth_context.metadata[:role],
-        **opts
-      )
     end
   end
 end

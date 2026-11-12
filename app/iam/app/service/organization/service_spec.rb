@@ -59,14 +59,26 @@ RSpec.describe Organization::Service, database: true do
   end
 
   describe "#delete" do
-    before do
-      allow(Api[:idah].dataset.projects).to receive(:index).and_return(Verse::JsonApi::Struct.new([]))
-    end
+    it "deletes an organization when it has no projects" do
+      allow(Api[:idah].dataset.projects).to receive(:index_all).and_return([])
 
-    it "deletes an organization" do
       organization_id = organization_repo.create(attributes)
       subject.delete(organization_id)
       expect { organization_repo.find!(organization_id) }.to raise_error(Verse::Error::NotFound)
+    end
+
+    it "refuses to delete an organization that still has projects" do
+      allow(Api[:idah].dataset.projects).to receive(:index_all).and_return(
+        [double(id: "p1")]
+      )
+
+      organization_id = organization_repo.create(attributes)
+      expect {
+        subject.delete(organization_id)
+      }.to raise_error(Verse::Error::Unauthorized, /still has project/)
+
+      # The organization is left intact.
+      expect(organization_repo.find!(organization_id).id.to_s).to eq(organization_id)
     end
   end
 end

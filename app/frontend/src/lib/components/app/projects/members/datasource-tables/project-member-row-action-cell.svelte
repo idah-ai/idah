@@ -1,15 +1,17 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { UserRoundXIcon } from "@lucide/svelte";
+  import { RotateCcwIcon, UserRoundXIcon } from "@lucide/svelte";
+  import { onMount } from "svelte";
 
   import MemberEntriesWarning from "@/components/app/projects/members/datasource-tables/member-entries-warning.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import Can from "@/security/can.svelte";
 
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+  import { authStatus } from "@/security/AuthContext";
+  import { canManageProjectMember } from "@/security/roleHierarchy";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
@@ -24,10 +26,25 @@
   interface Props extends DataTableCellBaseProps<ProjectMemberRecord> {
     record: ProjectMemberRecord;
   }
-  let { record: projectMember }: Props = $props();
+  let { record: projectMember, contexts = {} }: Props = $props();
 
   // Variables
   let projectId = page.params.projectId as string;
+  let canManageMember: boolean = $state(false);
+  let canResendInvitation: boolean = $state(false);
+
+  // Lifecycle
+  onMount(async () => {
+    const currentAccount = $authStatus.authContext;
+    const effectiveRank = currentAccount ? await currentAccount.effectiveProjectRank(projectMember.project_id) : null;
+    canManageMember = !!effectiveRank && canManageProjectMember(effectiveRank, String(projectMember.role));
+
+    // Resend is offered only for members whose account has not joined. The
+    // joined status is resolved on read by the members page and passed via
+    // `contexts` (a map of account_id → joined_at).
+    const joinedAt = contexts.accountJoinedAt?.[projectMember.account_id];
+    canResendInvitation = canManageMember && !joinedAt;
+  });
 
   // Functions
   async function confirmRemoveProjectMember(): Promise<void> {
@@ -57,21 +74,22 @@
       },
     });
   }
+
+  async function resendInvitation(): Promise<void> {
+    try {
+      await projectMembersBackendDataSource.resend_invitation({ id: projectMember.id });
+      $refetches.projectMembers.list = new Date();
+      showToast.success({
+        title: "Invitation resent",
+        description: `The invitation for "${projectMember.email}" has been resent.`,
+      });
+    } catch (error) {
+      showActionFailedToast(error);
+    }
+  }
 </script>
 
-<Can
-  action="delete"
-  resource="dataset:project_members"
-  scopes={[
-    "as_org_owner",
-    {
-      as_user: {
-        projectId,
-        projectMemberRoles: ["project_owner"],
-      },
-    },
-  ]}
->
+{#if canManageMember}
   <Tooltips align="center">
     {#snippet trigger()}
       <Button variant="ghost" size="icon-sm" onclick={confirmRemoveProjectMember}>
@@ -83,4 +101,18 @@
       Remove "{projectMember.email}" <br /> from project membership
     {/snippet}
   </Tooltips>
-</Can>
+{/if}
+
+{#if canResendInvitation}
+  <Tooltips align="center">
+    {#snippet trigger()}
+      <Button variant="ghost" size="icon-sm" onclick={resendInvitation}>
+        <RotateCcwIcon />
+      </Button>
+    {/snippet}
+
+    {#snippet content()}
+      Resend invitation to "{projectMember.email}"
+    {/snippet}
+  </Tooltips>
+{/if}

@@ -30,9 +30,21 @@ class AccountsExpo < BaseExpo
     end
 
     show
-    create
     update
     delete
+  end
+
+  expose on_http(:post, "/invite") do
+    desc "Invite an account (guarded; direct creation is restricted)"
+    input do
+      field? :name, String
+      field :email, String
+      field? :role_name, String
+      field? :role_scope, Hash
+    end
+  end
+  def invite
+    service.invite(params)
   end
 
   expose on_http(:patch, "/:token/join", auth: nil) do
@@ -51,18 +63,18 @@ class AccountsExpo < BaseExpo
   end
 
   expose on_http(:post, "/:id/resend_invitation") do
-    desc "Resend account invitation email"
+    desc "Resend account invitation email (guarded)"
     input do
       field :id, String
     end
   end
   def resend_invitation
-    service.resend_pending_invitations(params[:id])
+    service.resend_invitation(params[:id])
   end
 
   expose on_resource_event(Resource::Iam::Organizations, "deleted")
   def on_organization_deleted
     organization_id = message.content[:resource_id]
-    service.remove_org_from_account_role_scope(organization_id)
+    service.remove_org_from_account_role_scope(organization_id, message.content[:metadata])
   end
 end

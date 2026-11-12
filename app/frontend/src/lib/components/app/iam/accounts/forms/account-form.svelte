@@ -6,8 +6,11 @@
 
   import { roles } from "@/data/model/iam/accounts/constants";
   import { AccountRecord } from "@/data/model/iam/accounts/record";
+  import { authStatus } from "@/security/AuthContext";
+  import { filterAssignableAccountRoles } from "@/security/roleHierarchy";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
+  import type { LabelValue } from "@/utils/types";
   import AccountEntries from "@/components/app/projects/entries/account-entries.svelte";
 
   // Props
@@ -19,9 +22,22 @@
 
   // Variables
   let resource: string = AccountRecord.type;
+  let assignableRoles: Array<LabelValue<string | number>> = $state(roles);
 
   // Variables::Reactive
   let { name, email, role_name, enabled } = $derived(account);
+
+  // Filter the assignable roles by the actor's account role.
+  $effect(() => {
+    const currentAccount = $authStatus.authContext;
+    if (!currentAccount) return;
+
+    const allowed = filterAssignableAccountRoles(
+      currentAccount.roleName,
+      roles.map((r) => String(r.value)),
+    );
+    assignableRoles = roles.filter((r) => allowed.includes(String(r.value)));
+  });
 
   // Functions
   $effect(() => {
@@ -62,7 +78,7 @@
       label="Role"
       placeholder="Select a role"
       required
-      choices={roles}
+      choices={assignableRoles}
       errors={fieldErrors["role_name"]}
       value={role_name}
       onSelected={(selectedValue) => {

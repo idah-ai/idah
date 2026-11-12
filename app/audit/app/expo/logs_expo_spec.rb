@@ -41,6 +41,23 @@ RSpec.describe LogsExpo, type: :exposition, as: :system do
         )
       end
     end
+
+    it "skips an event without actor_account_id with a warning, no exception" do
+      @content[:metadata].delete(:actor_account_id)
+      expect(service).not_to receive(:create)
+      allow(Verse.logger).to receive(:warn)
+
+      expect {
+        Verse.publish_resource_event(
+          resource_type: @resource_type,
+          resource_id: @resource_id,
+          event: "deleted",
+          payload: @content
+        )
+      }.not_to raise_error
+
+      expect(Verse.logger).to have_received(:warn).with(/no actor_account_id/)
+    end
   end
 
   describe "account session events" do

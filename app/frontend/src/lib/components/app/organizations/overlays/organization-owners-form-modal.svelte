@@ -40,7 +40,7 @@
       /** Get latest account data */
       const { data: account } = await accountsBackendDataSource.get(accountId, {
         fields: {
-          [AccountRecord.type]: ["id", "role_name", "role_scope"],
+          [AccountRecord.type]: ["id", "email", "role_name", "role_scope"],
         },
         noCache: true,
       });
@@ -48,22 +48,18 @@
       /** Skip if account is admin */
       if (account.role_name === "admin") continue;
 
-      /** Update role_name and role_scope */
-      await accountsBackendDataSource.update(
-        account.id,
-        {
-          attributes: {
-            role_name: "org_owner",
-            role_scope: {
-              ...account.role_scope,
-              org: [...(account.role_scope.org || []), String(organizationId)],
-            },
-          },
+      /**
+       * Adding an org owner goes through the guarded invite endpoint. The
+       * backend grants the actor's own orgs and merges with any existing scope.
+       */
+      await accountsBackendDataSource.invite({
+        email: account.email,
+        role_name: "org_owner",
+        role_scope: {
+          ...account.role_scope,
+          org: [...(account.role_scope.org || []), String(organizationId)],
         },
-        {
-          showErrorToast: false,
-        },
-      );
+      });
     }
 
     closeThisModal();

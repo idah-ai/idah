@@ -10,6 +10,7 @@ RSpec.describe Entry::Service, database: true do
   let(:repo) { Entry::Repository.new(auth_context) }
   let(:project_repo) { Project::Repository.new(auth_context) }
   let(:dataset_repo) { Dataset::Repository.new(auth_context) }
+  let(:project_member_repo) { ProjectMember::Repository.new(auth_context) }
 
   let!(:project_id) do
     project_repo.create(
@@ -1016,6 +1017,79 @@ RSpec.describe Entry::Service, database: true do
       it "raises ValidationFailed" do
         expect { subject.reopen(completed_entry, target_step: "export") }
           .to raise_error(Verse::Error::ValidationFailed, /Invalid reopen target step/)
+      end
+    end
+
+    context "as org_owner with a membership on a foreign project", as: :org_owner do
+      subject { described_class.new(current_auth_context) }
+
+      let(:foreign_project_id) do
+        project_repo.create(name: "Foreign Project", created_by_email: "system@example.com", organization_id: 999)
+      end
+      let(:foreign_dataset_id) do
+        dataset_repo.create(
+          name: "Foreign Dataset",
+          project_id: foreign_project_id,
+          modality: "video",
+          workflow_configuration: {},
+          labeling_configuration: {}
+        )
+      end
+      let(:foreign_completed_entry) do
+        repo.create(
+          project_id: foreign_project_id,
+          dataset_id: foreign_dataset_id,
+          resource: "foreign-completed.mp4",
+          status: "completed",
+          wf_step: "done",
+          assigned_to_id: current_auth_context.metadata[:id],
+          submitted_by_id: 42,
+          submitted_by_email: "annotator@example.com",
+          reviewed_by_id: 43,
+          reviewed_by_email: "reviewer@example.com"
+        )
+      end
+
+      context "as a reviewer member of the foreign project" do
+        before do
+          project_member_repo.create(
+            project_id: foreign_project_id,
+            account_id: current_auth_context.metadata[:id],
+            role: "reviewer",
+            name: "Org Owner User",
+            email: "org_owner@example.com",
+            invited_by_id: 1
+          )
+        end
+
+        it "cannot reopen an entry there" do
+          foreign_completed_entry
+
+          expect { subject.reopen(foreign_completed_entry, target_step: "review") }
+            .to raise_error(Verse::Error::RecordNotFound)
+        end
+      end
+
+      context "as a project_owner member of the foreign project" do
+        before do
+          project_member_repo.create(
+            project_id: foreign_project_id,
+            account_id: current_auth_context.metadata[:id],
+            role: "project_owner",
+            name: "Org Owner User",
+            email: "org_owner@example.com",
+            invited_by_id: 1
+          )
+        end
+
+        it "can reopen an entry there" do
+          foreign_completed_entry
+
+          result = subject.reopen(foreign_completed_entry, target_step: "review")
+
+          expect(result.wf_step).to eq("review")
+          expect(result.status).to eq("pending")
+        end
       end
     end
   end

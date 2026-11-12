@@ -138,6 +138,8 @@ GET /exports/formats
 
 Orchestrates export creation, status tracking, and file retrieval.
 
+**Auth scoping:** the `as_org_owner` scope is the **union** of the actor's org projects and the projects where the actor is an enabled `project_owner` member (the sync `as_user` rule), resolved through `ProjectMembership::Lookup`. An org_owner who is a reviewer on a foreign project therefore gets **no** sync access there — this asymmetry vs dataset/media is intended.
+
 ```ruby
 class Exports::Service < Verse::Service::Base
   use_repository Exports::Repository

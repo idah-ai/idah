@@ -74,16 +74,9 @@ module NoteFeed
               "entry not found to create a note feed"
       end
 
-      # With "as_user" access ensure account can "create" note feed to the project
-      if auth_context.can?(:create, note_feeds.class.resource) == :as_user &&
-         ScopedQuery::Service.without_project_access?(
-           auth_context.metadata[:id],
-           entry.project_id,
-           ["project_owner", "reviewer", "annotator"]
-         )
-        raise Verse::Error::Unauthorized,
-              "You do not have permission to create note feed on this project"
-      end
+      # Creating a note feed requires effective rank >= project_owner, or an
+      # annotator/reviewer membership on the entry's project.
+      ensure_note_feed_create_access!(entry.project_id)
 
       attributes[:id] = UUIDv7.generate
       attributes[:project_id] = entry.project_id
@@ -117,6 +110,20 @@ module NoteFeed
     end
 
     private
+
+    # Creating a note feed requires effective rank >= project_owner, or an
+    # annotator/reviewer membership on the entry's project.
+    def ensure_note_feed_create_access!(project_id)
+      access = ProjectAccess::Service.resolve(
+        auth_context, project_id, action: :create, resource: note_feeds.class.resource
+      )
+      return if %i[all org_owner].include?(access)
+
+      return if %i[project_owner annotator reviewer].include?(access)
+
+      raise Verse::Error::Unauthorized,
+            "You do not have permission to create note feed on this project"
+    end
 
     # The resulting note must keep at least one of feedback_keys or content_md,
     # mirroring the ArgumentsSchema rule enforced on the create endpoint.

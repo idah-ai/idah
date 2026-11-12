@@ -104,6 +104,7 @@ RSpec.describe Project::Service, database: true do
 
         expect(result.name).to eq create_data[:data][:attributes][:name]
         expect(@org_scope).to include(result.organization_id.to_s)
+        expect(subject.auth_context.checked?).to be(true)
       end
 
       it "can update" do

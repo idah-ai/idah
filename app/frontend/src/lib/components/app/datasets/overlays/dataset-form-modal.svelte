@@ -27,7 +27,6 @@
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { IConfig } from "@/plugin/v2/types";
-  import type { ProjectMemberScope } from "@/security/types";
   import type { Hash } from "@/utils/types";
 
   // Props
@@ -40,11 +39,8 @@
   onMount(async () => {
     const currentAccount = $authStatus.authContext;
     if (!projectId) return;
-    const as_project_owner: { as_user: ProjectMemberScope } = {
-      as_user: { projectId, projectMemberRoles: ["project_owner"] },
-    };
     canEditDeliveryDate =
-      (await currentAccount?.can("update", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
+      (await currentAccount?.canOnProject("update", "dataset:datasets", projectId, "project_owner")) || false;
   });
 
   // Variables

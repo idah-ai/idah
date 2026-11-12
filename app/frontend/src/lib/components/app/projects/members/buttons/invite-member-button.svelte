@@ -16,19 +16,7 @@
   }
 </script>
 
-<Can
-  action="create"
-  resource="dataset:project_members"
-  scopes={[
-    "as_org_owner",
-    {
-      as_user: {
-        projectId,
-        projectMemberRoles: ["project_owner"],
-      },
-    },
-  ]}
->
+<Can action="create" resource="dataset:project_members" {projectId} minRole="project_owner">
   <Button onclick={openNewProjectMemberModal}>
     <PlusIcon />
     Invite Members

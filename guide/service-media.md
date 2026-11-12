@@ -201,7 +201,7 @@ end
 Key design points:
 
 - **Upload transactions**: Upload to Shrine first, then create DB record inside a transaction. If the DB write fails, roll back the Shrine upload.
-- **Auth scoping**: Repository scopes queries by the authenticated user's project memberships.
+- **Auth scoping**: Repository scopes queries by the authenticated user's project memberships. The `as_org_owner` scope is the **union** of the actor's org projects and the projects where the actor is an enabled member, resolved through `ProjectMembership::Lookup`.
 - **MIME detection**: Shrine's `determine_mime_type` plugin runs on upload to ensure `mime_type` is accurate.
 
 ### Jobs::Service
