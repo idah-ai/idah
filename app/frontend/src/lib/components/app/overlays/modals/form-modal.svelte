@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
+  import { sheetStore } from "@/components/app/overlays/sheets/sheet.service.svelte";
+
   import Button from "@/components/ui/button/button.svelte";
   import {
     Dialog,
@@ -96,7 +98,12 @@
     interactOutsideBehavior={closeOnOutsideClick && canClickOutside && !preventClose ? "close" : "ignore"}
     showCloseButton={!preventClose}
     onEscapeKeydown={(event) => {
-      if (preventClose) event.preventDefault();
+      // Escape closes the side panel first, when one is open beside the modal.
+      if (preventClose || sheetStore.panelOpen) event.preventDefault();
+    }}
+    onInteractOutside={(event) => {
+      // A side panel sits beside the modal: using it must not close the modal.
+      if ((event.target as Element | null)?.closest?.("[data-app-panel]")) event.preventDefault();
     }}
     class={className}
   >

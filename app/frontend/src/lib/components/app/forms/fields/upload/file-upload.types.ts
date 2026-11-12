@@ -4,7 +4,7 @@ import type { PickedFile } from "@/components/app/forms/fields/upload/file-uploa
 export interface FileUploadPicker {
   kind: "files" | "folder";
   label: string;
-  description: string;
+  description?: string; // shown on hover; leave it out where a help topic explains the pickers
   // Narrows what a "files" dialog offers; defaults to acceptedFileTypes.
   accept?: string[];
 }

@@ -64,12 +64,8 @@
     },
     datasets: {
       pickers: [
-        { kind: "files", label: "Select files", description: "Each zip becomes a dataset, other files one together" },
-        {
-          kind: "folder",
-          label: "Select folder",
-          description: "Each folder becomes a dataset (pick again to add more)",
-        },
+        { kind: "files", label: "Select files" }, // explained by the form's "How it works" help
+        { kind: "folder", label: "Select folder" },
       ],
       dropHint: "or drag and drop files and folders, several at once",
     },

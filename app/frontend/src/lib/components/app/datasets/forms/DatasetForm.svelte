@@ -4,6 +4,7 @@
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import MediaPicker from "@/components/app/datasets/upload/MediaPicker.svelte";
+  import HelpLink from "@/components/app/help/HelpLink.svelte";
   import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
@@ -138,6 +139,10 @@
     <!-- DATASET::MEDIA (create from upload) -->
     {#if uploadMode}
       <div>
+        <div class="mb-2 flex items-center justify-between">
+          <Text size="sm" weight="medium">Media</Text>
+          <HelpLink topic="dataset-upload" label="How it works" />
+        </div>
         <MediaPicker
           class="py-6"
           mode="datasets"

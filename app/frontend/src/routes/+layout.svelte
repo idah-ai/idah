@@ -4,6 +4,7 @@
 
   import favicon from "@/components/app/brand/idah-logo-favicon.svg";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+  import AppSheet from "@/components/app/overlays/sheets/AppSheet.svelte";
 
   import { Toaster } from "@/components/ui/sonner";
 
@@ -18,7 +19,10 @@
   <link rel="icon" href={favicon} />
 </svelte:head>
 
-<main class="bg-background relative flex min-h-screen flex-col">
+<!-- an open side panel (AppSheet), on a wide screen, takes --app-panel-width on the right -->
+<main
+  class="bg-background relative flex min-h-screen flex-col pr-[var(--app-panel-width,0px)] transition-[padding] duration-200"
+>
   <ModeWatcher />
 
   <Toaster position="bottom-center" richColors>
@@ -40,6 +44,7 @@
   </Toaster>
 
   <ConfirmModal />
+  <AppSheet />
 
   {@render children?.()}
 </main>

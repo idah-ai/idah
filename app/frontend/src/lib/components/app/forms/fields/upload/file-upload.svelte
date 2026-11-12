@@ -111,17 +111,24 @@
           />
         {/if}
 
-        <Tooltip delayDuration={200}>
-          <TooltipTrigger>
-            {#snippet child({ props })}
-              <Button {...props} type="button" variant="outline" size="sm" onclick={() => inputs[index]?.click()}>
-                <Icon />
-                {picker.label}
-              </Button>
-            {/snippet}
-          </TooltipTrigger>
-          <TooltipContent>{picker.description}</TooltipContent>
-        </Tooltip>
+        {#snippet pickerButton(props: Record<string, unknown> = {})}
+          <Button {...props} type="button" variant="outline" size="sm" onclick={() => inputs[index]?.click()}>
+            <Icon />
+            {picker.label}
+          </Button>
+        {/snippet}
+        {#if picker.description}
+          <Tooltip delayDuration={200}>
+            <TooltipTrigger>
+              {#snippet child({ props })}
+                {@render pickerButton(props)}
+              {/snippet}
+            </TooltipTrigger>
+            <TooltipContent>{picker.description}</TooltipContent>
+          </Tooltip>
+        {:else}
+          {@render pickerButton()}
+        {/if}
       {/each}
       <Text class="text-muted-foreground" size="sm">{dropHint}</Text>
     </div>
