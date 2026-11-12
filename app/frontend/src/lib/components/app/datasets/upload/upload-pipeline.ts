@@ -131,9 +131,6 @@ export async function uploadSingleMedia(media: UploadItem, context: UploadContex
       }
 
       media.errorMessage = errorMessageOf(error, "Upload failed");
-      if (media.isZip) {
-        media.errorMedias.push({ filename: media.media.name, message: media.errorMessage });
-      }
     }
   }
 

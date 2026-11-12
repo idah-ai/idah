@@ -17,7 +17,7 @@ import { once, uploadAll } from "./upload-pipeline";
 
 const media = (filename: string) => ({ resource: `res-${filename}`, filename });
 const uploaded = (...filenames: string[]) => ({ data: filenames.map(media) });
-const item = (path: string) => createUploadItem(new File(["x"], path.split("/").pop()!));
+const item = (name: string) => createUploadItem(new File(["x"], name)); // a loose file, picked on its own
 
 const entryNames = () => createEntry.mock.calls.map(([body]) => body.attributes.name);
 const entryDatasetIds = () => createEntry.mock.calls.map(([body]) => body.relationships.dataset.data.id);
@@ -100,10 +100,10 @@ describe("uploadAll", () => {
     expect(items[1].errorMessage).toBeTruthy();
   });
 
-  it("names entries by file name only, even for files picked inside folders", async () => {
+  it("allows duplicate entry names", async () => {
     upload.mockResolvedValueOnce(uploaded("0001.jpg")).mockResolvedValueOnce(uploaded("0001.jpg"));
 
-    await run([item("clip_a/0001.jpg"), item("frames.zip")], async () => "ds1");
+    await run([item("0001.jpg"), item("frames.zip")], async () => "ds1");
 
     expect(entryNames()).toEqual(["0001.jpg", "0001.jpg"]); // duplicates are fine
   });
@@ -133,5 +133,15 @@ describe("uploadAll", () => {
     expect(items[0].status).toBe("completed");
     expect(items[0].errorMessage).toBeTruthy();
     expect(entryNames()).toEqual(["ok.jpg"]);
+  });
+
+  it("reports a zip that failed every retry once, not once per attempt", async () => {
+    upload.mockRejectedValue(new Error("down"));
+    const zip = createUploadItem(new File(["x"], "batch.zip"));
+
+    await run([zip], async () => "ds1");
+
+    expect(zip.errorMessage).toBe("Upload failed");
+    expect(zip.errorMedias).toEqual([]); // the summary row lists the zip itself, once (see rowView)
   });
 });

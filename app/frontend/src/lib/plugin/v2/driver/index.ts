@@ -465,7 +465,7 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
 
   const driver = new IdahDriverV2({
     id: entry.id,
-    entryName: entry.name,
+    entryName: entry.name || mediaInfo.filename, // `entries.name` is optional (API, imports)
     dataset: datasetInfo,
     project: projectInfo,
     media: mediaInfo,

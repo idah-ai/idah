@@ -10,9 +10,16 @@
   import Text from "@/components/ui/text/Text.svelte";
 
   import MediaPicker from "@/components/app/datasets/upload/MediaPicker.svelte";
+  import UploadKeepOpenNote from "@/components/app/datasets/upload/UploadKeepOpenNote.svelte";
   import UploadMediaItem from "@/components/app/datasets/upload/UploadMediaItem.svelte";
 
-  import { buildEntryRows, createdEntryNames, rowItems, rowView } from "@/components/app/datasets/upload/upload-rows";
+  import {
+    buildEntryRows,
+    createdEntryNames,
+    problemsFirst,
+    rowItems,
+    rowView,
+  } from "@/components/app/datasets/upload/upload-rows";
   import { MAX_RETRIES, showUploadSummaryToast, uploadAll } from "@/components/app/datasets/upload/upload-pipeline";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { resourcePath } from "@/data/BackendDataSource";
@@ -21,6 +28,7 @@
   import { deliveryDateChangeSchema } from "@/data/model/dataset/datasets/schema";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { selectionSummary } from "@/components/app/datasets/upload/upload-summary";
+  import { guardLeavingDuringUpload } from "@/components/app/datasets/upload/upload-leave-guard.svelte";
   import { refetches } from "@/utils/refetch";
   import { pluralizeUnit } from "@/utils/unit";
   import { getFieldErrors } from "@/utils/validate";
@@ -78,12 +86,15 @@
   // Summary rows: loose files and zips, and each picked folder summed up like a zip.
   let rows = $state<UploadRow[]>([]);
   const allItemsCompleted = $derived(rows.length > 0 && rows.every((row) => rowView(row).status === "completed"));
+  // Once done, failed and skipped files come first: a long list shows its problems without scrolling.
+  const listedRows = $derived(allItemsCompleted ? problemsFirst(rows) : rows);
   const uploadProgressText = $derived.by<string>(() => {
     const done = rows.filter((row) => rowView(row).status === "completed").length;
     return `${done} of ${rows.length} ${pluralizeUnit(rows.length, "item")} uploaded`;
   });
 
   let uploading: boolean = $state(false);
+  guardLeavingDuringUpload(() => uploading);
   let disabledUploadButton: boolean = $derived.by(() => {
     if (picked.length === 0) return true;
 
@@ -185,6 +196,8 @@
   {#snippet modalDescription()}
     {#if view.isSelect()}
       <DialogDescription>Import media from your computer</DialogDescription>
+    {:else if !allItemsCompleted}
+      <UploadKeepOpenNote />
     {/if}
   {/snippet}
 
@@ -227,8 +240,8 @@
   {/if}
 
   {#if view.isUpload()}
-    <section class="max-h-[70vh] divide-y overflow-y-auto rounded-lg border">
-      {#each rows as row, rowIndex (rowIndex)}
+    <section class="max-h-[50vh] divide-y overflow-y-auto rounded-lg border">
+      {#each listedRows as row, rowIndex (rowIndex)}
         <UploadMediaItem uploadItem={rowView(row)} maxRetries={MAX_RETRIES} entries={createdEntryNames(row)} />
       {/each}
     </section>

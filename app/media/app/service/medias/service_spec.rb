@@ -219,6 +219,38 @@ RSpec.describe Medias::Service, as: :system, database: true do
       FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
     end
 
+    it "drops the wrapping folder from skipped and errored files too" do
+      allow(Processor::Registry).to receive(:allowed_mime_types).with("image_only").and_return(["image/.*"])
+      require "zip"
+      stub_const("Medias::UploadConstants::MAX_ENTRY_UNCOMPRESSED_SIZE", 10)
+
+      zip_path = Tempfile.create(["wrapped", ".zip"]).tap(&:close).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        { "clip/ok.jpg" => "ok", "clip/big.jpg" => "x" * 50, "clip/notes.sh" => "hi", "clip/bad.jpg" => "ko" }
+          .each do |name, content|
+            zip.put_next_entry(name)
+            zip.write(content)
+          end
+      end
+
+      allow(subject).to receive(:store_media).and_wrap_original do |original, **kwargs|
+        raise "storage exploded" if kwargs[:filename] == "bad.jpg"
+
+        original.call(**kwargs)
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        { filename: "clip.zip", type: "application/zip", tempfile: File.open(zip_path, "rb") }
+      )
+      result = subject.upload(zip_file, resource: "res", project_id: "pid", modality: "image_only")
+
+      expect(result[:processed].map(&:filename)).to eq(["ok.jpg"])
+      expect(result[:skipped].map { |s| s[:filename] }).to contain_exactly("big.jpg", "notes.sh")
+      expect(result[:errored]).to eq([{ filename: "bad.jpg", message: "storage exploded" }])
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
     it "skips system artifacts in zip files" do
       require "zip"
 

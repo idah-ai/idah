@@ -67,7 +67,11 @@ export function pickedItems(picked: PickedFile[], { looseName = DEFAULT_LOOSE_NA
       const key = `${p.path.slice(0, slash)}/`;
       add(key, () => ({ key, name: key.slice(0, -1), isZip: false, isLoose: false }), p);
     } else if (ZIP.test(p.path)) {
-      add(p.path, () => ({ key: p.path, name: p.path.replace(ZIP, ""), isZip: true, isLoose: false }), p);
+      // A zip is unpacked as a whole, so each one is its own item, even when it shares its
+      // name with another picked zip (from another folder): only its file tells them apart.
+      let key = p.path;
+      for (let n = 2; items.has(key); n++) key = `${p.path}\0${n}`;
+      add(key, () => ({ key, name: p.path.replace(ZIP, ""), isZip: true, isLoose: false }), p);
     } else {
       add(LOOSE_KEY, () => ({ key: LOOSE_KEY, name: looseName.trim(), isZip: false, isLoose: true }), p);
     }

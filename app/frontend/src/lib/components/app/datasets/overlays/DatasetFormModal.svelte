@@ -4,6 +4,7 @@
   import { page } from "$app/state";
   import { onMount } from "svelte";
 
+  import UploadKeepOpenNote from "@/components/app/datasets/upload/UploadKeepOpenNote.svelte";
   import UploadMediaItem from "@/components/app/datasets/upload/UploadMediaItem.svelte";
   import DatasetForm from "@/components/app/datasets/forms/DatasetForm.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
@@ -16,6 +17,7 @@
 
   import { groupIntoDatasets, type SplitOptions } from "@/components/app/datasets/upload/dataset-groups";
   import { selectionSummary } from "@/components/app/datasets/upload/upload-summary";
+  import { guardLeavingDuringUpload } from "@/components/app/datasets/upload/upload-leave-guard.svelte";
   import { createUploadItem } from "@/components/app/datasets/upload/upload-item.types";
   import {
     createdEntryNames,
@@ -93,6 +95,8 @@
   let uploading: boolean = $derived(runs.length > 0);
   const allRows: UploadRow[] = $derived(runs.flatMap((run) => run.rows));
   const allRunsCompleted: boolean = $derived(uploading && allRows.every((row) => rowView(row).status === "completed"));
+  // `submitting` lasts until the last dataset is done; `uploading` alone stays on for the summary.
+  guardLeavingDuringUpload(() => uploading && submitting);
   const count = (n: number, unit: string, units = `${unit}s`) => `${n} ${n === 1 ? unit : units}`; // "0 entries"
   // The whole result in one line, e.g. "6 datasets and 9 entries created · 1 file skipped".
   const uploadResultText = $derived.by<string>(() => {
@@ -100,7 +104,7 @@
     const datasets = runs.filter((run) => run.datasetId).length;
     const entries = views.reduce((total, view) => total + view.createdEntryCount, 0);
     const skipped = views.reduce((total, view) => total + view.skippedMedias.length, 0);
-    const failed = views.reduce((total, view) => total + view.errorMedias.length + (view.errorMessage ? 1 : 0), 0);
+    const failed = views.reduce((total, view) => total + view.errorMedias.length, 0); // a failed zip lists itself
     const parts = [`${count(datasets, "dataset")} and ${count(entries, "entry", "entries")} created`];
     if (skipped > 0) parts.push(`${count(skipped, "file")} skipped`);
     if (failed > 0) parts.push(`${count(failed, "file")} failed`);
@@ -394,12 +398,16 @@
   {/snippet}
 
   {#snippet modalDescription()}
-    <DialogDescription>{allRunsCompleted ? uploadResultText : ""}</DialogDescription>
+    {#if uploading && !allRunsCompleted}
+      <UploadKeepOpenNote />
+    {:else}
+      <DialogDescription>{allRunsCompleted ? uploadResultText : ""}</DialogDescription>
+    {/if}
   {/snippet}
 
   {#if uploading}
     <!-- One row per dataset (a split zip: one row for all of its datasets) -->
-    <section class="max-h-[60vh] divide-y overflow-y-auto rounded-lg border">
+    <section class="max-h-[50vh] divide-y overflow-y-auto rounded-lg border">
       {#each runs as run, runIndex (runIndex)}
         {#each run.rows as row, rowIndex (rowIndex)}
           <UploadMediaItem

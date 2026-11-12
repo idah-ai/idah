@@ -33,6 +33,17 @@ describe("groupIntoDatasets", () => {
     ]);
   });
 
+  it("keeps same-named zips apart, one dataset each", () => {
+    const { groups } = groupIntoDatasets([pick("batch.zip"), pick("batch.zip"), pick("batch.zip")]);
+    expect(groups.map((g) => [g.name, g.files.length])).toEqual([
+      ["batch", 1],
+      ["batch", 1],
+      ["batch", 1],
+    ]);
+    expect(new Set(groups.map((g) => g.key)).size).toBe(3);
+    expect(new Set(groups.map((g) => g.files[0].file)).size).toBe(3);
+  });
+
   it("makes one dataset per picked folder or zip, in selection order", () => {
     expect(summary(["b/1.jpg", "top.zip", "a/x/2.jpg", "b/3.jpg"]).datasets).toEqual([
       ["b", ["b/1.jpg", "b/3.jpg"]],
