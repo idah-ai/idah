@@ -82,6 +82,19 @@ RSpec.describe ProjectsExpo, type: :exposition, as: :system do
     expect(last_response.status).to eq 200
   end
 
+  it "update drops the readonly organization_id" do
+    project_data[:data][:attributes][:organization_id] = 2
+
+    expect(service).to receive(:update) do |args|
+      expect(args.id).to eq uuid
+      expect(args.attributes).not_to have_key(:organization_id)
+      project_record
+    end
+
+    patch "/projects/#{uuid}", project_data
+    expect(last_response.status).to eq 200
+  end
+
   it "destroy" do
     expect(service).to receive(:delete).with(uuid).and_return(true)
     delete "/projects/#{uuid}"

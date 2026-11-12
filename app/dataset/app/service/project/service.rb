@@ -55,8 +55,41 @@ module Project
     end
 
     def update(record)
+      authorize_organization_move(record)
+
       projects.update!(record.id, record.attributes)
       projects.find!(record.id)
+    end
+
+    # organization_id is readonly on Project::Record, so JSON:API PATCH already
+    # drops it. This guard is defense in depth: if a caller still tries to move a
+    # project to another organization, only admin/system (or an org_owner who
+    # owns both the current and the target organization) may do so.
+    def authorize_organization_move(record)
+      return unless record.attributes.key?(:organization_id)
+
+      current_org = projects.find!(record.id).organization_id
+      new_org = record.attributes[:organization_id]
+      return if new_org == current_org
+
+      auth_context.can!(:update, projects.class.resource) do |scope|
+        scope.all? { true }
+
+        scope.as_org_owner? do
+          org_ids = auth_context.custom_scopes[:org]
+          unless org_ids&.include?(current_org.to_s) && org_ids.include?(new_org.to_s)
+            raise Verse::Error::Unauthorized,
+                  "You do not have permission to move this project to another organization"
+          end
+
+          true
+        end
+
+        scope.else? do
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to move this project to another organization"
+        end
+      end
     end
 
     def delete(id)
