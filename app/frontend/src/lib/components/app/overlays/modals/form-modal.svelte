@@ -31,6 +31,7 @@
     confirm,
     children,
     canClickOutside = true,
+    preventClose = false,
     class: className,
   }: FormModalBaseProps = $props();
 
@@ -92,7 +93,11 @@
 
 <Dialog bind:open onOpenChangeComplete={handleOpenChangeComplete}>
   <DialogContent
-    interactOutsideBehavior={closeOnOutsideClick && canClickOutside ? "close" : "ignore"}
+    interactOutsideBehavior={closeOnOutsideClick && canClickOutside && !preventClose ? "close" : "ignore"}
+    showCloseButton={!preventClose}
+    onEscapeKeydown={(event) => {
+      if (preventClose) event.preventDefault();
+    }}
     class={className}
   >
     {#if modalTitle}
