@@ -6,8 +6,7 @@ import { get, type Unsubscriber } from "svelte/store";
 import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 import { EntryRecord, entriesBackendDataSource } from "@/data/model/dataset/entries/record";
 import { datasetsStatuses } from "@/data/model/dataset/datasets/constants";
-import { today } from "@/utils/date";
-import { PROJECT_DASHBOARD_DELIVERY_LABELS } from "@/components/app/projects/dashboard/projectDashboard.constants";
+import { getDeliveryStatusBadge, today } from "@/utils/date";
 import type { Filters } from "@/data/filtering";
 import type { JsonApiMeta } from "@/data/model/types";
 
@@ -196,24 +195,11 @@ export class ProjectDashboardController {
     return count ? `across ${count} selected dataset${count === 1 ? "" : "s"}` : "across all datasets";
   }
 
-  public get focusedDeliveryDate(): Date | null {
-    return this.focused?.delivery_date ? parseISO(this.focused.delivery_date) : null;
-  }
-
   public get focusedDeliveryLabel(): string | null {
     if (!this.focused || !this.summary) return null;
-
-    const labels = PROJECT_DASHBOARD_DELIVERY_LABELS;
-    if (this.summary.total > 0 && this.summary.completed === this.summary.total) return labels.completed;
-
-    const date = this.focusedDeliveryDate;
-    if (!date) return labels.noDueDate;
-
-    const days = differenceInCalendarDays(date, this.reportingDay);
-    if (days < 0) return labels.overdue;
-    if (days === 0) return labels.dueToday;
-    if (days === 1) return labels.dueTomorrow;
-    return `Due in ${days} days`;
+    const completed =
+      this.focused.status === "completed" || (this.summary.total > 0 && this.summary.completed === this.summary.total);
+    return getDeliveryStatusBadge(this.focused.delivery_date, completed, this.reportingDay).label;
   }
 
   private clearMetrics(): void {

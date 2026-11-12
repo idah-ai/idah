@@ -3,7 +3,7 @@ import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource"
 import { clearCache } from "@/data/Cache";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
-import { isOverdue } from "@/utils/date";
+import { getDeliveryStatusBadge, isOverdue, type DeliveryStatusBadgeProps } from "@/utils/date";
 import { showErrorToast } from "@/utils/error/error.toasts";
 
 import { EntryRecord } from "@/data/model/dataset/entries/record";
@@ -38,6 +38,10 @@ export class DatasetRecord extends Record {
 
   public get formattedDeliveryDate(): string | null {
     return this.delivery_date ? format(parseISO(this.delivery_date), "MMM dd, yyyy") : null;
+  }
+
+  public get deliveryStatusBadge(): DeliveryStatusBadgeProps {
+    return getDeliveryStatusBadge(this.delivery_date, this.status === "completed");
   }
 
   public get statusBadge(): DatasetStatusBadgeProps {
