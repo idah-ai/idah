@@ -16,6 +16,7 @@
 
   import { groupIntoDatasets, type SplitOptions } from "@/components/app/datasets/upload/dataset-groups";
   import { selectionSummary } from "@/components/app/datasets/upload/upload-summary";
+  import { guardLeavingDuringUpload } from "@/components/app/datasets/upload/upload-leave-guard.svelte";
   import { createUploadItem } from "@/components/app/datasets/upload/upload-item.types";
   import {
     createdEntryNames,
@@ -93,6 +94,8 @@
   let uploading: boolean = $derived(runs.length > 0);
   const allRows: UploadRow[] = $derived(runs.flatMap((run) => run.rows));
   const allRunsCompleted: boolean = $derived(uploading && allRows.every((row) => rowView(row).status === "completed"));
+  // `submitting` lasts until the last dataset is done; `uploading` alone stays on for the summary.
+  guardLeavingDuringUpload(() => uploading && submitting);
   const count = (n: number, unit: string, units = `${unit}s`) => `${n} ${n === 1 ? unit : units}`; // "0 entries"
   // The whole result in one line, e.g. "6 datasets and 9 entries created · 1 file skipped".
   const uploadResultText = $derived.by<string>(() => {

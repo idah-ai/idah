@@ -21,6 +21,7 @@
   import { deliveryDateChangeSchema } from "@/data/model/dataset/datasets/schema";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { selectionSummary } from "@/components/app/datasets/upload/upload-summary";
+  import { guardLeavingDuringUpload } from "@/components/app/datasets/upload/upload-leave-guard.svelte";
   import { refetches } from "@/utils/refetch";
   import { pluralizeUnit } from "@/utils/unit";
   import { getFieldErrors } from "@/utils/validate";
@@ -84,6 +85,7 @@
   });
 
   let uploading: boolean = $state(false);
+  guardLeavingDuringUpload(() => uploading);
   let disabledUploadButton: boolean = $derived.by(() => {
     if (picked.length === 0) return true;
 
