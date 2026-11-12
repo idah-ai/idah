@@ -11,7 +11,6 @@ import {
   type EntryWorkflowStep,
 } from "@/data/model/dataset/entries/constants";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
-import { Transformers } from "@/data/model/transformers";
 import { getDeliveryStatusBadge, isOverdue, type DeliveryStatusBadgeProps } from "@/utils/date";
 
 import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
