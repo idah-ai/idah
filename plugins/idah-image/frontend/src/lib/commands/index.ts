@@ -60,6 +60,7 @@ import { register as registerSidebarTab } from "./sidebar/sidebar_tab";
 import { register as registerCategoryDelete } from "./category/delete";
 import { register as registerCategoryToggleEditability } from "./category/toggle_editability";
 import { register as registerCategoryToggleVisibility } from "./category/toggle_visibility";
+import { register as registerCategoryReuseLast } from "./category/reuse_last";
 
 import { register as registerModeBoundingBox } from "./mode/bounding_box";
 import { register as registerModeCircle } from "./mode/circle";
@@ -115,6 +116,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerCategoryToggleEditability(driver);
   registerCategoryToggleVisibility(driver);
   registerCategoryDelete(driver);
+  registerCategoryReuseLast(driver);
 
   // ── Mode ──────────────────────────────────────────────────────
 
