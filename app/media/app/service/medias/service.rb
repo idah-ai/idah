@@ -51,9 +51,14 @@ module Medias
             # before anything is extracted; pass 2 extracts only the survivors.
             entries = scan_zip_entries(zip, skipped)
             wrapper = wrapping_folder(entries)
+            # Every report names a file as its entry would be, without the wrapping folder.
+            skipped.map! { |report| report.merge(filename: report[:filename].delete_prefix(wrapper)) }
 
             entries.each do |zip_entry|
               ext = File.extname(zip_entry.name).downcase
+              # The path inside the zip ("cam_a/0001.jpg"), so same-named files in
+              # different folders stay apart once they become entries.
+              name = zip_entry.name.delete_prefix(wrapper)
 
               entry_io = StreamWithPath.new(
                 zip_entry.get_input_stream,
@@ -64,9 +69,7 @@ module Medias
               begin
                 result = store_media(
                   io: entry_io, # Stream directly from zip entry to storage - no tempfiles
-                  # The path inside the zip ("cam_a/0001.jpg"), so same-named files in
-                  # different folders stay apart once they become entries.
-                  filename: zip_entry.name.delete_prefix(wrapper),
+                  filename: name,
                   size: zip_entry.size,
                   mime_type: mime_type_for(ext) || "application/octet-stream",
                   resource: "#{SecureRandom.hex(8)}#{ext}",
@@ -79,11 +82,11 @@ module Medias
                   results << result
                 else
                   # store_media returns a reason string when the file is intentionally rejected
-                  skipped << { filename: zip_entry.name, message: result }
+                  skipped << { filename: name, message: result }
                 end
               rescue StandardError => e
                 # A failing entry must not abort the rest of the archive
-                errored << { filename: zip_entry.name, message: e.message }
+                errored << { filename: name, message: e.message }
               end
             end
           end
