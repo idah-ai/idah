@@ -76,7 +76,8 @@
       (await currentAccount?.canOnProject("update", "dataset:entries", projectId, "project_owner")) || false;
     canDeleteEntry =
       (await currentAccount?.canOnProject("delete", "dataset:entries", projectId, "project_owner")) || false;
-    canExportEntry = (await currentAccount?.canOnProject("create", "sync:exports", projectId, "project_owner")) || false;
+    canExportEntry =
+      (await currentAccount?.canOnProject("create", "sync:exports", projectId, "project_owner")) || false;
   });
 
   // Functions

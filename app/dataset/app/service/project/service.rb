@@ -68,7 +68,7 @@ module Project
     def authorize_organization_move(record)
       return unless record.attributes.key?(:organization_id)
 
-      current_org = projects.find!(record.id).organization_id
+      current_org = projects.find!(record.id, scope: projects.scoped(:update)).organization_id
       new_org = record.attributes[:organization_id]
       return if new_org.to_s == current_org.to_s
 
