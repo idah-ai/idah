@@ -47,7 +47,7 @@ module ProjectMember
         end
 
         # Assigning project_owner requires effective rank >= org_owner.
-        if role == "project_owner" && effective_rank < RoleHierarchy.rank("org_owner")
+        unless RoleHierarchy.can_assign_project_role?(effective_rank, role)
           raise Verse::Error::Unauthorized,
                 "You do not have permission to update a member to a project owner for this project"
         end
