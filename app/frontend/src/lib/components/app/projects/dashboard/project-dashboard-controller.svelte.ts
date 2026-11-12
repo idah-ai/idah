@@ -1,6 +1,26 @@
 import { getContext, setContext } from "svelte";
 import { SvelteSet } from "svelte/reactivity";
-import { addDays, differenceInCalendarDays, format, isSameDay, isValid, parseISO } from "date-fns";
+import {
+  addDays,
+  addMonths,
+  differenceInCalendarDays,
+  endOfDay,
+  format,
+  isAfter,
+  isBefore,
+  isSameDay,
+  isSameMonth,
+  isSameYear,
+  isValid,
+  isWithinInterval,
+  max,
+  min,
+  parseISO,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  subDays,
+} from "date-fns";
 import { get, type Unsubscriber } from "svelte/store";
 
 import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
@@ -10,6 +30,12 @@ import { getDeliveryStatusBadge, today } from "@/utils/date";
 import { PROJECT_DASHBOARD_WORKFLOW_GROUPS } from "@/components/app/projects/dashboard/projectDashboard.constants";
 import type { Filters } from "@/data/filtering";
 import type { JsonApiMeta } from "@/data/model/types";
+import type {
+  CompletionGrouping,
+  CompletionRange,
+  CompletionHistoryResult,
+  CompletionBucket,
+} from "@/components/app/projects/dashboard/projectDashboard.types";
 
 export const PROJECT_DASHBOARD_CONTROLLER_KEY = Symbol("project-dashboard-controller");
 
@@ -47,8 +73,10 @@ export class ProjectDashboardController {
       const changed = !isSameDay(day, this.reportingDay);
       this.reportingDay = day;
 
-      if (changed && this.scopeReady && !this.denied) {
-        void this.loadAttention();
+      if (this.scopeReady && !this.denied) {
+        if (changed) void this.loadAttention();
+        if (this.completionHistory.zone !== Intl.DateTimeFormat().resolvedOptions().timeZone)
+          void this.loadCompletionHistory();
       }
     });
     await this.select([]);
@@ -58,6 +86,7 @@ export class ProjectDashboardController {
     this.disposed = true;
     this.generation++;
     this.clearMetrics();
+    this.clearCompletionHistory();
     this.unsubscribeToday?.();
     this.unsubscribeToday = undefined;
   }
@@ -87,6 +116,7 @@ export class ProjectDashboardController {
       return;
     }
     this.clearMetrics();
+    this.clearCompletionHistory();
     this.selectedDatasetIds = selected;
     this.focused = null;
     this.selectedDatasets = [];
@@ -221,6 +251,7 @@ export class ProjectDashboardController {
     void this.loadSummary();
     void this.loadAttention();
     void this.loadWorkflowCounts();
+    void this.loadCompletionHistory();
   }
 
   async retrySummary(): Promise<void> {
@@ -329,6 +360,10 @@ export class ProjectDashboardController {
 
   async retryWorkflowCounts(): Promise<void> {
     if (this.disposed || this.denied || !this.scopeReady || this.workflowLoading) return;
+    if (this.summary && this.workflowCounts && !this.workflowDistribution) {
+      await Promise.all([this.retrySummary(), this.loadWorkflowCounts()]);
+      return;
+    }
     await this.loadWorkflowCounts();
   }
 
@@ -522,6 +557,265 @@ export class ProjectDashboardController {
     }
   }
 
+  // ==================== Completion History ====================
+
+  public completionRange: CompletionRange = $state.raw({
+    start: format(addDays(this.reportingDay, -6), "yyyy-MM-dd"),
+    end: format(this.reportingDay, "yyyy-MM-dd"),
+  });
+  public completionGrouping: CompletionGrouping = $state("Day");
+  public completionHistory: CompletionHistoryResult = $state.raw({
+    status: "idle",
+    daily: {},
+    zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    error: "",
+  });
+  private completionGeneration = 0;
+
+  public get completionToday(): string {
+    return format(this.reportingDay, "yyyy-MM-dd");
+  }
+
+  public get completionTotal(): number {
+    return Object.values(this.completionHistory.daily).reduce((sum, count) => sum + count, 0);
+  }
+
+  public get completionMaximum(): number {
+    return this.completionBuckets.reduce((maximum, bucket) => Math.max(maximum, bucket.count ?? 0), 1);
+  }
+
+  private completionDateLabel(value: string): string {
+    return format(parseISO(value), "d MMM yyyy");
+  }
+
+  public isCompletionRangeValid(range: CompletionRange): boolean {
+    const isValidDate = (value: string): boolean => {
+      const date = parseISO(value);
+      return isValid(date) && format(date, "yyyy-MM-dd") === value;
+    };
+
+    return (
+      isValidDate(range.start) &&
+      isValidDate(range.end) &&
+      !isAfter(parseISO(range.start), parseISO(range.end)) &&
+      !isAfter(parseISO(range.end), this.reportingDay)
+    );
+  }
+
+  public completionGroupingAllowed(grouping: CompletionGrouping): boolean {
+    const days = differenceInCalendarDays(parseISO(this.completionRange.end), parseISO(this.completionRange.start)) + 1;
+    return grouping === "Day" ? days <= 62 : grouping === "Month" ? days >= 60 : days >= 14;
+  }
+
+  public setCompletionGrouping(grouping: CompletionGrouping): void {
+    if (this.completionGroupingAllowed(grouping)) this.completionGrouping = grouping;
+  }
+
+  public async applyCompletionRange(range: CompletionRange): Promise<void> {
+    if (this.disposed || this.denied || !this.isCompletionRangeValid(range)) return;
+    this.completionRange = { ...range };
+    const days = differenceInCalendarDays(parseISO(range.end), parseISO(range.start)) + 1;
+    this.completionGrouping = days <= 14 ? "Day" : days <= 92 ? "Week" : "Month";
+    this.clearCompletionHistory();
+    if (this.scopeReady) await this.loadCompletionHistory();
+  }
+
+  public async retryCompletionHistory(): Promise<void> {
+    if (this.disposed || this.denied || this.completionHistory.status === "loading") return;
+    if (this.scopeReady) await this.loadCompletionHistory();
+    else await this.retry();
+  }
+
+  private completionPeriodStart(date: Date): Date {
+    if (this.completionGrouping === "Week") return startOfWeek(date, { weekStartsOn: 1 });
+    if (this.completionGrouping === "Month") return startOfMonth(date);
+    return startOfDay(date);
+  }
+
+  public get completionBuckets(): CompletionBucket[] {
+    const range = this.completionRange;
+    const grouping = this.completionGrouping;
+    const complete = this.completionHistory.status === "ready" || this.completionHistory.status === "empty";
+
+    const rangeStart = parseISO(range.start);
+    const rangeEnd = parseISO(range.end);
+    const today = parseISO(this.completionToday);
+
+    const totals: Record<string, number> = {};
+
+    for (const [day, count] of Object.entries(this.completionHistory.daily)) {
+      const key = format(this.completionPeriodStart(parseISO(day)), "yyyy-MM-dd");
+      totals[key] = (totals[key] ?? 0) + count;
+    }
+
+    const result: CompletionBucket[] = [];
+    const currentPeriod = this.completionPeriodStart(this.reportingDay);
+
+    let current = this.completionPeriodStart(rangeStart);
+
+    while (!isAfter(current, rangeEnd)) {
+      const key = format(current, "yyyy-MM-dd");
+
+      const next = grouping === "Month" ? addMonths(current, 1) : addDays(current, grouping === "Week" ? 7 : 1);
+
+      const periodEnd = subDays(next, 1);
+      const start = max([current, rangeStart]);
+      const end = min([periodEnd, rangeEnd]);
+
+      const startDate = format(start, "yyyy-MM-dd");
+      const endDate = format(end, "yyyy-MM-dd");
+
+      let axisLabel: string;
+
+      if (grouping === "Month") {
+        axisLabel = format(start, "MMM yyyy");
+      } else if (grouping === "Day" || isSameDay(start, end)) {
+        axisLabel = format(start, "d MMM");
+      } else if (isSameMonth(start, end)) {
+        axisLabel = `${format(start, "d")}–${format(end, "d MMM")}`;
+      } else if (isSameYear(start, end)) {
+        axisLabel = `${format(start, "d MMM")}–${format(end, "d MMM")}`;
+      } else {
+        axisLabel = `${format(start, "d MMM yyyy")}–${format(end, "d MMM yyyy")}`;
+      }
+
+      result.push({
+        key,
+        start: startDate,
+        end: endDate,
+        count: totals[key] ?? (complete ? 0 : null),
+        clipped: isBefore(current, rangeStart) || isAfter(periodEnd, rangeEnd),
+        current:
+          isSameDay(current, currentPeriod) &&
+          isWithinInterval(today, { start: rangeStart, end: rangeEnd }) &&
+          (this.completionHistory.daily[this.completionToday] ?? 0) > 0,
+        label: isSameDay(start, end)
+          ? this.completionDateLabel(startDate)
+          : `${this.completionDateLabel(startDate)} – ${this.completionDateLabel(endDate)}`,
+        axisLabel,
+      });
+
+      current = next;
+    }
+
+    return result;
+  }
+
+  private clearCompletionHistory(): void {
+    this.completionGeneration++;
+    this.completionHistory = {
+      status: "idle",
+      daily: {},
+      zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      error: "",
+    };
+  }
+
+  private async loadCompletionHistory(): Promise<void> {
+    if (this.disposed || this.denied || !this.scopeReady) return;
+
+    const scope = this.generation;
+    const request = ++this.completionGeneration;
+    const ids = this.effectiveDatasetIds;
+    const range = { ...this.completionRange };
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    const current = (): boolean =>
+      this.isCurrent(scope) &&
+      request === this.completionGeneration &&
+      zone === Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    this.completionHistory = { status: "loading", daily: {}, zone, error: "" };
+
+    const daily: Record<string, number> = {};
+
+    try {
+      const start = startOfDay(parseISO(range.start));
+      const end = addDays(startOfDay(parseISO(range.end)), 1);
+
+      // PostgreSQL keeps six fractional digits. Do not pass this string through Date again.
+      const endInclusive = endOfDay(parseISO(range.end))
+        .toISOString()
+        .replace(/\.999Z$/, ".999999Z");
+
+      let cursor = "";
+
+      while (current()) {
+        const response = await entriesBackendDataSource.list({
+          filters: {
+            project_id: this.projectId,
+            ...(ids.length ? { dataset_id: ids } : {}),
+            status__in: ["completed"],
+            completed_at__gte: start.toISOString(),
+            completed_at__lte: endInclusive,
+            ...(cursor ? { id__gt: cursor } : {}),
+          },
+          fields: { [EntryRecord.type]: ["id", "completed_at"] },
+          sort: ["id"],
+          pagination: { page: 1, itemsPerPage: 1000 },
+          count: false,
+          noCache: true,
+        });
+
+        if (!current()) return;
+
+        if (!Array.isArray(response.data) || response.data.length > 1000) {
+          throw new Error("Completion results could not be validated. Retry.");
+        }
+
+        const batch: Record<string, number> = {};
+        let next = cursor;
+
+        for (const record of response.data) {
+          const timestamp = record.completed_at;
+
+          if (
+            typeof record.id !== "string" ||
+            !record.id ||
+            record.id <= next ||
+            !(timestamp instanceof Date) ||
+            !isValid(timestamp) ||
+            isBefore(timestamp, start) ||
+            !isBefore(timestamp, end)
+          ) {
+            throw new Error("Completion results changed or did not advance. Retry.");
+          }
+
+          next = record.id;
+
+          const day = format(timestamp, "yyyy-MM-dd");
+          batch[day] = (batch[day] ?? 0) + 1;
+        }
+
+        for (const [day, count] of Object.entries(batch)) {
+          daily[day] = (daily[day] ?? 0) + count;
+        }
+
+        cursor = next;
+
+        const finished = response.data.length < 1000;
+
+        this.completionHistory = {
+          status: finished ? (cursor ? "ready" : "empty") : "loading",
+          daily: { ...daily },
+          zone,
+          error: "",
+        };
+
+        if (finished) return;
+      }
+    } catch (reason) {
+      if (!current() || this.handleAccessError(reason)) return;
+
+      this.completionHistory = {
+        status: Object.keys(daily).length ? "partial" : "unavailable",
+        daily: { ...daily },
+        zone,
+        error: reason instanceof Error ? reason.message : "Recorded completions are unavailable.",
+      };
+    }
+  }
+
   private handleAccessError(reason: unknown): boolean {
     const status = reason !== null && typeof reason === "object" && "status" in reason ? reason.status : undefined;
     if (status !== 401 && status !== 403 && status !== 404) return false;
@@ -532,11 +826,13 @@ export class ProjectDashboardController {
   private denyAccess(status: number): void {
     this.generation++;
     this.clearMetrics();
+    this.clearCompletionHistory();
     this.denied = true;
     this.scopeReady = false;
     this.loading = false;
     this.error =
       status === 404 ? "This Project or Dataset is no longer available." : "Dashboard access is no longer available.";
+    this.completionHistory = { ...this.completionHistory, status: "unavailable", error: this.error };
   }
 
   // ==================== Request Lifecycle ====================
@@ -585,6 +881,7 @@ export class ProjectDashboardController {
       if (
         response.meta?.more ||
         response.data.length !== count ||
+        response.data.length !== ids.length ||
         new SvelteSet(returnedIds).size !== returnedIds.length ||
         returnedIds.some((id) => !ids.includes(id))
       )
@@ -594,8 +891,10 @@ export class ProjectDashboardController {
       this.loadMetrics();
     } catch (reason) {
       if (!this.isCurrent(generation)) return;
-      if (!this.handleAccessError(reason))
+      if (!this.handleAccessError(reason)) {
         this.error = reason instanceof Error ? reason.message : "Unable to load datasets.";
+        this.completionHistory = { ...this.completionHistory, status: "unavailable", error: this.error };
+      }
     } finally {
       if (this.isCurrent(generation)) this.loading = false;
     }

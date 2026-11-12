@@ -5,3 +5,5 @@ export const PROJECT_DASHBOARD_WORKFLOW_GROUPS = [
   { key: "annotating", label: "Annotating", bgColor: "bg-amber-500" },
   { key: "pendingAnnotation", label: "Pending annotation", bgColor: "bg-amber-200" },
 ] as const;
+
+export const COMPLETION_GROUPINGS = ["Day", "Week", "Month"] as const;
