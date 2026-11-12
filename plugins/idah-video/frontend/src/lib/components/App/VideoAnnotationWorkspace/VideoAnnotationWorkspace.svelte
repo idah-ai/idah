@@ -20,6 +20,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { BOUNDING_BOX_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
+  import { categoryPicker } from "$lib/state/category-picker";
   import {
     VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX,
     VIDEO_POLYGON as IDAH_VIDEO_POLYGON,
@@ -34,21 +35,28 @@
   import ContextMenu from "$lib/components/App/ContextMenu/ContextMenu.svelte";
   import DebugConsole from "$lib/components/App/DebugConsole.svelte";
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
-  // import CategorySelect from "$lib/components/App/SelectionPanel/_CategorySelect.svelte";
-  // import PropertiesSection from "$lib/components/App/SelectionPanel/_PropertiesSection.svelte";
-  // import Text from "$lib/components/ui/Text/Text.svelte";
-  // import Badge from "$lib/components/ui/Badge/Badge.svelte";
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
   import VideoCanvas from "$lib/components/App/Viewport/VideoCanvas.svelte";
   import ConfirmDialog from "$lib/components/App/ConfirmDialog/ConfirmDialog.svelte";
+  import { showConfirmDeleteAnnotationsDialog } from "$lib/components/App/ConfirmDialog/confirm-delete";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
 
-  import type { IVideoAnnotationRecord, IVideoAnnotationShape, IVideoFrameSelection, IVideoAnnotationValue } from "$lib/types";
+  import type {
+    IVideoAnnotationRecord,
+    IVideoAnnotationShape,
+    IVideoFrameSelection,
+    IVideoAnnotationValue,
+  } from "$lib/types";
   import type { Point } from "$lib/utils/math/point";
 
   // Local type aliases for V1-compatible annotation shapes/values
-  type AnnotationShape = Record<string, unknown> & { type: string; start?: number; end?: number; frames?: IVideoFrameSelection[] };
+  type AnnotationShape = Record<string, unknown> & {
+    type: string;
+    start?: number;
+    end?: number;
+    frames?: IVideoFrameSelection[];
+  };
   type AnnotationAttributes = Record<string, unknown>;
   interface AnnotationGroup<T> {
     groupId: string;
@@ -229,7 +237,12 @@
       frames: frames as IVideoFrameSelection[],
     };
 
-    getDriver().command.call("idah-video:annotation.add", { shape: videoShape, shape_type: type, category, properties });
+    getDriver().command.call("idah-video:annotation.add", {
+      shape: videoShape,
+      shape_type: type,
+      category,
+      properties,
+    });
 
     const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
 
@@ -332,6 +345,18 @@
       onShapeSelection(...shapeSelectionArgs);
     }
   }
+
+  /** Pick a category for the next annotation from a command (category.reuse-last), the same way a
+   *  sidebar click does. The command clears the selection first. Returns false when the category
+   *  is no longer in the label config. */
+  function applyCategory(category: string, shapeType: string): boolean {
+    if (!editable) return false;
+    if (!getDriver().config[shapeType]?.values.some((v) => v.id === category)) return false;
+    onEditValue(category, shapeType);
+    return true;
+  }
+
+  $effect(() => categoryPicker.attach(applyCategory));
 
   /** Called by the Confirm button / Enter key in the popover.
    *  Creates the annotation with the value the user picked (category + any properties). */
@@ -525,11 +550,7 @@
     if (resolution.action === "update") {
       updateAnnotationValue(resolution.existing, value.category, value.properties);
     } else if (resolution.action === "create") {
-      addAnnotation(
-        { type: VIDEO_FRAME, start: frame, end: frame, frames: [] },
-        value.category,
-        value.properties,
-      );
+      addAnnotation({ type: VIDEO_FRAME, start: frame, end: frame, frames: [] }, value.category, value.properties);
     }
     return true;
   }
@@ -551,14 +572,30 @@
     if (!editable) return;
     const existing = entryRootAnnotation;
     if (existing) {
-      getDriver().command.call("idah-video:annotation.delete", { annotationId: existing.id });
+      showConfirmDeleteAnnotationsDialog({
+        count: 1,
+        type: "tag",
+        title: "Delete video tag",
+        description: "Are you sure you want to delete the video tag for this entry?",
+        onConfirm: () => {
+          getDriver().command.call("idah-video:annotation.delete", { annotationId: existing.id });
+        },
+      });
     }
   }
 
   /** Delete a specific idah-video:frame tagging annotation. */
   function onDeleteFrame(ann: IVideoAnnotationRecord) {
     if (!editable) return;
-    getDriver().command.call("idah-video:annotation.delete", { annotationId: ann.id });
+    showConfirmDeleteAnnotationsDialog({
+      count: 1,
+      type: "tag",
+      title: "Delete Frame Tag",
+      description: "Are you sure you want to delete this Frame Tag?",
+      onConfirm: () => {
+        getDriver().command.call("idah-video:annotation.delete", { annotationId: ann.id });
+      },
+    });
   }
 
   function selectAnnotation(annotation?: IVideoAnnotationRecord) {
@@ -606,9 +643,7 @@
   // (entry:root / idah-video:frame) are excluded so they never render on canvas,
   // appear in the annotation sidebar, or reach the per-shape timeline tracks.
   let viewportAnnotations = $derived.by<IVideoAnnotationRecord[]>(() => {
-    const raw = (data.annotations?.items ?? []).filter(
-      (ann) => !NON_DRAWABLE_SHAPE_TYPES.has(ann.shape_type),
-    );
+    const raw = (data.annotations?.items ?? []).filter((ann) => !NON_DRAWABLE_SHAPE_TYPES.has(ann.shape_type));
     return raw.map((ann) => ({
       id: ann.id,
       shape_type: ann.shape_type,
@@ -690,7 +725,7 @@
         {#if pendingCategory || shapeSelectionArgs?.[0] === VIDEO_FRAME}
           <SelectionPanel
             selectedCategory={pendingCategory ?? ""}
-            annotationValue={annotationValue}
+            {annotationValue}
             shapeTypeOverride={shapeSelectionArgs?.[0]}
             onSelectCategory={(selectedCategory) => {
               if (!selectedCategory) selectAnnotation();
@@ -698,7 +733,8 @@
               onEditValue(pendingCategory, mode);
             }}
             onEditValue={(value) =>
-              value && onEditValue(value.category as string | undefined, mode, value.properties as Record<string, unknown>)}
+              value &&
+              onEditValue(value.category as string | undefined, mode, value.properties as Record<string, unknown>)}
             disabled={false}
           />
         {:else}
@@ -741,7 +777,7 @@
         <Button
           size="sm"
           onclick={() => {
-          if (shapeSelectionArgs && pendingCategory) {
+            if (shapeSelectionArgs && pendingCategory) {
               showPopOver = false;
               confirmCreateAnnotation(...shapeSelectionArgs);
             }
@@ -824,11 +860,11 @@
                 {entryRootAnnotation}
                 {currentFrameAnnotations}
                 currentFrame={viewport.video.currentFrame.value}
-                onEntryRootChange={onEntryRootChange}
-                onFrameCreate={onFrameCreate}
-                onFrameUpdate={onFrameUpdate}
-                onDeleteEntryRoot={onDeleteEntryRoot}
-                onDeleteFrame={onDeleteFrame}
+                {onEntryRootChange}
+                {onFrameCreate}
+                {onFrameUpdate}
+                {onDeleteEntryRoot}
+                {onDeleteFrame}
               />
             </section>
           </ResizablePane>
@@ -838,7 +874,14 @@
       <ResizableHandle withHandle />
 
       <ResizablePane defaultSize={25} minSize={20} maxSize={60}>
-        <BottomPanel {viewportAnnotations} {length} bind:player volume={viewport.video.sound} {frameAnnotations} {entryRootAnnotation} />
+        <BottomPanel
+          {viewportAnnotations}
+          {length}
+          bind:player
+          volume={viewport.video.sound}
+          {frameAnnotations}
+          {entryRootAnnotation}
+        />
       </ResizablePane>
     </ResizablePaneGroup>
   </div>

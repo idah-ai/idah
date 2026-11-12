@@ -1,25 +1,30 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { today } from "@/utils/date";
   import { LayoutListIcon } from "@lucide/svelte";
   import { getContext, onMount } from "svelte";
 
   import { resolve } from "$app/paths";
 
-  import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import DataView from "@/components/app/data-view/data-view.svelte";
-  import EntryCard from "@/components/app/datasets/entries/cards/entry-card.svelte";
-  import PageHeader from "@/components/app/page/page-header.svelte";
-
-  import UploadEntryButton from "@/components/app/datasets/entries/button/_UploadEntryButton.svelte";
+  import DatasetEntriesAnnotationErrorAlert from "@/components/app/datasets/entries/alerts/DatasetEntriesAnnotationErrorAlert.svelte";
   import EntriesFilterToolbar from "@/components/app/datasets/entries/toolbar/_EntryFilterToolbar.svelte";
+  import EntryCard from "@/components/app/datasets/entries/cards/EntryCard.svelte";
+  import PageHeader from "@/components/app/page/page-header.svelte";
+  import ResponseBlock from "@/components/app/blocks/response-block.svelte";
+  import UploadEntryButton from "@/components/app/datasets/entries/button/_UploadEntryButton.svelte";
 
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
 
   import { createEntriesController } from "@/components/app/datasets/entries/overlays/entries-list.svelte";
   import { EntrySelection } from "@/components/app/datasets/entries/util/entry-selection.svelte";
+  import { orphanFilterChanges } from "@/components/app/datasets/entries/util/orphan-filter";
+  import { orphanCountsByEntry } from "@/components/app/datasets/entries/util/orphan-counts";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
+  import { entryStatBackendDataSource, EntryStatRecord } from "@/data/model/dataset/entry-stats/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+  import { refetches } from "@/utils/refetch";
   import { authStatus } from "@/security/AuthContext";
 
   // Contexts
@@ -37,6 +42,42 @@
   // Auth-gated flags (resolved on mount)
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
+  const showOrphanCategories = $derived(
+    controller.filters.orphan_categories === true || controller.filters.orphan_categories === "true",
+  );
+  let orphanCounts = $state<Record<string, number>>({});
+  let orphanCountsError = $state(false);
+  let canExportEntry = $state(false);
+
+  $effect(() => {
+    const entryIds = controller.response.data.map((entry) => entry.id);
+    if (entryIds.length === 0) {
+      orphanCounts = {};
+      orphanCountsError = false;
+      return;
+    }
+
+    let cancelled = false;
+    orphanCounts = {};
+    orphanCountsError = false;
+    void entryStatBackendDataSource
+      .list({
+        fields: { [EntryStatRecord.type]: ["entry_id", "value"] },
+        filters: { entry_id__in: entryIds, key__eq: "orphan_category.count" },
+        pagination: { page: 1, itemsPerPage: entryIds.length },
+        noCache: true,
+      })
+      .then((response) => {
+        if (!cancelled) orphanCounts = orphanCountsByEntry(entryIds, response.data);
+      })
+      .catch(() => {
+        if (!cancelled) orphanCountsError = true;
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  });
 
   pageBreadcrumbsStore.set([
     projectBreadcrumb,
@@ -48,16 +89,37 @@
 
   onMount(async () => {
     const account = $authStatus.authContext;
-    [canUpdateEntry, canDeleteEntry] = await Promise.all([
+    [canUpdateEntry, canDeleteEntry, canExportEntry] = await Promise.all([
       account?.canOnProject("update", "dataset:entries", projectId, "project_owner") || Promise.resolve(false),
       account?.canOnProject("delete", "dataset:entries", projectId, "project_owner") || Promise.resolve(false),
+      account?.canOnProject("create", "sync:exports", projectId, "project_owner") || Promise.resolve(false),
     ]);
   });
+
+  async function handleOrphanFilterChange(checked: boolean) {
+    await controller.applyFilter({
+      filters: orphanFilterChanges(controller.filters, checked),
+    });
+  }
 </script>
+
+{#key $refetches.entries.list}
+  <DatasetEntriesAnnotationErrorAlert
+    {datasetId}
+    checked={showOrphanCategories}
+    onCheckedChange={handleOrphanFilterChange}
+  />
+{/key}
+
+{#if orphanCountsError}
+  <p class="text-destructive text-sm" role="status">Could not load annotation error counts.</p>
+{/if}
 
 <PageHeader title="Datasets">
   {#snippet slotTitle()}
-    <EntriesFilterToolbar {controller} {sel} {canUpdateEntry} {canDeleteEntry} {projectId} />
+    {#if !showOrphanCategories}
+      <EntriesFilterToolbar {controller} {sel} {canUpdateEntry} {canDeleteEntry} {canExportEntry} {projectId} />
+    {/if}
   {/snippet}
 </PageHeader>
 
@@ -65,6 +127,8 @@
   {#snippet DataSlot({ record })}
     <EntryCard
       entry={record}
+      orphanCategoryCount={orphanCounts[record.id] ?? 0}
+      today={$today}
       selectedEntryIds={controller.selectedIds}
       onRowSelect={controller.toggleSelect.bind(controller)}
       onEntryUpdated={controller.fetch.bind(controller)}

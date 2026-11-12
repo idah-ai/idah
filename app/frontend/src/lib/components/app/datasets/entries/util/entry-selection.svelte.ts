@@ -28,6 +28,16 @@ export class EntrySelection {
     }),
   );
 
+  /** Selected entry records, in selection order. */
+  selectedEntryRecords: EntryRecord[] = $derived(
+    this.controller.selectedIds.map((id) => this.entryMap.get(id)).filter((e): e is EntryRecord => !!e),
+  );
+
+  /** Selected entries that can be reopened (status is "completed"). */
+  reopenableEntryIds: string[] = $derived(
+    this.controller.selectedIds.filter((id) => this.entryMap.get(id)?.status === "completed"),
+  );
+
   checkAnyAssigned(ids: string[]): boolean {
     return ids.some((id) => !!this.entryMap.get(id)?.assigned_to_id);
   }

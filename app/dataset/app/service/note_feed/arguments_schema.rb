@@ -6,7 +6,8 @@ module NoteFeed
     field? :annotation_id, String
     field :anchor_type, String, required: true
     field? :position, Hash
-    field :content_md, String
+    field? :content_md, String
+    field? :feedback_keys, Array, of: String
 
     # Validate that annotation_id is required when anchor_type is "annotation"
     rule("annotation_id is required when anchor_type is 'annotation'") do |data|
@@ -17,12 +18,11 @@ module NoteFeed
       end
     end
 
-    rule("content_md cannot be empty") do |data|
-      if data.key?(:content_md)
-        !data[:content_md].nil? && !data[:content_md].empty?
-      else
-        true
-      end
+    # At least one of feedback_keys or content_md must be provided
+    rule("either feedback_keys or content_md must be provided") do |data|
+      has_feedback_key = data.key?(:feedback_keys) && data[:feedback_keys].is_a?(Array) && data[:feedback_keys].any?
+      has_content_md = data.key?(:content_md) && !data[:content_md].nil? && !data[:content_md].empty?
+      has_feedback_key || has_content_md
     end
   end
 end

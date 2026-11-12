@@ -98,7 +98,7 @@ class LogsExpo < BaseExpo
   end
 
   # Entry events
-  %w[created updated deleted assigned unassigned].each do |event|
+  %w[created updated deleted assigned unassigned reopened].each do |event|
     expose on_resource_event(Resource::Dataset::Entries, event)
     def on_entry_event
       # Entries updated by a background worker carry no actor; skip them.

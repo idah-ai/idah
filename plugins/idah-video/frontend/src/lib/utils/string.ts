@@ -68,6 +68,13 @@ export function truncate(str: string, length: number = 20): string {
   return str.length > length ? str.slice(0, length) + "..." : str;
 }
 
+/** Keep both ends of a long label; return it unchanged if shortening would not save space. */
+export function truncateMiddle(str: string, firstLength: number = 10, lastLength: number = 10): string {
+  const characters = Array.from(str);
+  if (characters.length <= firstLength + lastLength + 3) return str;
+  return `${characters.slice(0, firstLength).join("")}...${characters.slice(characters.length - lastLength).join("")}`;
+}
+
 /**
  * FNV-1a, 32 bits. Used only where Web Crypto is unavailable: it is not a
  * cryptographic hash, and nothing here relies on it being one.

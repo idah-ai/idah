@@ -78,6 +78,52 @@ RSpec.describe Exports::Service, database: true do
       end
     end
 
+    context "with an exporter that has options" do
+      # rubocop:disable Lint/ConstantDefinitionInBlock
+      class ServiceSpecExporterWithOptions
+        def options
+          Verse::Schema.define do
+            field(:task, String).default("detect").meta(choices: %w[detect segment])
+          end
+        end
+      end
+      # rubocop:enable Lint/ConstantDefinitionInBlock
+
+      let(:exporter) { "ServiceSpecExporterWithOptions" }
+
+      before do
+        allow(Exports::Registry).to receive(:export_class).with(exporter).and_return(ServiceSpecExporterWithOptions)
+        allow_any_instance_of(described_class).to receive(:filter_dataset_ids_by_rights)
+          .with(project_id, dataset_ids).and_return(dataset_ids)
+      end
+
+      it "stores the options in the job, defaults filled in" do
+        export = subject.create(project_id, dataset_ids, exporter, { include_medias: "none" })
+
+        job = Jobs::Service.new(auth_context).show(export.job_id)
+        expect(job.arguments[:options]).to eq({ include_medias: "none", task: "detect" })
+      end
+
+      it "keeps a given option" do
+        export = subject.create(project_id, dataset_ids, exporter, { task: "segment" })
+
+        expect(Jobs::Service.new(auth_context).show(export.job_id).arguments[:options]).to eq({ task: "segment" })
+      end
+
+      it "refuses an invalid option before creating anything" do
+        initial_job_count = Jobs::Service.new(auth_context).index.to_a.size
+
+        expect { subject.create(project_id, dataset_ids, exporter, { task: "pose" }) }
+          .to raise_error(Verse::Error::ValidationFailed, /options.task: must be one of: detect, segment/)
+        expect(Jobs::Service.new(auth_context).index.to_a.size).to eq(initial_job_count)
+      end
+
+      it "refuses an option the exporter does not declare" do
+        expect { subject.create(project_id, dataset_ids, exporter, { colour: "red" }) }
+          .to raise_error(Verse::Error::ValidationFailed, /options.colour/)
+      end
+    end
+
     context "with invalid exporter class" do
       it "raises an error" do
         allow(Exports::Registry).to receive(:valid_export_class?).with("bad_class").and_return(false)
@@ -156,6 +202,49 @@ RSpec.describe Exports::Service, database: true do
           expect(service.index.to_a.size).to eq(initial_export_count)
           expect(Jobs::Service.new(auth_context).index.to_a.size).to eq(initial_job_count)
         end
+      end
+    end
+
+    context "entry ids" do
+      let(:entry_ids) { %w[e1 e2] }
+
+      before do
+        allow_any_instance_of(described_class).to receive(:filter_dataset_ids_by_rights)
+          .with(project_id, dataset_ids).and_return(dataset_ids)
+      end
+
+      it "stores entry_ids in the job arguments when provided" do
+        allow(Api[:idah].dataset.entries).to receive(:index_all)
+          .with(
+            filter: { dataset_id: dataset_ids, id: entry_ids },
+            fields: { "dataset:entries": ["id"] }
+          )
+          .and_return([double("e1", id: "e1"), double("e2", id: "e2")])
+
+        export = subject.create(project_id, dataset_ids, exporter, {}, entry_ids:)
+
+        job = Jobs::Service.new(auth_context).show(export.job_id)
+        expect(job.arguments[:entry_ids]).to eq(entry_ids)
+      end
+
+      it "does not include entry_ids in the job arguments when not provided" do
+        export = subject.create(project_id, dataset_ids, exporter)
+
+        job = Jobs::Service.new(auth_context).show(export.job_id)
+        expect(job.arguments.key?(:entry_ids)).to be(false)
+      end
+
+      it "raises ValidationFailed when some entries do not belong to the datasets" do
+        allow(Api[:idah].dataset.entries).to receive(:index_all)
+          .with(
+            filter: { dataset_id: dataset_ids, id: entry_ids },
+            fields: { "dataset:entries": ["id"] }
+          )
+          .and_return([double("e1", id: "e1")])
+
+        expect {
+          subject.create(project_id, dataset_ids, exporter, {}, entry_ids:)
+        }.to raise_error(Verse::Error::ValidationFailed, /do not belong/)
       end
     end
 
@@ -457,6 +546,12 @@ RSpec.describe Exports::Service, database: true do
         expect(File).to receive(:basename).with(file_path).and_return("test_export.csv")
 
         service.upload(export_id, mock_file)
+      end
+
+      it "uses the filename given" do
+        service.upload(export_id, mock_file, filename: "idah-coco-image_2026-10-16_0430.zip")
+
+        expect(repo.find!(export_id).filename).to eq("idah-coco-image_2026-10-16_0430.zip")
       end
 
       it "registers rollback callback for file cleanup" do

@@ -30,7 +30,7 @@ RSpec.describe Exports::Job do
 
   let(:mock_export_context) { instance_double(Exports::Context) }
   let(:mock_io_context) { instance_double(Exports::IoContext) }
-  let(:mock_file) { instance_double(File, rewind: nil, write: nil) }
+  let(:mock_file) { instance_double(File, rewind: nil, write: nil, path: "/tmp/idah-export-x.json") }
   let(:mock_exports_service) { Exports::Service.new(Verse::Auth::Context.new) }
   let(:mock_export_record) { double(id: 123) }
 
@@ -52,6 +52,22 @@ RSpec.describe Exports::Job do
 
   subject { described_class.new(job_id, job_arguments) }
 
+  describe ".filename" do
+    let(:time) { Time.utc(2026, 10, 16, 4, 30) }
+
+    it "names the file idah-, the format and the export time, keeping its extension" do
+      name = described_class.filename(double(name: "COCO (Image)"), "/tmp/idah-export-x.zip", time)
+
+      expect(name).to eq("idah-coco-image_2026-10-16_0430.zip")
+    end
+
+    it "falls back to export for an exporter without a name" do
+      name = described_class.filename(Object.new, "/tmp/idah-export-x.json", time)
+
+      expect(name).to eq("idah-export_2026-10-16_0430.json")
+    end
+  end
+
   describe "#run_impl" do
     context "with file mode" do
       before do
@@ -63,7 +79,8 @@ RSpec.describe Exports::Job do
         expect(Exports::Context).to receive(:new).with(
           subject,
           dataset_ids,
-          export_options
+          export_options,
+          nil
         ).and_return(mock_export_context)
 
         subject.run_impl
@@ -79,7 +96,9 @@ RSpec.describe Exports::Job do
 
       it "rewinds the file and uploads it" do
         expect(mock_file).to receive(:rewind)
-        expect(mock_exports_service).to receive(:upload).with(mock_export_record.id, mock_file)
+        expect(mock_exports_service).to receive(:upload).with(
+          mock_export_record.id, mock_file, filename: match(/\Aidah-export_\d{4}-\d{2}-\d{2}_\d{4}\.json\z/)
+        )
 
         subject.run_impl
       end
@@ -101,7 +120,7 @@ RSpec.describe Exports::Job do
     end
 
     context "with dir mode" do
-      let(:mock_zip_file) { instance_double("File") }
+      let(:mock_zip_file) { instance_double("File", path: "/tmp/export.zip") }
 
       before do
         allow(mock_io_context).to receive(:mode).and_return(:dir)
@@ -111,7 +130,9 @@ RSpec.describe Exports::Job do
 
       it "opens the zip directory and uploads it" do
         expect(File).to receive(:open).with("/tmp/export.zip").and_return(mock_zip_file)
-        expect(mock_exports_service).to receive(:upload).with(mock_export_record.id, mock_zip_file)
+        expect(mock_exports_service).to receive(:upload).with(
+          mock_export_record.id, mock_zip_file, filename: match(/\Aidah-export_\d{4}-\d{2}-\d{2}_\d{4}\.zip\z/)
+        )
 
         subject.run_impl
       end
@@ -177,7 +198,8 @@ RSpec.describe Exports::Job do
         expect(Exports::Context).to receive(:new).with(
           subject,
           dataset_ids,
-          export_options
+          export_options,
+          nil
         ).and_return(mock_export_context)
 
         allow(mock_io_context).to receive(:mode).and_return(:file)
@@ -199,7 +221,8 @@ RSpec.describe Exports::Job do
         expect(Exports::Context).to receive(:new).with(
           subject,
           [],
-          export_options
+          export_options,
+          nil
         ).and_return(mock_export_context)
 
         subject.run_impl

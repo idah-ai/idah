@@ -11,7 +11,6 @@
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
-  import { EntryRecord } from "@/data/model/dataset/entries/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
@@ -64,14 +63,20 @@
     disabledActiveStateFilterSortKeys={["project_id"]}
     listOptions={{
       fields: {
-        [DatasetRecord.type]: ["id", "name", "status", "modality", "progress", "created_at", "updated_at"],
-        [ProjectRecord.type]: ["name"],
-        [EntryRecord.type]: ["status"],
+        [DatasetRecord.type]: [
+          "id",
+          "name",
+          "status",
+          "modality",
+          "progress",
+          "created_at",
+          "updated_at",
+          "delivery_date",
+        ],
       },
       filters: {
         project_id: projectId,
       },
-      included: ["entries"],
       sort: ["-created_at"],
     }}
     selectable

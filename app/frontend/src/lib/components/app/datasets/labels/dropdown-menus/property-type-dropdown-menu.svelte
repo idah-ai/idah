@@ -9,13 +9,14 @@
   import { truncate } from "@/utils/string";
 
   import { fieldTypes, type FieldType } from "@/data/model/dataset/labels";
-  import type { IConfigPropertyType } from "@/plugin/interface/Activity";
+  import type { IConfigPropertyType } from "@/plugin/v2/types";
 
   // Props
   interface Props {
     label: string;
     selectedFieldType: FieldType | undefined;
-    onSetLabel: (params: { label: string }) => void;
+    /** Returns whether the name was accepted. */
+    onSetLabel: (params: { label: string }) => boolean;
     onSetType: (params: { type: IConfigPropertyType }) => void;
   }
   let { label, selectedFieldType, onSetLabel, onSetType }: Props = $props();
@@ -45,7 +46,14 @@
     <Command>
       <CommandList>
         <CommandGroup heading="Label">
-          <InputField name={label} value={label} onblur={(e) => onSetLabel({ label: e.currentTarget.value })} />
+          <!-- A rejected name (e.g. a duplicate) puts the current name back in the input. -->
+          <InputField
+            name={label}
+            value={label}
+            onblur={(e) => {
+              if (!onSetLabel({ label: e.currentTarget.value })) e.currentTarget.value = label;
+            }}
+          />
         </CommandGroup>
 
         <CommandGroup heading="Type">

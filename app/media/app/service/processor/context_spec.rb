@@ -53,6 +53,38 @@ RSpec.describe Processor::Context, type: :repository, database: true do
       end
     end
 
+    context "when the stored media has an extension" do
+      # Decoders such as ImageMagick read the format from the trailing extension
+      # (ICO has no magic bytes), so it must not be followed by Tempfile's suffix.
+      it "keeps the extension at the end of the temporary file name" do
+        ico = Tempfile.new(["test-file", ".ico"]).tap do |f|
+          f.write("test-content")
+          f.rewind
+        end
+
+        uploaded_file = nil
+        Verse::Plugin[:shrine].with_storage do |storage|
+          uploaded_file = storage.upload(ico)
+        end
+
+        media_repo.create(
+          id: uploaded_file.id,
+          resource: resource,
+          key: "",
+          filename: "favicon.ico",
+          size: 12,
+          mime_type: "image/vnd.microsoft.icon",
+        )
+
+        temp_path = context.download_original
+
+        expect(File.extname(temp_path)).to eq(".ico")
+        expect(File.basename(temp_path)).to start_with("idah_media_#{File.basename(uploaded_file.id, ".ico")}_")
+      ensure
+        ico&.close!
+      end
+    end
+
     context "when media is not found" do
       it "raises an error" do
         expect { context.download_original }.to raise_error("media not found")

@@ -10,7 +10,15 @@ module Entry
     use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
-      entries.index(
+      keys = sort.is_a?(String) ? sort.split(",") : sort
+      method = if keys.is_a?(Array) && keys.length == 1 &&
+                  %w[delivery_date -delivery_date].include?(keys.first)
+                 :index_by_delivery_date
+               else
+                 :index
+               end
+      entries.public_send(
+        method,
         filter,
         included:,
         page:,
@@ -18,6 +26,18 @@ module Entry
         sort:,
         query_count:
       )
+    end
+
+    def select_next(dataset_id:, wf_step:)
+      dataset = datasets.find!(dataset_id)
+      entries.with_db_mode(:rw) do
+        entries.transaction do
+          id = entries.lock_next_id(dataset_id: dataset_id, wf_step: wf_step, fallback_date: dataset.delivery_date)
+          next unless id
+
+          select(id)
+        end
+      end
     end
 
     def show(id, included: [])
@@ -61,6 +81,8 @@ module Entry
       attributes[:id] = record.id || UUIDv7.generate
       attributes[:project_id] = dataset.project_id
       attributes[:dataset_id] = dataset.id
+      DeliveryDate.validate!(attributes)
+      attributes[:delivery_date] = dataset.delivery_date unless attributes.key?(:delivery_date)
 
       entries.transaction do
         id = entries.create(attributes)
@@ -69,7 +91,11 @@ module Entry
     end
 
     def mark_entries_status_as(job_id, status)
-      entries.mark_entries_status_as(job_id, status)
+      entries.transaction do
+        entry = entries.find_by!({ job_id:, status: "processing" })
+        entries.mark_entries_status_as(job_id, status)
+        system_datasets_repo.update_progress!(entry.dataset_id)
+      end
     end
 
     def complete_entry_processing(job_id)
@@ -82,17 +108,26 @@ module Entry
     end
 
     def update(record)
-      entries.update!(record.id, record.attributes)
+      attributes = record.attributes
+      if attributes.key?(:delivery_date)
+        current = entries.find!(record.id)
+        DeliveryDate.validate!(attributes, current.delivery_date)
+      end
+      entries.update!(record.id, attributes)
       entries.find!(record.id)
     end
 
     def delete(id)
-      entry = entries.find!(id)
-      if %w[in_progress completed].include?(entry.status)
-        raise Verse::Error::Unauthorized, "Unable to delete in progress or completed entry"
-      end
+      entries.transaction do
+        entry = entries.find!(id)
+        if %w[in_progress completed].include?(entry.status)
+          raise Verse::Error::Unauthorized, "Unable to delete in progress or completed entry"
+        end
 
-      entries.delete!(id)
+        dataset_id = entry.dataset_id
+        entries.delete!(id)
+        system_datasets_repo.update_progress!(dataset_id)
+      end
     end
 
     def assign_member(id, assigned_to_id)
@@ -169,6 +204,47 @@ module Entry
       end
     end
 
+    def reopen(entry_id, target_step:)
+      entries.transaction do
+        entry = entries.find!(entry_id, included: [:dataset])
+
+        unless entry.status == "completed"
+          raise Verse::Error::ValidationFailed, "Only completed entries can be reopened"
+        end
+
+        workflow = entry.dataset.entry_workflow.new(entries, entry)
+        target = target_step.to_s
+
+        unless workflow.reopenable_steps.map(&:to_s).include?(target)
+          raise Verse::Error::ValidationFailed, "Invalid reopen target step \"#{target}\""
+        end
+
+        entries.reopen(
+          entry.id,
+          {
+            wf_step: target,
+            status: "pending",
+            assigned_to_id: nil,
+            assigned_to_email: nil,
+            reopened_by_id: auth_context.metadata[:id],
+            reopened_by_email: auth_context.metadata[:email]
+          }
+        )
+
+        # Dataset status changes to in_progress if
+        # it was previously completed.
+        system_datasets_repo.update_progress!(entry.dataset_id)
+
+        entries.find!(entry.id, included: [:dataset])
+      end
+    end
+
+    def reopen_targets(entry_id)
+      entry = entries.find!(entry_id, included: [:dataset])
+
+      entry.dataset.entry_workflow.new(entries, entry).reopenable_steps.map(&:to_s)
+    end
+
     def unassign_account_entries(account_id, project_id)
       system_entries_repo.chunked_index({ assigned_to_id: account_id, project_id: }).each do |entry|
         system_entries_repo.unassign(entry.id)
@@ -205,6 +281,7 @@ module Entry
         entry_id = UUIDv7.generate
         attributes = {
           **duping_entry.fields,
+          delivery_date: nil,
           id: entry_id,
           project_id: duping_entry.project_id,
           dataset_id: dataset_id,

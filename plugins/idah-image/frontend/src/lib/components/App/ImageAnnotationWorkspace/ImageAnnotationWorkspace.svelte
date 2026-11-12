@@ -9,6 +9,7 @@
   import { requiredFullfilled } from "$lib/components/App/SelectionPanel";
   import { resolveEntryRoot, isTaggingValueComplete } from "$lib/utils/tagging-annotations";
   import { annotation } from "$lib/state/annotation.svelte";
+  import { categoryPicker } from "$lib/state/category-picker";
   import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
@@ -31,6 +32,7 @@
   import AnnotationSidebar from "$lib/components/App/CategorySelector/AnnotationCategorySelector.svelte";
   import PropertiesSidebar from "$lib/components/App/CategorySelector/PropertiesCategorySelector.svelte";
   import ConfirmDialog from "$lib/components/App/ConfirmDialog/ConfirmDialog.svelte";
+  import { showConfirmDeleteAnnotationsDialog } from "$lib/components/App/ConfirmDialog/confirm-delete";
   import ContextMenu from "$lib/components/App/ContextMenu/ContextMenu.svelte";
   import DebugConsole from "$lib/components/App/DebugConsole.svelte";
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
@@ -226,10 +228,14 @@
     // Find entry-root annotation from the global store
     const entryRootAnnotation = (data.annotations?.items ?? []).find((ann) => ann.shape_type === "entry:root");
     if (entryRootAnnotation) entryRoot.value = entryRootAnnotation;
-
   });
 
-  async function addAnnotation(shape: IImageAnnotationShape, shapeType: string, category?: string, properties: AnnotationAttributes = {}) {
+  async function addAnnotation(
+    shape: IImageAnnotationShape,
+    shapeType: string,
+    category?: string,
+    properties: AnnotationAttributes = {},
+  ) {
     if (!editable) return;
 
     getDriver().command.call("idah-image:annotation.add", { shape, shape_type: shapeType, category, properties });
@@ -300,26 +306,14 @@
           $state.snapshot(effectiveProperties),
         );
     } else if (valueMode !== ENTRY_ROOT) {
-      // ── Resolve the actual shape type from config ────────────────────
-      // The valueMode may be DEFAULT_MODE (popover/right sidebar flow), but
-      // the category might belong to a mask config. Resolve by checking if
-      // the category ID exists in the IMAGE_MASK config values.
-      const effectiveShapeType = (() => {
-        if (valueMode === IMAGE_MASK) return IMAGE_MASK;
-        if (category) {
-          const maskConfig = getDriver().config[IMAGE_MASK];
-          if (maskConfig?.values?.some((v: any) => v.id === category)) {
-            return IMAGE_MASK;
-          }
-        }
-        return valueMode;
-      })();
-
       // ── Mask category: prevent duplicates ───────────────────────────
       // If a mask annotation with this category already exists, select it
       // instead of entering drawing mode, and enter mask mode with brush
       // so the user can continue editing. Only one mask per category.
-      if (effectiveShapeType === IMAGE_MASK && category) {
+      // valueMode is always the shape type the category was picked under;
+      // category IDs may be shared across shape types, so never infer mask
+      // from the category ID alone.
+      if (valueMode === IMAGE_MASK && category) {
         const existingMask = data.annotations?.items.find(
           (a) => a.shape_type === IMAGE_MASK && a.category === category,
         );
@@ -365,6 +359,18 @@
     }
   }
 
+  /** Pick a category for the next annotation from a command (category.reuse-last), the same way a
+   *  sidebar click does. The command clears the selection first. Returns false when the category
+   *  is no longer in the label config. */
+  function applyCategory(category: string, shapeType: string): boolean {
+    if (!editable) return false;
+    if (!getDriver().config[shapeType]?.values.some((v) => v.id === category)) return false;
+    onEditValue(category, shapeType);
+    return true;
+  }
+
+  $effect(() => categoryPicker.attach(applyCategory));
+
   /** Called by the Confirm button / Enter key in the popover.
    *  Creates the annotation with the value the user picked (category + any properties). */
   function confirmCreateAnnotation(type: string, _points: Point[] = [], _extraProps: Record<string, unknown> = {}) {
@@ -400,7 +406,6 @@
       const shapeType = ann.shape_type ?? type;
       const updatedShape: IImageAnnotationShape = { points, ...extraProps };
       getDriver().command.call("idah-image:annotation.update", {
-
         annotation: ann,
         shape_type: shapeType,
         shape_args: updatedShape,
@@ -472,7 +477,14 @@
     if (!editable) return;
     const existing = entryRootAnnotation;
     if (existing) {
-      getDriver().command.call("idah-image:annotation.delete", { annotationId: existing.id });
+      showConfirmDeleteAnnotationsDialog({
+        count: 1,
+        title: "Delete Image Tag",
+        description: "Are you sure you want to delete the image tag for this entry?",
+        onConfirm: () => {
+          getDriver().command.call("idah-image:annotation.delete", { annotationId: existing.id });
+        },
+      });
     }
   }
 
@@ -488,9 +500,7 @@
   // (entry:root) are excluded so they never render on canvas, appear in the
   // annotation sidebar, or reach the timeline.
   let viewportAnnotations = $derived.by<IImageAnnotationRecord[]>(() => {
-    const raw = (data.annotations?.items ?? []).filter(
-      (ann) => !NON_DRAWABLE_SHAPE_TYPES.has(ann.shape_type),
-    );
+    const raw = (data.annotations?.items ?? []).filter((ann) => !NON_DRAWABLE_SHAPE_TYPES.has(ann.shape_type));
     return raw.map((ann) => ({
       id: ann.id,
       shape_type: ann.shape_type,
@@ -570,14 +580,15 @@
         {#if pendingCategory}
           <SelectionPanel
             selectedCategory={pendingCategory}
-            annotationValue={annotationValue}
+            {annotationValue}
             onSelectCategory={(selectedCategory) => {
               if (!selectedCategory) selectAnnotation();
               pendingCategory = selectedCategory;
               onEditValue(pendingCategory, mode);
             }}
             onEditValue={(value) =>
-              value && onEditValue(value.category as string | undefined, mode, value.properties as Record<string, unknown>)}
+              value &&
+              onEditValue(value.category as string | undefined, mode, value.properties as Record<string, unknown>)}
             disabled={false}
           />
         {:else}
@@ -625,7 +636,7 @@
         <Button
           size="sm"
           onclick={() => {
-          if (shapeSelectionArgs && pendingCategory) {
+            if (shapeSelectionArgs && pendingCategory) {
               showPopOver = false;
               confirmCreateAnnotation(...shapeSelectionArgs);
             }
@@ -684,8 +695,8 @@
                 {onEditValue}
                 onReSelectCategory={reSelectCategory}
                 {entryRootAnnotation}
-                onEntryRootChange={onEntryRootChange}
-                onDeleteEntryRoot={onDeleteEntryRoot}
+                {onEntryRootChange}
+                {onDeleteEntryRoot}
               />
             </section>
           </ResizablePane>

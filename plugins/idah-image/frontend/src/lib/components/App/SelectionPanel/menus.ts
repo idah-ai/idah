@@ -1,11 +1,12 @@
 import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon, type Icon as IconType } from "@lucide/svelte";
 
-import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
+import { showConfirmDeleteAnnotationsDialog } from "$lib/components/App/ConfirmDialog/confirm-delete";
 import { annotation } from "$lib/state/annotation.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
 import { isEditable } from "$lib/state/editor.svelte";
 import type { IImageAnnotationRecord } from "$lib/types";
 import { viewport } from "$lib/state/viewport.svelte";
+import { humanize } from "$lib/utils/string";
 
 export interface AnnotationAction {
   id: string;
@@ -65,6 +66,11 @@ export function getEditabilityAction(annotationId: string, items: IImageAnnotati
 export function getDeleteAction(annotationId: string, items: IImageAnnotationRecord[]): AnnotationAction | null {
   if (items.length === 0) return null;
 
+  const annotationCategory = items[0].category  ? humanize(items[0].category)  : undefined;
+  const shape = items[0].shape_type
+    ? humanize(items[0].shape_type.replace("idah-image:", ""))
+    : undefined;
+
   return {
     id: "delete",
     label: "Delete annotation",
@@ -72,9 +78,10 @@ export function getDeleteAction(annotationId: string, items: IImageAnnotationRec
     destructive: true,
     disabled: !isEditable() || viewport.isReviewWorkspace || items.some((item) => annotation.isLocked(item)),
     onClick: () => {
-      showConfirmDialog({
-        title: "Delete annotation",
-        description: "Are you sure you want to delete this annotation?",
+      showConfirmDeleteAnnotationsDialog({
+        count: 1,
+        shape: shape,
+        annotation_category: annotationCategory,
         onConfirm: () => {
           getDriver().command.call("idah-image:annotation.delete", { annotationId });
         },

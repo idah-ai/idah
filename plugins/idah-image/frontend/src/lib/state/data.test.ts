@@ -2,7 +2,14 @@
 // data.spec.ts — Unit tests for the DataStore
 // ---------------------------------------------------------------------------
 import { describe, it, expect, vi } from "vitest";
-import { createDataStore, computeMissingRanges, type DataItem, type RangeFetchFn } from "./data.svelte";
+import {
+  createDataStore,
+  createAnnotationStore,
+  computeMissingRanges,
+  type DataItem,
+  type RangeFetchFn,
+  type AnnotationDriver,
+} from "./data.svelte";
 
 // ─── Test helpers ─────────────────────────────────────────────────────────
 
@@ -318,5 +325,47 @@ describe("CRUD", () => {
     store.clear();
     expect(store.items).toHaveLength(0);
     expect(store.loadedRange).toBeNull();
+  });
+});
+
+// ─── Annotation store ─────────────────────────────────────────────────────
+
+describe("createAnnotationStore", () => {
+  function makeDriver(overrides: Partial<AnnotationDriver> = {}): AnnotationDriver {
+    return {
+      fetch: vi.fn(async () => []),
+      create: vi.fn(async (data) => ({ id: "created", ...data })),
+      update: vi.fn(async () => {}),
+      delete: vi.fn(async () => {}),
+      restore: vi.fn(async (id) => ({ id })),
+      setShape: vi.fn(async () => {}),
+      setShapes: vi.fn(async () => {}),
+      ...overrides,
+    };
+  }
+
+  it("restore() resolves to the backend's restored record", async () => {
+    const backendRecord = {
+      id: "ann-1",
+      shape_type: "idah-image:bounding-box",
+      shape_args: { points: [[0, 0], [10, 10]] },
+      category: "test/cat",
+      restored: true,
+    };
+    const driver = makeDriver({ restore: vi.fn(async () => backendRecord) });
+    const store = createAnnotationStore(driver);
+
+    const snapshot = {
+      id: "ann-1",
+      shape_type: "idah-image:bounding-box",
+      shape_args: { points: [[0, 0], [10, 10]] },
+      category: "test/cat",
+    };
+    const result = await store.restore(snapshot as any);
+
+    expect(driver.restore).toHaveBeenCalledWith("ann-1");
+    expect(result).toEqual(backendRecord);
+    // The optimistic snapshot was reconciled with the backend record.
+    expect(store.items.find((i) => i.id === "ann-1")).toEqual(backendRecord);
   });
 });

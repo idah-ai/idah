@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Badge } from "$lib/components/ui/Badge";
-  import Icon from "$lib/components/ui/Icon";
+  import { Button } from "$lib/components/ui/Button";
   import { Separator } from "$lib/components/ui/Separator";
   import Text from "$lib/components/ui/Text/Text.svelte";
   import {
@@ -13,29 +13,30 @@
     PaginationPrevButton,
   } from "$lib/components/ui/Pagination";
   import { ChevronLeftIcon, ChevronRightIcon } from "@lucide/svelte";
+  import CategorySelect from "$lib/components/App/SelectionPanel/_CategorySelect.svelte";
+  import BulkPropertiesSection from "$lib/components/App/SelectionPanel/_BulkPropertiesSection.svelte";
+  import { propertyFullfilled } from "$lib/components/App/SelectionPanel";
+  import ShapeIcon from "$lib/components/App/SelectionPanel/_ShapeIcon.svelte";
 
-  import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
-  import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
-  import lineIconSvg from "$lib/assets/icons/minimize-2.svg?raw";
-  import circleIconSvg from "$lib/assets/icons/circle.svg?raw";
-  import ellipseIconSvg from "$lib/assets/icons/ellipse.svg?raw";
-
+  import { annotation } from "$lib/state/annotation.svelte";
+  import { data } from "$lib/state/data.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { isEditable } from "$lib/state/editor.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { categoryValueToLabel } from "$lib/utils/annotation";
+  import { truncateMiddle } from "$lib/utils/string";
+  import { bulkFields, bulkPreview, categoryCounts, hasMaskCategoryCollision, sharedCategories, sharedProperties, type PropertyValue } from "$lib/utils/bulk-category";
 
-  import { IMAGE_POLYGON, IMAGE_LINE, IMAGE_CIRCLE, IMAGE_ELLIPSE } from "$lib/types";
-  import type { IAnnotationRecord } from "$idah/v2/types";
+  import {  IMAGE_MASK } from "$lib/types";
 
   // Optional — when provided, show these items instead of selection.selectedAnnotations.
   // This lets the component be reused for group-selection annotations.
   interface Props {
-    items?: IAnnotationRecord[];
+    disabled?: boolean;
   }
-  let { items }: Props = $props();
+  let { disabled = false }: Props = $props();
 
-  // Source of truth: explicit items prop, or fall back to the selection model.
-  let sourceItems = $derived(items ?? selection.selectedAnnotations);
+  let sourceItems = $derived(selection.selectedAnnotations);
 
   const PAGE_SIZE = 10;
   let page = $state(1);
@@ -45,18 +46,143 @@
   const showPagination = $derived(sourceItems.length > PAGE_SIZE);
   const placeholderCount = $derived(showPagination ? PAGE_SIZE - pagedAnnotations.length : 0);
 
-  const countLabel = $derived(`${sourceItems.length} ${sourceItems.length === 1 ? "annotation" : "annotations"}`);
+  const countLabel = $derived(`${sourceItems.length} selected`);
+  let draftCategory = $state<string | undefined>();
+  let draftProperties = $state<Record<string, PropertyValue>>({});
+  let feedback = $state("");
+  const selectionKey = $derived([...selection.selectedAnnotationIds].sort().join("|"));
+  const shapeType = $derived(sourceItems[0]?.shape_type);
+  const sameShape = $derived(sourceItems.length > 0 && sourceItems.every((item) => item.shape_type === shapeType));
+  const hasImageMask = $derived(sourceItems.some((item) => item.shape_type === IMAGE_MASK));
+  const counts = $derived(categoryCounts(sourceItems, getDriver().config));
+  const fields = $derived(bulkFields(sourceItems, getDriver(), draftCategory, draftProperties));
+  const hasPropertyEdit = $derived(Object.keys(draftProperties).length > 0);
+  const currentCategory = $derived(counts.size === 1 ? sourceItems[0]?.category : undefined);
+  const configValues = $derived(sharedCategories(sourceItems, getDriver().config));
+  const hasSharedChoices = $derived(configValues.length > 0 || fields.length > 0);
+  const selectedCategory = $derived(draftCategory ?? currentCategory ?? "");
+  const category = $derived(configValues.find((value) => value.id === selectedCategory));
+  const preview = $derived(bulkPreview(sourceItems, getDriver(), draftCategory, draftProperties, propertyFullfilled));
+  const blockReason = $derived.by(() => {
+    if (!sourceItems.length || sourceItems.length !== selection.selectedAnnotationIds.size) return "Selection is incomplete.";
+    if (sourceItems.some((item) => annotation.isLocked(item))) return "One or more selected annotations are locked or cannot be edited.";
+    if (!sameShape) return "Editing is unavailable because the selected annotations have different shapes.";
+    if (!hasSharedChoices) return "No category or property is available for all selected annotations.";
+    if (disabled || !isEditable() || ["completed", "errored"].includes(getDriver().entryStatus)) return "This workspace cannot be edited right now.";
+    if (sourceItems.some((item) => annotation.isHidden(item))) return "One or more selected annotations are hidden. Deselect them before applying.";
+    if (!draftCategory && !hasPropertyEdit) return "Choose a category or property to apply.";
+    if (preview?.error) return preview.error;
+    if (draftCategory && hasImageMask && !data.annotations) return "Entry annotations are unavailable.";
+    if (draftCategory && preview?.updates.length && data.annotations &&
+      hasMaskCategoryCollision(preview.updates, data.annotations.items))
+      return "Another image mask already uses this category. Choose a different category.";
+    if (draftCategory && !hasPropertyEdit && sourceItems.every((item) => item.category === draftCategory))
+      return "All selected annotations already use this category.";
+    return undefined;
+  });
+
+  $effect(() => {
+    selectionKey;
+    draftCategory = undefined;
+    draftProperties = {};
+    feedback = "";
+  });
+
+  function applyBulk() {
+    if (blockReason) return;
+    const result = bulkPreview(sourceItems, getDriver(), draftCategory, draftProperties, propertyFullfilled);
+    if (!result || result.error || !result.updates.length) return;
+    if (draftCategory && hasImageMask && (!data.annotations || hasMaskCategoryCollision(result.updates, data.annotations.items))) return;
+    getDriver().command.call("idah-image:annotation.bulk-update", { updates: result.updates });
+    draftCategory = undefined;
+    draftProperties = {};
+    feedback = "";
+  }
+
+  function keepVisibleDrafts(next: Record<string, PropertyValue>, category: string | undefined) {
+    const visible = new Set(sharedProperties(sourceItems, getDriver(), category, next).map((field) => field.id));
+    const removable = new Set(sharedProperties(sourceItems, getDriver(), category).map((field) => field.id));
+    const retained = Object.fromEntries(Object.entries(next).filter(([id, value]) =>
+      visible.has(id) || (value === undefined && removable.has(id)),
+    ));
+    feedback = Object.keys(retained).length < Object.keys(next).length
+      ? "Property changes hidden by the current category or values were cleared from the draft."
+      : "";
+    draftProperties = retained;
+  }
+
+  function setDraftCategory(value?: string) {
+    draftCategory = value;
+    keepVisibleDrafts(draftProperties, value);
+  }
+
+  function setDraftProperty(id: string, value: PropertyValue) {
+    keepVisibleDrafts({ ...draftProperties, [id]: value }, draftCategory);
+  }
 
   $effect(() => {
     if (page > totalPages) page = totalPages;
   });
 </script>
 
-<section class="flex flex-col gap-2">
+<section class="flex flex-col gap-4">
   <div class="flex items-center gap-2">
     <Text weight="semibold">Multiple selection</Text>
-    <Badge variant="info">{countLabel}</Badge>
+    <Badge variant="info" class="ml-auto">{countLabel}</Badge>
   </div>
+
+  <div class="bg-primary/10 flex flex-col gap-2 rounded-lg px-2 py-3 text-xs">
+    <strong>Selected Annotations</strong>
+    <div class="flex flex-wrap items-center gap-1.5">
+      {#each [...counts] as [id, { count, label }] (id)}
+        <Badge variant="outline" class="bg-accent" title={label} aria-label={`${count} ${label}`}>
+          {count} {truncateMiddle(label)}
+        </Badge>
+      {/each}
+    </div>
+  </div>
+
+  <div class="grid gap-4">
+	  <CategorySelect
+	    {configValues}
+	    {category}
+	    {selectedCategory}
+	    {shapeType}
+	    showShapeIcon={sameShape}
+	    onValueChange={setDraftCategory}
+	    disabled={disabled || !sameShape || configValues.length === 0}
+	    placeholder={counts.size > 1 ? "Mixed — leave unchanged" : "Select category"}
+	  />
+
+		<Separator />
+
+	  <BulkPropertiesSection
+	    items={sourceItems}
+      {fields}
+      draft={draftProperties}
+      draftCategory={draftCategory}
+      disabled={disabled || !sameShape}
+	    onValueChange={setDraftProperty}
+	  />
+    {#if blockReason}
+      {@const isPrompt = blockReason === "Choose a category or property to apply." || blockReason === "No changes to apply."}
+      {#if !(feedback && isPrompt)}
+        <p
+          role={isPrompt ? "status" : "alert"}
+          class={isPrompt
+            ? "text-muted-foreground text-xs"
+            : "bg-destructive/10 text-destructive rounded-md px-2 py-1 text-xs"}
+        >{blockReason}</p>
+      {/if}
+    {/if}
+    {#if feedback}
+      <p role="status" class="text-muted-foreground text-xs">{feedback}</p>
+    {/if}
+  </div>
+
+  <Button size="sm" disabled={Boolean(blockReason)} onclick={applyBulk}>
+  	Apply to {sourceItems.length}
+  </Button>
 
   <div class="flex flex-col gap-1">
     <Separator class="my-2" />
@@ -68,17 +194,7 @@
       {@const annDisplayName = annCategory ? `${annCategory.label}` : (ann.category ?? "Uncategorized")}
       {@const annParentLabel = annCategory ? categoryValueToLabel(annCategory.id) : ""}
       <div class="hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs">
-        {#if annShapeType === IMAGE_POLYGON}
-          <Icon src={polygonIconSvg} color={annColor} />
-        {:else if annShapeType === IMAGE_LINE}
-          <Icon src={lineIconSvg} color={annColor} />
-        {:else if annShapeType === IMAGE_CIRCLE}
-          <Icon src={circleIconSvg} color={annColor} />
-        {:else if annShapeType === IMAGE_ELLIPSE}
-          <Icon src={ellipseIconSvg} color={annColor} />
-        {:else}
-          <Icon src={vectorSquareIconSvg} color={annColor} />
-        {/if}
+        <ShapeIcon shapeType={annShapeType} color={annColor} />
         <div class="flex min-w-0 flex-col">
           {#if annParentLabel.length > 0}
             <span class="text-muted-foreground truncate text-xs">{annParentLabel}</span>

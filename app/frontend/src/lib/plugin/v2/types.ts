@@ -189,6 +189,18 @@ export interface IConfig {
   [shape_type: string]: IShapeConfig;
 }
 
+/**
+ * Project feedback configuration
+ */
+export interface IFeedbackItem {
+  label: string;
+  description: string | null;
+}
+
+export interface IFeedbackConfig {
+  [key: string]: IFeedbackItem;
+}
+
 // ─── AST (conditional visibility) ────────────────────────────────────────
 
 export type ASTValue = string | number | string[] | boolean | undefined;
@@ -407,7 +419,10 @@ export interface INoteRecord {
   anchor: INoteAnchor;
 
   /** Markdown content of the initial note (first message in the thread). */
-  content_md?: string;
+  content_md?: string | null;
+
+  /** Feedback keys */
+  feedback_keys?: string[] | null;
 
   /** Whether the note thread is resolved. */
   resolved?: boolean;
@@ -864,6 +879,24 @@ export interface ISettingsDriverV2 {
 
 // ─── V2 Driver — Stats submodule ──────────────────────────────────────────
 
+// /** Badge variants for stat tags — mirrors BadgeVariant from the UI badge component. */
+export type IStatTagVariant =
+  | "default"
+  | "secondary"
+  | "destructive"
+  | "destructive-outline"
+  | "outline"
+  | "warning"
+  | "success"
+  | "info"
+  | "gray";
+
+/** A small badge rendered next to a stat row label (e.g. "Deleted" for orphan categories). */
+export interface IStatTag {
+  label: string;
+  variant: IStatTagVariant;
+}
+
 /**
  * A single computed statistic for the entry-stats modal.
  *
@@ -885,6 +918,8 @@ export interface IStatEntry {
   unitHeader?: string;
   /** Optional explicit row label; falls back to a humanized key remainder. */
   label?: string;
+  /** Optional badges rendered next to the row label. */
+  tags?: IStatTag[];
 }
 
 /** Contributes a set of stats. Registered by plugins via `driver.stats.register`. */

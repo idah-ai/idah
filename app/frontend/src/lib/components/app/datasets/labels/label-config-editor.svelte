@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     BoltIcon,
+    CircleAlertIcon,
     CopyIcon,
     EllipsisVerticalIcon,
     GripVerticalIcon,
@@ -290,7 +291,7 @@
   }
 
   function addNewProperty() {
-    controller.setProperty({
+    controller.addProperty({
       id: `property-${new Date().getTime()}`,
       label: "New Property",
       type: "text",
@@ -301,8 +302,8 @@
     });
   }
 
-  function setProperty(property: IConfigProperty) {
-    controller.setProperty(property);
+  function setProperty(property: IConfigProperty): boolean {
+    return controller.setProperty(property);
   }
 
   function changeSelectableCategory(editedCategory: IConfigValue, selectable: boolean) {
@@ -414,7 +415,11 @@
 
               <Button
                 variant={isSelect ? "default" : "secondary"}
-                class="group w-full justify-start pr-1"
+                class={cn(
+                  "group w-full justify-start pr-1",
+                  controller.hasConfigVisibilityErrors(labelConfigKey) &&
+                    "bg-destructive/5 border-destructive/50 text-destructive hover:bg-destructive/10 hover:border-destructive",
+                )}
                 onclick={() => selectConfigKey(labelConfigKey)}
               >
                 {currentShape
@@ -424,6 +429,22 @@
                     : labelConfigKey === "entry:root" && modalityLabel
                       ? modalityLabel
                       : humanize(labelConfigKeyDisplay)}
+
+                {#if controller.hasConfigVisibilityErrors(labelConfigKey)}
+                  <Tooltips align="center">
+                    {#snippet trigger()}
+                      <CircleAlertIcon
+                        class="fill-destructive text-primary-foreground size-4 shrink-0"
+                        aria-label="Visibility error"
+                      />
+                    {/snippet}
+
+                    {#snippet content()}
+                      Visibility conditions in this configuration reference a category or property that no longer
+                      exists.
+                    {/snippet}
+                  </Tooltips>
+                {/if}
 
                 <DropdownMenus menus={getLabelConfigActionMenus(labelConfigKey)} align="end">
                   {#snippet trigger({ props })}
@@ -455,9 +476,9 @@
   </div>
 
   <!-- LABEL CONFIG::CATEGORIES & PROPERTIES -->
-  <div class="grid flex-1 grid-cols-1 gap-2 lg:grid-cols-5">
+  <div class="grid min-w-0 flex-1 grid-cols-1 gap-2 lg:grid-cols-2">
     <!-- CATEGORIES -->
-    <Card class="col-span-1 h-full gap-2 lg:col-span-3">
+    <Card class="h-full min-w-0 gap-2">
       <CardHeader>
         <CardTitle>Categories</CardTitle>
         <CardDescription class="text-xs">
@@ -497,7 +518,7 @@
     </Card>
 
     <!-- PROPERTIES -->
-    <Card class="col-span-1 h-full gap-2 md:col-span-2">
+    <Card class="h-full min-w-0 gap-2">
       <CardHeader>
         <CardTitle>Properties</CardTitle>
         <CardDescription class="text-xs">
@@ -514,7 +535,14 @@
       <CardContent class="flex flex-col gap-2">
         {#if selectedLabelConfig}
           {#each Object.values(selectedLabelConfig.properties) as property (property.id)}
-            <PropertyCard {property} onSetProperty={setProperty} onRemoveProperty={removeProperty} />
+            <PropertyCard
+              {property}
+              categories={selectedLabelConfig.values}
+              properties={selectedLabelConfig.properties}
+              visibilityErrors={controller.getPropertyVisibilityErrors(controller.selectedConfigKey, property.id)}
+              onSetProperty={setProperty}
+              onRemoveProperty={removeProperty}
+            />
           {:else}
             <ResponseBlock
               icon={BoltIcon}
