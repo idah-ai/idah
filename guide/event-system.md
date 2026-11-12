@@ -113,7 +113,7 @@ The `with_metadata` block enriches the event payload with context that subscribe
 ```ruby
 def create(attributes)
   with_metadata do
-    add_event_metadata(
+    add_metadata(
       project_id: attributes[:project_id],
       dataset_id: attributes[:dataset_id]
     )
@@ -126,7 +126,7 @@ def update!(id, attributes, scope: scoped(:update))
   with_metadata do
     record = find!(id)
 
-    add_event_metadata(
+    add_metadata(
       project_id: attributes[:project_id] || record.project_id,
       dataset_id: id
     )
@@ -139,7 +139,7 @@ def delete!(id)
   with_metadata do
     record = find!(id)
 
-    add_event_metadata(
+    add_metadata(
       project_id: record.project_id,
       dataset_id: id
     )
@@ -170,7 +170,7 @@ event(name: "submitted")
 def submit(id, attributes)
   entry = find!(id)
 
-  add_event_metadata(
+  add_metadata(
     project_id: attributes[:project_id] || entry.project_id,
     dataset_id: attributes[:dataset_id] || entry.dataset_id,
     entry_id: id,
@@ -219,7 +219,7 @@ event(name: "assigned")
 def assign(id, attributes)
   entry = find!(id)
 
-  add_event_metadata(
+  add_metadata(
     project_id: attributes[:project_id] || entry.project_id,
     dataset_id: attributes[:dataset_id] || entry.dataset_id,
     entry_id: id
@@ -310,7 +310,7 @@ message.content
 # }
 ```
 
-For events published via `event(name:)` decorator or `with_metadata`, the metadata is automatically populated from the auth context and any `add_event_metadata` calls.
+For events published via `event(name:)` decorator or `with_metadata`, the metadata is automatically populated from the auth context and any `add_metadata` calls.
 
 For custom events published via `Verse.publish`, the content is exactly the hash passed as the second argument.
 
@@ -554,7 +554,7 @@ sequenceDiagram
     Exp->>Svc: create(params)
     Svc->>Repo: create(attributes)
 
-    Note over Repo: with_metadata do<br/>  add_event_metadata(...)<br/>  super(attributes)<br/>end
+    Note over Repo: with_metadata do<br/>  add_metadata(...)<br/>  super(attributes)<br/>end
 
     Repo-->>Redis: publish "dataset:entries:created"<br/>{ resource_id, metadata }
 
@@ -675,11 +675,11 @@ Key considerations for testing event subscribers:
 
 ### Do: Enrich Events with Contextual Metadata
 
-Always include enough context in `add_event_metadata` so subscribers can operate without additional DB queries:
+Always include enough context in `add_metadata` so subscribers can operate without additional DB queries:
 
 ```ruby
 # ✅ Good — subscriber gets organization_id without a lookup
-add_event_metadata(
+add_metadata(
   organization_id: record.organization_id,
   project_id: record.project_id
 )
@@ -774,7 +774,7 @@ end
 |---------|-----------|---------|
 | **Auto CRUD events** | `self.resource` + `super` in `create`/`update!`/`delete!` | `"dataset:entries:created"` |
 | **Custom resource events** | `event(name:)` decorator on repository method | `"dataset:entries:submitted"` |
-| **Metadata enrichment** | `with_metadata` + `add_event_metadata` blocks | Actor info, org/project scoping |
+| **Metadata enrichment** | `with_metadata` + `add_metadata` blocks | Actor info, org/project scoping |
 | **Event suppression** | `no_event` block inside decorator methods | Prevent double-publishing |
 | **Manual publishing** | `Verse.publish(channel, payload)` | `"notification:email"`, `"iam:account:login"` |
 | **Resource event subscription** | `on_resource_event(Resource::X, "event")` in exposition | `on_resource_event(Resource::Iam::Accounts, "created")` |

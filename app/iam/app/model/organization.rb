@@ -46,8 +46,6 @@ module Organization
 
     def create(attributes)
       with_metadata do
-        add_metadata
-
         super(attributes)
       end
     end

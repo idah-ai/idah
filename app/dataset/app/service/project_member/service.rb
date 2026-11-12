@@ -46,7 +46,7 @@ module ProjectMember
           raise Verse::Error::ValidationFailed, "Invalid project member role `#{role}`"
         end
 
-        # Assigning project_owner requires effective rank >= org_owner.
+        # The actor must be allowed to assign the requested role (see RoleHierarchy.can_assign_project_role?).
         unless RoleHierarchy.can_assign_project_role?(effective_rank, role)
           raise Verse::Error::Unauthorized,
                 "You do not have permission to update a member to a project owner for this project"

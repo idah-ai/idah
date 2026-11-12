@@ -70,7 +70,7 @@ module Project
 
       current_org = projects.find!(record.id).organization_id
       new_org = record.attributes[:organization_id]
-      return if new_org == current_org
+      return if new_org.to_s == current_org.to_s
 
       auth_context.can!(:update, projects.class.resource) do |scope|
         scope.all? { true }

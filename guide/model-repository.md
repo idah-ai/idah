@@ -451,7 +451,7 @@ def login(email, password)
     account = self.class.model_class.new(account)
     valid = account.password_match?(password)
 
-    add_event_metadata(
+    add_metadata(
       actor_account_id: account.id,
       actor_account_email: account.email,
       actor_account_role_name: account.role_name,
@@ -492,7 +492,7 @@ For CRUD overrides that need additional event context:
 ```ruby
 def create(attributes)
   with_metadata do
-    add_event_metadata(
+    add_metadata(
       project_id: attributes[:project_id],
       dataset_id: attributes[:dataset_id]
     )
@@ -505,7 +505,7 @@ def update!(id, attributes, scope: scoped(:update))
   with_metadata do
     entry = find!(id)
 
-    add_event_metadata(
+    add_metadata(
       project_id: attributes[:project_id] || entry.project_id,
       dataset_id: attributes[:dataset_id] || entry.dataset_id,
       entry_id: id
@@ -519,7 +519,7 @@ def delete!(id)
   with_metadata do
     entry = find!(id)
 
-    add_event_metadata(
+    add_metadata(
       project_id: entry.project_id,
       dataset_id: entry.dataset_id,
       entry_id: id
@@ -530,12 +530,12 @@ def delete!(id)
 end
 ```
 
-The standard `add_event_metadata` helper in each repository:
+The standard `add_metadata` helper in each repository:
 
 ```ruby
 private
 
-def add_event_metadata(**opts)
+def add_metadata(**opts)
   add_metadata(
     actor_account_id: auth_context.metadata[:id],
     actor_account_email: auth_context.metadata[:email],
@@ -734,14 +734,14 @@ In-memory repositories share the same interface (`create`, `update!`, `delete!`,
 When overriding `create`, `update!`, or `delete!`, always:
 
 1. Wrap in `with_metadata { ... }` to capture event metadata.
-2. Call `add_event_metadata(...)` with domain-specific context (project_id, dataset_id, entry_id, etc.).
+2. Call `add_metadata(...)` with domain-specific context (project_id, dataset_id, entry_id, etc.).
 3. Call `super(...)` for the actual database operation.
 4. In `update!`, accept and forward the `scope:` keyword argument.
 
 ```ruby
 def create(attributes)
   with_metadata do
-    add_event_metadata(project_id: attributes[:project_id])
+    add_metadata(project_id: attributes[:project_id])
     super(attributes)
   end
 end
@@ -749,7 +749,7 @@ end
 def update!(id, attributes, scope: scoped(:update))
   with_metadata do
     record = find!(id)
-    add_event_metadata(project_id: attributes[:project_id] || record.project_id)
+    add_metadata(project_id: attributes[:project_id] || record.project_id)
     super(id, attributes, scope:)
   end
 end
@@ -757,7 +757,7 @@ end
 def delete!(id)
   with_metadata do
     record = find!(id)
-    add_event_metadata(project_id: record.project_id)
+    add_metadata(project_id: record.project_id)
     super(id)
   end
 end

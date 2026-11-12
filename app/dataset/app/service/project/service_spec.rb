@@ -73,6 +73,12 @@ RSpec.describe Project::Service, database: true do
         subject.update(update_record_with_org(project_org1_id, 2))
       }.to raise_error(Verse::Error::Unauthorized)
     end
+
+    it "is not refused when sending the same org id as a string" do
+      record = subject.update(update_record_with_org(project_org1_id, "1"))
+
+      expect(record.organization_id).to eq(1)
+    end
   end
 
   context "as admin", as: :admin do
