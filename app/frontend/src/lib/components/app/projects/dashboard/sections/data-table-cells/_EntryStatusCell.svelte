@@ -1,9 +1,11 @@
 <script lang="ts">
-  import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
+  import Badge from "@/components/ui/badge/badge.svelte";
+  import { getEntryWorkflowGroup } from "@/components/app/projects/dashboard/project-dashboard.constants";
   import { EntryRecord } from "@/data/model/dataset/entries/record";
 
   // Props
   let { row: entry }: { row: EntryRecord } = $props();
+  const status = $derived(getEntryWorkflowGroup(entry));
 </script>
 
-<EntryStatus {entry} />
+<Badge variant={status?.badgeColor ?? entry.statusBadge.variant}>{status?.label ?? entry.statusBadge.label}</Badge>
