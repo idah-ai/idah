@@ -69,7 +69,7 @@ The media service names a zip's media and drops its single wrapping folder (`wra
 - **Failures stay local.** A failing file never stops the others, with one exception: when its dataset can't be created (`DatasetCreationError`), the run's remaining files are marked "not uploaded".
 - **Server reports.** The media service returns `meta.skipped` (unsupported or too large) and `meta.errored` (failed to process) for a zip's files. They end up in the item's `skippedMedias` and `errorMedias`, shown under its row.
 - **Sequential.** Files go one at a time, and every file is a rendered row. See the `ponytail:` note in `uploadAll` before handling batches of thousands.
-- **Leaving the page.** The upload runs in the page, so leaving stops it halfway. While it runs, `guardLeavingDuringUpload` (`upload-leave-guard.svelte.ts`) makes the browser ask before closing or reloading the tab, and refuses in-app navigation such as Back with a toast.
+- **Leaving the page.** The upload runs in the page, so leaving stops it halfway. While it runs, `guardLeavingDuringUpload` (`upload-leave-guard.svelte.ts`) makes the browser ask before closing or reloading the tab, and refuses in-app navigation such as Back with a toast. Both modals also say so up front (`UploadKeepOpenNote.svelte`), since the browser prompt can only use its own generic text.
 
 ## Files
 
@@ -87,5 +87,6 @@ The media service names a zip's media and drops its single wrapping folder (`wra
 | `UploadMediaItem.svelte`, `UploadItemCollapsibleSection.svelte`, `_UploadItemStatusIcon.svelte` | The summary rows                                                                              |
 | `upload-summary.ts`                                                                             | The modal footer text ("3 items to upload")                                                   |
 | `upload-leave-guard.svelte.ts`                                                                  | Asks before leaving the page while an upload runs                                             |
+| `UploadKeepOpenNote.svelte`                                                                     | The "keep this tab open" line shown while an upload runs                                      |
 
 `dataset-groups`, `upload-rows`, `upload-pipeline`, `upload-summary` and `file-upload.utils` have a `*.test.ts` beside them. Run them inside the frontend container (`pnpm exec vitest run src/lib/components/app/datasets/upload`).

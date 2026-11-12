@@ -4,6 +4,7 @@
   import { page } from "$app/state";
   import { onMount } from "svelte";
 
+  import UploadKeepOpenNote from "@/components/app/datasets/upload/UploadKeepOpenNote.svelte";
   import UploadMediaItem from "@/components/app/datasets/upload/UploadMediaItem.svelte";
   import DatasetForm from "@/components/app/datasets/forms/DatasetForm.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
@@ -397,7 +398,11 @@
   {/snippet}
 
   {#snippet modalDescription()}
-    <DialogDescription>{allRunsCompleted ? uploadResultText : ""}</DialogDescription>
+    {#if uploading && !allRunsCompleted}
+      <UploadKeepOpenNote />
+    {:else}
+      <DialogDescription>{allRunsCompleted ? uploadResultText : ""}</DialogDescription>
+    {/if}
   {/snippet}
 
   {#if uploading}

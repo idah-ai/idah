@@ -10,6 +10,7 @@
   import Text from "@/components/ui/text/Text.svelte";
 
   import MediaPicker from "@/components/app/datasets/upload/MediaPicker.svelte";
+  import UploadKeepOpenNote from "@/components/app/datasets/upload/UploadKeepOpenNote.svelte";
   import UploadMediaItem from "@/components/app/datasets/upload/UploadMediaItem.svelte";
 
   import { buildEntryRows, createdEntryNames, rowItems, rowView } from "@/components/app/datasets/upload/upload-rows";
@@ -187,6 +188,8 @@
   {#snippet modalDescription()}
     {#if view.isSelect()}
       <DialogDescription>Import media from your computer</DialogDescription>
+    {:else if !allItemsCompleted}
+      <UploadKeepOpenNote />
     {/if}
   {/snippet}
 
