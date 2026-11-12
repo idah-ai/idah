@@ -11,7 +11,8 @@ import {
   type EntryWorkflowStep,
 } from "@/data/model/dataset/entries/constants";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
-import { isOverdue } from "@/utils/date";
+import { Transformers } from "@/data/model/transformers";
+import { getDeliveryStatusBadge, isOverdue, type DeliveryStatusBadgeProps } from "@/utils/date";
 
 import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
@@ -44,6 +45,14 @@ export class EntryRecord extends Record {
   @field() public reopened_by_id!: number | null;
   @field() public reopened_by_email!: string | null;
 
+  @field({
+    transformer: {
+      ...Transformers.Time,
+      from: (value: string | null | undefined): Date | null => Transformers.Time.from(value ?? undefined) || null,
+    },
+  })
+  public readonly completed_at!: Date | null;
+
   @field() public created_at!: Date;
   @field() public updated_at!: Date;
 
@@ -64,6 +73,10 @@ export class EntryRecord extends Record {
     const foundEntryPriority = entryPriorities.find((p) => p.value === this.priority);
 
     return foundEntryPriority ?? defaultBadgeProps;
+  }
+
+  public get deliveryStatusBadge(): DeliveryStatusBadgeProps {
+    return getDeliveryStatusBadge(this.delivery_date, this.status === "completed");
   }
 
   public get statusBadge(): EntryStatusBadgeProps {
