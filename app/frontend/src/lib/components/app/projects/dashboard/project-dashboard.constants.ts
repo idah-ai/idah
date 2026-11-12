@@ -7,3 +7,18 @@ export const PROJECT_DASHBOARD_WORKFLOW_GROUPS = [
 ] as const;
 
 export const COMPLETION_GROUPINGS = ["Day", "Week", "Month"] as const;
+
+export const PROJECT_DASHBOARD_OPEN_ENTRIES_TABS = [
+  {
+    label: "All",
+    value: "all",
+  },
+  {
+    label: "Open",
+    value: "open",
+  },
+  {
+    label: "Completed",
+    value: "completed",
+  },
+] as const;

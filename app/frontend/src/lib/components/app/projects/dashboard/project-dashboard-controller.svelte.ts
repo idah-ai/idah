@@ -25,6 +25,8 @@ import { get, type Unsubscriber } from "svelte/store";
 
 import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 import { EntryRecord, entriesBackendDataSource } from "@/data/model/dataset/entries/record";
+import { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
+import { entryStatuses } from "@/data/model/dataset/entries/constants";
 import { datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 import { getDeliveryStatusBadge, today } from "@/utils/date";
 import { PROJECT_DASHBOARD_WORKFLOW_GROUPS } from "@/components/app/projects/dashboard/project-dashboard.constants";
@@ -36,6 +38,7 @@ import type {
   CompletionRange,
   CompletionHistoryResult,
   CompletionBucket,
+  OpenEntryTab,
 } from "@/components/app/projects/dashboard/project-dashboard.types";
 
 export const PROJECT_DASHBOARD_CONTROLLER_KEY = Symbol("project-dashboard-controller");
@@ -89,6 +92,7 @@ export class ProjectDashboardController {
     this.clearMetrics();
     this.clearCompletionHistory();
     this.clearDatasetProgress();
+    this.clearEntryProgress();
     this.unsubscribeToday?.();
     this.unsubscribeToday = undefined;
   }
@@ -120,6 +124,7 @@ export class ProjectDashboardController {
     this.clearMetrics();
     this.clearCompletionHistory();
     this.clearDatasetProgress();
+    this.clearEntryProgress();
     this.selectedDatasetIds = selected;
     this.focused = null;
     this.selectedDatasets = [];
@@ -256,6 +261,7 @@ export class ProjectDashboardController {
     void this.loadWorkflowCounts();
     void this.loadCompletionHistory();
     void this.loadDatasetProgress(true);
+    void this.loadEntryProgress(true);
   }
 
   async retrySummary(): Promise<void> {
@@ -820,6 +826,123 @@ export class ProjectDashboardController {
     }
   }
 
+  // ==================== Open Entries ====================
+
+  public entryTab: OpenEntryTab = $state("all");
+
+  changeEntryTab(value: string): void {
+    if (value !== "all" && value !== "open" && value !== "completed") return;
+    if (value === this.entryTab || this.disposed || this.denied) return;
+    this.entryTab = value;
+    void this.loadEntryProgress(true);
+  }
+
+  public entryProgressResponse: CollectionResponse<EntryRecord> | null = $state.raw(null);
+  public entryProgressPagination: Pagination | undefined = $state.raw();
+  public entryProgressLoading = $state(false);
+  public entryProgressError = $state("");
+  private entryProgressGeneration = 0;
+
+  public get entryProgressRows(): EntryRecord[] {
+    return this.scopeReady && !this.denied && !this.disposed ? (this.entryProgressResponse?.data ?? []) : [];
+  }
+
+  public get entryProgressCaption(): string {
+    if (this.entryProgressLoading || this.entryProgressError || !this.scopeReady || this.denied) return "";
+    const shown = this.entryProgressRows.length.toLocaleString();
+    const meta = this.entryProgressResponse?.meta;
+    const count = meta?.count;
+    if (typeof count === "number" && Number.isSafeInteger(count) && count >= 0) {
+      if (meta?.more === false) return `Showing ${shown} of ${count.toLocaleString()} entries`;
+      if (meta?.more === true) return `Showing ${shown} entries · ${count.toLocaleString()}+ matching`;
+    }
+    return `Showing ${shown} entries`;
+  }
+
+  async changeEntryProgressPage(pagination: Pagination): Promise<void> {
+    if (this.disposed || this.denied || !this.scopeReady) return;
+    if (
+      !Number.isSafeInteger(pagination.page) ||
+      pagination.page < 1 ||
+      !Number.isSafeInteger(pagination.itemsPerPage) ||
+      pagination.itemsPerPage < 1
+    )
+      return;
+    this.entryProgressPagination = { ...pagination };
+    await this.loadEntryProgress();
+  }
+
+  async retryEntryProgress(): Promise<void> {
+    if (this.disposed || this.denied || this.loading || this.entryProgressLoading) return;
+    if (this.scopeReady) await this.loadEntryProgress();
+    else await this.retry();
+  }
+
+  private clearEntryProgress(): void {
+    this.entryProgressGeneration++;
+    this.entryProgressResponse = null;
+    this.entryProgressLoading = false;
+    this.entryProgressError = "";
+  }
+
+  private async loadEntryProgress(resetPage = false): Promise<void> {
+    if (resetPage && this.entryProgressPagination)
+      this.entryProgressPagination = { ...this.entryProgressPagination, page: 1 };
+    if (this.disposed || this.denied || !this.scopeReady) return;
+
+    const scope = this.generation;
+    const request = ++this.entryProgressGeneration;
+    const current = (): boolean => this.isCurrent(scope) && request === this.entryProgressGeneration;
+    const ids = this.effectiveDatasetIds;
+    const overview = !this.focused;
+    this.entryProgressResponse = null;
+    this.entryProgressError = "";
+    this.entryProgressLoading = true;
+    try {
+      if (!this.projectId || (this.selectedDatasetIds.length > 0 && ids.length === 0))
+        throw new Error("Entry scope is unavailable. Please retry.");
+      const statuses =
+        this.entryTab === "completed"
+          ? ["completed"]
+          : this.entryTab === "open"
+            ? entryStatuses.filter((status) => status.value !== "completed").map((status) => status.value)
+            : null;
+      const response = await entriesBackendDataSource.list({
+        filters: {
+          project_id: this.projectId,
+          ...(ids.length ? { dataset_id: ids } : {}),
+          ...(statuses ? { status__in: statuses } : {}),
+        },
+        fields: {
+          [EntryRecord.type]: [
+            "id",
+            "name",
+            "resource",
+            "dataset_id",
+            "status",
+            "wf_step",
+            "assigned_to_id",
+            "assigned_to_email",
+          ],
+          [ProjectMemberRecord.type]: ["name", "email", "picture_url"],
+          ...(overview ? { [DatasetRecord.type]: ["name"] } : {}),
+        },
+        included: ["assigned_to", ...(overview ? ["dataset"] : [])],
+        sort: ["-created_at", "-id"],
+        ...(this.entryProgressPagination ? { pagination: { ...this.entryProgressPagination } } : {}),
+        count: true,
+        noCache: true,
+      });
+      if (!current()) return;
+      this.entryProgressResponse = response;
+    } catch (reason) {
+      if (!current() || this.handleAccessError(reason)) return;
+      this.entryProgressError = reason instanceof Error ? reason.message : "Entries are unavailable.";
+    } finally {
+      if (current()) this.entryProgressLoading = false;
+    }
+  }
+
   // ==================== Dataset Progress ====================
 
   public datasetProgressResponse: CollectionResponse<DatasetRecord> | null = $state.raw(null);
@@ -941,6 +1064,7 @@ export class ProjectDashboardController {
     this.clearMetrics();
     this.clearCompletionHistory();
     this.clearDatasetProgress();
+    this.clearEntryProgress();
     this.denied = true;
     this.scopeReady = false;
     this.loading = false;
@@ -948,6 +1072,7 @@ export class ProjectDashboardController {
       status === 404 ? "This Project or Dataset is no longer available." : "Dashboard access is no longer available.";
     this.completionHistory = { ...this.completionHistory, status: "unavailable", error: this.error };
     this.datasetProgressError = this.error;
+    this.entryProgressError = this.error;
   }
 
   // ==================== Request Lifecycle ====================
@@ -1010,6 +1135,7 @@ export class ProjectDashboardController {
         this.error = reason instanceof Error ? reason.message : "Unable to load datasets.";
         this.completionHistory = { ...this.completionHistory, status: "unavailable", error: this.error };
         this.datasetProgressError = this.error;
+        this.entryProgressError = this.error;
       }
     } finally {
       if (this.isCurrent(generation)) this.loading = false;

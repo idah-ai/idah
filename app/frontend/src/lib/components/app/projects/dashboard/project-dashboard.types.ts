@@ -1,4 +1,7 @@
-import type { COMPLETION_GROUPINGS } from "@/components/app/projects/dashboard/project-dashboard.constants";
+import type {
+  COMPLETION_GROUPINGS,
+  PROJECT_DASHBOARD_OPEN_ENTRIES_TABS,
+} from "@/components/app/projects/dashboard/project-dashboard.constants";
 
 export type CompletionGrouping = (typeof COMPLETION_GROUPINGS)[number];
 export type CompletionRange = { start: string; end: string };
@@ -21,3 +24,5 @@ export interface CompletionBucket {
   label: string;
   axisLabel: string;
 }
+
+export type OpenEntryTab = (typeof PROJECT_DASHBOARD_OPEN_ENTRIES_TABS)[number]["value"];
