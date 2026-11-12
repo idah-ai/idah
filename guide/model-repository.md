@@ -530,20 +530,7 @@ def delete!(id)
 end
 ```
 
-The standard `add_metadata` helper in each repository:
-
-```ruby
-private
-
-def add_metadata(**opts)
-  add_metadata(
-    actor_account_id: auth_context.metadata[:id],
-    actor_account_email: auth_context.metadata[:email],
-    actor_account_role_name: auth_context.metadata[:role],
-    **opts
-  )
-end
-```
+Actor fields (`actor_account_id`, `actor_account_email`, `actor_account_role_name`) are seeded automatically: repositories `include ActorEventMetadata` (`common/lib/actor_event_metadata.rb`), which adds them to the repository's metadata from the auth context. Call Verse's `add_metadata(...)` directly for domain context. Do not define `add_metadata` or a wrapper in a repository. For writes made on a system context on behalf of a user, wrap them in `with_actor(actor) { ... }`.
 
 **Key rule:** `with_metadata` MUST wrap any CRUD override that calls `add_metadata`. Without it, metadata will be lost.
 
