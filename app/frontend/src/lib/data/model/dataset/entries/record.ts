@@ -45,13 +45,7 @@ export class EntryRecord extends Record {
   @field() public reopened_by_id!: number | null;
   @field() public reopened_by_email!: string | null;
 
-  @field({
-    transformer: {
-      ...Transformers.Time,
-      from: (value: string | null | undefined): Date | null => Transformers.Time.from(value ?? undefined) || null,
-    },
-  })
-  public readonly completed_at!: Date | null;
+  @field() public readonly completed_at!: Date | null;
 
   @field() public created_at!: Date;
   @field() public updated_at!: Date;
