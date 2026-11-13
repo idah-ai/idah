@@ -358,12 +358,11 @@ module Annotation
       old_for_diff = row.slice(*attributes.keys.map(&:to_sym))
 
       if attributes.key?(:shape_args)
-        old_shape_args = old_for_diff[:shape_args]
         # `row` comes from Sequel with the pg_json extension, so the jsonb
-        # column is a JSONObject/JSONHash wrapper, not a plain Hash. Unwrap
-        # before rejecting, otherwise the leaked tile key survives and records
-        # a spurious `-`.
-        old_shape_args = old_shape_args.to_h if old_shape_args.is_a?(::Sequel::Postgres::JSONHashBase)
+        # column is a JSONObject/JSONHash wrapper, not a plain Hash. Normalize
+        # (which unwraps those) before rejecting, otherwise the leaked tile key
+        # survives and records a spurious `-`.
+        old_shape_args = AnnotationDiff.normalize(old_for_diff[:shape_args])
         if old_shape_args.is_a?(Hash)
           old_for_diff[:shape_args] = old_shape_args.reject do |k, _|
             shape_keys.include?(k.to_s)
