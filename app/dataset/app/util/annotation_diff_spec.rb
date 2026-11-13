@@ -222,18 +222,20 @@ RSpec.describe AnnotationDiff do
         expect(changes.map(&:first)).to eq(["~"])
         expect(changes.first[1]).to eq('a\.b')
 
-        expect(AnnotationDiff.parse_path(changes.first[1])).to eq(["a.b"])
+        expect(AnnotationDiff.parse_path(changes.first[1])).to eq([[:plain, "a.b"]])
       end
 
       it "round-trips parse_path(path(...))" do
-        expect(AnnotationDiff.parse_path(AnnotationDiff.path("shape_args"))).to eq(["shape_args"])
-        expect(AnnotationDiff.parse_path(AnnotationDiff.path("shape_args.frames"))).to eq(%w[shape_args frames])
+        expect(AnnotationDiff.parse_path(AnnotationDiff.path("shape_args"))).to eq([[:plain, "shape_args"]])
+        expect(AnnotationDiff.parse_path(AnnotationDiff.path("shape_args.frames"))).to eq(
+          [[:plain, "shape_args"], [:plain, "frames"]]
+        )
         expect(
           AnnotationDiff.parse_path(AnnotationDiff.path("shape_args.frames[frame=57].points"))
-        ).to eq(["shape_args", "frames[frame=57]", "points"])
+        ).to eq([[:plain, "shape_args"], [:keyed, "frames", "frame", 57], [:plain, "points"]])
         expect(
           AnnotationDiff.parse_path(AnnotationDiff.path("shape_args", 'frames[frame="5.7"]'))
-        ).to eq(["shape_args", 'frames[frame="5.7"]'])
+        ).to eq([[:plain, "shape_args"], [:keyed, "frames", "frame", "5.7"]])
       end
     end
   end
@@ -332,6 +334,36 @@ RSpec.describe AnnotationDiff do
       new_h = { deleted_at: t }
 
       expect(AnnotationDiff.call(old_h, new_h)).to eq([])
+    end
+
+    describe "metadata keys with path metacharacters" do
+      # Keys that contain `.`, `[`, `]` or `\` must survive a call → apply and
+      # call → revert round-trip exactly: they are escaped when `call` builds
+      # the path, and `parse_path` must not re-detect a `[` on an unescaped
+      # plain segment or unescape a plain segment twice.
+      %w[a[b x[k=1] a.b a\b a\.b ]].each do |key|
+        it "round-trips a top-level metadata key #{key.inspect}" do
+          old_h = { "metadata" => { key => 1 } }
+          new_h = { "metadata" => { key => 2 } }
+
+          changes = AnnotationDiff.call(old_h, new_h)
+          expect(changes).to eq([["~", "metadata.#{AnnotationDiff.escape(key)}", 1, 2]])
+
+          expect(AnnotationDiff.apply(old_h, changes)).to eq(AnnotationDiff.normalize(new_h))
+          expect(AnnotationDiff.revert(new_h, changes)).to eq(AnnotationDiff.normalize(old_h))
+        end
+      end
+
+      it "round-trips a keyed array item path" do
+        old_h = { shape_args: { "frames" => [{ "frame" => 1, "points" => [] }] } }
+        new_h = { shape_args: { "frames" => [{ "frame" => 1, "points" => [1] }] } }
+
+        changes = AnnotationDiff.call(old_h, new_h, identity_keys: { "frames" => "frame" })
+        expect(changes).to eq([["~", "shape_args.frames[frame=1].points", [], [1]]])
+
+        expect(AnnotationDiff.apply(old_h, changes)).to eq(AnnotationDiff.normalize(new_h))
+        expect(AnnotationDiff.revert(new_h, changes)).to eq(AnnotationDiff.normalize(old_h))
+      end
     end
 
     describe "with Sequel JSONB* wrappers (as read back from the table)" do

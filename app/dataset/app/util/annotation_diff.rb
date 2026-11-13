@@ -20,7 +20,8 @@ module AnnotationDiff
   # plain names are consumed by `\\.`; dots inside brackets are not
   # separators, so `[frame="5.7"]` stays one segment.
   SEGMENT_RE = /((?:\\.|[^\[\].\\])+)(?:\[((?:\\.|[^\]])*)\])?/
-  KEYED_RE = /^([^\[\]=]+)\[([^\[\]=]+)=(.*)\]$/
+  # The content of a keyed segment, `key=value` (value is JSON, `]`/`\` escaped).
+  KEYED_CONTENT_RE = /^([^\[\]=]+)=(.*)$/
 
   module_function
 
@@ -76,10 +77,17 @@ module AnnotationDiff
   end
 
   # Invert `path` exactly: split on unescaped separators, keep keyed brackets
-  # attached to their name, undo the escapes of plain segments.
+  # attached to their name, undo the escapes of plain segments. Returns tagged
+  # tuples so consumers never re-detect keyed segments or unescape twice:
+  # `[:plain, name]` or `[:keyed, name, key, value]`.
   def parse_path(string)
     string.to_s.scan(SEGMENT_RE).map do |name, keyed|
-      keyed ? "#{name}[#{keyed}]" : unescape(name)
+      if keyed
+        [:keyed, unescape(name), unescape_bracket(keyed[KEYED_CONTENT_RE, 1]),
+         JSON.parse(unescape_bracket(keyed[KEYED_CONTENT_RE, 2]))]
+      else
+        [:plain, unescape(name)]
+      end
     end
   end
 
@@ -259,12 +267,11 @@ module AnnotationDiff
   end
 
   # Descend one segment (plain hash key or keyed array item) into `value`,
-  # creating the container when it does not exist yet.
+  # creating the container when it does not exist yet. `segment` is a tuple
+  # from `parse_path`.
   def descend(value, segment)
-    if keyed?(segment)
-      name = keyed_name(segment)
-      key = identity_key_of(segment)
-      item_key = identity_value_of(segment)
+    if segment[0] == :keyed
+      _tag, name, key, item_key = segment
 
       array = value[name]
       unless array.is_a?(Array)
@@ -278,20 +285,18 @@ module AnnotationDiff
       insert_keyed_item(array, key, item_key, item)
       item
     else
-      key = unescape(segment)
-      child = value[key]
+      _tag, name = segment
+      child = value[name]
       unless child.is_a?(Hash)
-        child = value[key] = {}
+        child = value[name] = {}
       end
       child
     end
   end
 
   def set_value(parent, last, value)
-    if keyed?(last)
-      name = keyed_name(last)
-      key = identity_key_of(last)
-      item_key = identity_value_of(last)
+    if last[0] == :keyed
+      _tag, name, key, item_key = last
 
       array = parent[name]
       unless array.is_a?(Array)
@@ -305,22 +310,20 @@ module AnnotationDiff
         insert_keyed_item(array, key, item_key, normalize(value))
       end
     else
-      parent[unescape(last)] = normalize(value)
+      parent[last[1]] = normalize(value)
     end
   end
 
   def delete_value(parent, last)
-    if keyed?(last)
-      name = keyed_name(last)
-      key = identity_key_of(last)
-      item_key = identity_value_of(last)
+    if last[0] == :keyed
+      _tag, name, key, item_key = last
 
       array = parent[name]
       return unless array.is_a?(Array)
 
       array.delete_if { |item| item.is_a?(Hash) && item[key] == item_key }
     else
-      parent.delete(unescape(last))
+      parent.delete(last[1])
     end
   end
 
@@ -330,13 +333,14 @@ module AnnotationDiff
   # re-inserted in ascending key order.
   def prune_empty_containers(chain)
     chain.reverse_each do |parent, segment, child|
-      if keyed?(segment)
-        array = parent[keyed_name(segment)]
+      if segment[0] == :keyed
+        name = segment[1]
+        array = parent[name]
         if array.is_a?(Array) && array.empty?
-          parent.delete(keyed_name(segment))
+          parent.delete(name)
         end
       elsif child.is_a?(Hash) && child.empty?
-        parent.delete(unescape(segment))
+        parent.delete(segment[1])
       end
     end
   end
@@ -353,22 +357,6 @@ module AnnotationDiff
     end
 
     array.insert(index || array.length, item)
-  end
-
-  def keyed?(segment)
-    segment.include?("[")
-  end
-
-  def keyed_name(segment)
-    segment.split("[", 2).first
-  end
-
-  def identity_key_of(segment)
-    unescape_bracket(segment[KEYED_RE, 2])
-  end
-
-  def identity_value_of(segment)
-    JSON.parse(unescape_bracket(segment[KEYED_RE, 3]))
   end
 
   # ── Escaping ──────────────────────────────────────────────────────────────
