@@ -65,7 +65,6 @@ export async function flushDirtyTiles(
   if (setShapes) {
     await writeTileEntries({ setShape, setShapes }, annotationId, entries);
   } else {
-    // No batching available: fire all in parallel
     const pending: Promise<void>[] = [];
     for (const { key, value } of entries) {
       pending.push(setShape(annotationId, key, value));

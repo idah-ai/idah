@@ -30,7 +30,23 @@ function rectToPolygon(x: number, y: number, w: number, h: number): [number, num
 
 // ── Public API ───────────────────────────────────────────────────────────
 
-export const session = {
+export interface CoverageMaskSession {
+  mode: "add" | "remove";
+  onChange(fn: () => void): () => void;
+  getTileBuffer(col: number, row: number): Uint8Array | undefined;
+  getDirtyTiles(): string[];
+  initFromRle(rleMap: Record<string, unknown>): void;
+  fillRect(x: number, y: number, w: number, h: number, mode: "add" | "remove"): void;
+  snapshotTiles(x: number, y: number, w: number, h: number): Array<{ key: string; rle: string }>;
+  snapshotAll(): Array<{ key: string; rle: string }>;
+  restoreSnapshots(snapshots: Array<{ key: string; rle: string }>): void;
+  reset(): void;
+  getAllTileEntries(): Array<{ col: number; row: number; rle: string }>;
+  buildFlushEntries(): Array<{ key: string; value: object | null }>;
+  triggerRedraw(): void;
+}
+
+export const session: CoverageMaskSession = {
   // ── Read-only ───────────────────────────────────────────────────────
 
   get mode(): "add" | "remove" { return _mode; },
@@ -144,6 +160,11 @@ export const session = {
       });
     }
     return entries;
+  },
+
+  /** Trigger a redraw notification (used by Show/Hide toggle). */
+  triggerRedraw(): void {
+    notify();
   },
 
   /** Build flush entries from dirty tiles. */

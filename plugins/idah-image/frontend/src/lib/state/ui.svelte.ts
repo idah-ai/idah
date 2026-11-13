@@ -75,6 +75,7 @@ class UIState {
   coverageMaskActive = $state(false);
   coverageMaskToolType: "bbox" | "polygon" = $state("bbox");
   coverageMaskIsRemove = $state(false);
+  coverageMaskVisible = $state(true);
 
   // Persisted per-plugin to account settings (not localStorage): hydrated from
   // the account setting on init via settings.ts#hydrateSettings, and written back

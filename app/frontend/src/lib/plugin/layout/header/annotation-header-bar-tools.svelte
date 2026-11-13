@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CheckCheckIcon, ChevronDownIcon, RedoIcon, Trash2Icon, UndoIcon } from "@lucide/svelte";
+  import { ChevronDownIcon, RedoIcon, UndoIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -50,48 +50,18 @@
   let canUndo = $state(driver.command.canUndo());
   let canRedo = $state(driver.command.canRedo());
 
-  // ── Coverage mask state ───────────────────────────────────────────
-  // Tracks current coverage mask mode. Each tool (add/remove) is a toggle:
-  // click once to activate, click again or Escape to deactivate.
-  let coverageMaskMode = $state<"off" | "add" | "remove">("off");
+  // Track the mode before entering coverage mode, so we can restore it
+  let _modeBeforeCoverage: string | null = null;
   function isCoverageMaskMode(mode: string): boolean {
     return mode.includes("coverage-mask");
   }
 
-  function isCoverageMaskRemove(mode: string): boolean {
-    return mode.includes("-remove");
-  }
-
-  function enterCoverageAdd() {
-    if (coverageMaskMode === "add") {
-      coverageMaskMode = "off";
-      driver.command.call("coverage-mask-set-mode", { mode: "off" });
-    } else {
-      coverageMaskMode = "add";
-      driver.command.call("coverage-mask-set-mode", { mode: "add" });
-    }
-  }
-
-  function enterCoverageRemove() {
-    if (coverageMaskMode === "remove") {
-      coverageMaskMode = "off";
-      driver.command.call("coverage-mask-set-mode", { mode: "off" });
-    } else {
-      coverageMaskMode = "remove";
-      driver.command.call("coverage-mask-set-mode", { mode: "remove" });
-    }
-  }
-
-  function clearCoverageMasks() {
-    coverageMaskMode = "off";
-    driver.command.call("coverage-mask-clear");
-    driver.command.call("coverage-mask-set-mode", { mode: "off" });
-  }
-
   function refreshToolbar() {
-    // Keep the toolbar looking at editor/review mode even while the viewport
-    // is in a mask mode — mask is a sub-mode, not a separate toolbar context.
-    currentMode = isCoverageMaskMode(driver.mode) ? "editor" : driver.mode;
+    if (isCoverageMaskMode(driver.mode)) {
+      currentMode = _modeBeforeCoverage ?? driver.mode;
+    } else {
+      currentMode = driver.mode;
+    }
     canUndo = driver.command.canUndo();
     canRedo = driver.command.canRedo();
   }
@@ -99,9 +69,8 @@
   driver.onModeChange((event) => {
     refreshToolbar();
     if (isCoverageMaskMode(event.newValue)) {
-      coverageMaskMode = isCoverageMaskRemove(event.newValue) ? "remove" : "add";
+      if (!isCoverageMaskMode(event.oldValue)) _modeBeforeCoverage = event.oldValue;
     } else {
-      coverageMaskMode = "off";
       driver.command.call("coverage-mask-set-mode", { mode: "off" });
     }
   });
@@ -281,41 +250,4 @@
   {/each}
 
   <Separator orientation="vertical"></Separator>
-
-  <!-- Coverage mask tool — dropdown with add/remove/clear -->
-  <DropdownMenu.Root>
-    <DropdownMenu.Trigger>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        class="w-auto gap-0.5 px-1.5 duration-0"
-        style={coverageMaskMode === "add"
-          ? "background-color:rgba(24,131,91,0.12)"
-          : coverageMaskMode === "remove"
-            ? "background-color:rgba(180,50,57,0.12)"
-            : ""}
-      >
-        <CheckCheckIcon
-          class="size-4"
-          style={coverageMaskMode === "add" ? "color:#18835b" : coverageMaskMode === "remove" ? "color:#b43239" : ""}
-        />
-        <ChevronDownIcon class="size-3" />
-      </Button>
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start" side="bottom">
-      <DropdownMenu.Item onclick={enterCoverageAdd}>
-        <CheckCheckIcon class="size-3" style="color:#18835b" />
-        Done Area — Add
-      </DropdownMenu.Item>
-      <DropdownMenu.Item onclick={enterCoverageRemove}>
-        <CheckCheckIcon class="size-3" style="color:#b43239" />
-        Done Area — Remove
-      </DropdownMenu.Item>
-      <Separator />
-      <DropdownMenu.Item onclick={clearCoverageMasks}>
-        <Trash2Icon class="size-3" />
-        Remove All
-      </DropdownMenu.Item>
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
 </div>
