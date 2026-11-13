@@ -132,6 +132,7 @@ RSpec.describe Annotation, database: true do
         write_index = changes.rindex do |row|
           row.any? { |op, path, _old, _new| path == "shape_args.tile-0x0" && op == "+" }
         end
+        expect(write_index).not_to be_nil
 
         after = changes.drop(write_index + 1)
         expect(after.any? { |row| row.any? { |entry| entry[1] == "shape_args.tile-0x0" } }).to be(false)
