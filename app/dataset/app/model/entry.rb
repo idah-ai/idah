@@ -92,6 +92,35 @@ module Entry
       raise Verse::Error::ValidationFailed, "Invalid completion timestamp"
     end
 
+    custom_filter :category_count do |collection, value|
+      conditions = EntryCategoryCount::Filter.parse(value, allowed: %i[category count_gte count_lte])
+      raise Verse::Error::ValidationFailed, "Expected one category condition" unless conditions.one?
+
+      condition = conditions.first
+      condition[:count_gte] = 1 unless condition.key?(:count_gte) || condition.key?(:count_lte)
+      expression = "COALESCE((SELECT ecc.count FROM entry_category_counts ecc " \
+                   "WHERE ecc.entry_id = entries.id AND ecc.category = ?), 0)"
+      if condition.key?(:count_gte)
+        collection = collection.where(
+          Sequel.lit(
+            "#{expression} >= ?",
+            condition[:category],
+            condition[:count_gte]
+          )
+        )
+      end
+      if condition.key?(:count_lte)
+        collection = collection.where(
+          Sequel.lit(
+            "#{expression} <= ?",
+            condition[:category],
+            condition[:count_lte]
+          )
+        )
+      end
+      collection
+    end
+
     custom_filter :participated do |collection, value|
       where_fragment = <<-SQL
         assigned_to_id = :account_id

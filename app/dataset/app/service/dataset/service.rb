@@ -5,7 +5,8 @@ module Dataset
     use datasets: Dataset::Repository,
         projects: Project::Repository,
         entries: Entry::Repository,
-        annotations: Annotation::Repository
+        annotations: Annotation::Repository,
+        category_count_rows: EntryCategoryCount::Repository
     use_system project_members: ProjectMember::Repository,
                note_feeds: NoteFeed::Repository,
                annotations_system: Annotation::Repository
@@ -23,6 +24,28 @@ module Dataset
 
     def show(id, included: [])
       datasets.find!(id, included: included)
+    end
+
+    def category_counts(id)
+      dataset = datasets.find!(id)
+      if auth_context.can?(:read, Resource::Dataset::Datasets) == :as_user &&
+         !project_members.owner?(dataset.project_id, auth_context.metadata[:id])
+        raise Verse::Error::Unauthorized, "Project owner access required"
+      end
+
+      observed = category_count_rows.totals_for_dataset(id).to_h do |row|
+        [row[:category], row[:annotation_count]]
+      end
+      configured = dataset.configured_category_ids
+
+      (configured + observed.keys).uniq.sort.map do |category|
+        DatasetCategoryTotal::Record.new(
+          {
+            id: "#{id}:#{category}", dataset_id: id, category:,
+            annotation_count: observed.fetch(category, 0)
+          }
+        )
+      end
     end
 
     def create(record)

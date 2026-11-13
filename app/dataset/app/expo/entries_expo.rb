@@ -37,7 +37,8 @@ class EntriesExpo < BaseExpo
                       :name__match,
                       :delivery_date__gte,
                       :delivery_date__lte,
-                      :orphan_categories
+                      :orphan_categories,
+                      :category_count
     end
     create do
       authorized_relationships dataset: [:link]
@@ -106,6 +107,17 @@ class EntriesExpo < BaseExpo
     entry_id = params[:id]
 
     service.select(entry_id)
+  end
+
+  expose on_http(:get, "/:id/category_counts") do
+    desc "Visible annotation counts by category for one entry"
+    input do
+      field :id, String
+    end
+    output Verse::JsonApi::Util.jsonapi_collection(EntryCategoryCount::Record)
+  end
+  def category_counts
+    service.category_counts(params[:id])
   end
 
   expose on_http(:post, "/:id/submit") do

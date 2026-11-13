@@ -66,6 +66,56 @@ module Dataset
     self.table = "datasets"
     self.resource = Resource::Dataset::Datasets
 
+    custom_filter :category_counts do |collection, value|
+      conditions = EntryCategoryCount::Filter.parse(
+        value, allowed: %i[category min_annotations_per_entry entries_gte total_gte]
+      )
+
+      if auth_context.can?(:read, self.class.resource) == :as_user
+        owned_projects = ProjectMember::Repository.new(auth_context)
+                                                  .owned_project_ids(auth_context.metadata[:id])
+        raise Verse::Error::Unauthorized, "Project owner access required" unless owned_projects.any?
+
+        collection = collection.where(project_id: owned_projects)
+      end
+
+      conditions.each do |condition|
+        category = condition[:category]
+        if condition.key?(:entries_gte)
+          minimum = condition.fetch(:min_annotations_per_entry, 1)
+          collection = if minimum.zero?
+                         collection.where(
+                           Sequel.lit(
+                             "(SELECT COUNT(*) FROM entries e WHERE e.dataset_id = datasets.id) >= ?",
+                             condition[:entries_gte]
+                           )
+                         )
+                       else
+                         collection.where(
+                           Sequel.lit(
+                             "(SELECT COUNT(*) FROM entry_category_counts ecc WHERE ecc.dataset_id = datasets.id " \
+                             "AND ecc.category = ? AND ecc.count >= ?) >= ?",
+                             category,
+                             minimum,
+                             condition[:entries_gte]
+                           )
+                         )
+                       end
+        end
+        next unless condition.key?(:total_gte)
+
+        collection = collection.where(
+          Sequel.lit(
+            "COALESCE((SELECT SUM(ecc.count) FROM entry_category_counts ecc " \
+            "WHERE ecc.dataset_id = datasets.id AND ecc.category = ?), 0) >= ?",
+            category,
+            condition[:total_gte]
+          )
+        )
+      end
+      collection
+    end
+
     encoder :labeling_configuration, Verse::Sequel::JsonEncoder
     encoder :feedback_configuration, Verse::Sequel::JsonEncoder
     encoder :workflow_configuration, Verse::Sequel::JsonEncoder

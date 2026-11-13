@@ -30,7 +30,7 @@ RSpec.describe EntryStats::CoreStats do
     end
 
     context "with annotations and no labeling config" do
-      it "counts annotations and emits data-driven categories" do
+      it "counts annotations without category stats" do
         annotations = [
           make_annotation(category: "cat"),
           make_annotation(category: "cat"),
@@ -39,8 +39,7 @@ RSpec.describe EntryStats::CoreStats do
         result = described_class.call(make_entry(annotations: annotations))
 
         expect(result["annotation.count"]).to eq("3")
-        expect(result["category.cat.count"]).to eq("2")
-        expect(result["category.dog.count"]).to eq("1")
+        expect(result.keys.grep(/^category\./)).to be_empty
       end
 
       it "skips annotations that have no category value" do
@@ -51,53 +50,7 @@ RSpec.describe EntryStats::CoreStats do
         result = described_class.call(make_entry(annotations: annotations))
 
         expect(result["annotation.count"]).to eq("2")
-        expect(result["category.cat.count"]).to eq("1")
-      end
-    end
-
-    context "with configured category ids" do
-      let(:config) do
-        {
-          "tool" => { values: [{ id: "cat" }, { id: "dog" }] }
-        }
-      end
-
-      it "zero-fills configured categories when no annotations are present" do
-        result = described_class.call(make_entry(config: config))
-
-        expect(result["category.cat.count"]).to eq("0")
-        expect(result["category.dog.count"]).to eq("0")
-      end
-
-      it "counts annotations against configured categories" do
-        annotations = [
-          make_annotation(category: "cat"),
-          make_annotation(category: "cat")
-        ]
-        result = described_class.call(make_entry(annotations: annotations, config: config))
-
-        expect(result["category.cat.count"]).to eq("2")
-        expect(result["category.dog.count"]).to eq("0")
-      end
-
-      it "also emits categories that appear in annotations but are not in the config" do
-        annotations = [make_annotation(category: "bird")]
-        result = described_class.call(make_entry(annotations: annotations, config: config))
-
-        expect(result["category.bird.count"]).to eq("1")
-        expect(result["category.cat.count"]).to eq("0")
-        expect(result["category.dog.count"]).to eq("0")
-      end
-    end
-
-    context "with a category_field override in the config" do
-      let(:config) { { category_field: "label" } }
-
-      it "ignores the override and always reads the canonical `category` field" do
-        annotation = instance_double(Annotation::Record, category: "cat", shape_type: nil, deleted_at: nil)
-        result = described_class.call(make_entry(annotations: [annotation], config: config))
-
-        expect(result["category.cat.count"]).to eq("1")
+        expect(result.keys.grep(/^category\./)).to be_empty
       end
     end
 
@@ -234,10 +187,7 @@ RSpec.describe EntryStats::CoreStats do
         result = described_class.call(make_entry(annotations: annotations))
 
         expect(result["annotation.count"]).to eq("1")
-        expect(result["category.cat.count"]).to eq("1")
-        # dog was only present on the deleted annotation, so it is neither
-        # counted nor emitted (no config zero-fill for it).
-        expect(result["category.dog.count"]).to be_nil
+        expect(result.keys.grep(/^category\./)).to be_empty
         expect(result["shape.bounding-box.count"]).to eq("1")
         expect(result["shape.polygon.count"]).to be_nil
       end
