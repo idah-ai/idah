@@ -79,5 +79,51 @@ RSpec.describe Annotation, database: true do
           .to be_empty
       end
     end
+
+    describe "shape store keys are not memoized across updates" do
+      def create_annotation
+        eid = entry_repo.create(
+          priority: 1,
+          project_id:,
+          dataset_id:,
+          wf_step: "start",
+          status: "in_progress"
+        )
+        sys_subject.create(
+          project_id:,
+          dataset_id:,
+          entry_id: eid,
+          shape_type: "idah-image:rect",
+          category: "cat",
+          shape_args: {},
+          created_by_email: "user@example.com"
+        )
+      end
+
+      def history_changes(annotation_id)
+        change_repo = AnnotationChange::Repository.new(Verse::Auth::Context[:system])
+        change_repo.index({ annotation_id: }, items_per_page: 10_000)
+                   .sort_by(&:version)
+                   .map(&:changes)
+      end
+
+      it "does not record a spurious '-' after write_shapes adds a key on the same instance" do
+        id = create_annotation
+
+        # First update writes a shape_args key that is not in annotation_shape.
+        sys_subject.update(id, { shape_args: { "tile-0x0" => { "rle" => "A" } } })
+
+        # write_shapes moves that key into the child table.
+        sys_subject.write_shapes(id, [{ key: "tile-0x0", value: { "rle" => "A" } }])
+
+        # A second update on the same repository instance must see the new
+        # annotation_shape key and not diff against a stale memoized copy.
+        sys_subject.update(id, { category: "dog" })
+
+        changes = history_changes(id)
+        updated = changes.select { |c| c.any? { |entry| entry[1] == "tile-0x0" } }
+        expect(updated).to be_empty
+      end
+    end
   end
 end

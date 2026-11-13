@@ -129,9 +129,10 @@ module Annotation
           row = scope.where(id:).for_update.first
           return false unless row
 
-          strip_shape_store_keys(id, attributes)
+          shape_keys = shape_store_keys(id)
+          strip_shape_store_keys(attributes, shape_keys)
 
-          changes = diff_for_update(row, attributes)
+          changes = diff_for_update(row, attributes, shape_keys)
           return true if changes.empty?
 
           version = row[:version] + 1
@@ -326,15 +327,20 @@ module Annotation
     # in the parent's jsonb column. Keys that already sit in the column are
     # dropped on the next write, with no history entry, since reads already
     # show the annotation_shape values; the live tile values are unaffected.
-    def strip_shape_store_keys(id, attributes)
-      return unless attributes[:shape_args].is_a?(Hash)
-
-      shape_keys = client do |db|
+    # The annotation_shape keys for this annotation, read once per update so a
+    # write_shapes on the same repository instance between two updates is seen
+    # (a memoized copy would diff against stale keys and record a spurious `-`).
+    def shape_store_keys(id)
+      client do |db|
         db[:annotation_shape]
           .where(annotation_id: id)
           .select_map(:key)
           .map(&:to_s)
       end
+    end
+
+    def strip_shape_store_keys(attributes, shape_keys)
+      return unless attributes[:shape_args].is_a?(Hash)
       return if shape_keys.empty?
 
       attributes[:shape_args] = attributes[:shape_args].reject { |k, _| shape_keys.include?(k.to_s) }
@@ -346,25 +352,17 @@ module Annotation
     # child-table values, so removing the leak is not a visible change and
     # records no entry). Identity keys come from the plugin manifests, keyed by
     # the row's shape_type — or the new one when the same write changes it.
-    def diff_for_update(row, attributes)
+    def diff_for_update(row, attributes, shape_keys)
       old_for_diff = row.slice(*attributes.keys.map(&:to_sym))
 
       if attributes.key?(:shape_args) && old_for_diff[:shape_args].is_a?(Hash)
         old_for_diff[:shape_args] = old_for_diff[:shape_args].reject do |k, _|
-          shape_keys_include?(row[:id], k.to_s)
+          shape_keys.include?(k.to_s)
         end
       end
 
       identity_keys = AnnotationDiff::IdentityKeys.for(attributes.fetch(:shape_type, row[:shape_type]))
       AnnotationDiff.call(old_for_diff, attributes, identity_keys: identity_keys)
-    end
-
-    def shape_keys_include?(annotation_id, key)
-      @shape_keys_include ||= {}
-      @shape_keys_include[annotation_id] ||= client do |db|
-        db[:annotation_shape].where(annotation_id:).select_map(:key).map(&:to_s)
-      end
-      @shape_keys_include[annotation_id].include?(key)
     end
 
     # Insert one history row, inside the write's transaction. `version` is the
