@@ -129,7 +129,7 @@ module Annotation
           row = scope.where(id:).for_update.first
           return false unless row
 
-          shape_keys = shape_store_keys(id)
+          shape_keys = attributes.key?(:shape_args) ? shape_store_keys(id) : []
           strip_shape_store_keys(attributes, shape_keys)
 
           changes = diff_for_update(row, attributes, shape_keys)
