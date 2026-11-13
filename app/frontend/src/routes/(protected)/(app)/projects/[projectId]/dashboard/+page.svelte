@@ -3,7 +3,7 @@
 
   import ProjectDashboard from "@/components/app/projects/dashboard/ProjectDashboard.svelte";
 
-  const projectId = page.params.projectId as string;
+  const projectId = $derived(page.params.projectId as string);
 </script>
 
 <ProjectDashboard {projectId} />
