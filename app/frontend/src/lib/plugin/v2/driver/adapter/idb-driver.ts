@@ -28,7 +28,10 @@ import { createChangesAdapter, type ChangesAdapter } from "./changes";
 
 // ─── Schema version ───────────────────────────────────────────────────────────
 
-const VERSION = 3;
+export const VERSION = 3;
+
+/** Why the local cache needs a reload (or would, if it were safe). */
+export type ReloadReason = "upgraded" | "blocked";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -67,18 +70,18 @@ const IDB_STORES = [
   },
 ];
 
-const openIdb = (pluginId: string, onReloadRequired: () => void): Promise<IDBDatabase> => {
+const openIdb = (pluginId: string, onReloadRequired: (reason: ReloadReason) => void): Promise<IDBDatabase> => {
   const name = `idahPlugin::${pluginId}`;
   return new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(name, VERSION);
     req.onerror = (e) => reject(e);
     req.onblocked = () => {
       // A tab still running an older version holds the database open and blocks
-      // this upgrade. Tell the user to close the other tabs so the new tab can
-      // resync; without this the new tab would wait forever. The reload is left
-      // to the caller so it can wait for queued backend writes to drain.
+      // this upgrade. Reloading would just block again (the old tab has no
+      // onversionchange, so it never closes), so the caller must NOT reload —
+      // it only warns the user to close the other tabs.
       console.warn(`[idb-driver] "${name}" upgrade blocked by another tab.`);
-      onReloadRequired();
+      onReloadRequired("blocked");
     };
     req.onupgradeneeded = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
@@ -120,7 +123,7 @@ const openIdb = (pluginId: string, onReloadRequired: () => void): Promise<IDBDat
       const db = (e.target as IDBOpenDBRequest).result;
       db.onversionchange = () => {
         db.close();
-        onReloadRequired();
+        onReloadRequired("upgraded");
       };
       resolve(db);
     };
@@ -337,8 +340,13 @@ export interface IndexedDbAnnotationsDriverConfig<
    * Invoked when the local cache must be reloaded because another tab upgraded
    * the database (or blocked this tab's upgrade). The driver closes the DB and
    * defers the reload to the caller, so queued backend writes are not lost.
+   *
+   * - `"upgraded"`: another tab upgraded the DB; the caller should reload once
+   *   queued backend writes drain.
+   * - `"blocked"`: an older tab holds the DB open and blocks this upgrade;
+   *   reloading would loop forever, so the caller must only warn the user.
    */
-  onReloadRequired?: () => void;
+  onReloadRequired?: (reason: ReloadReason) => void;
 }
 
 // ─── Internal type ────────────────────────────────────────────────────────────
@@ -366,7 +374,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
   let dbPromise: Promise<IDBDatabase> | null = null;
   const getDb = () => {
-    if (!dbPromise) dbPromise = openIdb(config.pluginId, () => config.onReloadRequired?.());
+    if (!dbPromise) dbPromise = openIdb(config.pluginId, (reason) => config.onReloadRequired?.(reason));
     return dbPromise;
   };
 

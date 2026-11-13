@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { IDBFactory, IDBKeyRange } from "fake-indexeddb";
-import { IdbBackedAnnotationsDriverAdapter, type ICrudDriver } from "./idb-driver";
+import { IdbBackedAnnotationsDriverAdapter, VERSION, type ICrudDriver } from "./idb-driver";
 import type { IAnnotationRecord } from "../../types";
 
 // fake-indexeddb provides an in-memory IndexedDB implementation.
@@ -13,7 +13,16 @@ import type { IAnnotationRecord } from "../../types";
 
 const PLUGIN_ID = "idah-video";
 const ENTRY_ID = "entry-1";
-const VERSION = 3; // must match the driver's VERSION
+
+/** Delete the plugin database, awaiting the request so it is gone before the next step. */
+function deleteDatabase(name: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.deleteDatabase(name);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+    req.onblocked = () => reject(new Error(`deleteDatabase blocked for ${name}`));
+  });
+}
 
 /** Open a connection to the plugin database at a given version. */
 function openDbAtVersion(version: number): Promise<IDBDatabase> {
@@ -84,13 +93,13 @@ async function makeSeededDriver(records: IAnnotationRecord[], enqueue: (op: Prom
 }
 
 describe("IdbBackedAnnotationsDriverAdapter tombstones", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     // Fresh database per test.
-    indexedDB.deleteDatabase(`idahPlugin::${PLUGIN_ID}`);
+    await deleteDatabase(`idahPlugin::${PLUGIN_ID}`);
   });
 
-  afterEach(() => {
-    indexedDB.deleteDatabase(`idahPlugin::${PLUGIN_ID}`);
+  afterEach(async () => {
+    await deleteDatabase(`idahPlugin::${PLUGIN_ID}`);
   });
 
   it("sync keeps tombstones in the cache", async () => {
@@ -201,12 +210,12 @@ describe("IdbBackedAnnotationsDriverAdapter tombstones", () => {
 });
 
 describe("IdbBackedAnnotationsDriverAdapter sync sharing", () => {
-  beforeEach(() => {
-    indexedDB.deleteDatabase(`idahPlugin::${PLUGIN_ID}`);
+  beforeEach(async () => {
+    await deleteDatabase(`idahPlugin::${PLUGIN_ID}`);
   });
 
-  afterEach(() => {
-    indexedDB.deleteDatabase(`idahPlugin::${PLUGIN_ID}`);
+  afterEach(async () => {
+    await deleteDatabase(`idahPlugin::${PLUGIN_ID}`);
   });
 
   it("two concurrent fetch() calls run the backend listing once per page", async () => {
@@ -251,12 +260,12 @@ describe("IdbBackedAnnotationsDriverAdapter sync sharing", () => {
 describe("IdbBackedAnnotationsDriverAdapter reload handling", () => {
   const DB_NAME = `idahPlugin::${PLUGIN_ID}`;
 
-  beforeEach(() => {
-    indexedDB.deleteDatabase(DB_NAME);
+  beforeEach(async () => {
+    await deleteDatabase(DB_NAME);
   });
 
-  afterEach(() => {
-    indexedDB.deleteDatabase(DB_NAME);
+  afterEach(async () => {
+    await deleteDatabase(DB_NAME);
   });
 
   it("defers to onReloadRequired on versionchange instead of reloading directly", async () => {
@@ -284,11 +293,11 @@ describe("IdbBackedAnnotationsDriverAdapter reload handling", () => {
       req.onerror = () => reject(req.error);
     });
 
-    await vi.waitFor(() => expect(onReloadRequired).toHaveBeenCalled());
+    await vi.waitFor(() => expect(onReloadRequired).toHaveBeenCalledWith("upgraded"));
     upgradeDb.close();
   });
 
-  it("defers to onReloadRequired when the upgrade is blocked by another tab", async () => {
+  it("defers to onReloadRequired with reason 'blocked' when the upgrade is blocked by another tab", async () => {
     const onReloadRequired = vi.fn();
 
     // Hold an older-version connection open so the driver's upgrade to VERSION
@@ -308,7 +317,7 @@ describe("IdbBackedAnnotationsDriverAdapter reload handling", () => {
     // The open request is blocked by `blocker`; do not await (it would hang).
     const fetchPromise = driver.fetch();
 
-    await vi.waitFor(() => expect(onReloadRequired).toHaveBeenCalled());
+    await vi.waitFor(() => expect(onReloadRequired).toHaveBeenCalledWith("blocked"));
 
     // Unblock so the driver's connection can open and the fetch completes.
     blocker.close();
@@ -329,12 +338,12 @@ describe("IdbBackedAnnotationsDriverAdapter reload handling", () => {
 describe("IdbBackedAnnotationsDriverAdapter cache v3 upgrade", () => {
   const DB_NAME = `idahPlugin::${PLUGIN_ID}`;
 
-  beforeEach(() => {
-    indexedDB.deleteDatabase(DB_NAME);
+  beforeEach(async () => {
+    await deleteDatabase(DB_NAME);
   });
 
-  afterEach(() => {
-    indexedDB.deleteDatabase(DB_NAME);
+  afterEach(async () => {
+    await deleteDatabase(DB_NAME);
   });
 
   /** Create a version 2 database with the two stores and some records. */
