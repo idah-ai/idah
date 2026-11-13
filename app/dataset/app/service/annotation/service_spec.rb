@@ -1212,6 +1212,20 @@ RSpec.describe Annotation::Service, database: true do
         )
       end
 
+      it "Repository#update! records a version + history row through the overridden update" do
+        # The base Repository#update! delegates to update(id, attributes, scope:),
+        # which resolves to the overridden Annotation::Repository#update — the one
+        # that bumps the version and records a history row. Asserting both the
+        # version bump and the "updated" row proves the override ran.
+        subject.annotations.update!(annotation_id, { category: "dog" })
+
+        rows = history_rows(annotation_id)
+        expect(rows.map(&:version)).to eq([1, 2])
+        expect(rows[1].op).to eq("updated")
+        expect(rows[1].changes).to contain_exactly(["~", "category", "cat", "dog"])
+        expect(subject.annotations.client { |db| db[:annotations].where(id: annotation_id).get(:version) }).to eq(2)
+      end
+
       it "a no-op update writes nothing and keeps the version" do
         subject.update(
           deserialize(
