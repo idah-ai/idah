@@ -12,6 +12,7 @@ import {
 } from "@/data/model/dataset/entries/constants";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { getDeliveryStatusBadge, isOverdue, type DeliveryStatusBadgeProps } from "@/utils/date";
+import { Transformers } from "@/data/model/transformers";
 
 import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
@@ -44,7 +45,8 @@ export class EntryRecord extends Record {
   @field() public reopened_by_id!: number | null;
   @field() public reopened_by_email!: string | null;
 
-  @field() public readonly completed_at!: Date | null;
+  @field({ transformer: Transformers.Time })
+  public readonly completed_at!: Date | null;
 
   @field() public created_at!: Date;
   @field() public updated_at!: Date;
