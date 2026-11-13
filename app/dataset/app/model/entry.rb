@@ -30,6 +30,8 @@ module Entry
     field :reopened_by_id, type: [Integer, NilClass]
     field :reopened_by_email, type: [String, NilClass]
 
+    field :time_tracking, type: [Hash, NilClass]
+
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
@@ -65,11 +67,14 @@ module Entry
 
     has_many :annotations, repository: "Annotation::Repository", foreign_key: :entry_id
     has_many :entry_stats, repository: "EntryStat::Repository", foreign_key: :entry_id
+    has_many :entry_work_times, repository: "EntryWorkTime::Repository", foreign_key: :entry_id
   end
 
   class Repository < Verse::Sequel::Repository
     self.table = "entries"
     self.resource = Resource::Dataset::Entries
+
+    encoder :time_tracking, Verse::Sequel::JsonEncoder
 
     custom_filter :participated do |collection, value|
       where_fragment = <<-SQL
@@ -412,6 +417,17 @@ module Entry
 
       transaction do
         update!(entry.id, { status: })
+      end
+    end
+
+    # Persist the combined per-step time cache without emitting an event.
+    # Called from TimeTracking.recompute_entry_cache via a system repository.
+    def update_time_tracking(entry_id, time_tracking)
+      no_event do
+        table.where(id: entry_id).update(
+          time_tracking: time_tracking.nil? ? nil : Sequel.pg_jsonb(time_tracking),
+          updated_at: Time.now
+        )
       end
     end
 

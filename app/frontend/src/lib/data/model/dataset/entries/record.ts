@@ -34,6 +34,8 @@ export class EntryRecord extends Record {
   @field() public name!: string;
   @field() public delivery_date!: string | null;
 
+  @field() public time_tracking!: { [key: string]: number } | null;
+
   @field() public assigned_to_id!: number | null;
   @field() public assigned_to_email!: string | null;
   @field() public submitted_by_id!: number | null;
@@ -52,6 +54,7 @@ export class EntryRecord extends Record {
   @relationship() public reviewed_by!: ProjectMemberRecord;
   @relationship() public submitted_by!: ProjectMemberRecord;
   @relationship() public reopened_by!: ProjectMemberRecord;
+  @relationship() public entry_work_times?: EntryWorkTimeRecord[] | null;
 
   public get priorityBadge(): EntryPriorityBadgeProps {
     const defaultBadgeProps: EntryPriorityBadgeProps = {
@@ -85,7 +88,16 @@ export class EntryRecord extends Record {
 
 export const entriesBasePath: string = `/api/v1/dataset/entries`;
 
-RecordFactory.registerTypes(EntryRecord);
+/** Per-stint rolled-up time for an entry (from the `entry_work_times` relation). */
+@type("dataset:entry_work_times")
+export class EntryWorkTimeRecord extends Record {
+  @field() public readonly account_id!: number;
+  @field() public readonly wf_step!: string;
+  @field() public readonly seconds!: number;
+  @field() public readonly email!: string | null;
+}
+
+RecordFactory.registerTypes(EntryRecord, EntryWorkTimeRecord);
 
 export const entriesBackendDataSource = createBackendDataSource(EntryRecord, entriesBasePath, {
   select: async (params: { id: string }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {

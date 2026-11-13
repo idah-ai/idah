@@ -26,6 +26,7 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
+        driver.notifyActivity();
         viewport.video.goToFrame(media.totalFrames - 1);
       },
       isCombinable() {

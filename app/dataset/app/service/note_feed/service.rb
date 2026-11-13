@@ -4,7 +4,9 @@ module NoteFeed
   class Service < Verse::Service::Base
     use note_feeds: NoteFeed::Repository
     use_system entries: Entry::Repository,
-               annotations: Annotation::Repository
+               annotations: Annotation::Repository,
+               entry_time_slots: EntryTimeSlot::Repository,
+               entry_work_times: EntryWorkTime::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       note_feeds.index(
@@ -22,12 +24,12 @@ module NoteFeed
     end
 
     def update(record)
-      current = note_feeds.find!(record.id)
+      current_feed = note_feeds.find!(record.id)
       attributes = record.attributes
 
       # A note feed must always keep at least one of feedback_keys or content_md
       # (mirrors the ArgumentsSchema rule enforced on the create endpoint).
-      unless content_remaining?(current, attributes)
+      unless content_remaining?(current_feed, attributes)
         raise Verse::Error::ValidationFailed,
               "either feedback_keys or content_md must be provided"
       end
@@ -36,24 +38,31 @@ module NoteFeed
       # feedback configuration (same rule as the create path). The normalized
       # (de-duplicated) keys are written back before persisting.
       if attributes.key?(:feedback_keys)
-        entry = entries.find!(current.entry_id, included: ["dataset"])
+        entry = entries.find!(current_feed.entry_id, included: ["dataset"])
         attributes[:feedback_keys] = validate_feedback_keys!(entry, attributes[:feedback_keys])
       end
 
       # Only stamp edited_at when the note's content actually changed, so no-op
       # PATCHes do not rewrite the "last edited" timestamp.
-      attributes[:edited_at] = Time.now if content_edited?(current, attributes)
+      attributes[:edited_at] = Time.now if content_edited?(current_feed, attributes)
 
       note_feeds.update!(record.id, attributes)
+      touch_entry(current_feed.entry_id)
       note_feeds.find!(record.id)
     end
 
     def delete(id)
-      note_feeds.delete!(id)
+      feed = note_feeds.find!(id)
+      result = note_feeds.delete!(id)
+      touch_entry(feed.entry_id)
+      result
     end
 
     def resolve(id)
-      note_feeds.resolve!(id)
+      feed = note_feeds.find!(id)
+      resolved = note_feeds.resolve!(id)
+      touch_entry(feed.entry_id)
+      resolved
     end
 
     def create_from_params(data)
@@ -112,11 +121,24 @@ module NoteFeed
 
       note_feeds.transaction do
         id = note_feeds.create(attributes)
-        note_feeds.find!(id)
+        feed = note_feeds.find!(id)
+        touch_entry(entry.id)
+        feed
       end
     end
 
     private
+
+    def touch_entry(entry_id)
+      TimeTracking.safe_touch(
+        entry_repo: entries,
+        slot_repo: entry_time_slots,
+        work_repo: entry_work_times,
+        entry_id: entry_id,
+        account_id: auth_context.metadata[:id],
+        email: auth_context.metadata[:email]
+      )
+    end
 
     # The resulting note must keep at least one of feedback_keys or content_md,
     # mirroring the ArgumentsSchema rule enforced on the create endpoint.

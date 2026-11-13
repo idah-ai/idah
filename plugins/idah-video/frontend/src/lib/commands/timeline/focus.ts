@@ -85,6 +85,7 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: command as any,
         do() {
+          driver.notifyActivity();
           viewport.timeline.range = {
             startRange: Math.max(0, start - margin),
             endRange: Math.min(media.totalFrames, end + margin),

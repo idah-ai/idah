@@ -17,7 +17,8 @@ class EntriesExpo < BaseExpo
                      "submitted_by",
                      "reviewed_by",
                      "reopened_by",
-                     "entry_stats"
+                     "entry_stats",
+                     "entry_work_times"
     show
     index do
       allowed_filters :id__in,
@@ -103,6 +104,24 @@ class EntriesExpo < BaseExpo
     entry_id = params[:id]
 
     service.select(entry_id)
+  end
+
+  expose on_http(:post, "/:id/activity") do
+    desc "Record activity for time tracking (fire-and-forget)"
+    input do
+      field :id, String
+    end
+
+    output do
+      field :data, Hash do
+        field :attributes, Hash do
+          field :accepted, TrueClass
+        end
+      end
+    end
+  end
+  def activity
+    service.notify_activity(params[:id])
   end
 
   expose on_http(:post, "/:id/submit") do
