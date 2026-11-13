@@ -70,7 +70,11 @@ const IDB_STORES = [
   },
 ];
 
-const openIdb = (pluginId: string, onReloadRequired: (reason: ReloadReason) => void): Promise<IDBDatabase> => {
+const openIdb = (
+  pluginId: string,
+  onReloadRequired: (reason: ReloadReason) => void,
+  onUnblocked?: () => void,
+): Promise<IDBDatabase> => {
   const name = `idahPlugin::${pluginId}`;
   return new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(name, VERSION);
@@ -125,6 +129,7 @@ const openIdb = (pluginId: string, onReloadRequired: (reason: ReloadReason) => v
         db.close();
         onReloadRequired("upgraded");
       };
+      onUnblocked?.();
       resolve(db);
     };
   });
@@ -352,6 +357,8 @@ export interface IndexedDbAnnotationsDriverConfig<
    *   reloading would loop forever, so the caller must only warn the user.
    */
   onReloadRequired?: (reason: ReloadReason) => void;
+  /** Invoked when a previously-blocked open succeeds (e.g. to dismiss a notice). */
+  onUnblocked?: () => void;
 }
 
 // ─── Internal type ────────────────────────────────────────────────────────────
@@ -385,7 +392,13 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
   let dbPromise: Promise<IDBDatabase> | null = null;
   const getDb = () => {
-    if (!dbPromise) dbPromise = openIdb(config.pluginId, (reason) => config.onReloadRequired?.(reason));
+    if (!dbPromise) {
+      dbPromise = openIdb(
+        config.pluginId,
+        (reason) => config.onReloadRequired?.(reason),
+        () => config.onUnblocked?.(),
+      );
+    }
     return dbPromise;
   };
 

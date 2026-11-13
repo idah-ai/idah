@@ -20,9 +20,14 @@ function getRandomUUID(): string {
   return crypto.randomUUID();
 }
 
+/** Dismiss a toast by its id (e.g. one shown with a fixed id). */
+export function dismissToast(id: string | number): void {
+  toast.dismiss(id);
+}
+
 export const showToast = {
   default: (toastOptions: CustomToastOptions) => {
-    const id = getRandomUUID();
+    const id = toastOptions.id ?? getRandomUUID();
     toast(CustomToast, {
       id,
       duration: toastOptions.duration,
@@ -36,7 +41,7 @@ export const showToast = {
     });
   },
   success: (toastOptions: CustomToastOptions) => {
-    const id = getRandomUUID();
+    const id = toastOptions.id ?? getRandomUUID();
     toast.success(CustomToast, {
       id,
       duration: toastOptions.duration,
@@ -50,7 +55,7 @@ export const showToast = {
     });
   },
   info: (toastOptions: CustomToastOptions) => {
-    const id = getRandomUUID();
+    const id = toastOptions.id ?? getRandomUUID();
     toast.info(CustomToast, {
       id,
       duration: toastOptions.duration,
@@ -64,7 +69,7 @@ export const showToast = {
     });
   },
   warning: (toastOptions: CustomToastOptions) => {
-    const id = getRandomUUID();
+    const id = toastOptions.id ?? getRandomUUID();
     toast.warning(CustomToast, {
       id,
       duration: toastOptions.duration,
@@ -78,7 +83,7 @@ export const showToast = {
     });
   },
   error: (toastOptions: CustomToastOptions) => {
-    const id = getRandomUUID();
+    const id = toastOptions.id ?? getRandomUUID();
     toast.error(CustomToast, {
       id,
       duration: toastOptions.duration,
