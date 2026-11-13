@@ -62,7 +62,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private readonly rpc = new JsonRpcDatasource(`/api/v1/dataset/annotations/_rpc`);
 
   private pendingCount = 0;
-  private #reloadScheduled = false;
+  #reloadScheduled = false;
 
   // ── Adapters exposed to the user ──────────────────────────────────────
 
