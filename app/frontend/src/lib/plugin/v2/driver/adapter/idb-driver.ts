@@ -335,6 +335,11 @@ export interface IndexedDbAnnotationsDriverConfig<
   pluginId: string;
   backend: ICrudDriver<IAnnotationRecord<Shape, Annotation>>;
   enqueue: (p: Promise<unknown>) => void;
+  /**
+   * When true, the editor is read-only (a reload is pending and the DB is
+   * closed). Write methods reject before touching the DB or the backend.
+   */
+  isReadOnly?: () => boolean;
   changes?: ChangesAdapter;
   /**
    * Invoked when the local cache must be reloaded because another tab upgraded
@@ -371,6 +376,12 @@ export const IdbBackedAnnotationsDriverAdapter = <
   }
 
   const { entryId, backend, enqueue } = config;
+
+  const assertWritable = () => {
+    if (config.isReadOnly?.()) {
+      throw new Error("Editor is read-only while a reload is pending. Reload to continue.");
+    }
+  };
 
   let dbPromise: Promise<IDBDatabase> | null = null;
   const getDb = () => {
@@ -484,6 +495,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
     },
 
     async update(id, data): Promise<void> {
+      assertWritable();
       const db = await getDb();
       const existing = await idbGet<IAnnotationRecord<Shape, Annotation>>(db, entryId, id);
       if (!existing) throw new Error(`Annotation not found: ${id}`);
@@ -493,6 +505,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
     },
 
     async delete(id): Promise<void> {
+      assertWritable();
       const db = await getDb();
       // Write a tombstone locally instead of removing the record, so the
       // History panel and note markers can still read the deleted annotation.
@@ -506,6 +519,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
     },
 
     async restore(id: string): Promise<void> {
+      assertWritable();
       const db = await getDb();
       // Local-first: clear the tombstone immediately so undo does not hang
       // offline. The backend restore is enqueued like every other write; see
@@ -518,6 +532,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
     },
 
     async create(data): Promise<IAnnotationRecord<Shape, Annotation>> {
+      assertWritable();
       const db = await getDb();
       const record = { ...data, id: data.id ?? uuidv7() } as IAnnotationRecord<Shape, Annotation>;
       await idbCreate(db, entryId, record);
@@ -526,6 +541,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
     },
 
     async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
+      assertWritable();
       // Store tiles directly in the annotation's shape field in the main
       // annotations store (not in a separate annotation_shapes store).
       // This mirrors how the backend returns annotations with tiles merged
@@ -563,6 +579,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
     async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
       if (entries.length === 0) return;
+      assertWritable();
       const db = await getDb();
       const existing = await idbGet<IAnnotationRecord<Shape, Annotation>>(db, entryId, annotationId);
       if (existing?.deleted_at) throw new Error(`Cannot write shape to a deleted annotation: ${annotationId}`);

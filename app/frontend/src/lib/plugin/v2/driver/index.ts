@@ -149,6 +149,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       pluginId: PLUGIN_ID,
       backend: backendDriver,
       enqueue: (op: Promise<unknown>) => this.#enqueue(op),
+      isReadOnly: () => this.#readOnly,
       onReloadRequired: (reason) => this.#handleReloadRequired(reason),
     });
     this.idbAnnotationsDriver = idbDriver;
@@ -229,12 +230,6 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   }
 
   #enqueue(op: Promise<unknown>): void {
-    // Once a reload is scheduled the DB is closed; reject new writes so the
-    // queue can drain and nothing is written to the closed DB.
-    if (this.#readOnly) {
-      op.catch(() => {});
-      throw new Error("Editor is read-only while a reload is pending. Reload to continue.");
-    }
     this.pendingCount++;
     this.#emitSyncChange();
     op.catch(console.error).finally(() => {

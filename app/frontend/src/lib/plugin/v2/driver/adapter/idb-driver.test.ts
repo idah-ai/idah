@@ -257,6 +257,31 @@ describe("IdbBackedAnnotationsDriverAdapter sync sharing", () => {
   });
 });
 
+describe("IdbBackedAnnotationsDriverAdapter read-only gate", () => {
+  beforeEach(async () => {
+    await deleteDatabase(`idahPlugin::${PLUGIN_ID}`);
+  });
+
+  afterEach(async () => {
+    await deleteDatabase(`idahPlugin::${PLUGIN_ID}`);
+  });
+
+  it("rejects update and does not call the backend when isReadOnly is true", async () => {
+    const backend = makeBackend();
+    const driver = IdbBackedAnnotationsDriverAdapter<IAnnotationRecord["shape_args"], IAnnotationRecord["properties"]>({
+      entryId: ENTRY_ID,
+      pluginId: PLUGIN_ID,
+      backend,
+      enqueue: () => {},
+      isReadOnly: () => true,
+    });
+    if (!driver) throw new Error("driver is null");
+
+    await expect(driver.update("ann-1", { category: "dog" })).rejects.toThrow(/read-only while a reload is pending/);
+    expect(backend.update).not.toHaveBeenCalled();
+  });
+});
+
 describe("IdbBackedAnnotationsDriverAdapter reload handling", () => {
   const DB_NAME = `idahPlugin::${PLUGIN_ID}`;
 
