@@ -1,9 +1,8 @@
-// ---------------------------------------------------------------------------
 // coverage-mask/remove — Enter remove mode (shortcut Shift+K)
-// ---------------------------------------------------------------------------
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { DEFAULT_MODE, REVIEW_MODE, COVERAGE_MASK_BBOX, COVERAGE_MASK_BBOX_REMOVE } from "$lib/types";
 import { doRemove, invalidate } from "./_shared";
+import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
   name: "coverage-mask-remove",
@@ -21,12 +20,22 @@ export function register(driver: IIdahDriverV2): void {
     shortcut: command.shortcut,
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
-    callback: () => ({
-      command: { ...command },
-      do() { doRemove(); invalidate(driver); },
-      isCombinable() { return false; },
-      combine(p: any) { return p; },
-    }),
+    callback: () => {
+      if (!isEditable()) {
+        return {
+          command: { ...command },
+          do() {},
+          isCombinable() { return false; },
+          combine(p: any) { return p; },
+        };
+      }
+      return {
+        command: { ...command },
+        do() { doRemove(); invalidate(driver); },
+        isCombinable() { return false; },
+        combine(p: any) { return p; },
+      };
+    },
     group: command.group,
   });
 }

@@ -28,6 +28,7 @@
   import PolygonCreateShape from "./PolygonCreateShape.svelte";
   import MaskPolygonCreateShape from "./MaskPolygonCreateShape.svelte";
   import MaskCanvasLayer from "./MaskCanvasLayer.svelte";
+  import CoverageMaskCanvas from "./CoverageMaskCanvas.svelte";
   import NoteMarkers from "$lib/components/App/NoteMarkers.svelte";
 
   import { viewport } from "$lib/state/viewport.svelte";
@@ -45,8 +46,8 @@
   import { selection } from "$lib/state/selection.svelte";
   import { snapDebug, ui } from "$lib/state/ui.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
-  import { loadCoverageMasks } from "$lib/commands/coverage-mask/save";
-  import { clampRect, subtractRectFromShapes } from "$lib/mask/coverage-mask";
+    import { session } from "$lib/mask/coverage-mask-session";
+    import { clampRect, subtractRectFromShapes } from "$lib/mask/coverage-mask";
 
   import {
     onPointerDown as maskBrushPointerDown,
@@ -68,6 +69,7 @@
     IMAGE_MASK,
     NOTE_MODE,
     REVIEW_MODE,
+    COVERAGE_DONE_AREA,
     NON_DRAWABLE_SHAPE_TYPES,
     type IImageAnnotationShape,
     type IImageAnnotationRecord,
@@ -228,12 +230,15 @@
     }
   });
 
-  // Load persisted coverage masks once annotations become available
+  // Load coverage mask session when annotations become available
   $effect(() => {
-    // Access data.annotations?.items to establish reactivity
     const items = data.annotations?.items;
-    if (items) {
-      loadCoverageMasks();
+    if (!items) return;
+    const ann = items.find(a => a.shape_type === COVERAGE_DONE_AREA);
+    if (ann?.shape_args) {
+      session.initFromRle(ann.shape_args as Record<string, unknown>);
+    } else {
+      session.reset();
     }
   });
 
@@ -286,6 +291,7 @@
 
   // ── Mask drawing state ──────────────────────────────────────────────
   let coverageMaskDrawing = $state(false);
+  let coverageMaskCanvas: CoverageMaskCanvas | undefined = $state();
   let coverageMaskStart: Point = $state([0, 0]);
   let coverageMaskCurrent: Point = $state([0, 0]);
 
@@ -968,11 +974,15 @@
 
       if (ui.coverageMaskIsRemove) {
         const newList = subtractRectFromShapes(ui.coverageMaskShapes, cx, cy, cw, ch);
-        getDriver().command.call("coverage-mask-draw", { before: [...ui.coverageMaskShapes], after: newList });
+        const tileSnapshots = session.snapshotTiles(cx, cy, cw, ch);
+        session.fillRect(cx, cy, cw, ch, "remove");
+        getDriver().command.call("coverage-mask-draw", { before: [...ui.coverageMaskShapes], after: newList, tileSnapshots, rect: [cx, cy, cw, ch], mode: "remove" });
       } else {
+        // Add mode
         const before = [...ui.coverageMaskShapes];
-        const after = [...before, { type: "bbox", points: [x, y, w, h] }];
-        getDriver().command.call("coverage-mask-draw", { before, after });
+        const after = [...before, { type: "bbox", points: [cx, cy, cw, ch] }];
+        const tileSnapshots = session.snapshotTiles(cx, cy, cw, ch);
+        getDriver().command.call("coverage-mask-draw", { tileSnapshots, rect: [cx, cy, cw, ch], mode: "add" });
       }
       return;
     }
@@ -1300,6 +1310,9 @@
   <!-- Layer 1: Mask canvas overlay -->
   <MaskCanvasLayer {previewColor} />
 
+  <!-- Layer 1.5: Coverage mask canvas overlay -->
+  <CoverageMaskCanvas bind:this={coverageMaskCanvas} />
+
   <!-- Layer 2: SVG overlay for shapes -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <svg
@@ -1502,25 +1515,6 @@
         <NoteMarkers />
       {/if}
     </g>
-
-    <!-- Coverage mask shapes — rendered above annotations but below labels -->
-    {#if ui.coverageMaskShapes.length > 0}
-      <g opacity="0.25">
-        {#each ui.coverageMaskShapes as shape}
-          {#if shape.type === "bbox" && shape.points.length >= 4}
-            <rect
-              x={shape.points[0]}
-              y={shape.points[1]}
-              width={shape.points[2]}
-              height={shape.points[3]}
-              fill="#00b450"
-              pointer-events="none"
-              vector-effect="non-scaling-stroke"
-            />
-          {/if}
-        {/each}
-      </g>
-    {/if}
 
     {#if coverageMaskDrawing}
       <rect

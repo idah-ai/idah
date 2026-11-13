@@ -1,14 +1,12 @@
-// ---------------------------------------------------------------------------
-// coverage-mask/set-mode — Set mask mode (internal, called by toolbar button)
-// ---------------------------------------------------------------------------
+// coverage-mask/set-mode — Toggle coverage mask mode on/off (called from header toolbar)
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import { DEFAULT_MODE, REVIEW_MODE } from "$lib/types";
-import { doOff, doAdd, doRemove, invalidate } from "./_shared";
+import { DEFAULT_MODE, REVIEW_MODE, COVERAGE_MASK_BBOX, COVERAGE_MASK_BBOX_REMOVE } from "$lib/types";
+import { doAdd, doRemove, doOff, invalidate } from "./_shared";
 
 export const command = {
   name: "coverage-mask-set-mode",
   group: "Coverage Mask",
-  modes: [DEFAULT_MODE, REVIEW_MODE] as string[],
+  modes: [DEFAULT_MODE, REVIEW_MODE, COVERAGE_MASK_BBOX, COVERAGE_MASK_BBOX_REMOVE] as string[],
   shortcut: null as string | null,
   shortDescription: null as string | null,
   longDescription: null as string | null,
@@ -22,13 +20,13 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts) => {
-      const { mode } = opts ?? {};
+      const mode = (opts as any)?.mode;
       return {
         command: { ...command },
         do() {
-          if (mode === "off") doOff();
-          else if (mode === "add") doAdd();
+          if (mode === "add") doAdd();
           else if (mode === "remove") doRemove();
+          else doOff();
           invalidate(driver);
         },
         isCombinable() { return false; },
