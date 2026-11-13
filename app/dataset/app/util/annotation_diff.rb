@@ -16,11 +16,7 @@
 module AnnotationDiff
   SEPARATOR = "."
 
-  # One path segment: `name` or `name[key=value]`. Escaped characters in
-  # plain names are consumed by `\\.`; dots inside brackets are not
-  # separators, so `[frame="5.7"]` stays one segment.
-  SEGMENT_RE = /((?:\\.|[^\[\].\\])+)(?:\[((?:\\.|[^\]])*)\])?/
-  # The content of a keyed segment, `key=value` (value is JSON, `]`/`\` escaped).
+  # The content of a keyed segment, `key=value` (value is JSON, `]`/`\\` escaped).
   KEYED_CONTENT_RE = /^([^\[\]=]+)=(.*)$/
 
   module_function
@@ -81,14 +77,53 @@ module AnnotationDiff
   # tuples so consumers never re-detect keyed segments or unescape twice:
   # `[:plain, name]` or `[:keyed, name, key, value]`.
   def parse_path(string)
-    string.to_s.scan(SEGMENT_RE).map do |name, keyed|
-      if keyed
-        [:keyed, unescape(name), unescape_bracket(keyed[KEYED_CONTENT_RE, 1]),
-         JSON.parse(unescape_bracket(keyed[KEYED_CONTENT_RE, 2]))]
+    split_path(string).map do |segment|
+      if (match = segment.match(/(?<!\\)\[/))
+        name = segment[0...match.begin(0)]
+        content = segment[(match.begin(0) + 1)...-1] # strip the surrounding [ ]
+        [:keyed, unescape(name), unescape_bracket(content[KEYED_CONTENT_RE, 1]),
+         JSON.parse(unescape_bracket(content[KEYED_CONTENT_RE, 2]))]
       else
-        [:plain, unescape(name)]
+        [:plain, unescape(segment)]
       end
     end
+  end
+
+  # Split a path into raw segments on unescaped separators, keeping keyed
+  # brackets attached to their name (dots inside brackets are not separators)
+  # and yielding an empty plain segment for an empty key ("metadata." →
+  # ["metadata", ""]). Escaped characters (`\.`, `\[`, `\]`, `\\`) are kept
+  # verbatim and unescaped later, so an escaped `]` in a plain segment is not
+  # mistaken for a real closing bracket.
+  def split_path(string)
+    segments = []
+    current = +""
+    depth = 0
+    s = string.to_s
+    i = 0
+    while i < s.length
+      c = s[i]
+      if c == "\\" && i + 1 < s.length
+        current << c << s[i + 1]
+        i += 2
+        next
+      end
+      case c
+      when "[" then depth += 1
+      when "]" then depth -= 1
+      when "."
+        if depth.zero?
+          segments << current
+          current = +""
+          i += 1
+          next
+        end
+      end
+      current << c
+      i += 1
+    end
+    segments << current
+    segments
   end
 
   # ── Normalization ────────────────────────────────────────────────────────

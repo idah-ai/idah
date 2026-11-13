@@ -340,8 +340,10 @@ RSpec.describe AnnotationDiff do
       # Keys that contain `.`, `[`, `]` or `\` must survive a call → apply and
       # call → revert round-trip exactly: they are escaped when `call` builds
       # the path, and `parse_path` must not re-detect a `[` on an unescaped
-      # plain segment or unescape a plain segment twice.
-      %w[a[b x[k=1] a.b a\b a\.b ]].each do |key|
+      # plain segment or unescape a plain segment twice. The empty string is
+      # included: its path is "metadata.", which must parse back to an empty
+      # plain segment rather than overwriting `metadata` itself.
+      ["a[b", "x[k=1]", "a.b", "a\\b", "a\\.b", "]", ""].each do |key|
         it "round-trips a top-level metadata key #{key.inspect}" do
           old_h = { "metadata" => { key => 1 } }
           new_h = { "metadata" => { key => 2 } }
