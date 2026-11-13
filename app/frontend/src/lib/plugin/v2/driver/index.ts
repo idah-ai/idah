@@ -24,7 +24,8 @@ import type {
 
 import { AstProcessor } from "../utils/ast-evaluator";
 import { modKey } from "../utils/browser";
-import { IdbBackedAnnotationsDriverAdapter } from "./adapter/idb-driver";
+import { IdbBackedAnnotationsDriverAdapter, type ReloadReason } from "./adapter/idb-driver";
+import { createReloadScheduler } from "./reload-scheduler";
 import { showToast } from "@/components/ui/toast/index.svelte";
 import registerCommands from "./command";
 import { CommandManagerV2 } from "./manager/command-manager";
@@ -62,7 +63,8 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private readonly rpc = new JsonRpcDatasource(`/api/v1/dataset/annotations/_rpc`);
 
   private pendingCount = 0;
-  #reloadScheduled = false;
+  #readOnly = false;
+  #scheduleReload: () => void;
 
   // ── Adapters exposed to the user ──────────────────────────────────────
 
@@ -121,6 +123,17 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       this.syncErrorListeners.forEach((cb) => cb(err));
     });
 
+    this.#scheduleReload = createReloadScheduler({
+      pendingCount: () => this.pendingCount,
+      onSyncChange: (cb) => this.onSyncChange((event) => cb(event.queued)),
+      reload: () => this.#reload(),
+      onSchedule: () => {
+        // Block local writes so the queue can drain and the closed DB is not
+        // written to; the reload happens once the queue empties.
+        this.#readOnly = true;
+      },
+    });
+
     // Build command & toolbar adapters
     this.command = new CommandDriverAdapter(this.commandMgr);
     this.toolbar = new ToolbarDriverAdapter(this.toolbarMgr);
@@ -136,7 +149,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       pluginId: PLUGIN_ID,
       backend: backendDriver,
       enqueue: (op: Promise<unknown>) => this.#enqueue(op),
-      onReloadRequired: () => this.#handleReloadRequired(),
+      onReloadRequired: (reason) => this.#handleReloadRequired(reason),
     });
     this.idbAnnotationsDriver = idbDriver;
     this.annotations = idbDriver?.sealed() ?? new AnnotationsDriverAdapter(this._id, this.rpc);
@@ -216,6 +229,12 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   }
 
   #enqueue(op: Promise<unknown>): void {
+    // Once a reload is scheduled the DB is closed; reject new writes so the
+    // queue can drain and nothing is written to the closed DB.
+    if (this.#readOnly) {
+      op.catch(() => {});
+      throw new Error("Editor is read-only while a reload is pending. Reload to continue.");
+    }
     this.pendingCount++;
     this.#emitSyncChange();
     op.catch(console.error).finally(() => {
@@ -226,27 +245,31 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
   /**
    * Another tab upgraded (or blocked) the local cache database. The driver has
-   * already closed it; tell the user a reload is needed and reload only once
-   * the queued backend writes have drained, so none are lost.
+   * already closed it.
+   *
+   * - `"upgraded"`: reload once queued backend writes drain, so none are lost.
+   * - `"blocked"`: an older tab holds the DB open; reloading would just block
+   *   again, so only warn the user to close the other tabs.
    */
-  #handleReloadRequired(): void {
-    if (this.#reloadScheduled) return;
-    this.#reloadScheduled = true;
+  #handleReloadRequired(reason: ReloadReason): void {
+    if (reason === "blocked") {
+      showToast.warning({
+        title: "Reload to continue",
+        description: "Close other tabs of this editor to continue.",
+        dismissable: true,
+        duration: Infinity,
+      });
+      return;
+    }
 
     showToast.info({
       title: "Reload to continue",
       description: "This editor was updated in another tab. Reload to continue.",
       dismissable: true,
+      duration: Infinity,
     });
 
-    if (this.pendingCount === 0) {
-      this.#reload();
-      return;
-    }
-
-    this.onSyncChange((event) => {
-      if (event.queued === 0) this.#reload();
-    });
+    this.#scheduleReload();
   }
 
   #reload(): void {

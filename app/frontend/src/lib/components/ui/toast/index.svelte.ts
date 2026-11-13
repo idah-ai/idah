@@ -12,6 +12,8 @@ export interface CustomToastOptions {
   description?: string;
 
   dismissable?: boolean; // default: false
+  /** How long (ms) to keep the toast visible; Infinity keeps it until dismissed. */
+  duration?: number;
 }
 
 function getRandomUUID(): string {
@@ -23,6 +25,7 @@ export const showToast = {
     const id = getRandomUUID();
     toast(CustomToast, {
       id,
+      duration: toastOptions.duration,
       componentProps: {
         toastOptions: {
           ...toastOptions,
@@ -36,6 +39,7 @@ export const showToast = {
     const id = getRandomUUID();
     toast.success(CustomToast, {
       id,
+      duration: toastOptions.duration,
       componentProps: {
         toastOptions: {
           ...toastOptions,
@@ -49,6 +53,7 @@ export const showToast = {
     const id = getRandomUUID();
     toast.info(CustomToast, {
       id,
+      duration: toastOptions.duration,
       componentProps: {
         toastOptions: {
           ...toastOptions,
@@ -62,6 +67,7 @@ export const showToast = {
     const id = getRandomUUID();
     toast.warning(CustomToast, {
       id,
+      duration: toastOptions.duration,
       componentProps: {
         toastOptions: {
           ...toastOptions,
@@ -75,6 +81,7 @@ export const showToast = {
     const id = getRandomUUID();
     toast.error(CustomToast, {
       id,
+      duration: toastOptions.duration,
       componentProps: {
         toastOptions: {
           ...toastOptions,
