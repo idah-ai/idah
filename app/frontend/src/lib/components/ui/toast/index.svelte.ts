@@ -30,7 +30,7 @@ export const showToast = {
     const id = toastOptions.id ?? getRandomUUID();
     toast(CustomToast, {
       id,
-      duration: toastOptions.duration,
+      ...(toastOptions.duration !== undefined && { duration: toastOptions.duration }),
       componentProps: {
         toastOptions: {
           ...toastOptions,
@@ -44,7 +44,7 @@ export const showToast = {
     const id = toastOptions.id ?? getRandomUUID();
     toast.success(CustomToast, {
       id,
-      duration: toastOptions.duration,
+      ...(toastOptions.duration !== undefined && { duration: toastOptions.duration }),
       componentProps: {
         toastOptions: {
           ...toastOptions,
@@ -58,7 +58,7 @@ export const showToast = {
     const id = toastOptions.id ?? getRandomUUID();
     toast.info(CustomToast, {
       id,
-      duration: toastOptions.duration,
+      ...(toastOptions.duration !== undefined && { duration: toastOptions.duration }),
       componentProps: {
         toastOptions: {
           ...toastOptions,
@@ -72,7 +72,7 @@ export const showToast = {
     const id = toastOptions.id ?? getRandomUUID();
     toast.warning(CustomToast, {
       id,
-      duration: toastOptions.duration,
+      ...(toastOptions.duration !== undefined && { duration: toastOptions.duration }),
       componentProps: {
         toastOptions: {
           ...toastOptions,
@@ -86,7 +86,7 @@ export const showToast = {
     const id = toastOptions.id ?? getRandomUUID();
     toast.error(CustomToast, {
       id,
-      duration: toastOptions.duration,
+      ...(toastOptions.duration !== undefined && { duration: toastOptions.duration }),
       componentProps: {
         toastOptions: {
           ...toastOptions,
