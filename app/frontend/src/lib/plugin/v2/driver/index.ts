@@ -25,6 +25,7 @@ import type {
 import { AstProcessor } from "../utils/ast-evaluator";
 import { modKey } from "../utils/browser";
 import { IdbBackedAnnotationsDriverAdapter } from "./adapter/idb-driver";
+import { showToast } from "@/components/ui/toast/index.svelte";
 import registerCommands from "./command";
 import { CommandManagerV2 } from "./manager/command-manager";
 import { ToolbarManagerV2 } from "./manager/toolbar-manager.svelte";
@@ -61,6 +62,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private readonly rpc = new JsonRpcDatasource(`/api/v1/dataset/annotations/_rpc`);
 
   private pendingCount = 0;
+  private #reloadScheduled = false;
 
   // ── Adapters exposed to the user ──────────────────────────────────────
 
@@ -134,6 +136,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       pluginId: PLUGIN_ID,
       backend: backendDriver,
       enqueue: (op: Promise<unknown>) => this.#enqueue(op),
+      onReloadRequired: () => this.#handleReloadRequired(),
     });
     this.idbAnnotationsDriver = idbDriver;
     this.annotations = idbDriver?.sealed() ?? new AnnotationsDriverAdapter(this._id, this.rpc);
@@ -219,6 +222,35 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       this.pendingCount--;
       this.#emitSyncChange();
     });
+  }
+
+  /**
+   * Another tab upgraded (or blocked) the local cache database. The driver has
+   * already closed it; tell the user a reload is needed and reload only once
+   * the queued backend writes have drained, so none are lost.
+   */
+  #handleReloadRequired(): void {
+    if (this.#reloadScheduled) return;
+    this.#reloadScheduled = true;
+
+    showToast.info({
+      title: "Reload to continue",
+      description: "This editor was updated in another tab. Reload to continue.",
+      dismissable: true,
+    });
+
+    if (this.pendingCount === 0) {
+      this.#reload();
+      return;
+    }
+
+    this.onSyncChange((event) => {
+      if (event.queued === 0) this.#reload();
+    });
+  }
+
+  #reload(): void {
+    if (typeof location !== "undefined") location.reload();
   }
 
   #emitSyncChange(): void {

@@ -13,6 +13,27 @@ import type { IAnnotationRecord } from "../../types";
 
 const PLUGIN_ID = "idah-video";
 const ENTRY_ID = "entry-1";
+const VERSION = 3; // must match the driver's VERSION
+
+/** Open a connection to the plugin database at a given version. */
+function openDbAtVersion(version: number): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(`idahPlugin::${PLUGIN_ID}`, version);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains("annotations")) {
+        const ann = db.createObjectStore("annotations", { keyPath: ["entryId", "id"] });
+        ann.createIndex("entryId", "entryId");
+      }
+      if (!db.objectStoreNames.contains("entries")) {
+        const ent = db.createObjectStore("entries", { keyPath: "entryId" });
+        ent.createIndex("lastVisitedAt", "lastVisitedAt");
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
 
 function makeRecord(overrides: Partial<IAnnotationRecord> = {}): IAnnotationRecord {
   return {
@@ -225,6 +246,84 @@ describe("IdbBackedAnnotationsDriverAdapter sync sharing", () => {
     expect(all.map((a) => a.id)).toEqual(["ann-1"]);
     expect(backend.list).toHaveBeenCalledTimes(2);
   });
+});
+
+describe("IdbBackedAnnotationsDriverAdapter reload handling", () => {
+  const DB_NAME = `idahPlugin::${PLUGIN_ID}`;
+
+  beforeEach(() => {
+    indexedDB.deleteDatabase(DB_NAME);
+  });
+
+  afterEach(() => {
+    indexedDB.deleteDatabase(DB_NAME);
+  });
+
+  it("defers to onReloadRequired on versionchange instead of reloading directly", async () => {
+    const onReloadRequired = vi.fn();
+
+    const backend = makeBackend();
+    const driver = IdbBackedAnnotationsDriverAdapter<IAnnotationRecord["shape_args"], IAnnotationRecord["properties"]>({
+      entryId: ENTRY_ID,
+      pluginId: PLUGIN_ID,
+      backend,
+      enqueue: () => {},
+      onReloadRequired,
+    });
+    if (!driver) throw new Error("driver is null");
+
+    await driver.fetch(); // opens the driver's connection at VERSION
+
+    // Opening a connection at a higher version fires versionchange on the
+    // driver's connection. The driver must close and defer to the callback,
+    // never calling alert() or reloading itself.
+    const upgradeDb = await new Promise<IDBDatabase>((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, VERSION + 1);
+      req.onupgradeneeded = () => {};
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+
+    await vi.waitFor(() => expect(onReloadRequired).toHaveBeenCalled());
+    upgradeDb.close();
+  });
+
+  it("defers to onReloadRequired when the upgrade is blocked by another tab", async () => {
+    const onReloadRequired = vi.fn();
+
+    // Hold an older-version connection open so the driver's upgrade to VERSION
+    // is blocked, firing onblocked on its open request.
+    const blocker = await openDbAtVersion(2);
+
+    const backend = makeBackend();
+    const driver = IdbBackedAnnotationsDriverAdapter<IAnnotationRecord["shape_args"], IAnnotationRecord["properties"]>({
+      entryId: ENTRY_ID,
+      pluginId: PLUGIN_ID,
+      backend,
+      enqueue: () => {},
+      onReloadRequired,
+    });
+    if (!driver) throw new Error("driver is null");
+
+    // The open request is blocked by `blocker`; do not await (it would hang).
+    const fetchPromise = driver.fetch();
+
+    await vi.waitFor(() => expect(onReloadRequired).toHaveBeenCalled());
+
+    // Unblock so the driver's connection can open and the fetch completes.
+    blocker.close();
+    await fetchPromise;
+
+    // Trigger a versionchange so the driver closes its connection, otherwise
+    // afterEach deleteDatabase would be blocked.
+    const upgradeDb = await new Promise<IDBDatabase>((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, VERSION + 1);
+      req.onupgradeneeded = () => {};
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    upgradeDb.close();
+  }, 10000);
 });
 
 describe("IdbBackedAnnotationsDriverAdapter cache v3 upgrade", () => {

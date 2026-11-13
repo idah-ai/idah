@@ -67,7 +67,7 @@ const IDB_STORES = [
   },
 ];
 
-const openIdb = (pluginId: string): Promise<IDBDatabase> => {
+const openIdb = (pluginId: string, onReloadRequired: () => void): Promise<IDBDatabase> => {
   const name = `idahPlugin::${pluginId}`;
   return new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(name, VERSION);
@@ -75,11 +75,10 @@ const openIdb = (pluginId: string): Promise<IDBDatabase> => {
     req.onblocked = () => {
       // A tab still running an older version holds the database open and blocks
       // this upgrade. Tell the user to close the other tabs so the new tab can
-      // resync; without this the new tab would wait forever.
+      // resync; without this the new tab would wait forever. The reload is left
+      // to the caller so it can wait for queued backend writes to drain.
       console.warn(`[idb-driver] "${name}" upgrade blocked by another tab.`);
-      if (typeof alert !== "undefined") {
-        alert("This editor needs to reload to update its local cache. Close other tabs of this editor first.");
-      }
+      onReloadRequired();
     };
     req.onupgradeneeded = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
@@ -115,17 +114,13 @@ const openIdb = (pluginId: string): Promise<IDBDatabase> => {
       }
     };
     // Close the database when another tab upgrades it, so this tab does not
-    // block the upgrade. The caller reloads to pick up the new schema.
+    // block the upgrade. The caller reloads to pick up the new schema, waiting
+    // for queued backend writes to drain first.
     req.onsuccess = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
       db.onversionchange = () => {
         db.close();
-        if (typeof alert !== "undefined") {
-          alert("This editor was updated in another tab. Reload to continue.");
-        }
-        if (typeof location !== "undefined") {
-          location.reload();
-        }
+        onReloadRequired();
       };
       resolve(db);
     };
@@ -338,6 +333,12 @@ export interface IndexedDbAnnotationsDriverConfig<
   backend: ICrudDriver<IAnnotationRecord<Shape, Annotation>>;
   enqueue: (p: Promise<unknown>) => void;
   changes?: ChangesAdapter;
+  /**
+   * Invoked when the local cache must be reloaded because another tab upgraded
+   * the database (or blocked this tab's upgrade). The driver closes the DB and
+   * defers the reload to the caller, so queued backend writes are not lost.
+   */
+  onReloadRequired?: () => void;
 }
 
 // ─── Internal type ────────────────────────────────────────────────────────────
@@ -365,7 +366,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
   let dbPromise: Promise<IDBDatabase> | null = null;
   const getDb = () => {
-    if (!dbPromise) dbPromise = openIdb(config.pluginId);
+    if (!dbPromise) dbPromise = openIdb(config.pluginId, () => config.onReloadRequired?.());
     return dbPromise;
   };
 
