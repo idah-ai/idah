@@ -117,12 +117,24 @@ RSpec.describe Annotation, database: true do
         sys_subject.write_shapes(id, [{ key: "tile-0x0", value: { "rle" => "A" } }])
 
         # A second update on the same repository instance must see the new
-        # annotation_shape key and not diff against a stale memoized copy.
-        sys_subject.update(id, { category: "dog" })
+        # annotation_shape key and not diff against a stale memoized copy. It
+        # sends shape_args (so the diff actually touches shape_args) with a key
+        # that is not in annotation_shape, so the old side must not leak the
+        # now-stored tile key as a spurious '-'. The change path is
+        # "shape_args.tile-0x0", not "tile-0x0".
+        sys_subject.update(id, { shape_args: { "other" => 1 } })
 
         changes = history_changes(id)
-        updated = changes.select { |c| c.any? { |entry| entry[1] == "tile-0x0" } }
-        expect(updated).to be_empty
+        # The write_shapes row is the last one that records `+ shape_args.tile-0x0`
+        # (the first update and the write_shapes both legitimately record it). The
+        # second update runs after it, so rows later than that index must not
+        # touch the tile key at all.
+        write_index = changes.rindex do |row|
+          row.any? { |op, path, _old, _new| path == "shape_args.tile-0x0" && op == "+" }
+        end
+
+        after = changes.drop(write_index + 1)
+        expect(after.any? { |row| row.any? { |entry| entry[1] == "shape_args.tile-0x0" } }).to be(false)
       end
     end
   end

@@ -327,9 +327,18 @@ module Annotation
     # in the parent's jsonb column. Keys that already sit in the column are
     # dropped on the next write, with no history entry, since reads already
     # show the annotation_shape values; the live tile values are unaffected.
-    # The annotation_shape keys for this annotation, read once per update so a
-    # write_shapes on the same repository instance between two updates is seen
-    # (a memoized copy would diff against stale keys and record a spurious `-`).
+    def strip_shape_store_keys(attributes, shape_keys)
+      return unless attributes[:shape_args].is_a?(Hash)
+      return if shape_keys.empty?
+
+      attributes[:shape_args] = attributes[:shape_args].reject { |k, _| shape_keys.include?(k.to_s) }
+    end
+
+    # The annotation_shape keys for this annotation, read fresh on every update.
+    # They must not be memoized on the repository instance: a write_shapes that
+    # runs between two updates adds a key to the child table, and a stale copy
+    # from the earlier update would diff against the leaked key in the parent
+    # column and record a spurious `-`.
     def shape_store_keys(id)
       client do |db|
         db[:annotation_shape]
@@ -337,13 +346,6 @@ module Annotation
           .select_map(:key)
           .map(&:to_s)
       end
-    end
-
-    def strip_shape_store_keys(attributes, shape_keys)
-      return unless attributes[:shape_args].is_a?(Hash)
-      return if shape_keys.empty?
-
-      attributes[:shape_args] = attributes[:shape_args].reject { |k, _| shape_keys.include?(k.to_s) }
     end
 
     # The diff of the tracked fields that were written. The old side is the
@@ -355,9 +357,17 @@ module Annotation
     def diff_for_update(row, attributes, shape_keys)
       old_for_diff = row.slice(*attributes.keys.map(&:to_sym))
 
-      if attributes.key?(:shape_args) && old_for_diff[:shape_args].is_a?(Hash)
-        old_for_diff[:shape_args] = old_for_diff[:shape_args].reject do |k, _|
-          shape_keys.include?(k.to_s)
+      if attributes.key?(:shape_args)
+        old_shape_args = old_for_diff[:shape_args]
+        # `row` comes from Sequel with the pg_json extension, so the jsonb
+        # column is a JSONObject/JSONHash wrapper, not a plain Hash. Unwrap
+        # before rejecting, otherwise the leaked tile key survives and records
+        # a spurious `-`.
+        old_shape_args = old_shape_args.to_h if old_shape_args.is_a?(::Sequel::Postgres::JSONHashBase)
+        if old_shape_args.is_a?(Hash)
+          old_for_diff[:shape_args] = old_shape_args.reject do |k, _|
+            shape_keys.include?(k.to_s)
+          end
         end
       end
 
