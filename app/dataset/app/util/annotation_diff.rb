@@ -77,12 +77,11 @@ module AnnotationDiff
   # tuples so consumers never re-detect keyed segments or unescape twice:
   # `[:plain, name]` or `[:keyed, name, key, value]`.
   def parse_path(string)
-    split_path(string).map do |segment|
-      if (match = segment.match(/(?<!\\)\[/))
-        name = segment[0...match.begin(0)]
-        content = segment[(match.begin(0) + 1)...-1] # strip the surrounding [ ]
-        [:keyed, unescape(name), unescape_bracket(content[KEYED_CONTENT_RE, 1]),
-         JSON.parse(unescape_bracket(content[KEYED_CONTENT_RE, 2]))]
+    split_path(string).map do |segment, bracket_content|
+      if bracket_content
+        name = segment.delete_suffix("[#{bracket_content}]")
+        [:keyed, unescape(name), unescape_bracket(bracket_content[KEYED_CONTENT_RE, 1]),
+         JSON.parse(unescape_bracket(bracket_content[KEYED_CONTENT_RE, 2]))]
       else
         [:plain, unescape(segment)]
       end
@@ -94,35 +93,57 @@ module AnnotationDiff
   # and yielding an empty plain segment for an empty key ("metadata." →
   # ["metadata", ""]). Escaped characters (`\.`, `\[`, `\]`, `\\`) are kept
   # verbatim and unescaped later, so an escaped `]` in a plain segment is not
-  # mistaken for a real closing bracket.
+  # mistaken for a real closing bracket. Returns `[segment, bracket_content]`
+  # pairs where `bracket_content` is the raw text between the brackets (or nil
+  # for a plain segment), so the caller never re-detects the bracket with a
+  # regex.
+  #
+  # A single in-bracket flag is used rather than a depth counter: keyed values
+  # may themselves contain an unescaped `[` (keyed_path only escapes `]` and
+  # `\` inside brackets), so `[` opens only when not already in a bracket and
+  # only an unescaped `]` closes it.
   def split_path(string)
     segments = []
     current = +""
-    depth = 0
+    in_bracket = false
+    bracket_content = nil
     s = string.to_s
     i = 0
     while i < s.length
       c = s[i]
       if c == "\\" && i + 1 < s.length
         current << c << s[i + 1]
+        bracket_content << c << s[i + 1] if in_bracket
         i += 2
         next
       end
       case c
-      when "[" then depth += 1
-      when "]" then depth -= 1
+      when "["
+        if in_bracket
+          bracket_content << c
+        else
+          in_bracket = true # rubocop:disable Lint/UselessAssignment -- loop-carried flag
+          bracket_content = +""
+        end
+      when "]"
+        in_bracket = false if in_bracket
       when "."
-        if depth.zero?
-          segments << current
+        if in_bracket
+          bracket_content << c
+        else
+          segments << [current, bracket_content]
           current = +""
+          bracket_content = nil
           i += 1
           next
         end
+      else
+        bracket_content << c if in_bracket
       end
       current << c
       i += 1
     end
-    segments << current
+    segments << [current, bracket_content]
     segments
   end
 

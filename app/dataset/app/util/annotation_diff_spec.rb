@@ -366,6 +366,23 @@ RSpec.describe AnnotationDiff do
         expect(AnnotationDiff.apply(old_h, changes)).to eq(AnnotationDiff.normalize(new_h))
         expect(AnnotationDiff.revert(new_h, changes)).to eq(AnnotationDiff.normalize(old_h))
       end
+
+      # Keyed string values may contain `[`, `]` or `\\` (keyed_path escapes only
+      # `]` and `\\` inside brackets), so the path parser must not treat a `[`
+      # inside the value as opening a nested bracket.
+      ["a[b", "x[", "[[", "a]b\\", "5.7"].each do |value|
+        it "round-trips a keyed string value #{value.inspect}" do
+          old_h = { shape_args: { "frames" => [{ "id" => value, "points" => [] }] } }
+          new_h = { shape_args: { "frames" => [{ "id" => value, "points" => [1] }] } }
+
+          changes = AnnotationDiff.call(old_h, new_h, identity_keys: { "frames" => "id" })
+          expect(changes.size).to eq(1)
+          expect(changes.first[1]).to include("frames[id=")
+
+          expect(AnnotationDiff.apply(old_h, changes)).to eq(AnnotationDiff.normalize(new_h))
+          expect(AnnotationDiff.revert(new_h, changes)).to eq(AnnotationDiff.normalize(old_h))
+        end
+      end
     end
 
     describe "with Sequel JSONB* wrappers (as read back from the table)" do
