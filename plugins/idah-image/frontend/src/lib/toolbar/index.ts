@@ -197,7 +197,14 @@ export function initToolbar(driver: IIdahDriverV2): void {
     label: "Done Area — Add",
     modes: [DEFAULT_MODE, REVIEW_MODE, COVERAGE_MASK_BBOX, COVERAGE_MASK_BBOX_REMOVE],
     group: "done-area",
-    onClick: () => driver.command.call("coverage-mask-set-mode", { mode: "add" }),
+    toggledVariant: "success",
+    onClick: () => {
+      if (driver.mode === COVERAGE_MASK_BBOX) {
+        driver.command.call("coverage-mask-set-mode", { mode: "off" });
+      } else {
+        driver.command.call("coverage-mask-set-mode", { mode: "add" });
+      }
+    },
     whenToggled: () => driver.mode === COVERAGE_MASK_BBOX,
   });
 
@@ -207,7 +214,14 @@ export function initToolbar(driver: IIdahDriverV2): void {
     label: "Done Area — Remove",
     modes: [DEFAULT_MODE, REVIEW_MODE, COVERAGE_MASK_BBOX, COVERAGE_MASK_BBOX_REMOVE],
     group: "done-area",
-    onClick: () => driver.command.call("coverage-mask-set-mode", { mode: "remove" }),
+    toggledVariant: "destructive",
+    onClick: () => {
+      if (driver.mode === COVERAGE_MASK_BBOX_REMOVE) {
+        driver.command.call("coverage-mask-set-mode", { mode: "off" });
+      } else {
+        driver.command.call("coverage-mask-set-mode", { mode: "remove" });
+      }
+    },
     whenToggled: () => driver.mode === COVERAGE_MASK_BBOX_REMOVE,
   });
 

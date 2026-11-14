@@ -72,8 +72,6 @@ class UIState {
 
   // ── Coverage mask ───────────────────────────────────────────────────
   coverageMaskShapes: { type: string; points: number[] }[] = $state([]);
-  coverageMaskActive = $state(false);
-  coverageMaskToolType: "bbox" | "polygon" = $state("bbox");
   coverageMaskIsRemove = $state(false);
   coverageMaskVisible = $state(true);
 

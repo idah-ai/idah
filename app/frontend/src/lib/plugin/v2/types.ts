@@ -215,6 +215,11 @@ export interface IToolbarItem {
   /** Click handler. */
   onClick: Unsubscribe;
   /**
+   * Optional button variant when the item is toggled (e.g. "success" for green,
+   * "destructive" for red). Defaults to "default" (primary color).
+   */
+  toggledVariant?: string;
+  /**
    * Optional command name for shortcut lookup.
    * If provided, the toolbar item's shortcut will be fetched from the command registry.
    */
@@ -659,6 +664,11 @@ export interface ToolbarItemOptions {
    * Default: `false`.
    */
   whenToggled?: () => boolean;
+  /**
+   * Optional button variant when the item is toggled (e.g. "success" for green,
+   * "destructive" for red). Defaults to "default" (primary color).
+   */
+  toggledVariant?: string;
 }
 
 export interface IToolbarDriverV2 {

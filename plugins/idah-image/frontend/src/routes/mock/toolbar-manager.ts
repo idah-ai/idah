@@ -31,6 +31,7 @@ export class ToolbarManagerV2 {
         onClick: opts.onClick,
         visibleWhen: opts.visibleWhen,
         whenToggled: opts.whenToggled ?? (() => false),
+        toggledVariant: opts.toggledVariant,
       });
     }
   }

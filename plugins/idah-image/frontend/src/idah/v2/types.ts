@@ -206,6 +206,11 @@ export interface IToolbarItem {
    * Default: false.
    */
   whenToggled?: () => boolean;
+  /**
+   * Optional button variant when the item is toggled (e.g. "success" for green,
+   * "destructive" for red). Defaults to "default" (primary color).
+   */
+  toggledVariant?: string;
 }
 
 /**
@@ -616,6 +621,11 @@ export interface ToolbarItemOptions {
    * Default: `false`.
    */
   whenToggled?: () => boolean;
+  /**
+   * Optional button variant when the item is toggled (e.g. "success" for green,
+   * "destructive" for red). Defaults to "default" (primary color).
+   */
+  toggledVariant?: string;
 }
 
 export interface IToolbarDriverV2 {

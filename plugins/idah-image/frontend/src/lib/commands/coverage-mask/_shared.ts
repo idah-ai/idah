@@ -9,8 +9,6 @@ import { DEFAULT_MODE, COVERAGE_MASK_BBOX, COVERAGE_MASK_BBOX_REMOVE } from "$li
 let _previousMode: string | null = null;
 
 export function doOff() {
-  ui.coverageMaskActive = false;
-  // ui.coverageMaskVisible = false;
   if (viewport.isCoverageMaskMode) {
     viewport.mode = _previousMode ?? DEFAULT_MODE;
   }
@@ -18,20 +16,18 @@ export function doOff() {
 }
 
 export function doAdd() {
-  _previousMode = viewport.mode;
-  ui.coverageMaskActive = true;
-  // ui.coverageMaskVisible = true;
+  if (!viewport.isCoverageMaskMode) {
+    _previousMode = viewport.mode;
+  }
   ui.coverageMaskIsRemove = false;
-  ui.coverageMaskToolType = "bbox";
   viewport.mode = COVERAGE_MASK_BBOX;
 }
 
 export function doRemove() {
-  _previousMode = viewport.mode;
-  ui.coverageMaskActive = true;
-  // ui.coverageMaskVisible = true;
+  if (!viewport.isCoverageMaskMode) {
+    _previousMode = viewport.mode;
+  }
   ui.coverageMaskIsRemove = true;
-  ui.coverageMaskToolType = "bbox";
   viewport.mode = COVERAGE_MASK_BBOX_REMOVE;
 }
 
