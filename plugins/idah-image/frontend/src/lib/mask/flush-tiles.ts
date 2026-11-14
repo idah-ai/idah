@@ -48,15 +48,13 @@ export async function flushDirtyTiles(
     const row = parseInt(rowStr, 10);
     const buf = getBuffer(col, row);
 
-    if (buf) {
-      if (isEmpty(buf)) {
-        entries.push({ key: `tile-${col}x${row}`, value: null });
-        invalidate(annotationId, tileKey);
-      } else {
-        const rle = encode(buf, MASK_TILE_SIZE, MASK_TILE_SIZE);
-        entries.push({ key: `tile-${col}x${row}`, value: { rle } });
-        invalidate(annotationId, tileKey);
-      }
+    if (!buf || isEmpty(buf)) {
+      entries.push({ key: `tile-${col}x${row}`, value: null });
+      invalidate(annotationId, tileKey);
+    } else {
+      const rle = encode(buf, MASK_TILE_SIZE, MASK_TILE_SIZE);
+      entries.push({ key: `tile-${col}x${row}`, value: { rle } });
+      invalidate(annotationId, tileKey);
     }
   }
 
