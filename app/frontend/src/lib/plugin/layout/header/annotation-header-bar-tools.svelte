@@ -15,7 +15,12 @@
   import type { IdahDriverV2 } from "@/plugin/v2/driver";
   import type { IToolbarItem, IToolbarNode, IToolbarGroupNode } from "@/plugin/v2/types";
   import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
-  import { resolveToggledVariant, toggledItemClass, groupActiveVariant, groupActiveVariantClass } from "./toolbar-variants";
+  import {
+    resolveToggledVariant,
+    toggledItemClass,
+    groupActiveVariant,
+    groupActiveVariantClass,
+  } from "./toolbar-variants";
 
   // Props
   interface Props {
@@ -131,10 +136,7 @@
       <DropdownMenu.Item
         onclick={node.item.onClick}
         disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
-        class={cn(
-          "[&_svg]:!text-inherit",
-          toggledItemClass(node.item, isItemToggled(node.item)),
-        )}
+        class={cn("[&_svg]:!text-inherit", toggledItemClass(node.item, isItemToggled(node.item)))}
       >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         {@html node.item.icon}

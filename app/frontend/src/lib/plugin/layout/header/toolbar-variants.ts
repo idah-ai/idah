@@ -19,10 +19,7 @@ export function resolveToggledVariant(item: IToolbarItem): ButtonVariant {
 // ── Group button variant ───────────────────────────────────────────────
 
 /** Variant for the collapsed group button — uses the active child's toggledVariant. */
-export function groupActiveVariant(
-  node: IToolbarGroupNode,
-  activeLeaf: IToolbarItem | undefined,
-): ButtonVariant {
+export function groupActiveVariant(node: IToolbarGroupNode, activeLeaf: IToolbarItem | undefined): ButtonVariant {
   if (activeLeaf) {
     const v = activeLeaf.toggledVariant;
     if (v === "success" || v === "destructive") return v;
@@ -33,10 +30,7 @@ export function groupActiveVariant(
 // ── Dropdown item class ────────────────────────────────────────────────
 
 /** CSS class for a toggled dropdown-menu item, based on its toggledVariant. */
-export function toggledItemClass(
-  item: IToolbarItem,
-  isToggled: boolean,
-): string {
+export function toggledItemClass(item: IToolbarItem, isToggled: boolean): string {
   if (!isToggled) return "";
   const v = item.toggledVariant;
   if (v === "success") {
@@ -51,10 +45,7 @@ export function toggledItemClass(
 // ── Group sub-trigger class ────────────────────────────────────────────
 
 /** CSS class for the collapsed group sub-trigger, based on the active leaf's toggledVariant. */
-export function groupActiveVariantClass(
-  node: IToolbarGroupNode,
-  activeLeaf: IToolbarItem | undefined,
-): string {
+export function groupActiveVariantClass(node: IToolbarGroupNode, activeLeaf: IToolbarItem | undefined): string {
   const v = activeLeaf?.toggledVariant;
   if (v === "success") {
     return "bg-green-500 text-white data-[state=open]:bg-green-500 data-[state=open]:text-white";
