@@ -14,8 +14,8 @@
 
   import type { IdahDriverV2 } from "@/plugin/v2/driver";
   import type { IToolbarItem, IToolbarNode, IToolbarGroupNode } from "@/plugin/v2/types";
-  import type { ButtonVariant } from "@/components/ui/button/button.svelte";
   import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
+  import { resolveToggledVariant, toggledItemClass, groupActiveVariant, groupActiveVariantClass } from "./toolbar-variants";
 
   // Props
   interface Props {
@@ -87,48 +87,6 @@
     return (leaves.find(isItemToggled) ?? leaves[0])?.icon ?? "";
   }
 
-  /** The collapsed button renders pressed when any child is toggled. */
-  function groupActive(node: IToolbarGroupNode): boolean {
-    return visibleLeaves(node).some(isItemToggled);
-  }
-
-  /** Variant for the collapsed group button — uses the active child's toggledVariant. */
-  function groupActiveVariant(node: IToolbarGroupNode): ButtonVariant {
-    const leaves = visibleLeaves(node);
-    const active = leaves.find(isItemToggled);
-    if (active) {
-      const v = active.toggledVariant;
-      if (v === "success" || v === "destructive") return v;
-    }
-    return "default";
-  }
-
-  /** Resolve the button variant for a toolbar item when toggled. */
-  function resolveToggledVariant(item: IToolbarItem): ButtonVariant {
-    const v = item.toggledVariant;
-    if (v === "success" || v === "destructive") return v;
-    return "default";
-  }
-
-  /** CSS class for a toggled dropdown-menu item, based on its toggledVariant. */
-  function toggledItemClass(item: IToolbarItem): string {
-    if (!isItemToggled(item)) return "";
-    const v = item.toggledVariant;
-    if (v === "success") return "bg-green-500 text-white focus:bg-green-500 focus:text-white data-highlighted:bg-green-500 data-highlighted:text-white";
-    if (v === "destructive") return "bg-destructive text-white focus:bg-destructive focus:text-white data-highlighted:bg-destructive data-highlighted:text-white";
-    return "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground data-highlighted:bg-primary data-highlighted:text-primary-foreground";
-  }
-
-  /** CSS class for the collapsed group sub-trigger, based on the active leaf's toggledVariant. */
-  function groupActiveVariantClass(node: IToolbarGroupNode): string {
-    const leaves = visibleLeaves(node);
-    const active = leaves.find(isItemToggled);
-    const v = active?.toggledVariant;
-    if (v === "success") return "bg-green-500 text-white data-[state=open]:bg-green-500 data-[state=open]:text-white";
-    if (v === "destructive") return "bg-destructive text-white data-[state=open]:bg-destructive data-[state=open]:text-white";
-    return "bg-primary text-primary-foreground data-[state=open]:bg-primary data-[state=open]:text-primary-foreground";
-  }
-
   const commands: AnnotationHeaderBarBaseTool[] = $derived([
     {
       name: "history.undo",
@@ -175,7 +133,7 @@
         disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
         class={cn(
           "[&_svg]:!text-inherit",
-          toggledItemClass(node.item),
+          toggledItemClass(node.item, isItemToggled(node.item)),
         )}
       >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -198,7 +156,11 @@
       <DropdownMenu.SubTrigger
         class={cn(
           "[&_svg]:!text-inherit",
-          groupActive(node) && groupActiveVariantClass(node),
+          (() => {
+            const leaves = visibleLeaves(node);
+            const active = leaves.find(isItemToggled);
+            return active ? groupActiveVariantClass(node, active) : "";
+          })(),
         )}
       >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -217,10 +179,11 @@
 <!-- A group collapsed into a single button + chevron dropdown -->
 {#snippet groupButton(node: IToolbarGroupNode)}
   {#if visibleLeaves(node).length > 0}
+    {@const _activeLeaf = visibleLeaves(node).find(isItemToggled)}
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
         <Button
-          variant={groupActive(node) ? groupActiveVariant(node) : "ghost"}
+          variant={_activeLeaf ? groupActiveVariant(node, _activeLeaf) : "ghost"}
           size="icon-sm"
           class="w-auto gap-0.5 px-1.5"
           disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
