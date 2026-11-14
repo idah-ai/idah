@@ -71,6 +71,7 @@ class UIState {
   gridOpacity = $state(100);
 
   // ── Coverage mask ───────────────────────────────────────────────────
+  coverageMaskActive = $state(false);
   coverageMaskShapes: { type: string; points: number[] }[] = $state([]);
   coverageMaskIsRemove = $state(false);
   coverageMaskVisible = $state(true);

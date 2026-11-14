@@ -7,7 +7,7 @@
 import { data } from "$lib/state/data.svelte";
 import { getDriver } from "$lib/state/driver.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import { DEFAULT_MODE, REVIEW_MODE, COVERAGE_MASK_BBOX, COVERAGE_MASK_BBOX_REMOVE, COVERAGE_DONE_AREA } from "$lib/types";
+import { DEFAULT_MODE, REVIEW_MODE, COVERAGE_DONE_AREA } from "$lib/types";
 import { session } from "$lib/mask/coverage-mask-session";
 import { flushDirtyTiles } from "$lib/mask/flush-tiles";
 import { isEditable } from "$lib/state/editor.svelte";
@@ -15,7 +15,7 @@ import { isEditable } from "$lib/state/editor.svelte";
 export const command = {
   name: "coverage-mask-draw",
   group: "Coverage Mask",
-  modes: [DEFAULT_MODE, REVIEW_MODE, COVERAGE_MASK_BBOX, COVERAGE_MASK_BBOX_REMOVE] as string[],
+  modes: [DEFAULT_MODE, REVIEW_MODE, ] as string[],
   shortcut: null as string | null,
   shortDescription: null as string | null,
   longDescription: null as string | null,

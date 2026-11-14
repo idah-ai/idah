@@ -500,7 +500,7 @@
     // An active grab (middle-mouse or drag pan) outranks every other cursor.
     if (isPanning) return "cursor-grabbing";
     if (hoveringFirstPoint) return "cursor-target";
-    if (viewport.isCreationMode || viewport.isCoverageMaskMode) return "cursor-crosshair";
+    if (viewport.isCreationMode || ui.coverageMaskActive) return "cursor-crosshair";
     if (isNoteMode) return "cursor-note";
     if (selAnnotation) return "cursor-pointer";
     if (_hoveringMask) return "cursor-pointer";
@@ -765,7 +765,7 @@
 
     // ── Mask mode — start drawing in capture phase so annotation shapes
     // cannot stop the event before we begin.
-    if (viewport.isCoverageMaskMode) {
+    if (ui.coverageMaskActive) {
       if (svgEl) {
         const rect = svgEl.getBoundingClientRect();
         mousePosition = [e.clientX - rect.left, e.clientY - rect.top];
@@ -872,7 +872,7 @@
     }
 
     // ── Coverage mask mode — prevent panning, let mask shapes render ──
-    if (viewport.isCoverageMaskMode) {
+    if (ui.coverageMaskActive) {
       // Start drawing in both add and remove mode
       coverageMaskDrawing = true;
       const p0 = sceneNormalizedCursor[0] * media.width;

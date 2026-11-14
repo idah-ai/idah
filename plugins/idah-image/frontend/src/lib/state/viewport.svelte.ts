@@ -33,9 +33,6 @@ class Viewport {
   get isReviewWorkspace() {
     return this.#mode === REVIEW_MODE || this.#mode === NOTE_MODE;
   }
-  get isCoverageMaskMode() {
-    return this.#mode === "idah-image:coverage-mask-bbox" || this.#mode === "idah-image:coverage-mask-bbox-remove";
-  }
 
   set mode(val: string) {
     if (this.#mode === val) return;

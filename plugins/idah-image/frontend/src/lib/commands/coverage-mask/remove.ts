@@ -1,13 +1,13 @@
 // coverage-mask/remove — Enter remove mode (shortcut Shift+K)
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import { DEFAULT_MODE, REVIEW_MODE, COVERAGE_MASK_BBOX, COVERAGE_MASK_BBOX_REMOVE } from "$lib/types";
+import { DEFAULT_MODE, REVIEW_MODE } from "$lib/types";
 import { doRemove, invalidate } from "./_shared";
 import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
   name: "coverage-mask-remove",
   group: "Coverage Mask",
-  modes: [DEFAULT_MODE, REVIEW_MODE, COVERAGE_MASK_BBOX, COVERAGE_MASK_BBOX_REMOVE] as string[],
+  modes: [DEFAULT_MODE, REVIEW_MODE, ] as string[],
   shortcut: "Shift+K" as string | null,
   shortDescription: "Done Area — Remove mode",
   longDescription: "Enter remove mode to erase coverage mask rectangles",

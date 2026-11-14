@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import { DEFAULT_MODE, REVIEW_MODE, COVERAGE_MASK_BBOX, COVERAGE_MASK_BBOX_REMOVE, COVERAGE_DONE_AREA } from "$lib/types";
+import { DEFAULT_MODE, REVIEW_MODE, COVERAGE_DONE_AREA } from "$lib/types";
 import { session } from "$lib/mask/coverage-mask-session";
 import { flushDirtyTiles } from "$lib/mask/flush-tiles";
 import { doOff, invalidate } from "./_shared";
@@ -12,7 +12,7 @@ import { isEditable } from "$lib/state/editor.svelte";
 export const command = {
   name: "coverage-mask-clear",
   group: "Coverage Mask",
-  modes: [DEFAULT_MODE, REVIEW_MODE, COVERAGE_MASK_BBOX, COVERAGE_MASK_BBOX_REMOVE] as string[],
+  modes: [DEFAULT_MODE, REVIEW_MODE, ] as string[],
   shortcut: "Control+Shift+K" as string | null,
   shortDescription: "Done Area — Clear all",
   longDescription: "Remove all coverage mask shapes",

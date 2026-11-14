@@ -51,30 +51,13 @@
   let canUndo = $state(driver.command.canUndo());
   let canRedo = $state(driver.command.canRedo());
 
-  // Track the mode before entering coverage mode, so we can restore it
-  let _modeBeforeCoverage: string | null = null;
-  function isCoverageMaskMode(mode: string): boolean {
-    return mode.includes("coverage-mask");
-  }
-
   function refreshToolbar() {
-    if (isCoverageMaskMode(driver.mode)) {
-      currentMode = _modeBeforeCoverage ?? driver.mode;
-    } else {
-      currentMode = driver.mode;
-    }
+    currentMode = driver.mode;
     canUndo = driver.command.canUndo();
     canRedo = driver.command.canRedo();
   }
 
-  driver.onModeChange((event) => {
-    refreshToolbar();
-    if (isCoverageMaskMode(event.newValue)) {
-      if (!isCoverageMaskMode(event.oldValue)) _modeBeforeCoverage = event.oldValue;
-    } else {
-      driver.command.call("coverage-mask-set-mode", { mode: "off" });
-    }
-  });
+  driver.onModeChange(() => refreshToolbar());
   driver.onSyncChange(() => refreshToolbar());
   driver.command.onStackChange(() => refreshToolbar());
 
