@@ -8,7 +8,6 @@
   import Separator from "@/components/ui/separator/separator.svelte";
   import * as DropdownMenu from "@/components/ui/dropdown-menu";
   import * as Kbd from "@/components/ui/kbd";
-  // import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
   import { getShortcutLabel } from "@/components/ui/kbd/utils";
   import { cn } from "@/utils";
@@ -88,7 +87,6 @@
     return (leaves.find(isItemToggled) ?? leaves[0])?.icon ?? "";
   }
 
-  // type ButtonVariant = NonNullable<IToolbarItem["toggledVariant"]>;
   /** The collapsed button renders pressed when any child is toggled. */
   function groupActive(node: IToolbarGroupNode): boolean {
     return visibleLeaves(node).some(isItemToggled);
