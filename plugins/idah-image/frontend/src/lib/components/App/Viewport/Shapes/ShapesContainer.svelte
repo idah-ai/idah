@@ -879,6 +879,8 @@
       const p1 = sceneNormalizedCursor[1] * media.height;
       coverageMaskStart = [p0, p1];
       coverageMaskCurrent = [p0, p1];
+      e.stopPropagation();
+      e.preventDefault();
       return;
     }
 
@@ -1299,7 +1301,7 @@
   }
 </script>
 
-<div class={cn("shapes-container flex-1", pointer)} onmousedown={onContainerMouseDown}>
+<div class={cn("shapes-container flex-1", pointer, ui.coverageMaskActive && "coverage-active")} onmousedown={onContainerMouseDown}>
   <!-- Layer 0: Viewport with image content -->
   <div class="viewport-layer">
     <Viewport bind:this={zoomableElement} onPanStart={() => (isPanning = true)} onPanStop={() => (isPanning = false)}>
@@ -1334,21 +1336,25 @@
 
     <!-- Rendered annotations -->
     {#each visibleAnnotations as ann, i (ann.id)}
-      <AnnotationGeometry
-        bind:this={_compRefs[i]}
-        annotation={ann}
-        selected={selection.isAnnotationSelected(ann.id)}
-        editable={viewport.mode === DEFAULT_MODE &&
-          selection.isAnnotationSelected(ann.id) &&
-          !annotation.isLocked(ann) &&
-          !["errored", "completed"].includes(getDriver().entryStatus)}
-        cursor={snappedCursor}
-        multiDragDelta={_multiDragDelta}
-        mode={viewport.mode}
-        onClick={(e: MouseEvent) => handleClick(ann, e)}
-        onEditComplete={(aabb: Point[], extraProps: Record<string, unknown> = {}) =>
-          handleEditComplete(ann.id, aabb, extraProps)}
-      />
+      <!-- When coverage mask is active, disable pointer-events on shapes
+           so clicks reach the SVG handler directly for mask drawing -->
+      <g pointer-events={ui.coverageMaskActive ? "none" : undefined}>
+        <AnnotationGeometry
+          bind:this={_compRefs[i]}
+          annotation={ann}
+          selected={selection.isAnnotationSelected(ann.id)}
+          editable={viewport.mode === DEFAULT_MODE &&
+            selection.isAnnotationSelected(ann.id) &&
+            !annotation.isLocked(ann) &&
+            !["errored", "completed"].includes(getDriver().entryStatus)}
+          cursor={snappedCursor}
+          multiDragDelta={_multiDragDelta}
+          mode={viewport.mode}
+          onClick={(e: MouseEvent) => handleClick(ann, e)}
+          onEditComplete={(aabb: Point[], extraProps: Record<string, unknown> = {}) =>
+            handleEditComplete(ann.id, aabb, extraProps)}
+        />
+      </g>
     {/each}
 
     <!-- Magnetic snap visual feedback (handler-style dot + ring) -->
