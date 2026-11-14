@@ -456,25 +456,6 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IVideoAnnotationS
   async create(data: Annot): Promise<Annot> {
     return this.store.create(data);
   }
-
-  async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
-    // Mock: update the annotation's shape_args in-memory
-    const annot = this.store.find(annotationId);
-    if (!annot) return;
-    const shape = { ...((annot as any).shape_args || {}) };
-    if (value === null) {
-      delete shape[key];
-    } else {
-      shape[key] = value;
-    }
-    await this.store.update(annotationId, { shape_args: shape } as any);
-  }
-
-  async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
-    for (const { key, value } of entries) {
-      await this.setShape(annotationId, key, value);
-    }
-  }
 }
 
 // ---------------------------------------------------------------------------

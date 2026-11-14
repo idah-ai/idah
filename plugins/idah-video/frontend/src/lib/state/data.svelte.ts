@@ -79,12 +79,6 @@ export interface AnnotationDataStore extends DataStore<AnnotationItem> {
    * Resolves with the restored record.
    */
   restore(record: AnnotationItem): Promise<AnnotationItem>;
-
-  /** Upsert or delete a single annotation_shape row. */
-  setShape(annotationId: string, key: string, value: object | null): Promise<void>;
-
-  /** Batch upsert/delete annotation_shape rows. */
-  setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
 
 export interface DataStore<T extends DataItem> {
@@ -152,8 +146,6 @@ export interface AnnotationDriver {
   update(id: string, data: Record<string, unknown>): Promise<void>;
   delete(id: string): Promise<void>;
   restore(id: string): Promise<{ id: string } & Record<string, unknown>>;
-  setShape(annotationId: string, key: string, value: object | null): Promise<void>;
-  setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
 
 function syncSelectionOnUpdate(updatedId: string): void {
@@ -277,62 +269,6 @@ export function createAnnotationStore(driver: AnnotationDriver): AnnotationDataS
         // Rollback
         if (old) originalUpsert(old);
         throw new Error("Failed to update annotation");
-      }
-    },
-
-    async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
-      const record = store.items.find((i) => i.id === annotationId);
-      const originalShape = record ? { ...(record.shape_args as Record<string, unknown>) } : null;
-      if (record) {
-        const shape = { ...(record.shape_args as Record<string, unknown>) };
-        if (value === null) {
-          delete shape[key];
-        } else {
-          shape[key] = value;
-        }
-        originalUpsert({ ...record, shape_args: shape as any });
-        const all = [...store.items];
-        store.reset(all, store.loadedRange ?? [0, 0]);
-      }
-      try {
-        await driver.setShape(annotationId, key, $state.snapshot(value));
-      } catch (e) {
-        if (record && originalShape) {
-          originalUpsert({ ...record, shape_args: originalShape as any });
-          const all = [...store.items];
-          store.reset(all, store.loadedRange ?? [0, 0]);
-        }
-        throw e;
-      }
-    },
-
-    async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
-      if (entries.length === 0) return;
-      const record = store.items.find((i) => i.id === annotationId);
-      const originalShape = record ? { ...(record.shape_args as Record<string, unknown>) } : null;
-      if (record) {
-        const shape = { ...(record.shape_args as Record<string, unknown>) };
-        for (const { key, value } of entries) {
-          if (value === null) {
-            delete shape[key];
-          } else {
-            shape[key] = value;
-          }
-        }
-        originalUpsert({ ...record, shape_args: shape as any });
-        const all = [...store.items];
-        store.reset(all, store.loadedRange ?? [0, 0]);
-      }
-      try {
-        const snapshotEntries = entries.map((e) => ({ key: e.key, value: $state.snapshot(e.value) }));
-        await driver.setShapes(annotationId, snapshotEntries);
-      } catch (e) {
-        if (record && originalShape) {
-          originalUpsert({ ...record, shape_args: originalShape as any });
-          const all = [...store.items];
-          store.reset(all, store.loadedRange ?? [0, 0]);
-        }
-        throw e;
       }
     },
   };

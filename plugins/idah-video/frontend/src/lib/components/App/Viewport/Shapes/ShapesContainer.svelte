@@ -43,15 +43,13 @@
   import { selection } from "$lib/state/selection.svelte";
   import { data, setPendingNoteScene, type AnnotationItem } from "$lib/state/data.svelte";
   import { media } from "$lib/state/media.svelte";
-  import { snapDebug, ui } from "$lib/state/ui.svelte";
+  import { snapDebug } from "$lib/state/ui.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { isEditable } from "$lib/state/editor.svelte";
   import noteIconSvg from "$lib/assets/icons/message-circle.svg?raw";
   import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_point.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
   import { rotatePointN } from "./BoundingBox/utils";
-  import { loadCoverageMasks } from "$lib/commands/coverage-mask/save";
-  import { clampRect, subtractRectFromShapes } from "$lib/mask/coverage-mask";
   import type { IAnnotationRecord } from "$idah/v2/types";
   import {
     NON_DRAWABLE_SHAPE_TYPES,
@@ -217,14 +215,6 @@
     }
   });
 
-  // Load persisted coverage masks once annotations finish loading
-  $effect(() => {
-    const store = data.annotations;
-    if (store && !store.pending) {
-      loadCoverageMasks();
-    }
-  });
-
   // Derive tool selection from the primary (first) selected annotation's component
   // In multi-selection mode, only the primary annotation gets edit handles.
   let selAnnotation = $derived.by((): IAnnotationRecord | undefined => {
@@ -259,11 +249,6 @@
   let isRectSelecting = $state(false);
   let rectStart: Point | null = $state(null);
   let rectEnd: Point | null = $state(null);
-
-  // ── Mask drawing state ──────────────────────────────────────────────
-  let coverageMaskDrawing = $state(false);
-  let coverageMaskStart: Point = $state([0, 0]);
-  let coverageMaskCurrent: Point = $state([0, 0]);
 
   /** Screen-pixel movement below which a press-and-release still counts as a click, not a drag. */
   const DRAG_SLOP_PX = 4;
@@ -488,7 +473,7 @@
     if (isPanning) return "cursor-grabbing";
     if (isNoteMode) return "cursor-note";
     if (hoveringFirstPoint) return "cursor-target";
-    if (viewport.isCreationMode || viewport.isCoverageMaskMode) return "cursor-crosshair";
+    if (viewport.isCreationMode) return "cursor-crosshair";
     if (selAnnotation) return "cursor-pointer";
 
     return "cursor-grab";
@@ -601,18 +586,6 @@
   }
 
   // ── Event handlers ───────────────────────────────────────────────────
-  function onMouseMoveCapture(e: MouseEvent) {
-    // Mask drawing tracking in capture phase — runs before annotation shapes
-    // can stop propagation
-    if (coverageMaskDrawing) {
-      const rect = svgEl?.getBoundingClientRect();
-      if (rect) {
-        mousePosition = [e.clientX - rect.left, e.clientY - rect.top];
-        coverageMaskCurrent = [sceneNormalizedCursor[0] * media.width, sceneNormalizedCursor[1] * media.height];
-      }
-    }
-  }
-
   function onMouseMove(e: MouseEvent) {
     handlePointerMove(e, [e.offsetX, e.offsetY], false);
   }
@@ -627,12 +600,6 @@
     // ── Rectangle selection tracking ───────────────────────────────
     if (isRectSelecting) {
       rectEnd = sceneNormalizedCursor;
-      return;
-    }
-
-    // ── Mask drawing tracking ─────────────────────────────────────
-    if (coverageMaskDrawing) {
-      coverageMaskCurrent = [sceneNormalizedCursor[0] * media.width, sceneNormalizedCursor[1] * media.height];
       return;
     }
 
@@ -699,23 +666,6 @@
     // gesture that starts here is tracked to its release, wherever that lands.
     beginGestureTracking();
 
-    // ── Mask mode — start drawing in capture phase so annotation shapes
-    // cannot stop the event before we begin.
-    if (viewport.isCoverageMaskMode) {
-      if (svgEl) {
-        const rect = svgEl.getBoundingClientRect();
-        mousePosition = [e.clientX - rect.left, e.clientY - rect.top];
-      }
-      coverageMaskDrawing = true;
-      const p0 = sceneNormalizedCursor[0] * media.width;
-      const p1 = sceneNormalizedCursor[1] * media.height;
-      coverageMaskStart = [p0, p1];
-      coverageMaskCurrent = [p0, p1];
-      e.stopPropagation();
-      e.preventDefault();
-      return;
-    }
-
     // Anchor a potential group drag at the press point. The dragged shape records
     // its own start here too (its mousedown runs next, in the bubble phase), so
     // letting the first mousemove set the origin instead leaves the rest of the
@@ -748,17 +698,6 @@
     // ── Bounding-box creation mode — delegate to BBoxCreateShape ───
     if (isBoundingBoxMode) {
       bboxCreateComp?.handleMouseDown(snappedCursor);
-      return;
-    }
-
-    // ── Mask bbox mode — prevent panning, let CoverageMask handle ─
-    if (viewport.isCoverageMaskMode) {
-      // Start drawing in both add and remove mode
-      coverageMaskDrawing = true;
-      const p0 = sceneNormalizedCursor[0] * media.width;
-      const p1 = sceneNormalizedCursor[1] * media.height;
-      coverageMaskStart = [p0, p1];
-      coverageMaskCurrent = [p0, p1];
       return;
     }
 
@@ -816,33 +755,6 @@
     // ── Bounding-box creation mode — finalize on BBoxCreateShape ──
     if (isBoundingBoxMode) {
       bboxCreateComp?.handleMouseUp(snappedCursor);
-      return;
-    }
-
-    // ── Mask mode — finalize mask shape ──────────────────────────
-    if (coverageMaskDrawing) {
-      coverageMaskDrawing = false;
-      const ax = coverageMaskStart[0],
-        ay = coverageMaskStart[1];
-      const bx = coverageMaskCurrent[0],
-        by = coverageMaskCurrent[1];
-      const x = Math.min(ax, bx),
-        y = Math.min(ay, by);
-      const w = Math.abs(bx - ax),
-        h = Math.abs(by - ay);
-      if (w < 3 || h < 3) return;
-      const [cx, cy, cw, ch] = clampRect(x, y, w, h, media.width, media.height);
-
-      if (ui.coverageMaskIsRemove) {
-        // Erase mode — subtract the drawn rectangle from each mask shape
-        const newList = subtractRectFromShapes(ui.coverageMaskShapes, cx, cy, cw, ch);
-        getDriver().command.call("coverage-mask-draw", { before: [...ui.coverageMaskShapes], after: newList });
-      } else {
-        // Add mode
-        const before = [...ui.coverageMaskShapes];
-        const after = [...before, { type: "bbox", points: [cx, cy, cw, ch] }];
-        getDriver().command.call("coverage-mask-draw", { before, after });
-      }
       return;
     }
 
@@ -1109,7 +1021,6 @@
     onmousedowncapture={onMouseDownCapture}
     onmousedown={onMouseDown}
     onclick={onSvgClick}
-    onmousemovecapture={onMouseMoveCapture}
     onmousemove={onMouseMove}
     onwheel={onWheel}
   >
@@ -1223,41 +1134,6 @@
         <NoteMarkers />
       {/if}
     </g>
-
-    <!-- Coverage mask shapes — rendered above annotations but below labels -->
-    {#if ui.coverageMaskShapes.length > 0}
-      <g opacity="0.25">
-        {#each ui.coverageMaskShapes as shape}
-          {#if shape.type === "bbox" && shape.points.length >= 4}
-            <rect
-              x={shape.points[0]}
-              y={shape.points[1]}
-              width={shape.points[2]}
-              height={shape.points[3]}
-              fill="#00b450"
-              pointer-events="none"
-              vector-effect="non-scaling-stroke"
-            />
-          {/if}
-        {/each}
-      </g>
-    {/if}
-
-    {#if coverageMaskDrawing}
-      <rect
-        x={Math.min(coverageMaskStart[0], coverageMaskCurrent[0])}
-        y={Math.min(coverageMaskStart[1], coverageMaskCurrent[1])}
-        width={Math.abs(coverageMaskCurrent[0] - coverageMaskStart[0])}
-        height={Math.abs(coverageMaskCurrent[1] - coverageMaskStart[1])}
-        fill={ui.coverageMaskIsRemove ? "rgba(200,50,50,.25)" : "rgba(0,180,80,.25)"}
-        stroke={ui.coverageMaskIsRemove ? "rgba(200,50,50,.8)" : "rgba(0,180,80,.6)"}
-        stroke-width="2"
-        rx="3"
-        stroke-dasharray="4 2"
-        pointer-events="none"
-        vector-effect="non-scaling-stroke"
-      />
-    {/if}
 
     <!--
       Category labels last, so they sit above every shape. `visibleAnnotations`
