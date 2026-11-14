@@ -15,6 +15,12 @@
   import type { IdahDriverV2 } from "@/plugin/v2/driver";
   import type { IToolbarItem, IToolbarNode, IToolbarGroupNode } from "@/plugin/v2/types";
   import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
+  import {
+    resolveToggledVariant,
+    toggledItemClass,
+    groupActiveVariant,
+    groupActiveVariantClass,
+  } from "./toolbar-variants";
 
   // Props
   interface Props {
@@ -55,7 +61,7 @@
     canRedo = driver.command.canRedo();
   }
 
-  driver.onModeChange((_) => refreshToolbar());
+  driver.onModeChange(() => refreshToolbar());
   driver.onSyncChange(() => refreshToolbar());
   driver.command.onStackChange(() => refreshToolbar());
 
@@ -86,11 +92,6 @@
     return (leaves.find(isItemToggled) ?? leaves[0])?.icon ?? "";
   }
 
-  /** The collapsed button renders pressed when any child is toggled. */
-  function groupActive(node: IToolbarGroupNode): boolean {
-    return visibleLeaves(node).some(isItemToggled);
-  }
-
   const commands: AnnotationHeaderBarBaseTool[] = $derived([
     {
       name: "history.undo",
@@ -118,7 +119,7 @@
     commandName={item.name}
     align="center"
     delayDuration={100}
-    variant={isToggled ? "default" : "ghost"}
+    variant={isToggled ? resolveToggledVariant(item) : "ghost"}
     size="icon-sm"
     onclick={item.onClick}
     disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
@@ -135,11 +136,7 @@
       <DropdownMenu.Item
         onclick={node.item.onClick}
         disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
-        class={cn(
-          "[&_svg]:!text-inherit",
-          isItemToggled(node.item) &&
-            "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground data-highlighted:bg-primary data-highlighted:text-primary-foreground",
-        )}
+        class={cn("[&_svg]:!text-inherit", toggledItemClass(node.item, isItemToggled(node.item)))}
       >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         {@html node.item.icon}
@@ -161,8 +158,11 @@
       <DropdownMenu.SubTrigger
         class={cn(
           "[&_svg]:!text-inherit",
-          groupActive(node) &&
-            "bg-primary text-primary-foreground data-[state=open]:bg-primary data-[state=open]:text-primary-foreground",
+          (() => {
+            const leaves = visibleLeaves(node);
+            const active = leaves.find(isItemToggled);
+            return active ? groupActiveVariantClass(node, active) : "";
+          })(),
         )}
       >
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -181,10 +181,11 @@
 <!-- A group collapsed into a single button + chevron dropdown -->
 {#snippet groupButton(node: IToolbarGroupNode)}
   {#if visibleLeaves(node).length > 0}
+    {@const _activeLeaf = visibleLeaves(node).find(isItemToggled)}
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
         <Button
-          variant={groupActive(node) ? "default" : "ghost"}
+          variant={_activeLeaf ? groupActiveVariant(node, _activeLeaf) : "ghost"}
           size="icon-sm"
           class="w-auto gap-0.5 px-1.5"
           disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
@@ -230,4 +231,6 @@
       onclick={handleClick}
     />
   {/each}
+
+  <Separator orientation="vertical"></Separator>
 </div>

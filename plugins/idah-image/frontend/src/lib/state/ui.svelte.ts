@@ -70,6 +70,12 @@ class UIState {
   gridSize = $state(100);
   gridOpacity = $state(100);
 
+  // ── Coverage mask ───────────────────────────────────────────────────
+  coverageMaskActive = $state(false);
+  coverageMaskShapes: { type: string; points: number[] }[] = $state([]);
+  coverageMaskIsRemove = $state(false);
+  coverageMaskVisible = $state(true);
+
   // Persisted per-plugin to account settings (not localStorage): hydrated from
   // the account setting on init via settings.ts#hydrateSettings, and written back
   // on change via the settings descriptor's set() (upsert). "never" is the

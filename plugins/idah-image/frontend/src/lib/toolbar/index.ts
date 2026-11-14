@@ -9,12 +9,29 @@ import brushIcon from "$lib/assets/icons/brush.svg?raw";
 import maskPolygonIcon from "$lib/assets/icons/mask-polygon.svg?raw";
 import polyIcon from "$lib/assets/icons/polygon.svg?raw";
 import rectIcon from "$lib/assets/icons/vector-square.svg?raw";
-import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK, NOTE_MODE, REVIEW_MODE } from "$lib/types";
+import doubleCheckIcon from "$lib/assets/icons/check-check.svg?raw";
+import trashIcon from "$lib/assets/icons/trash.svg?raw";
+import eyesIcon from "$lib/assets/icons/eye.svg?raw";
+import eyeOffIcon from "$lib/assets/icons/eye-off.svg?raw";
+import {
+  DEFAULT_MODE,
+  IMAGE_BOUNDING_BOX,
+  IMAGE_CIRCLE,
+  IMAGE_ELLIPSE,
+  IMAGE_LINE,
+  IMAGE_POLYGON,
+  IMAGE_MASK,
+  NOTE_MODE,
+  REVIEW_MODE,
+} from "$lib/types";
 import { hasConfig } from "$idah/v2/utils";
 import { magneticSnap } from "$lib/state/magnetic-snap.svelte";
 import { maskTool } from "$lib/state/mask-tool.svelte";
 import { toolPanel } from "$lib/state/tool-panel.svelte";
 import MaskToolConfigurations from "$lib/components/App/MaskToolPanel/MaskToolConfigurations.svelte";
+import { ui } from "$lib/state/ui.svelte";
+import { session } from "$lib/mask/coverage-mask-session";
+import { registerCoverageModeWatcher } from "$lib/commands/coverage-mask/_shared";
 
 // ── Magnet icon as inline SVG ──────────────────────────────────────────
 const magnetIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15 16 19"/><path d="M2.352 10.648a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l6.029-6.029a1 1 0 1 1 3 3l-6.029 6.029a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l6.365-6.367A1 1 0 0 0 8.716 4.282z"/><path d="M5 8 9 12"/></svg>`;
@@ -170,4 +187,81 @@ export function initToolbar(driver: IIdahDriverV2): void {
   });
 
   // Prevent-overlap now lives in the floating mask tool panel (see MaskToolConfigurations).
+
+  // ── Done Area (Coverage Mask) ──────────────────────────────────────
+
+  t.add({
+    name: "coverage-mask-add",
+    icon: doubleCheckIcon,
+    label: "Done Area — Add",
+    modes: [DEFAULT_MODE, REVIEW_MODE],
+    group: "done-area",
+    toggledVariant: "success",
+    onClick: () => {
+      if (ui.coverageMaskActive && !ui.coverageMaskIsRemove) {
+        driver.command.call("coverage-mask-set-mode", { mode: "off" });
+      } else {
+        driver.command.call("coverage-mask-set-mode", { mode: "add" });
+      }
+    },
+    whenToggled: () => ui.coverageMaskActive && !ui.coverageMaskIsRemove,
+  });
+
+  t.add({
+    name: "coverage-mask-remove",
+    icon: doubleCheckIcon,
+    label: "Done Area — Remove",
+    modes: [DEFAULT_MODE, REVIEW_MODE],
+    group: "done-area",
+    toggledVariant: "destructive",
+    onClick: () => {
+      if (ui.coverageMaskActive && ui.coverageMaskIsRemove) {
+        driver.command.call("coverage-mask-set-mode", { mode: "off" });
+      } else {
+        driver.command.call("coverage-mask-set-mode", { mode: "remove" });
+      }
+    },
+    whenToggled: () => ui.coverageMaskActive && ui.coverageMaskIsRemove,
+  });
+
+  t.add({
+    name: "coverage-mask-toggle-visibility",
+    icon: eyesIcon,
+    label: "Done Area — Show",
+    modes: [DEFAULT_MODE, REVIEW_MODE],
+    group: "done-area-show-hide",
+    onClick: () => {
+      ui.coverageMaskVisible = !ui.coverageMaskVisible;
+      session.triggerRedraw();
+      driver.toolbar.invalidate();
+    },
+    whenToggled: () => ui.coverageMaskVisible,
+  });
+
+  t.add({
+    name: "coverage-mask-toggle-visibility-off",
+    icon: eyeOffIcon,
+    label: "Done Area — Hide",
+    modes: [DEFAULT_MODE, REVIEW_MODE],
+    group: "done-area-show-hide",
+    onClick: () => {
+      ui.coverageMaskVisible = !ui.coverageMaskVisible;
+      session.triggerRedraw();
+      driver.toolbar.invalidate();
+    },
+    whenToggled: () => !ui.coverageMaskVisible,
+  });
+
+  t.add({
+    name: "coverage-mask-clear",
+    icon: trashIcon,
+    label: "Done Area — Remove All",
+    modes: [DEFAULT_MODE, REVIEW_MODE],
+    group: "done-area",
+    onClick: () => driver.command.call("coverage-mask-clear"),
+    whenToggled: () => false,
+  });
+
+  // Watch for mode changes to other tools and deactivate coverage state
+  registerCoverageModeWatcher(driver);
 }
