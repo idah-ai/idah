@@ -14,7 +14,7 @@
   import Button from "$lib/components/ui/Button/Button.svelte";
   import HistoryChangeCard from "$lib/components/App/CategorySelector/HistoryChangeCard.svelte";
   import { history } from "$lib/state/history.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
+  import { getDriver, syncStatus } from "$lib/state/driver.svelte";
   import { hover } from "$lib/state/hover.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { selection } from "$lib/state/selection.svelte";
@@ -44,6 +44,17 @@
     lastScopeSignature = sig;
     history.resetPage();
     void history.load();
+  });
+
+  // Show this tab's own writes without a manual refresh: reload when the write
+  // queue drains while the panel shows the newest page (an older page stays
+  // put so the reviewer is not moved while reading).
+  let lastQueued = syncStatus.queued;
+  $effect(() => {
+    const queued = syncStatus.queued;
+    const drained = lastQueued > 0 && queued === 0;
+    lastQueued = queued;
+    if (drained && history.open && history.page === 1) void history.refresh();
   });
 
   /** The live annotation for a change, if any. */
