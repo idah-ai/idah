@@ -3,7 +3,7 @@
   "name": "idah-video",
   "version": "0.1.0",
 
-  "idahVersion": "0.1.0",
+  "idahVersion": "0.1.3",
 
   "title": "IDAH Video Annotation",
   "description": "A module for annotating video.",
@@ -20,17 +20,26 @@
       "shapes": {
         "bounding-box": {
           "label": "Bounding Box",
-          "icon": "api/v1/plugins/idah-video/assets/bounding-box-icon.svg"
+          "icon": "api/v1/plugins/idah-video/assets/bounding-box-icon.svg",
+          "args": {
+            "frames": { "type": "array", "x-identity-key": "frame" }
+          }
         },
         "polygon": {
           "label": "Polygon",
-          "icon": "api/v1/plugins/idah-video/assets/polygon-icon.svg"
+          "icon": "api/v1/plugins/idah-video/assets/polygon-icon.svg",
+          "args": {
+            "frames": { "type": "array", "x-identity-key": "frame" }
+          }
         }
       },
       "tagging": {
         "frame": {
           "label": "Frame",
-          "icon": "api/v1/plugins/idah-video/assets/frame-icon.svg"
+          "icon": "api/v1/plugins/idah-video/assets/frame-icon.svg",
+          "args": {
+            "frames": { "type": "array", "x-identity-key": "frame" }
+          }
         }
       }
     }

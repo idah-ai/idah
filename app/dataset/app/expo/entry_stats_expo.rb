@@ -11,6 +11,7 @@ class EntryStatsExpo < BaseExpo
       - when an entry transitions to submitted or errored
       - when the dataset's labeling_configuration is updated (e.g. categories renamed/deleted)
       - when an annotation is updated on an in-progress entry
+      - when an annotation is deleted or restored
   MD
 
   json_api EntryStat::Record do
@@ -59,5 +60,28 @@ class EntryStatsExpo < BaseExpo
 
       service.recompute_from_annotation(entry_id:, dataset_id:, new_category:)
     end
+  end
+
+  # A delete can only remove an orphan, which the "entry has orphans" check
+  # in the service already covers, so no category is passed.
+  expose on_resource_event(Resource::Dataset::Annotations, "deleted")
+  def compute_stats_on_annotation_deleted
+    metadata = message.content[:metadata] || {}
+    service.recompute_from_annotation(
+      entry_id: metadata[:entry_id],
+      dataset_id: metadata[:dataset_id],
+      new_category: nil
+    )
+  end
+
+  # A restore can bring an orphan back, so pass the annotation's category.
+  expose on_resource_event(Resource::Dataset::Annotations, "restored")
+  def compute_stats_on_annotation_restored
+    metadata = message.content[:metadata] || {}
+    service.recompute_from_annotation(
+      entry_id: metadata[:entry_id],
+      dataset_id: metadata[:dataset_id],
+      new_category: metadata[:category]
+    )
   end
 end

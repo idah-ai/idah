@@ -35,6 +35,7 @@
     "eslint": "^9.29.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-svelte": "^3.9.2",
+    "fake-indexeddb": "^6.2.7",
     "globals": "^16.2.0",
     "jsdom": "^26.1.0",
     "paneforge": "1.0.0-next.5",
