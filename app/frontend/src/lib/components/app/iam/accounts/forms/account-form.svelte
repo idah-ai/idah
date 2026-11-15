@@ -1,14 +1,20 @@
 <script lang="ts">
+  import ComboboxTriggerValueBadges from "@/components/app/forms/fields/combobox/combobox-trigger-value-badges.svelte";
   import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import MultipleSelectDatasourceField from "@/components/app/forms/fields/select/multiple/multiple-select-datasource-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
+  import AccountEntries from "@/components/app/projects/entries/account-entries.svelte";
+  import { CheckIcon } from "@lucide/svelte";
+  import { CommandItem } from "@/components/ui/command";
+  import { cn } from "@/utils";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
 
   import { roles } from "@/data/model/iam/accounts/constants";
   import { AccountRecord } from "@/data/model/iam/accounts/record";
+  import { organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
-  import AccountEntries from "@/components/app/projects/entries/account-entries.svelte";
 
   // Props
   interface Props extends FormBaseProps {
@@ -21,11 +27,13 @@
   let resource: string = AccountRecord.type;
 
   // Variables::Reactive
-  let { name, email, role_name, enabled } = $derived(account);
+  let { name, email, role_name, role_scope, enabled } = $derived(account);
+
+  let isOrgOwner = $derived(role_name === "org_owner");
 
   // Functions
   $effect(() => {
-    onValueChange({ name, email, role_name, enabled });
+    onValueChange({ name, email, role_name, role_scope, enabled });
   });
 </script>
 
@@ -70,6 +78,50 @@
       }}
     />
     <!-- {/if} -->
+
+    {#if isOrgOwner}
+      <MultipleSelectDatasourceField
+        name="{resource}/role_scope"
+        label="Organizations"
+        placeholder="Select organizations"
+        dataSource={organizationsBackendDataSource}
+        displayKey="name"
+        searchKeyWithOperation="name__match"
+        searchable
+        required
+        errors={fieldErrors["role_scope"]}
+        values={role_scope?.org ?? []}
+      >
+        {#snippet slotChoice({ choice })}
+          <CommandItem
+            onclick={() => {
+              const org = role_scope?.org ?? [];
+              role_scope = {
+                ...role_scope,
+                org: org.some((id: string | number) => id == choice.value)
+                  ? org.filter((id: string | number) => id != choice.value)
+                  : [...org, choice.value],
+              };
+            }}
+          >
+            <CheckIcon
+              class={cn("mr-2 size-4", {
+                "opacity-0": !role_scope?.org?.some((id: string | number) => id == choice.value),
+              })}
+            />
+            {choice.label}
+          </CommandItem>
+        {/snippet}
+        {#snippet slotTriggerValues({ selectedChoices })}
+          <ComboboxTriggerValueBadges
+            values={selectedChoices.map((choice) => choice.value)}
+            dataSource={organizationsBackendDataSource}
+            displayKey="name"
+            maxShown={2}
+          />
+        {/snippet}
+      </MultipleSelectDatasourceField>
+    {/if}
 
     <!-- ACCOUNT::ENABLED -->
     <CheckboxField
