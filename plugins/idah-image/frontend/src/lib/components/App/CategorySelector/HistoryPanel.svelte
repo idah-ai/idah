@@ -84,6 +84,27 @@
     return `${label}-${change.annotation_id.split("-").pop()}`;
   }
 
+  /**
+   * True when this row's recorded state is soft-deleted: the annotation is
+   * deleted now and this row is its latest version (other than its own
+   * `deleted` row). That is the `baseline` of an annotation already deleted
+   * when change tracking started, or the `created` row of a copied deleted
+   * annotation. Older rows from while it was live are not tagged.
+   *
+   * The latest version is the highest of the cached record's `version` and the
+   * loaded rows, so a deletion made in this tab (whose cached record still
+   * holds the pre-delete version) is covered once its `deleted` row loads.
+   */
+  function recordsDeletedState(change: IAnnotationChange): boolean {
+    if (change.op === "deleted") return false;
+    const ann = liveAnnotation(change);
+    const record = ann ? (ann.deleted_at ? ann : undefined) : getDeletedAnnotation(change.annotation_id);
+    if (!record) return false;
+    const known = (record as { version?: number }).version ?? 0;
+    const loaded = history.items.filter((c) => c.annotation_id === change.annotation_id).map((c) => c.version);
+    return change.version === Math.max(known, ...loaded);
+  }
+
   /** Category colour for a change's annotation, resolved like the shapes. */
   function categoryColor(change: IAnnotationChange): string {
     const ann = liveAnnotation(change);
@@ -180,6 +201,7 @@
               categoryLabel={categoryLabel(change)}
               categoryColor={categoryColor(change)}
               highlighted={false}
+              deleted={recordsDeletedState(change)}
               diff={history.getDiff(change.id)}
               diffLoading={history.isDiffLoading(change.id)}
               open={history.isCardOpen(change.id)}

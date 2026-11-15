@@ -24,6 +24,8 @@
     frameRange?: string | null;
     /** Its annotation is highlighted on the canvas. */
     highlighted?: boolean;
+    /** The state this row recorded is soft-deleted (see HistoryPanel recordsDeletedState). */
+    deleted?: boolean;
     /** Arrived with the latest sync: flash once. */
     isNew?: boolean;
     /** The diff payload, fetched lazily when the card is opened. */
@@ -43,6 +45,7 @@
     categoryColor,
     frameRange = null,
     highlighted = false,
+    deleted = false,
     isNew = false,
     diff,
     diffLoading = false,
@@ -87,8 +90,11 @@
     <span class="row1">
       <span class="op op-{change.op}">{change.op}</span>
       <span class="swatch" style:background={categoryColor}></span>
-      <span class="cat">{categoryLabel}</span>
+      <span class="cat" class:cat-deleted={deleted}>{categoryLabel}</span>
       <span class="spacer"></span>
+      {#if deleted}
+        <span class="tag-deleted" title="This annotation was already deleted at this version">deleted</span>
+      {/if}
       <ChevronDownIcon class="chev {open ? '' : 'chev-closed'}" size={12} strokeWidth={2.2} aria-hidden="true" />
     </span>
     {#if frameRange}
@@ -266,6 +272,19 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  .cat-deleted {
+    color: #71717a;
+    text-decoration: line-through;
+  }
+  .tag-deleted {
+    flex: none;
+    font-size: 10.5px;
+    padding: 0 5px;
+    border: 1px solid #ffcecb;
+    border-radius: 4px;
+    line-height: 15px;
+    color: #cf222e;
   }
   .fr {
     flex: none;
