@@ -53,6 +53,26 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
     expect(record[0].status).to eq "pending"
   end
 
+  it "passes selected entry IDs to the service" do
+    expect(service).to receive(:index) do |filters, **_options|
+      expect(filters.transform_keys(&:to_s)).to include("id__in" => [uuid])
+      [entry_record]
+    end
+    get "/entries?filter[id__in][]=#{uuid}&page[size]=1"
+    expect(last_response.status).to eq(200), last_response.body
+  end
+
+  it "passes Delivery Date range filters to the service" do
+    expect(service).to receive(:index) do |filters, **_options|
+      expect(filters.transform_keys(&:to_s)).to include(
+        "delivery_date__gte" => "2026-11-01", "delivery_date__lte" => "2026-11-10"
+      )
+      [entry_record]
+    end
+    get "/entries?filter[delivery_date__gte]=2026-11-01&filter[delivery_date__lte]=2026-11-10"
+    expect(last_response.status).to eq(200)
+  end
+
   it "show" do
     expect(service).to receive(:show).with(uuid, included: []).and_return(entry_record)
     get "/entries/#{uuid}"
@@ -100,6 +120,76 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
           }
 
     expect(last_response.status).to eq 200
+  end
+
+  describe "Delivery Date HTTP contract" do
+    [:post, :patch].each do |verb|
+      context "on #{verb}" do
+        let(:path) { verb == :post ? "/entries" : "/entries/#{uuid}" }
+        let(:action) { verb == :post ? :create : :update }
+
+        it "rejects an invalid date before calling the service" do
+          expect(service).not_to receive(action)
+          public_send(
+            verb,
+            path,
+            { data: { type: Resource::Dataset::Entries,
+                      attributes: { delivery_date: "2030-02-30" } } }
+          )
+          expect(last_response.status).to eq(422)
+        end
+
+        ["2030-01-02", nil].each do |value|
+          it "accepts delivery_date #{value.inspect}" do
+            date = value && Date.iso8601(value)
+            expect(service).to receive(action) do |record|
+              expect(record.attributes).to have_key(:delivery_date)
+              expect(record.attributes[:delivery_date]).to eq(date)
+              Entry::Record.new(entry_record.fields.merge(delivery_date: date))
+            end
+            public_send(
+              verb,
+              path,
+              { data: { type: Resource::Dataset::Entries,
+                        attributes: { delivery_date: value } } }
+            )
+            expect(last_response.status).to eq(verb == :post ? 201 : 200)
+            expect(JSON.parse(last_response.body).dig("data", "attributes", "delivery_date")).to eq(value)
+          end
+        end
+
+        it "does not turn an omitted date into explicit null" do
+          expect(service).to receive(action) do |record|
+            expect(record.attributes).not_to have_key(:delivery_date)
+            entry_record
+          end
+          public_send(verb, path, { data: { type: Resource::Dataset::Entries, attributes: { name: "Unrelated" } } })
+          expect(last_response.status).to eq(verb == :post ? 201 : 200)
+        end
+      end
+    end
+  end
+
+  describe "POST /entries/next" do
+    it "claims an entry through the service" do
+      expect(service).to receive(:select_next).with(dataset_id: uuid, wf_step: "review").and_return(entry_record)
+      post "/entries/next", { dataset_id: uuid, wf_step: "review" }
+      expect(last_response.status).to eq(200)
+      expect(JSON.parse(last_response.body).dig("data", "id")).to eq(uuid)
+    end
+
+    it "returns null when no entry is claimable" do
+      expect(service).to receive(:select_next).and_return(nil)
+      post "/entries/next", { dataset_id: uuid, wf_step: "review" }
+      expect(last_response.status).to eq(200)
+      expect(JSON.parse(last_response.body)).to eq("data" => nil)
+    end
+
+    it "rejects missing workflow before calling the service" do
+      expect(service).not_to receive(:select_next)
+      post "/entries/next", { dataset_id: uuid }
+      expect(last_response.status).to eq(422)
+    end
   end
 
   it "destroy" do

@@ -20,6 +20,8 @@ module NoteComment
     end
 
     def create(record)
+      validate_content!(record.attributes[:content_md])
+
       unless record.note_feed
         raise Verse::Error::ValidationFailed,
               "note feed relationship is required to create a comment"
@@ -59,6 +61,7 @@ module NoteComment
 
     def update(record)
       attributes = record.attributes
+      validate_content!(attributes[:content_md]) if attributes.key?(:content_md)
       attributes[:edited_at] = Time.now
 
       note_comments.update!(record.id, attributes)
@@ -67,6 +70,14 @@ module NoteComment
 
     def delete(id)
       note_comments.delete!(id)
+    end
+
+    private
+
+    def validate_content!(content)
+      return if content.is_a?(String) && !content.strip.empty?
+
+      raise Verse::Error::ValidationFailed, "comment content is required"
     end
   end
 end

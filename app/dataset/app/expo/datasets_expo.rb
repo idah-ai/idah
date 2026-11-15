@@ -22,7 +22,9 @@ class DatasetsExpo < BaseExpo
                       :created_at__gte,
                       :created_at__lte,
                       :updated_at__gte,
-                      :updated_at__lte
+                      :updated_at__lte,
+                      :delivery_date__gte,
+                      :delivery_date__lte
     end
 
     show
@@ -52,6 +54,31 @@ class DatasetsExpo < BaseExpo
       with_labels: params[:with_labels],
       with_annotations: params[:with_annotations]
     )
+  end
+
+  # Feedback Configuration Management
+  expose on_http(:patch, "/:id/feedback_configuration") do
+    desc "Update the feedback configuration for a dataset (add/update/delete items)"
+    input do
+      field :id, String
+      field :feedback_configuration, Hash
+    end
+  end
+  def update_feedback_configuration
+    service.update_feedback_configuration(
+      params[:id],
+      params[:feedback_configuration]
+    )
+  end
+
+  expose on_http(:get, "/:id/feedback_keys_in_use") do
+    desc "Return which feedback keys are currently referenced by notes"
+    input do
+      field :id, String
+    end
+  end
+  def feedback_keys_in_use
+    service.feedback_keys_in_use(params[:id])
   end
 
   expose on_resource_event(Resource::Dataset::Datasets, "completed")

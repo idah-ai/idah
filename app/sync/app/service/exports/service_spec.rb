@@ -204,6 +204,49 @@ RSpec.describe Exports::Service, database: true do
       end
     end
 
+    context "entry ids" do
+      let(:entry_ids) { %w[e1 e2] }
+
+      before do
+        allow_any_instance_of(described_class).to receive(:filter_dataset_ids_by_rights)
+          .with(project_id, dataset_ids).and_return(dataset_ids)
+      end
+
+      it "stores entry_ids in the job arguments when provided" do
+        allow(Api[:idah].dataset.entries).to receive(:index_all)
+          .with(
+            filter: { dataset_id: dataset_ids, id: entry_ids },
+            fields: { "dataset:entries": ["id"] }
+          )
+          .and_return([double("e1", id: "e1"), double("e2", id: "e2")])
+
+        export = subject.create(project_id, dataset_ids, exporter, {}, entry_ids:)
+
+        job = Jobs::Service.new(auth_context).show(export.job_id)
+        expect(job.arguments[:entry_ids]).to eq(entry_ids)
+      end
+
+      it "does not include entry_ids in the job arguments when not provided" do
+        export = subject.create(project_id, dataset_ids, exporter)
+
+        job = Jobs::Service.new(auth_context).show(export.job_id)
+        expect(job.arguments.key?(:entry_ids)).to be(false)
+      end
+
+      it "raises ValidationFailed when some entries do not belong to the datasets" do
+        allow(Api[:idah].dataset.entries).to receive(:index_all)
+          .with(
+            filter: { dataset_id: dataset_ids, id: entry_ids },
+            fields: { "dataset:entries": ["id"] }
+          )
+          .and_return([double("e1", id: "e1")])
+
+        expect {
+          subject.create(project_id, dataset_ids, exporter, {}, entry_ids:)
+        }.to raise_error(Verse::Error::ValidationFailed, /do not belong/)
+      end
+    end
+
     context "authorization flow" do
       it "calls filter_dataset_ids_by_rights with correct parameters" do
         allow_any_instance_of(described_class).to receive(:filter_dataset_ids_by_rights)

@@ -20,6 +20,7 @@
   import { selection } from "$lib/state/selection.svelte";
   import { BOUNDING_BOX_MODE, POLYGON_MODE, viewport } from "$lib/state/viewport.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
+  import { categoryPicker } from "$lib/state/category-picker";
   import {
     VIDEO_BOUNDING_BOX as IDAH_VIDEO_BOUNDING_BOX,
     VIDEO_POLYGON as IDAH_VIDEO_POLYGON,
@@ -34,10 +35,6 @@
   import ContextMenu from "$lib/components/App/ContextMenu/ContextMenu.svelte";
   import DebugConsole from "$lib/components/App/DebugConsole.svelte";
   import SelectionPanel from "$lib/components/App/SelectionPanel/SelectionPanel.svelte";
-  // import CategorySelect from "$lib/components/App/SelectionPanel/_CategorySelect.svelte";
-  // import PropertiesSection from "$lib/components/App/SelectionPanel/_PropertiesSection.svelte";
-  // import Text from "$lib/components/ui/Text/Text.svelte";
-  // import Badge from "$lib/components/ui/Badge/Badge.svelte";
   import ShapesContainer, { type OnAddNewNoteParams } from "$lib/components/App/Viewport/Shapes/ShapesContainer.svelte";
   import Video from "$lib/components/App/Viewport/Video.svelte";
   import VideoCanvas from "$lib/components/App/Viewport/VideoCanvas.svelte";
@@ -348,6 +345,18 @@
       onShapeSelection(...shapeSelectionArgs);
     }
   }
+
+  /** Pick a category for the next annotation from a command (category.reuse-last), the same way a
+   *  sidebar click does. The command clears the selection first. Returns false when the category
+   *  is no longer in the label config. */
+  function applyCategory(category: string, shapeType: string): boolean {
+    if (!editable) return false;
+    if (!getDriver().config[shapeType]?.values.some((v) => v.id === category)) return false;
+    onEditValue(category, shapeType);
+    return true;
+  }
+
+  $effect(() => categoryPicker.attach(applyCategory));
 
   /** Called by the Confirm button / Enter key in the popover.
    *  Creates the annotation with the value the user picked (category + any properties). */

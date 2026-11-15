@@ -45,6 +45,7 @@ import { register as registerAnnotationLineAddPoint } from "./annotation/line.ad
 import { register as registerAnnotationToggleEditabilityAll } from "./annotation/toggle_editability_all";
 import { register as registerAnnotationToggleVisibilityAll } from "./annotation/toggle_visibility_all";
 import { register as registerAnnotationUpdate } from "./annotation/update";
+import { register as registerAnnotationBulkUpdate } from "./annotation/bulk-update";
 import { register as registerMaskFlush } from "./annotation/mask_shapes.flush";
 import { register as registerMaskPolygonAddPoint } from "./annotation/mask_polygon.add_point";
 import { register as registerMaskBrushRadiusIncrease } from "./annotation/mask_brush_radius_increase";
@@ -59,6 +60,7 @@ import { register as registerSidebarTab } from "./sidebar/sidebar_tab";
 import { register as registerCategoryDelete } from "./category/delete";
 import { register as registerCategoryToggleEditability } from "./category/toggle_editability";
 import { register as registerCategoryToggleVisibility } from "./category/toggle_visibility";
+import { register as registerCategoryReuseLast } from "./category/reuse_last";
 
 import { register as registerModeBoundingBox } from "./mode/bounding_box";
 import { register as registerModeCircle } from "./mode/circle";
@@ -74,6 +76,7 @@ import { register as registerCoverageMaskRemove } from "./coverage-mask/remove";
 import { register as registerCoverageMaskDraw } from "./coverage-mask/draw";
 import { register as registerCoverageMaskSetMode } from "./coverage-mask/set-mode";
 import { register as registerSnapMagneticToggle } from "./snap/magnetic_toggle";
+import { register as registerHistoryToggle } from "./history/toggle";
 import { IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK } from "$lib/types";
 import { hasConfig } from "$idah/v2/utils";
 
@@ -107,6 +110,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationPolygonAddPoint(driver);
   registerAnnotationLineAddPoint(driver);
   registerAnnotationUpdate(driver);
+  registerAnnotationBulkUpdate(driver);
   if (hasConfig(driver, IMAGE_MASK)) {
     registerMaskFlush(driver);
     registerMaskPolygonAddPoint(driver);
@@ -118,6 +122,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerCategoryToggleEditability(driver);
   registerCategoryToggleVisibility(driver);
   registerCategoryDelete(driver);
+  registerCategoryReuseLast(driver);
 
   // ── Mode ──────────────────────────────────────────────────────
 
@@ -147,4 +152,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
 
   // ── Snap ─────────────────────────────────────────────────────────────
   registerSnapMagneticToggle(driver);
+
+  // ── History ───────────────────────────────────────────────────────────
+  registerHistoryToggle(driver);
 }

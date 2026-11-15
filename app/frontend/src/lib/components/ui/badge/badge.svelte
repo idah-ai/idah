@@ -9,11 +9,13 @@
         secondary: "bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90 border-transparent",
         destructive:
           "bg-destructive [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/70 border-transparent text-white",
+        "destructive-outline":
+          "bg-destructive/10 text-destructive [a&]:hover:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 border-destructive dark:border-destructive/50",
         outline: "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         warning:
           "bg-amber-300 text-secondary-foreground dark:text-secondary [a&]:hover:bg-amber-300/90 border-transparent",
         success: "bg-green-600 text-primary-foreground [a&]:hover:bg-green-600/90 border-transparent",
-        info: "bg-sky-200 text-secondary-foreground [a&]:hover:bg-sky-200/90 border-transparent",
+        info: "bg-blue-200 text-blue-800 border-blue-400 dark:bg-blue-900 dark:text-blue-100 dark:border-blue-600 [a&]:hover:bg-sky-200/90",
         gray: "bg-gray-200 text-secondary-foreground dark:bg-gray-600 [a&]:hover:bg-secondary/90 border-transparent",
       },
       rounded: {

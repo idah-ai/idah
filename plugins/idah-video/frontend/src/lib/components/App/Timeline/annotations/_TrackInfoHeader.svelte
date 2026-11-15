@@ -1,6 +1,7 @@
 <script lang="ts">
   import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
 
+  import AnnotationsErrorAlertIcon from "$lib/components/App/SelectionPanel/_AnnotationsErrorAlertIcon.svelte";
   import KbdTooltipButton from "$lib/components/ui/Tooltips/KbdTooltipButton.svelte";
 
   import { annotation } from "$lib/state/annotation.svelte";
@@ -66,7 +67,10 @@
   onclick={selection.deselect}
   onkeypress={selection.deselect}
 >
-  <p class="text-xs font-medium">Annotations</p>
+  <div class="flex items-center gap-2">
+    <p class="text-xs font-medium">Annotations</p>
+    <AnnotationsErrorAlertIcon {annotations} />
+  </div>
 
   <div class="ml-auto flex items-center">
     {#each Object.entries(menus.actions.items) as [key, { label, icon, disabled, onClick }] (key)}

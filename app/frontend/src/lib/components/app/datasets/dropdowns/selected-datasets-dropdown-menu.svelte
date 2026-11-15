@@ -6,7 +6,7 @@
   import { onMount } from "svelte";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
-  import ExportFormModal from "@/components/app/projects/exports/overlays/export-form-modal.svelte";
+  import ExportFormModal from "@/components/app/projects/exports/overlays/_ExportFormModal.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
   import { selectedDatasets } from "@/components/app/datasets/stores";
@@ -117,7 +117,7 @@
   </DropdownMenus>
 
   <ExportFormModal
-    title="Export Dataset(s)"
+    title="Export Datasets"
     action="create"
     datasetRecords={$selectedDatasets}
     bind:open={openExportFormModal}

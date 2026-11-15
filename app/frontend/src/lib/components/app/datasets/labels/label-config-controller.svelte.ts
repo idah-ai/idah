@@ -5,8 +5,10 @@ import { getTextColor, randomHex } from "@/components/app/color-picker/utils";
 import { showToast } from "@/components/ui/toast/index.svelte";
 import { labelColors } from "@/data/model/dataset/labels";
 import { humanize, slugify } from "@/utils/string";
+import { visibilityReferenceErrors } from "@/components/app/datasets/labels/properties/visibility/visibility-fields";
 
 import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/v2/types";
+import type { VisibilityReferenceError } from "@/components/app/datasets/labels/properties/visibility/visibility-fields";
 
 /**
  * Owns all label-config edit state and mutations, so the same editor can be
@@ -28,6 +30,9 @@ export class LabelConfigController {
   categoryOrderMap: Record<string, number> = {};
 
   hasUnsavedChanges = $derived(JSON.stringify(this.labelConfig) !== this.savedSnapshot);
+  hasVisibilityErrors = $derived(
+    Object.keys(this.labelConfig).some((labelConfigKey) => this.hasConfigVisibilityErrors(labelConfigKey)),
+  );
 
   // ---------------------------------------------------------------- lifecycle
   load(config: IConfig | undefined) {
@@ -76,6 +81,25 @@ export class LabelConfigController {
       }
     });
     return cleaned;
+  }
+
+  getPropertyVisibilityErrors(labelConfigKey: string, propertyId: string): VisibilityReferenceError[] {
+    const config = this.labelConfig[labelConfigKey];
+    const property = config?.properties.find((candidate) => candidate.id === propertyId);
+    if (!config || !property) return [];
+
+    return visibilityReferenceErrors(property.visibility, config.values, config.properties);
+  }
+
+  hasPropertyVisibilityErrors(labelConfigKey: string, propertyId: string): boolean {
+    return this.getPropertyVisibilityErrors(labelConfigKey, propertyId).length > 0;
+  }
+
+  hasConfigVisibilityErrors(labelConfigKey: string): boolean {
+    const config = this.labelConfig[labelConfigKey];
+    return (
+      config?.properties.some((property) => this.hasPropertyVisibilityErrors(labelConfigKey, property.id)) ?? false
+    );
   }
 
   // ------------------------------------------------- order helpers (ex-utils)

@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     BoltIcon,
+    CircleAlertIcon,
     CopyIcon,
     EllipsisVerticalIcon,
     GripVerticalIcon,
@@ -402,7 +403,11 @@
 
               <Button
                 variant={isSelect ? "default" : "secondary"}
-                class="group w-full justify-start pr-1"
+                class={cn(
+                  "group w-full justify-start pr-1",
+                  controller.hasConfigVisibilityErrors(labelConfigKey) &&
+                    "bg-destructive/5 border-destructive/50 text-destructive hover:bg-destructive/10 hover:border-destructive",
+                )}
                 onclick={() => selectConfigKey(labelConfigKey)}
               >
                 {currentShape
@@ -412,6 +417,22 @@
                     : labelConfigKey === "entry:root" && modalityLabel
                       ? modalityLabel
                       : humanize(labelConfigKeyDisplay)}
+
+                {#if controller.hasConfigVisibilityErrors(labelConfigKey)}
+                  <Tooltips align="center">
+                    {#snippet trigger()}
+                      <CircleAlertIcon
+                        class="fill-destructive text-primary-foreground size-4 shrink-0"
+                        aria-label="Visibility error"
+                      />
+                    {/snippet}
+
+                    {#snippet content()}
+                      Visibility conditions in this configuration reference a category or property that no longer
+                      exists.
+                    {/snippet}
+                  </Tooltips>
+                {/if}
 
                 <DropdownMenus menus={getLabelConfigActionMenus(labelConfigKey)} align="end">
                   {#snippet trigger({ props })}
@@ -506,6 +527,7 @@
               {property}
               categories={selectedLabelConfig.values}
               properties={selectedLabelConfig.properties}
+              visibilityErrors={controller.getPropertyVisibilityErrors(controller.selectedConfigKey, property.id)}
               onSetProperty={setProperty}
               onRemoveProperty={removeProperty}
             />

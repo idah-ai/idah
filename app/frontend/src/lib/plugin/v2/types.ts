@@ -189,6 +189,18 @@ export interface IConfig {
   [shape_type: string]: IShapeConfig;
 }
 
+/**
+ * Project feedback configuration
+ */
+export interface IFeedbackItem {
+  label: string;
+  description: string | null;
+}
+
+export interface IFeedbackConfig {
+  [key: string]: IFeedbackItem;
+}
+
 // ─── AST (conditional visibility) ────────────────────────────────────────
 
 export type ASTValue = string | number | string[] | boolean | undefined;
@@ -349,6 +361,9 @@ export interface IAnnotationRecord<ShapeArgs = Record<string, unknown>, Properti
   created_at?: Date;
   updated_at?: Date;
 
+  /** Server-set version, bumped on every write. Absent on locally-built records until the next sync. */
+  version?: number;
+
   /** Allow extensibility. */
   [key: string]: unknown;
 }
@@ -412,7 +427,10 @@ export interface INoteRecord {
   anchor: INoteAnchor;
 
   /** Markdown content of the initial note (first message in the thread). */
-  content_md?: string;
+  content_md?: string | null;
+
+  /** Feedback keys */
+  feedback_keys?: string[] | null;
 
   /** Whether the note thread is resolved. */
   resolved?: boolean;
@@ -427,6 +445,67 @@ export interface INoteRecord {
 
   /** Allow extensibility. */
   [key: string]: unknown;
+}
+
+// ─── V2 Driver — Annotation change history ────────────────────────────────
+
+/** One recorded annotation change. `changes` is present when `fields` includes "changes". */
+export interface IAnnotationChange {
+  id: string;
+  annotation_id: string;
+  account_id: number | null;
+  account_email: string | null;
+  op: "baseline" | "created" | "updated" | "deleted" | "restored";
+  version: number;
+  /** Epoch ms, parsed explicitly from the API value (second precision, not ISO). */
+  changed_at: number;
+  /** Diff payload: [op, path, old, new] entries. Only set when `fields` includes "changes". */
+  changes?: ["+" | "-" | "~", string, unknown, unknown][];
+}
+
+/**
+ * Query for the annotation change history, mirroring the backend
+ * `/annotation_changes` index endpoint. `entry_id` is always bound by the
+ * driver. Filters use the raw API keys; time values are epoch-ms and are
+ * converted to ISO by the adapter. Include `changes` in `fields` to get the
+ * diff payload.
+ */
+export interface IChangesQuery {
+  /** Raw API filters (keys mirror the backend's allowed_filters). */
+  filters?: {
+    annotation_id__in?: string[];
+    id__in?: string[];
+    op__in?: IAnnotationChange["op"][];
+    changed_at__gte?: number;
+    changed_at__lte?: number;
+  };
+  /** Sort fields, newest first by default (`-changed_at`). */
+  sort?: string[];
+  /** Page number, 1-based (default 1). */
+  page?: number;
+  /** Page size (default 50, server max 1000). */
+  size?: number;
+  /** Sparse fieldset; include `changes` to get the diff payload. */
+  fields?: IAnnotationChangeField[];
+  /** Request the true total count. */
+  count?: boolean;
+}
+
+/** A selectable field on an annotation change row. */
+export type IAnnotationChangeField =
+  | "annotation_id"
+  | "account_id"
+  | "account_email"
+  | "op"
+  | "version"
+  | "changed_at"
+  | "changes";
+
+export interface IChangesResult {
+  items: IAnnotationChange[];
+  total: number;
+  /** True when the server's count is a lower bound (rows exist past it). */
+  hasMore: boolean;
 }
 
 // ─── V2 Driver — Annotations submodule ────────────────────────────────────
@@ -447,8 +526,8 @@ export interface IAnnotationsDriverV2<ShapeArgs = Record<string, unknown>, Prope
   /** Delete a single annotation. */
   delete(id: string): Promise<void>;
 
-  /** Restore a soft-deleted annotation; resolves with the restored record. */
-  restore(id: string): Promise<IAnnotationRecord<ShapeArgs, Properties>>;
+  /** Restore a soft-deleted annotation; local-first, enqueued like all writes. The backend failure surfaces via onSyncError. */
+  restore(id: string): Promise<void>;
 
   /** Create a new annotation (id is auto-generated via uuidv7). */
   create(data: IAnnotationRecord<ShapeArgs, Properties>): Promise<IAnnotationRecord<ShapeArgs, Properties>>;
@@ -464,6 +543,17 @@ export interface IAnnotationsDriverV2<ShapeArgs = Record<string, unknown>, Prope
    */
   setShape(annotationId: string, key: string, value: object | null): Promise<void>;
   setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
+
+  /**
+   * Read the entry's annotation change history, newest first. `size` defaults
+   * to 50. Each call queries the backend directly and returns the page, the
+   * server's count (`total`), and whether rows exist past that count
+   * (`hasMore`).
+   */
+  changes(query?: IChangesQuery): Promise<IChangesResult>;
+
+  /** Rebuild an annotation as it was at a past version. */
+  version(id: string, version: number): Promise<IAnnotationRecord<ShapeArgs, Properties>>;
 }
 
 // ─── V2 Driver — Notes submodule ──────────────────────────────────────────
@@ -874,6 +964,24 @@ export interface ISettingsDriverV2 {
 
 // ─── V2 Driver — Stats submodule ──────────────────────────────────────────
 
+// /** Badge variants for stat tags — mirrors BadgeVariant from the UI badge component. */
+export type IStatTagVariant =
+  | "default"
+  | "secondary"
+  | "destructive"
+  | "destructive-outline"
+  | "outline"
+  | "warning"
+  | "success"
+  | "info"
+  | "gray";
+
+/** A small badge rendered next to a stat row label (e.g. "Deleted" for orphan categories). */
+export interface IStatTag {
+  label: string;
+  variant: IStatTagVariant;
+}
+
 /**
  * A single computed statistic for the entry-stats modal.
  *
@@ -895,6 +1003,8 @@ export interface IStatEntry {
   unitHeader?: string;
   /** Optional explicit row label; falls back to a humanized key remainder. */
   label?: string;
+  /** Optional badges rendered next to the row label. */
+  tags?: IStatTag[];
 }
 
 /** Contributes a set of stats. Registered by plugins via `driver.stats.register`. */
@@ -914,6 +1024,7 @@ export interface IStatsDriverV2 {
 export interface IIdahDriverV2<ShapeArgs = Record<string, unknown>, Properties = Record<string, unknown>> {
   // ── Activity context ──────────────────────────────────────────────────
   readonly id: string;
+  readonly entryName: string;
   readonly dataset: IDatasetInfo;
   readonly project: IProjectInfo;
   readonly media: IMediaInfo;
