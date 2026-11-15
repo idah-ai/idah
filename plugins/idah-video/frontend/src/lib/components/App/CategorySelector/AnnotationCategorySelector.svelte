@@ -26,7 +26,6 @@
   // Props
   let {
     view,
-    sidebarWidthRem,
     annotationValue,
     onEditValue,
     onSelectAnnotation,
@@ -37,7 +36,6 @@
     class: className,
   }: {
     view: "sidebar" | "popover";
-    sidebarWidthRem: number;
     annotationValue: IVideoAnnotationValue;
     onEditValue: (category: string | undefined, mode: string) => void;
     onSelectAnnotation: (annotation?: IVideoAnnotationRecord) => void;
@@ -117,10 +115,10 @@
   }
 </script>
 
-  {#if view === "sidebar" && history.open}
-    <HistoryPanel {sidebarWidthRem} />
-  {:else}
-  <Sidebar variant="inset" collapsible="none" class={cn(className)} style="width: ${sidebarWidthRem}rem">
+{#if view === "sidebar" && history.open}
+  <HistoryPanel />
+{:else}
+  <Sidebar variant="inset" collapsible="none" class={cn(view === "sidebar" && "w-full", className)}>
     {#if !tools.has(mode) || selAnnotation}
       <SidebarHeader>
         <InputField
@@ -158,4 +156,4 @@
       {/each}
     </SidebarContent>
   </Sidebar>
-  {/if}
+{/if}
