@@ -81,6 +81,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   // ── Activity context ──────────────────────────────────────────────────
 
   private _id: string;
+  private _entryName: string;
   private _dataset: IDatasetInfo;
   private _project: IProjectInfo;
   private _media: IMediaInfo;
@@ -105,6 +106,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
   constructor(opts: {
     id: string;
+    entryName: string;
     dataset: IDatasetInfo;
     project: IProjectInfo;
     media: IMediaInfo;
@@ -114,6 +116,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     entryStatus: string;
   }) {
     this._id = opts.id;
+    this._entryName = opts.entryName;
     this._dataset = opts.dataset;
     this._project = opts.project;
     this._media = opts.media;
@@ -291,6 +294,10 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     return this._id;
   }
 
+  get entryName(): string {
+    return this._entryName;
+  }
+
   get dataset(): IDatasetInfo {
     return { ...this._dataset };
   }
@@ -405,6 +412,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       get id() {
         return driver.id;
       },
+      get entryName() {
+        return driver.entryName;
+      },
       get dataset() {
         return driver.dataset;
       },
@@ -514,6 +524,7 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
 
   const driver = new IdahDriverV2({
     id: entry.id,
+    entryName: entry.name || mediaInfo.filename, // `entries.name` is optional (API, imports)
     dataset: datasetInfo,
     project: projectInfo,
     media: mediaInfo,
