@@ -25,8 +25,6 @@
   import type { IAnnotationChange } from "$idah/v2/types";
   import type { IVideoAnnotationShape } from "$lib/types";
 
-  let { sidebarWidthRem }: { sidebarWidthRem: number } = $props();
-
   // Scope follows the selection reactively: the store derives the scope from
   // the selection, and this effect reloads (back to page 1) whenever the
   // selected annotation or group ids change while the panel is open. Reading
@@ -173,7 +171,7 @@
   }
 </script>
 
-<Sidebar variant="inset" collapsible="none" class="h-full" style="width: {sidebarWidthRem}rem">
+<Sidebar variant="inset" collapsible="none" class="h-full w-full">
   <SidebarHeader>
     <div class="flex items-center justify-between gap-2 p-1">
       <span class="text-sm font-semibold">History</span>
