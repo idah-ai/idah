@@ -56,6 +56,14 @@
     if (drained && history.open && history.page === 1) void history.refresh();
   });
 
+  /** 24-hour, like the times on the cards. */
+  const UPDATED_TIME_FORMAT: Intl.DateTimeFormatOptions = {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  };
+
   /** The live annotation for a change, if any. */
   function liveAnnotation(change: IAnnotationChange) {
     return data.annotations?.items?.find((a) => a.id === change.annotation_id);
@@ -135,7 +143,9 @@
       <span class="text-sm font-semibold">History</span>
       <div class="flex items-center gap-1">
         {#if history.lastLoadedAt}
-          <span class="text-muted-foreground text-[10px]">Updated {history.lastLoadedAt.toLocaleTimeString()}</span>
+          <span class="text-muted-foreground text-[10px]"
+            >Updated {history.lastLoadedAt.toLocaleTimeString([], UPDATED_TIME_FORMAT)}</span
+          >
         {/if}
         <Button variant="ghost" size="icon" title="Refresh" onclick={() => history.refresh()}>
           <RefreshCwIcon class="size-4" />
