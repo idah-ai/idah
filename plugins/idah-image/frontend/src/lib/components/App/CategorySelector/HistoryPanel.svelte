@@ -15,6 +15,7 @@
   import HistoryChangeCard from "$lib/components/App/CategorySelector/HistoryChangeCard.svelte";
   import { history } from "$lib/state/history.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
+  import { hover } from "$lib/state/hover.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { data, getDeletedAnnotation } from "$lib/state/data.svelte";
@@ -162,6 +163,8 @@
               diffLoading={history.isDiffLoading(change.id)}
               open={history.isCardOpen(change.id)}
               onToggle={() => onCardClick(change)}
+              onHoverStart={() => hover.setHovered(change.annotation_id)}
+              onHoverEnd={() => hover.clearHovered(change.annotation_id)}
             />
           {/each}
         {/each}

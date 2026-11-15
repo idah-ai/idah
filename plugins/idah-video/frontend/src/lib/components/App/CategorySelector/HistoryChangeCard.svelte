@@ -32,6 +32,9 @@
     diffLoading?: boolean;
     open: boolean;
     onToggle: () => void;
+    /** Pointer or focus entered / left the card header (to highlight its shape on the canvas). */
+    onHoverStart?: () => void;
+    onHoverEnd?: () => void;
   }
 
   let {
@@ -45,6 +48,8 @@
     diffLoading = false,
     open,
     onToggle,
+    onHoverStart,
+    onHoverEnd,
   }: Props = $props();
 
   let showAll = $state(false);
@@ -68,7 +73,17 @@
 </script>
 
 <div class="card" class:card-hl={highlighted} class:card-new={isNew}>
-  <button type="button" class="head" class:head-open={open} aria-expanded={open} onclick={onToggle}>
+  <button
+    type="button"
+    class="head"
+    class:head-open={open}
+    aria-expanded={open}
+    onclick={onToggle}
+    onmouseenter={onHoverStart}
+    onmouseleave={onHoverEnd}
+    onfocus={onHoverStart}
+    onblur={onHoverEnd}
+  >
     <span class="row1">
       <span class="op op-{change.op}">{change.op}</span>
       <span class="swatch" style:background={categoryColor}></span>
