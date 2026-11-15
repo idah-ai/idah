@@ -49,7 +49,9 @@
     return data.annotations?.items?.find((a) => a.id === change.annotation_id);
   }
 
-  /** Category label for a change's annotation (live, tombstone, or fallback). */
+  /** Category label for a change's annotation (live, tombstone, or fallback),
+   *  with the id's last part so same-category cards can be told apart — the
+   *  same `{categoryLabel}-{idLastPart}` naming the video plugin uses. */
   function categoryLabel(change: IAnnotationChange): string {
     const ann = liveAnnotation(change);
     const tomb = getDeletedAnnotation(change.annotation_id);
@@ -58,7 +60,8 @@
     if (!category) return `Annotation ${change.annotation_id.slice(0, 8)}`;
     const config = shapeType ? getDriver().config[shapeType] : undefined;
     const cat = config?.values?.find((v) => v.id === category);
-    return cat?.label ?? category;
+    const label = cat?.label ?? category;
+    return `${label}-${change.annotation_id.split("-").pop()}`;
   }
 
   /** Category colour for a change's annotation, resolved like the shapes. */
