@@ -1,5 +1,4 @@
 import type { Record } from "@/data/model/Record";
-import type { Hash } from "@/utils/types";
 import type { Component } from "svelte";
 
 export interface DataTableColumnSetting<T extends Record> {
@@ -15,3 +14,10 @@ export interface DataTableColumnSettings<T extends Record> {
 }
 
 export type DataTableRows<T extends Record> = Array<T>;
+
+export interface IDataTablePagination {
+  count: number;
+  page: number;
+  itemsPerPage: number;
+  hasMore: boolean;
+}
