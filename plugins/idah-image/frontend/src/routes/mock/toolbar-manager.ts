@@ -1,7 +1,13 @@
 // ---------------------------------------------------------------------------
 // V2 Toolbar Manager — items, groups, ordering
 // ---------------------------------------------------------------------------
-import type { IToolbarGroupNode, IToolbarItem, IToolbarNode, ToolbarItemOptions } from "$idah/v2/types";
+import type {
+  IToolbarGroupNode,
+  IToolbarItem,
+  IToolbarNode,
+  ToolbarGroupOptions,
+  ToolbarItemOptions,
+} from "$idah/v2/types";
 
 export class ToolbarManagerV2 {
   /** All registered items. */
@@ -9,6 +15,9 @@ export class ToolbarManagerV2 {
 
   /** Per-mode group ordering. */
   private groupOrders: Map<string, string[]> = new Map();
+
+  /** Group display metadata (title, icon), keyed by full colon path. */
+  private groupMeta: Map<string, ToolbarGroupOptions> = new Map();
 
   /** Revision counter for toggle state invalidation. */
   revision = 0;
@@ -32,6 +41,9 @@ export class ToolbarManagerV2 {
         visibleWhen: opts.visibleWhen,
         whenToggled: opts.whenToggled ?? (() => false),
         toggledVariant: opts.toggledVariant,
+        variant: opts.variant,
+        separatorBefore: opts.separatorBefore,
+        section: opts.section,
       });
     }
   }
@@ -41,38 +53,32 @@ export class ToolbarManagerV2 {
     this.groupOrders.set(mode, groups);
   }
 
+  /** Give a group (by full colon path) a title and an icon for the renderer. */
+  defineGroup(path: string, options: ToolbarGroupOptions): void {
+    this.groupMeta.set(path, options);
+  }
+
   // ── Queries ───────────────────────────────────────────────────────────
 
-  /**
-   * Return items visible for the given mode, sorted by group order.
-   * Items with group = null are always first.
-   */
+  /** Return the items visible in the given mode, in registration order. */
   getItemsForMode(mode: string): IToolbarItem[] {
-    // Filter by mode and whenActive ('*' is a wildcard matching any mode)
-    const visible = this.items.filter((it) => (it.mode === mode || it.mode === "*") && (it.visibleWhen?.() ?? true));
+    // Filter by mode and visibleWhen ('*' is a wildcard matching any mode)
+    return this.items.filter((it) => (it.mode === mode || it.mode === "*") && (it.visibleWhen?.() ?? true));
+  }
 
-    // Group ordering
+  /**
+   * Rearrange the top-level groups named in `orderGroups(mode, …)` among the slots those
+   * groups occupy, leaving every other node where it is.
+   */
+  private applyGroupOrder(mode: string, roots: IToolbarNode[]): IToolbarNode[] {
     const order = this.groupOrders.get(mode);
-
-    // Stable sort:
-    // 1) null group first
-    // 2) by index in order (if provided), then by insertion order
-    const orderIndex = new Map<string, number>();
-    if (order) {
-      order.forEach((g, i) => orderIndex.set(g, i));
-    }
-
-    return [...visible].sort((a, b) => {
-      // null groups always come first
-      if (a.group === null && b.group !== null) return -1;
-      if (a.group !== null && b.group === null) return 1;
-      if (a.group === null && b.group === null) return 0;
-
-      // Both have non-null groups
-      const aIdx = orderIndex.get(a.group!) ?? Infinity;
-      const bIdx = orderIndex.get(b.group!) ?? Infinity;
-      return aIdx - bIdx;
-    });
+    if (!order?.length) return roots;
+    const rank = (node: IToolbarNode) => (node.kind === "group" ? order.indexOf(node.path) : -1);
+    const slots = roots.map((node, i) => (rank(node) >= 0 ? i : -1)).filter((i) => i >= 0);
+    const ordered = slots.map((i) => roots[i]).sort((a, b) => rank(a) - rank(b));
+    const out = [...roots];
+    slots.forEach((slot, k) => (out[slot] = ordered[k]));
+    return out;
   }
 
   /**
@@ -98,7 +104,18 @@ export class ToolbarManagerV2 {
         currentPath = currentPath ? `${currentPath}:${segment}` : segment;
         let node = groupsByPath.get(currentPath);
         if (!node) {
-          node = { kind: "group", path: currentPath, segment, children: [] };
+          const meta = this.groupMeta.get(currentPath);
+          node = {
+            kind: "group",
+            path: currentPath,
+            segment,
+            label: meta?.label,
+            icon: meta?.icon,
+            whenAccented: meta?.whenAccented,
+            accentVariant: meta?.accentVariant,
+            section: meta?.section ?? item.section,
+            children: [],
+          };
           groupsByPath.set(currentPath, node);
           currentChildren.push(node);
         }
@@ -108,7 +125,7 @@ export class ToolbarManagerV2 {
       currentChildren.push({ kind: "item", item });
     }
 
-    return roots;
+    return this.applyGroupOrder(mode, roots);
   }
 
   /** Get all registered items (for debugging). */
@@ -120,5 +137,6 @@ export class ToolbarManagerV2 {
   clear(): void {
     this.items = [];
     this.groupOrders.clear();
+    this.groupMeta.clear();
   }
 }
