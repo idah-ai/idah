@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------------------
 import { MASK_TILE_SIZE } from "./constants";
 import { encode, decode } from "./rle";
-import { isEmpty, fillPolygon } from "./raster";
+import { fillPolygon } from "./raster";
 import { tilesTouchedByPolygon } from "./grid";
 
 // ── Internal state ───────────────────────────────────────────────────────
@@ -60,9 +60,6 @@ export interface CoverageMaskSession {
   reset(): void;
   tileKeys(): IterableIterator<string>;
   getTileVersion(key: string): number;
-  getAllTileEntries(): Array<{ col: number; row: number; rle: string }>;
-  buildFlushEntries(): Array<{ key: string; value: object | null }>;
-  triggerRedraw(): void;
 }
 
 export const session: CoverageMaskSession = {
@@ -200,38 +197,5 @@ export const session: CoverageMaskSession = {
   /** Version of a tile's buffer; changes whenever its pixels change. */
   getTileVersion(key: string): number {
     return _versions.get(key) ?? 0;
-  },
-
-  /** Get tile RLE data for canvas rendering. */
-  getAllTileEntries(): Array<{ col: number; row: number; rle: string }> {
-    const entries: Array<{ col: number; row: number; rle: string }> = [];
-    for (const [key, buf] of _tileBuffers) {
-      if (isEmpty(buf)) continue;
-      const [colStr, rowStr] = key.split(":");
-      entries.push({
-        col: parseInt(colStr, 10),
-        row: parseInt(rowStr, 10),
-        rle: encode(buf, MASK_TILE_SIZE, MASK_TILE_SIZE),
-      });
-    }
-    return entries;
-  },
-
-  /** Trigger a redraw notification (used by Show/Hide toggle). */
-  triggerRedraw(): void {
-    notify();
-  },
-
-  /** Build flush entries from dirty tiles. */
-  buildFlushEntries(): Array<{ key: string; value: object | null }> {
-    const entries: Array<{ key: string; value: object | null }> = [];
-    for (const tileKey of _dirty) {
-      const [colStr, rowStr] = tileKey.split(":");
-      const buf = _tileBuffers.get(tileKey);
-      const tKey = `tile-${colStr}x${rowStr}`;
-      entries.push({ key: tKey, value: (!buf || isEmpty(buf)) ? null : { rle: encode(buf, MASK_TILE_SIZE, MASK_TILE_SIZE) } });
-    }
-    _dirty.clear();
-    return entries;
   },
 };

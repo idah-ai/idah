@@ -21,7 +21,7 @@
   import { session } from "$lib/mask/coverage-mask-session";
 
   /** rgba(0, 180, 80, 0.25) */
-  const COVERAGE_COLOR: [number, number, number, number] = [0, 180, 80, 127];
+  const COVERAGE_COLOR: [number, number, number, number] = [0, 180, 80, 64];
 
   let canvasEl: HTMLCanvasElement | undefined = $state();
   let _resizeObserver: ResizeObserver | undefined;

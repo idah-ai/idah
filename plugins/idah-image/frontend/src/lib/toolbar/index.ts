@@ -261,7 +261,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
     group: "done-area-show-hide",
     onClick: () => {
       ui.coverageMaskVisible = !ui.coverageMaskVisible;
-      session.triggerRedraw();
       driver.toolbar.invalidate();
     },
     whenToggled: () => ui.coverageMaskVisible,
@@ -275,7 +274,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
     group: "done-area-show-hide",
     onClick: () => {
       ui.coverageMaskVisible = !ui.coverageMaskVisible;
-      session.triggerRedraw();
       driver.toolbar.invalidate();
     },
     whenToggled: () => !ui.coverageMaskVisible,

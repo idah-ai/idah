@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { session } from "./coverage-mask-session";
+import { encode } from "./rle";
 
 describe("coverage mask session versions", () => {
   beforeEach(() => session.reset());
@@ -16,9 +17,10 @@ describe("coverage mask session versions", () => {
 
   it("skips unchanged tiles on reload and does not notify", () => {
     session.fillRect(0, 0, 10, 10, "add");
-    const [entry] = session.buildFlushEntries();
-    const stored = { [entry.key]: entry.value };
-    session.initFromRle(stored); // first sync after flush
+    const stored = {
+      "tile-0x0": { rle: encode(session.getTileBuffer(0, 0)!, 128, 128) },
+    };
+    session.initFromRle(stored); // reload, version bumps
     const v = session.getTileVersion("0:0");
 
     let notified = 0;
