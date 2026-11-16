@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveToolbarText, itemClass, toggledButton, accentButtonClass, accentSubTriggerClass } from "./toolbar-variants";
+import {
+  resolveToolbarText,
+  itemClass,
+  toggledButton,
+  accentButtonClass,
+  accentSubTriggerClass,
+} from "./toolbar-variants";
 import type { IToolbarItem } from "@/plugin/v2/types";
 
 function item(extra: Partial<IToolbarItem> = {}): IToolbarItem {
