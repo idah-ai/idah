@@ -14,9 +14,10 @@
     caption?: string;
 
     showPaginator?: boolean;
-    pagination: IDataTablePagination;
+    pagination?: IDataTablePagination;
+    onPageChange?: (page: number) => void | Promise<void>;
   }
-  let { columns, rows, RowComponent, caption, showPaginator = false, pagination }: Props = $props();
+  let { columns, rows, RowComponent, caption, showPaginator = false, pagination, onPageChange }: Props = $props();
 </script>
 
 <Table.Root>
@@ -67,7 +68,7 @@
     <Table.Caption class="px-2 text-left">{caption}</Table.Caption>
   {/if}
 
-  {#if showPaginator}
-    <DataTablePaginator {...pagination} class="ml-auto" />
+  {#if showPaginator && pagination}
+    <DataTablePaginator {...pagination} {onPageChange} class="ml-auto" />
   {/if}
 </div>

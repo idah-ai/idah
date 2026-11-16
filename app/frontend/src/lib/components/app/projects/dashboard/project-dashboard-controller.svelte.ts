@@ -30,6 +30,8 @@ import { entryStatuses } from "@/data/model/dataset/entries/constants";
 import { datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 import { getDeliveryStatusBadge, today } from "@/utils/date";
 import { PROJECT_DASHBOARD_WORKFLOW_GROUPS } from "@/components/app/projects/dashboard/project-dashboard.constants";
+
+import type { IDataTablePagination } from "@/components/app/data-table/types";
 import type { Filters } from "@/data/filtering";
 import type { Pagination } from "@/data/DataSource";
 import type { CollectionResponse, JsonApiMeta } from "@/data/model/types";
@@ -125,6 +127,7 @@ export class ProjectDashboardController {
     this.clearCompletionHistory();
     this.clearDatasetProgress();
     this.clearEntryProgress();
+    this.entryOverviewPage = 1;
     this.selectedDatasetIds = selected;
     this.focused = null;
     this.selectedDatasets = [];
@@ -151,16 +154,18 @@ export class ProjectDashboardController {
     if (this.disposed || this.denied || this.loading || !this.focused) return;
     this.generation++;
     this.focused = null;
-    this.loadMetrics();
+    this.entryProgressPagination = { ...this.entryProgressPagination, page: this.entryOverviewPage };
+    this.loadMetrics(false);
   }
 
   step(delta: -1 | 1): void {
     if (this.disposed || this.denied || this.loading || !this.scopeReady || !this.selectedDatasets.length) return;
     const records = this.selectedDatasets;
     if (!this.focused) {
+      this.entryOverviewPage = this.entryProgressPagination.page;
       this.generation++;
       this.focused = delta === 1 ? records[0] : records[records.length - 1];
-      this.loadMetrics();
+      this.loadMetrics(false);
       return;
     }
     const index = records.findIndex((record) => record.id === this.focused?.id);
@@ -168,7 +173,7 @@ export class ProjectDashboardController {
     if (next.id === this.focused.id) return;
     this.generation++;
     this.focused = next;
-    this.loadMetrics();
+    this.loadMetrics(false);
   }
 
   async retry(): Promise<void> {
@@ -253,15 +258,15 @@ export class ProjectDashboardController {
     this.workflowError = "";
   }
 
-  private loadMetrics(): void {
+  private loadMetrics(resetOverviewPages = true): void {
     if (this.disposed || this.denied || !this.scopeReady) return;
     this.clearMetrics();
     void this.loadSummary();
     void this.loadAttention();
     void this.loadWorkflowCounts();
     void this.loadCompletionHistory();
-    void this.loadDatasetProgress(true);
-    void this.loadEntryProgress(true);
+    void this.loadDatasetProgress(resetOverviewPages);
+    void this.loadEntryProgress(resetOverviewPages || this.focused !== null);
   }
 
   async retrySummary(): Promise<void> {
@@ -833,30 +838,45 @@ export class ProjectDashboardController {
   changeEntryTab(value: string): void {
     if (value !== "all" && value !== "open" && value !== "completed") return;
     if (value === this.entryTab || this.disposed || this.denied) return;
+    this.entryOverviewPage = 1;
     this.entryTab = value;
     void this.loadEntryProgress(true);
   }
 
   public entryProgressResponse: CollectionResponse<EntryRecord> | null = $state.raw(null);
-  public entryProgressPagination: Pagination | undefined = $state.raw();
+  public entryProgressPagination: Pagination = $state.raw({ page: 1, itemsPerPage: 10 });
   public entryProgressLoading = $state(false);
   public entryProgressError = $state("");
   private entryProgressGeneration = 0;
+  private entryOverviewPage = 1;
 
   public get entryProgressRows(): EntryRecord[] {
     return this.scopeReady && !this.denied && !this.disposed ? (this.entryProgressResponse?.data ?? []) : [];
   }
 
-  public get entryProgressCaption(): string {
-    if (this.entryProgressLoading || this.entryProgressError || !this.scopeReady || this.denied) return "";
-    const shown = this.entryProgressRows.length.toLocaleString();
+  public get entryProgressTablePagination(): IDataTablePagination | undefined {
+    if (!this.scopeReady || this.denied || this.disposed) return undefined;
     const meta = this.entryProgressResponse?.meta;
     const count = meta?.count;
-    if (typeof count === "number" && Number.isSafeInteger(count) && count >= 0) {
-      if (meta?.more === false) return `Showing ${shown} of ${count.toLocaleString()} entries`;
-      if (meta?.more === true) return `Showing ${shown} entries · ${count.toLocaleString()}+ matching`;
+    if (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0 || typeof meta?.more !== "boolean")
+      return undefined;
+
+    return { ...this.entryProgressPagination, count, hasMore: meta.more };
+  }
+
+  public get entryProgressCaption(): string {
+    if (this.entryProgressLoading || this.entryProgressError || !this.scopeReady || this.denied) return "";
+    const shown = this.entryProgressRows.length;
+    if (shown === 0 && this.entryProgressPagination.page > 1)
+      return `Showing 0 entries on page ${this.entryProgressPagination.page}`;
+
+    const pagination = this.entryProgressTablePagination;
+    if (pagination) {
+      if (pagination.hasMore)
+        return `Showing ${shown.toLocaleString()} entries · ${pagination.count.toLocaleString()}+ matching`;
+      return `Showing ${shown.toLocaleString()} of ${pagination.count.toLocaleString()} entries`;
     }
-    return `Showing ${shown} entries`;
+    return `Showing ${shown.toLocaleString()} entries`;
   }
 
   async changeEntryProgressPage(pagination: Pagination): Promise<void> {
@@ -868,7 +888,18 @@ export class ProjectDashboardController {
       pagination.itemsPerPage < 1
     )
       return;
-    this.entryProgressPagination = { ...pagination };
+    const next = {
+      page: pagination.itemsPerPage === this.entryProgressPagination.itemsPerPage ? pagination.page : 1,
+      itemsPerPage: pagination.itemsPerPage,
+    };
+    if (
+      next.page === this.entryProgressPagination.page &&
+      next.itemsPerPage === this.entryProgressPagination.itemsPerPage
+    )
+      return;
+
+    if (next.itemsPerPage !== this.entryProgressPagination.itemsPerPage) this.entryOverviewPage = 1;
+    this.entryProgressPagination = next;
     await this.loadEntryProgress();
   }
 
@@ -886,8 +917,7 @@ export class ProjectDashboardController {
   }
 
   private async loadEntryProgress(resetPage = false): Promise<void> {
-    if (resetPage && this.entryProgressPagination)
-      this.entryProgressPagination = { ...this.entryProgressPagination, page: 1 };
+    if (resetPage) this.entryProgressPagination = { ...this.entryProgressPagination, page: 1 };
     if (this.disposed || this.denied || !this.scopeReady) return;
 
     const scope = this.generation;
@@ -929,7 +959,7 @@ export class ProjectDashboardController {
         },
         included: ["assigned_to", ...(overview ? ["dataset"] : [])],
         sort: ["-created_at", "-id"],
-        ...(this.entryProgressPagination ? { pagination: { ...this.entryProgressPagination } } : {}),
+        pagination: { ...this.entryProgressPagination },
         count: true,
         noCache: true,
       });
@@ -946,7 +976,7 @@ export class ProjectDashboardController {
   // ==================== Dataset Progress ====================
 
   public datasetProgressResponse: CollectionResponse<DatasetRecord> | null = $state.raw(null);
-  public datasetProgressPagination: Pagination | undefined = $state.raw();
+  public datasetProgressPagination: Pagination = $state.raw({ page: 1, itemsPerPage: 10 });
   public datasetProgressLoading = $state(false);
   public datasetProgressError = $state("");
   private datasetProgressGeneration = 0;
@@ -957,26 +987,35 @@ export class ProjectDashboardController {
     if (!this.selectedDatasetIds.length) return this.datasetProgressResponse?.data ?? [];
 
     const pagination = this.datasetProgressPagination;
-    if (!pagination) return this.selectedDatasets;
     const start = (pagination.page - 1) * pagination.itemsPerPage;
     return this.selectedDatasets.slice(start, start + pagination.itemsPerPage);
   }
 
+  public get datasetProgressTablePagination(): IDataTablePagination | undefined {
+    if (!this.scopeReady || this.denied || this.disposed || this.focused) return undefined;
+    const meta = this.selectedDatasetIds.length
+      ? { count: this.selectedDatasets.length, more: false }
+      : this.datasetProgressResponse?.meta;
+    const count = meta?.count;
+    if (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0 || typeof meta?.more !== "boolean")
+      return undefined;
+
+    return { ...this.datasetProgressPagination, count, hasMore: meta.more };
+  }
+
   public get datasetProgressCaption(): string {
     if (!this.scopeReady || this.denied || this.datasetProgressLoading || this.datasetProgressError) return "";
+    if (this.focused) return "Showing 1 of 1 dataset";
 
     const shown = this.datasetProgressRows.length;
-    const meta = this.focused
-      ? { count: 1, more: false }
-      : this.selectedDatasetIds.length
-        ? { count: this.selectedDatasets.length, more: false }
-        : this.datasetProgressResponse?.meta;
-    const count = meta?.count;
-    if (typeof count === "number" && Number.isSafeInteger(count) && count >= 0) {
-      if (meta?.more === false)
-        return `Showing ${shown.toLocaleString()} of ${count.toLocaleString()} ${count === 1 ? "dataset" : "datasets"}`;
-      if (meta?.more === true)
-        return `Showing ${shown.toLocaleString()} ${shown === 1 ? "dataset" : "datasets"} · ${count.toLocaleString()}+ matching`;
+    if (shown === 0 && this.datasetProgressPagination.page > 1)
+      return `Showing 0 datasets on page ${this.datasetProgressPagination.page}`;
+
+    const pagination = this.datasetProgressTablePagination;
+    if (pagination) {
+      if (pagination.hasMore)
+        return `Showing ${shown.toLocaleString()} ${shown === 1 ? "dataset" : "datasets"} · ${pagination.count.toLocaleString()}+ matching`;
+      return `Showing ${shown.toLocaleString()} of ${pagination.count.toLocaleString()} ${pagination.count === 1 ? "dataset" : "datasets"}`;
     }
     return `Showing ${shown.toLocaleString()} ${shown === 1 ? "dataset" : "datasets"}`;
   }
@@ -990,7 +1029,18 @@ export class ProjectDashboardController {
       pagination.itemsPerPage < 1
     )
       return;
-    this.datasetProgressPagination = { ...pagination };
+    const next = {
+      page: pagination.itemsPerPage === this.datasetProgressPagination.itemsPerPage ? pagination.page : 1,
+      itemsPerPage: pagination.itemsPerPage,
+    };
+    if (
+      next.page === this.datasetProgressPagination.page &&
+      next.itemsPerPage === this.datasetProgressPagination.itemsPerPage
+    )
+      return;
+
+    this.datasetProgressPagination = next;
+    if (this.focused || this.selectedDatasetIds.length) return;
     await this.loadDatasetProgress();
   }
 
@@ -1009,8 +1059,7 @@ export class ProjectDashboardController {
 
   private async loadDatasetProgress(resetPage = false): Promise<void> {
     if (this.disposed || this.denied || !this.scopeReady) return;
-    if (resetPage && this.datasetProgressPagination)
-      this.datasetProgressPagination = { ...this.datasetProgressPagination, page: 1 };
+    if (resetPage) this.datasetProgressPagination = { ...this.datasetProgressPagination, page: 1 };
 
     const scope = this.generation;
     const request = ++this.datasetProgressGeneration;
@@ -1021,7 +1070,7 @@ export class ProjectDashboardController {
     if (this.focused || this.selectedDatasetIds.length) return;
 
     this.datasetProgressLoading = true;
-    const pagination = this.datasetProgressPagination ? { ...this.datasetProgressPagination } : undefined;
+    const pagination = { ...this.datasetProgressPagination };
     try {
       const response = await datasetsBackendDataSource.list({
         filters: { project_id: this.projectId },
@@ -1037,7 +1086,7 @@ export class ProjectDashboardController {
           ],
         },
         sort: ["name", "id"],
-        ...(pagination ? { pagination } : {}),
+        pagination,
         count: true,
         noCache: true,
       });

@@ -17,6 +17,7 @@
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
   const columns = $derived(getColumns(!controller.focused));
   const rows = $derived(controller.entryProgressRows);
+  const pagination = $derived(controller.entryProgressTablePagination);
 </script>
 
 <Card.Root>
@@ -57,15 +58,27 @@
         <div class="flex min-h-32 items-center justify-center" role="status" aria-label="Loading entries">
           <Spinner size="sm" />
         </div>
-      {:else if !rows.length}
-        <ResponseBlock
-          size="sm"
-          title="No entries to display"
-          description="No entries were returned for this tab and scope."
-        />
       {:else}
+        {#if !rows.length}
+          <ResponseBlock
+            size="sm"
+            title="No entries to display"
+            description="No entries were returned for this tab and scope."
+          />
+        {/if}
         <ScrollArea class="max-h-[80vh]">
-          <DataTable {columns} {rows} caption={controller.entryProgressCaption} />
+          <DataTable
+            {columns}
+            {rows}
+            {pagination}
+            showPaginator={pagination !== undefined}
+            onPageChange={(page) =>
+              controller.changeEntryProgressPage({
+                page,
+                itemsPerPage: controller.entryProgressPagination.itemsPerPage,
+              })}
+            caption={controller.entryProgressCaption}
+          />
         </ScrollArea>
       {/if}
     </Tabs>

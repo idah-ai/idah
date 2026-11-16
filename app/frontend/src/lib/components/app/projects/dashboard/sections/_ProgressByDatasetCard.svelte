@@ -15,6 +15,7 @@
   // Variables
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
   const rows = $derived(controller.datasetProgressRows);
+  const pagination = $derived(controller.datasetProgressTablePagination);
 </script>
 
 <Card.Root>
@@ -42,15 +43,27 @@
       <div class="flex min-h-32 items-center justify-center" role="status" aria-label="Loading dataset progress">
         <Spinner size="sm" />
       </div>
-    {:else if !rows.length}
-      <ResponseBlock
-        size="sm"
-        title="No datasets to display"
-        description="No datasets were returned for this page and scope."
-      />
     {:else}
+      {#if !rows.length}
+        <ResponseBlock
+          size="sm"
+          title="No datasets to display"
+          description="No datasets were returned for this page and scope."
+        />
+      {/if}
       <ScrollArea class="max-h-[80vh]">
-        <DataTable {columns} {rows} caption={controller.datasetProgressCaption} />
+        <DataTable
+          {columns}
+          {rows}
+          {pagination}
+          showPaginator={pagination !== undefined}
+          onPageChange={(page) =>
+            controller.changeDatasetProgressPage({
+              page,
+              itemsPerPage: controller.datasetProgressPagination.itemsPerPage,
+            })}
+          caption={controller.datasetProgressCaption}
+        />
       </ScrollArea>
     {/if}
   </Card.Content>
