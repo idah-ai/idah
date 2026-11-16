@@ -13,6 +13,7 @@
   import CompletedEntriesPerPeriodCard from "@/components/app/projects/dashboard/sections/_CompletedEntriesPerPeriodCard.svelte";
   import ProgressByDatasetCard from "@/components/app/projects/dashboard/sections/_ProgressByDatasetCard.svelte";
   import OpenEntriesCard from "@/components/app/projects/dashboard/sections/_OpenEntriesCard.svelte";
+  import OpenEntriesCardV2 from "@/components/app/projects/dashboard/sections/_OpenEntriesCardV2.svelte";
   import AnnotationsByCategoryCard from "@/components/app/projects/dashboard/sections/_AnnotationsByCategoryCard.svelte";
 
   // Props
@@ -35,15 +36,17 @@
 <div class="grid gap-4">
   <ProjectDatasetSelection />
 
-  <DatasetMetricsCard />
+  <!-- <DatasetMetricsCard />
 
   <EntriesByStatusCard />
 
   <CompletedEntriesPerPeriodCard />
 
-  <ProgressByDatasetCard />
+  <ProgressByDatasetCard /> -->
 
-  <OpenEntriesCard />
+  <!-- <OpenEntriesCard /> -->
 
-  <AnnotationsByCategoryCard />
+  <OpenEntriesCardV2 />
+
+  <!-- <AnnotationsByCategoryCard /> -->
 </div>

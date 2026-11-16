@@ -2,7 +2,7 @@
   import * as Table from "@/components/ui/table/index";
   import DataTablePaginator from "@/components/app/data-table/_DataTablePaginator.svelte";
 
-  import type { DataTableColumnSettings, DataTableRows, IDataTablePagination } from "./types";
+  import type { DataTableColumnSettings, DataTableRows, IDataTablePagination, DataTableSortState } from "./types";
   import { cn } from "@/utils";
   import type { Snippet } from "svelte";
   import type { Record } from "@/data/model/Record";
@@ -10,14 +10,37 @@
   interface Props {
     columns: DataTableColumnSettings<T>;
     rows: DataTableRows<T>;
-    RowComponent?: Snippet;
+    RowComponent?: Snippet<[row: T]>;
     caption?: string;
 
     showPaginator?: boolean;
     pagination?: IDataTablePagination;
     onPageChange?: (page: number) => void | Promise<void>;
+
+    // Sorting
+    sort?: DataTableSortState;
+    onSort?: (sort: DataTableSortState) => void;
   }
-  let { columns, rows, RowComponent, caption, showPaginator = false, pagination, onPageChange }: Props = $props();
+  let {
+    columns,
+    rows,
+    RowComponent,
+    caption,
+    showPaginator = false,
+    pagination,
+    onPageChange,
+    sort,
+    onSort,
+  }: Props = $props();
+
+  function handleSort(key: string): void {
+    if (!onSort) return;
+    if (sort?.key === key) {
+      onSort({ key, dir: sort.dir === "asc" ? "desc" : "asc" });
+    } else {
+      onSort({ key, dir: "desc" });
+    }
+  }
 </script>
 
 <Table.Root>
@@ -28,9 +51,18 @@
           class={cn("text-muted-foreground text-left font-medium", {
             "text-center": column.align === "center",
             "text-right": column.align === "right",
+            "cursor-pointer select-none hover:text-foreground": column.sortable,
           })}
+          onclick={column.sortable ? () => handleSort(column.key) : undefined}
+          role={column.sortable ? "button" : undefined}
+          tabindex={column.sortable ? "0" : undefined}
         >
           {column.title}
+          {#if column.sortable && sort?.key === column.key}
+            <span class="arr ml-1 inline-block w-3 text-primary">
+              {sort.dir === "asc" ? "↑" : "↓"}
+            </span>
+          {/if}
         </Table.Head>
       {/each}
     </Table.Row>
@@ -39,7 +71,7 @@
   <Table.Body>
     {#each rows as row, rowIndex (rowIndex)}
       {#if RowComponent}
-        {@render RowComponent()}
+        {@render RowComponent(row)}
       {:else}
         <Table.Row>
           {#each Object.entries(columns) as [columnKey, column] (columnKey)}

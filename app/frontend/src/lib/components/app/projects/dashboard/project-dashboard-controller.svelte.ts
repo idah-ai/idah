@@ -108,6 +108,10 @@ export class ProjectDashboardController {
   public error = $state("");
   public denied = $state(false);
 
+  public get singleDatasetView(): boolean {
+    return this.focused !== null || this.selectedDatasetIds.length === 1;
+  }
+
   public get effectiveDatasetIds(): string[] {
     return this.focused ? [this.focused.id] : [...this.selectedDatasetIds];
   }
@@ -924,7 +928,7 @@ export class ProjectDashboardController {
     const request = ++this.entryProgressGeneration;
     const current = (): boolean => this.isCurrent(scope) && request === this.entryProgressGeneration;
     const ids = this.effectiveDatasetIds;
-    const overview = !this.focused;
+    const overview = !this.singleDatasetView;
     this.entryProgressResponse = null;
     this.entryProgressError = "";
     this.entryProgressLoading = true;
