@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------------------
 import { MASK_TILE_SIZE } from "./constants";
 import { encode, decode } from "./rle";
-import { isEmpty, fillPolygon } from "./raster";
+import { fillPolygon } from "./raster";
 import { tilesTouchedByPolygon } from "./grid";
 
 // ── Internal state ───────────────────────────────────────────────────────
@@ -18,7 +18,24 @@ const _tileBuffers = new Map<string, Uint8Array>();
 const _dirty = new Set<string>();
 const _listeners = new Set<() => void>();
 
+/**
+ * Per-tile version, bumped whenever a tile's buffer changes. The canvas uses
+ * it to re-rasterize only the tiles that changed since the last frame.
+ */
+const _versions = new Map<string, number>();
+
+/**
+ * The stored RLE each tile was last loaded from. Lets initFromRle skip tiles
+ * whose stored value did not change (e.g. a reload triggered by an unrelated
+ * annotation edit, or by this client's own flush).
+ */
+const _sourceRle = new Map<string, string>();
+
 let _mode: "add" | "remove" = "add";
+
+function bump(key: string): void {
+  _versions.set(key, (_versions.get(key) ?? 0) + 1);
+}
 
 function notify(): void {
   for (const fn of _listeners) fn();
@@ -41,9 +58,8 @@ export interface CoverageMaskSession {
   snapshotAll(): Array<{ key: string; rle: string }>;
   restoreSnapshots(snapshots: Array<{ key: string; rle: string }>): void;
   reset(): void;
-  getAllTileEntries(): Array<{ col: number; row: number; rle: string }>;
-  buildFlushEntries(): Array<{ key: string; value: object | null }>;
-  triggerRedraw(): void;
+  tileKeys(): IterableIterator<string>;
+  getTileVersion(key: string): number;
 }
 
 export const session: CoverageMaskSession = {
@@ -67,22 +83,44 @@ export const session: CoverageMaskSession = {
 
   // ── Mutators ────────────────────────────────────────────────────────
 
-  /** Initialise buffers from annotation tile data. Clears any prior state. */
+  /**
+   * Sync buffers with annotation tile data. Afterwards the session matches the
+   * stored tiles exactly and nothing is dirty. Tiles whose stored RLE is
+   * unchanged since they were last loaded (and that have no local edits) are
+   * kept as-is, so an unrelated reload decodes and redraws nothing.
+   */
   initFromRle(rleMap: Record<string, unknown>): void {
-    _tileBuffers.clear();
-    _dirty.clear();
+    const incoming = new Map<string, string>();
     for (const [key, value] of Object.entries(rleMap)) {
       const match = key.match(/^tile-(\d+)x(\d+)$/);
       if (!match) continue;
       if (!value || typeof value !== "object") continue;
       const rle = (value as Record<string, unknown>).rle;
       if (typeof rle !== "string") continue;
-      const col = parseInt(match[1], 10);
-      const row = parseInt(match[2], 10);
-      const buf = decode(rle, MASK_TILE_SIZE, MASK_TILE_SIZE);
-      _tileBuffers.set(`${col}:${row}`, buf);
+      incoming.set(`${parseInt(match[1], 10)}:${parseInt(match[2], 10)}`, rle);
     }
-    notify();
+
+    let changed = false;
+    // Drop tiles that are no longer stored
+    for (const key of [..._tileBuffers.keys()]) {
+      if (!incoming.has(key)) {
+        _tileBuffers.delete(key);
+        _sourceRle.delete(key);
+        bump(key);
+        changed = true;
+      }
+    }
+    // Load new or changed tiles; keep untouched ones
+    for (const [key, rle] of incoming) {
+      if (_tileBuffers.has(key) && _sourceRle.get(key) === rle && !_dirty.has(key)) continue;
+      _tileBuffers.set(key, decode(rle, MASK_TILE_SIZE, MASK_TILE_SIZE));
+      _sourceRle.set(key, rle);
+      bump(key);
+      changed = true;
+    }
+    if (_dirty.size > 0) changed = true;
+    _dirty.clear();
+    if (changed) notify();
   },
 
   /** Paint or erase a rectangle into the tile buffers. */
@@ -100,6 +138,7 @@ export const session: CoverageMaskSession = {
       const originY = row * MASK_TILE_SIZE;
       fillPolygon(buf, originX, originY, poly, mode);
       if (!_dirty.has(key)) _dirty.add(key);
+      bump(key);
     }
     notify();
   },
@@ -130,6 +169,7 @@ export const session: CoverageMaskSession = {
   restoreSnapshots(snapshots: Array<{ key: string; rle: string }>): void {
     for (const { key, rle } of snapshots) {
       _dirty.add(key);
+      bump(key);
       if (rle === "") {
         _tileBuffers.delete(key);
       } else {
@@ -142,41 +182,20 @@ export const session: CoverageMaskSession = {
 
   /** Discard all state. */
   reset(): void {
+    for (const key of _tileBuffers.keys()) bump(key);
     _tileBuffers.clear();
+    _sourceRle.clear();
     _dirty.clear();
     notify();
   },
 
-  /** Get tile RLE data for canvas rendering. */
-  getAllTileEntries(): Array<{ col: number; row: number; rle: string }> {
-    const entries: Array<{ col: number; row: number; rle: string }> = [];
-    for (const [key, buf] of _tileBuffers) {
-      if (isEmpty(buf)) continue;
-      const [colStr, rowStr] = key.split(":");
-      entries.push({
-        col: parseInt(colStr, 10),
-        row: parseInt(rowStr, 10),
-        rle: encode(buf, MASK_TILE_SIZE, MASK_TILE_SIZE),
-      });
-    }
-    return entries;
+  /** Tile keys ("col:row") currently held in the session. */
+  tileKeys(): IterableIterator<string> {
+    return _tileBuffers.keys();
   },
 
-  /** Trigger a redraw notification (used by Show/Hide toggle). */
-  triggerRedraw(): void {
-    notify();
-  },
-
-  /** Build flush entries from dirty tiles. */
-  buildFlushEntries(): Array<{ key: string; value: object | null }> {
-    const entries: Array<{ key: string; value: object | null }> = [];
-    for (const tileKey of _dirty) {
-      const [colStr, rowStr] = tileKey.split(":");
-      const buf = _tileBuffers.get(tileKey);
-      const tKey = `tile-${colStr}x${rowStr}`;
-      entries.push({ key: tKey, value: (!buf || isEmpty(buf)) ? null : { rle: encode(buf, MASK_TILE_SIZE, MASK_TILE_SIZE) } });
-    }
-    _dirty.clear();
-    return entries;
+  /** Version of a tile's buffer; changes whenever its pixels change. */
+  getTileVersion(key: string): number {
+    return _versions.get(key) ?? 0;
   },
 };

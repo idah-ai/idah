@@ -31,7 +31,6 @@ import { toolPanel } from "$lib/state/tool-panel.svelte";
 import { history } from "$lib/state/history.svelte";
 import MaskToolConfigurations from "$lib/components/App/MaskToolPanel/MaskToolConfigurations.svelte";
 import { ui } from "$lib/state/ui.svelte";
-import { session } from "$lib/mask/coverage-mask-session";
 import { registerCoverageModeWatcher } from "$lib/commands/coverage-mask/_shared";
 
 // ── History icon as inline SVG ─────────────────────────────────────────
@@ -261,7 +260,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
     group: "done-area-show-hide",
     onClick: () => {
       ui.coverageMaskVisible = !ui.coverageMaskVisible;
-      session.triggerRedraw();
       driver.toolbar.invalidate();
     },
     whenToggled: () => ui.coverageMaskVisible,
@@ -275,7 +273,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
     group: "done-area-show-hide",
     onClick: () => {
       ui.coverageMaskVisible = !ui.coverageMaskVisible;
-      session.triggerRedraw();
       driver.toolbar.invalidate();
     },
     whenToggled: () => !ui.coverageMaskVisible,
