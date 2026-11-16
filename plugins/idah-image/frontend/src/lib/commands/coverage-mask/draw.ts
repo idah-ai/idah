@@ -26,8 +26,9 @@ export const command = {
  *
  * IMPORTANT: Tile buffers are cached BEFORE the annotation is created
  * because create() triggers a ShapesContainer $effect that calls
- * session.initFromRle() which clears the tile buffers. By caching them
- * first, flushDirtyTiles can read from the cache instead.
+ * session.initFromRle() with the new annotation's empty tiles, which drops
+ * unsaved buffers and clears the dirty set. By caching them first,
+ * flushDirtyTiles can read from the cache instead.
  */
 async function flushIfDirty(): Promise<void> {
   const dirty = session.getDirtyTiles();

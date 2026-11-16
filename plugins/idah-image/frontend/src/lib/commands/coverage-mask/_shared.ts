@@ -3,7 +3,6 @@
 // ---------------------------------------------------------------------------
 import { ui } from "$lib/state/ui.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import { session } from "$lib/mask/coverage-mask-session";
 import {
   DEFAULT_MODE,
   IMAGE_BOUNDING_BOX,
@@ -48,7 +47,6 @@ export function doOff() {
 export function showMask() {
   if (ui.coverageMaskVisible) return;
   ui.coverageMaskVisible = true;
-  session.triggerRedraw();
 }
 
 /**
@@ -59,7 +57,6 @@ export function hideMask() {
   doOff();
   if (!ui.coverageMaskVisible) return;
   ui.coverageMaskVisible = false;
-  session.triggerRedraw();
 }
 
 export function doAdd(driver: Pick<IIdahDriverV2, "mode" | "setMode">) {
