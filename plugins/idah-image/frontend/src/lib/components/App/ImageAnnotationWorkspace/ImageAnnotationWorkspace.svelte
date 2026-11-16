@@ -87,7 +87,6 @@
   let image_container: HTMLImageElement | undefined = $state();
 
   let annotationSidebarResizablePercentage = $state<number>(16);
-  let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
 
   let annotationId = $derived<string | undefined>(selAnnotation?.id);
 
@@ -594,7 +593,6 @@
         {:else}
           <AnnotationSidebar
             view="popover"
-            sidebarWidthRem={annotationSidebarWidthRem}
             class="rounded-t-lg"
             db={data.annotations}
             items={viewportAnnotations}
@@ -656,7 +654,6 @@
           <ResizablePane minSize={14} defaultSize={annotationSidebarResizablePercentage} maxSize={20}>
             <AnnotationSidebar
               view="sidebar"
-              sidebarWidthRem={annotationSidebarWidthRem}
               db={data.annotations}
               items={viewportAnnotations}
               {annotationValue}

@@ -27,9 +27,9 @@
 </script>
 
 {#if icon === "success"}
-  <img src="/assets/icons/SuccessIcon.svg" alt="Success" class="size-5 shrink-0" />
+  <img src="/assets/icons/SuccessIcon.svg" alt="Success" class="size-4 shrink-0" />
 {:else if icon === "warning"}
-  <img src="/assets/icons/WarningIcon.svg" alt="Warning" class="size-5 shrink-0" />
+  <img src="/assets/icons/WarningIcon.svg" alt="Warning" class="size-4 shrink-0" />
 {:else if icon === "error"}
-  <img src="/assets/icons/ErrorIcon.svg" alt="Error" class="size-5 shrink-0" />
+  <img src="/assets/icons/ErrorIcon.svg" alt="Error" class="size-4 shrink-0" />
 {/if}
