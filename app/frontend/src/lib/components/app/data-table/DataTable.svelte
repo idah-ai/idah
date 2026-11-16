@@ -1,7 +1,8 @@
 <script lang="ts" generics="T extends Record">
   import * as Table from "@/components/ui/table/index";
+  import DataTablePaginator from "@/components/app/data-table/_DataTablePaginator.svelte";
 
-  import type { DataTableColumnSettings, DataTableRows } from "./types";
+  import type { DataTableColumnSettings, DataTableRows, IDataTablePagination } from "./types";
   import { cn } from "@/utils";
   import type { Snippet } from "svelte";
   import type { Record } from "@/data/model/Record";
@@ -11,8 +12,11 @@
     rows: DataTableRows<T>;
     RowComponent?: Snippet;
     caption?: string;
+
+    showPaginator?: boolean;
+    pagination: IDataTablePagination;
   }
-  let { columns, rows, RowComponent, caption }: Props = $props();
+  let { columns, rows, RowComponent, caption, showPaginator = false, pagination }: Props = $props();
 </script>
 
 <Table.Root>
@@ -56,12 +60,14 @@
       {/if}
     {/each}
   </Table.Body>
-
-  <div class="flex items-center gap-2">
-    {#if caption}
-      <Table.Caption class="px-2 text-left">{caption}</Table.Caption>
-    {/if}
-
-    <!-- Paginator -->
-  </div>
 </Table.Root>
+
+<div class="flex items-center gap-2">
+  {#if caption}
+    <Table.Caption class="px-2 text-left">{caption}</Table.Caption>
+  {/if}
+
+  {#if showPaginator}
+    <DataTablePaginator {...pagination} class="ml-auto" />
+  {/if}
+</div>
