@@ -2,7 +2,6 @@
   import Progress from "@/components/ui/progress/progress.svelte";
   import Text from "@/components/ui/text/Text.svelte";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
-  import { PROJECT_DASHBOARD_WORKFLOW_GROUPS } from "@/components/app/projects/dashboard/project-dashboard.constants";
 
   // Props
   interface Props {
@@ -11,7 +10,6 @@
   let { row: dataset }: Props = $props();
 
   // Variables
-  const completedColor = PROJECT_DASHBOARD_WORKFLOW_GROUPS.find((group) => group.key === "completed")?.bgColor;
   const percentage = $derived.by((): number | null => {
     const total = dataset.entries_total_count;
     const completed = dataset.entries_completed_count;
@@ -31,7 +29,7 @@
   <span>—</span>
 {:else}
   <div class="min-w-32 space-y-1">
-    <Progress value={percentage} indicatorClass={completedColor} class="bg-muted" />
+    <Progress value={percentage} class="bg-muted [&>[data-slot=progress-indicator]]:bg-emerald-500" />
 
     <div class="flex w-full items-center justify-between gap-2">
       <Text size="xs" class="text-muted-foreground">
