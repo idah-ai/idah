@@ -133,6 +133,14 @@ export const mediaBackendDataSource = createBackendDataSource(MediaRecord, media
       body: formData,
     });
 
+    // nginx answers 504 with an HTML page when the media service takes longer than its
+    // proxy timeout to reply. The service keeps processing the file regardless, so the
+    // status must reach the caller (who must not resend it) instead of a JSON parse error.
+    if (out.status === 504) {
+      const timeout: JsonApiErrorResponse = { status: 504, errors: [{ status: "504", title: "Gateway Timeout" }] };
+      return Promise.reject(timeout);
+    }
+
     const body = await out.json();
 
     // Cache Management
