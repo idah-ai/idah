@@ -7,7 +7,6 @@
   } from "@/components/app/projects/dashboard/project-dashboard-controller.svelte";
   import { PROJECT_DASHBOARD_OPEN_ENTRIES_TABS } from "../project-dashboard.constants";
   import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-  import ScrollArea from "@/components/ui/scroll-area/scroll-area.svelte";
   import DataTable from "@/components/app/data-table/DataTable.svelte";
   import DataTablePaginator from "@/components/app/data-table/_DataTablePaginator.svelte";
   import { getColumns } from "@/components/app/projects/dashboard/sections/_OpenEntriesCard.table";
@@ -20,6 +19,7 @@
   const rows = $derived(controller.entryProgressRows);
   const pagination = $derived(controller.entryProgressTablePagination);
 
+  // Functions
   function changePage(page: number): Promise<void> {
     return controller.changeEntryProgressPage({
       page,
@@ -76,16 +76,14 @@
           <DataTablePaginator {...pagination} onPageChange={changePage} class="mt-3" />
         {/if}
       {:else}
-        <ScrollArea class="max-h-[80vh]">
-          <DataTable
-            {columns}
-            {rows}
-            {pagination}
-            showPaginator={pagination !== undefined}
-            onPageChange={changePage}
-            caption={controller.entryProgressCaption}
-          />
-        </ScrollArea>
+        <DataTable
+          {columns}
+          {rows}
+          {pagination}
+          showPaginator={pagination !== undefined}
+          onPageChange={changePage}
+          caption={controller.entryProgressCaption}
+        />
       {/if}
     </Tabs>
   </Card.Content>

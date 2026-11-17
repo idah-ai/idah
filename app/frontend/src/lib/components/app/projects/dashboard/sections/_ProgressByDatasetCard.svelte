@@ -11,13 +11,13 @@
     getProjectDashboardController,
   } from "@/components/app/projects/dashboard/project-dashboard-controller.svelte";
   import { columns } from "@/components/app/projects/dashboard/sections/_ProgressByDatasetCard.table";
-  import ScrollArea from "@/components/ui/scroll-area/scroll-area.svelte";
 
   // Variables
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
   const rows = $derived(controller.datasetProgressRows);
   const pagination = $derived(controller.datasetProgressTablePagination);
 
+  // Functions
   function changePage(page: number): Promise<void> {
     return controller.changeDatasetProgressPage({
       page,
@@ -61,16 +61,14 @@
         <DataTablePaginator {...pagination} onPageChange={changePage} class="mt-3" />
       {/if}
     {:else}
-      <ScrollArea class="max-h-[80vh]">
-        <DataTable
-          {columns}
-          {rows}
-          {pagination}
-          showPaginator={pagination !== undefined}
-          onPageChange={changePage}
-          caption={controller.datasetProgressCaption}
-        />
-      </ScrollArea>
+      <DataTable
+        {columns}
+        {rows}
+        {pagination}
+        showPaginator={pagination !== undefined}
+        onPageChange={changePage}
+        caption={controller.datasetProgressCaption}
+      />
     {/if}
   </Card.Content>
 </Card.Root>
