@@ -4,6 +4,7 @@
   import { format, isSameMonth, isSameYear, parseISO } from "date-fns";
 
   import { Button } from "@/components/ui/button";
+  import { ButtonGroup } from "@/components/ui/button-group";
   import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
   import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
@@ -38,14 +39,47 @@
         <CardTitle>Completed entries per {interval.toLowerCase()}</CardTitle>
       </div>
 
-      <DateRangePicker
-        value={range}
-        maxDate={controller.completionToday}
-        title="Completion date range"
-        timezone={zone}
-        isValid={(value) => controller.isCompletionRangeValid(value)}
-        onApply={(value) => controller.applyCompletionRange(value)}
-      />
+      <div class="flex flex-wrap items-center gap-1.5">
+        <DateRangePicker
+          value={range}
+          maxDate={controller.completionToday}
+          title="Completion date range"
+          timezone={zone}
+          isValid={(value) => controller.isCompletionRangeValid(value)}
+          onApply={(value) => controller.applyCompletionRange(value)}
+        />
+
+        <ButtonGroup aria-label="Completion chart grouping">
+          {#each COMPLETION_GROUPINGS as value (value)}
+            {@const allowed = controller.completionGroupingAllowed(value)}
+            <Tooltip disabled={allowed}>
+              <TooltipTrigger>
+                {#snippet child({ props })}
+                  <Button
+                    {...props}
+                    size="sm"
+                    variant={interval === value ? "secondary" : "ghost"}
+                    aria-pressed={interval === value}
+                    aria-disabled={!allowed}
+                    class="aria-disabled:pointer-events-auto"
+                    onclick={() => {
+                      if (allowed) controller.setCompletionGrouping(value);
+                    }}
+                    >{value}
+                  </Button>
+                {/snippet}
+              </TooltipTrigger>
+              <TooltipContent>
+                {value === "Day"
+                  ? "Day view needs a date range of 2 months or less"
+                  : value === "Month"
+                    ? "Month view needs a date range of 2 months or more"
+                    : "Week view needs a date range of 14 days or more"}
+              </TooltipContent>
+            </Tooltip>
+          {/each}
+        </ButtonGroup>
+      </div>
     </CardHeader>
 
     <CardContent>
@@ -70,34 +104,6 @@
             {/if}
             {history.status === "partial" ? " · incomplete" : ""}
           </Text>
-        </div>
-
-        <div class="flex gap-1">
-          {#each COMPLETION_GROUPINGS as value (value)}
-            <Tooltip>
-              <TooltipTrigger>
-                {#snippet child({ props })}
-                  <Button
-                    {...props}
-                    size="sm"
-                    variant={interval === value ? "secondary" : "ghost"}
-                    aria-pressed={interval === value}
-                    aria-disabled={!controller.completionGroupingAllowed(value)}
-                    class="aria-disabled:pointer-events-auto"
-                    onclick={() => controller.setCompletionGrouping(value)}
-                    >{value}
-                  </Button>
-                {/snippet}
-              </TooltipTrigger>
-              <TooltipContent>
-                {value === "Day"
-                  ? "Day view needs a date range of 2 months or less"
-                  : value === "Month"
-                    ? "Month view needs a date range of 2 months or more"
-                    : "Week view needs a date range of 14 days or more"}
-              </TooltipContent>
-            </Tooltip>
-          {/each}
         </div>
       </div>
       {#if history.status === "loading" || history.status === "idle"}
