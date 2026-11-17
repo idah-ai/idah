@@ -34,6 +34,30 @@ RSpec.describe Entry, database: true do
       )
     end
 
+    describe "#summary" do
+      it "applies the Entry read scope to every count", as: :annotator do
+        ProjectMember::Repository.new(system_auth_context).create(
+          project_id: project_id, account_id: 4, role: "annotator", email: "annotator@example.com", invited_by_id: 1
+        )
+        entry_repo.create(
+          project_id: project_id,
+          dataset_id: dataset_id,
+          status: "pending",
+          wf_step: "annotate",
+          assigned_to_id: 4
+        )
+        entry_repo.create(
+          project_id: project_id,
+          dataset_id: dataset_id,
+          status: "completed",
+          wf_step: "done",
+          assigned_to_id: 5
+        )
+        counts = described_class.new(current_auth_context).summary(project_id: project_id)
+        expect(counts).to eq(total: 1, completed: 0, review: 0, annotation: 1, reviewing: 0, annotating: 1)
+      end
+    end
+
     describe "#custom_filter :assigned" do
       context "As Admin", as: :admin do
         subject { described_class.new(current_auth_context) }

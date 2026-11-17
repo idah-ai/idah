@@ -42,6 +42,7 @@ import type {
   CompletionBucket,
   OpenEntryTab,
 } from "@/components/app/projects/dashboard/project-dashboard.types";
+import type { EntrySummary } from "@/data/model/dataset/entries/constants";
 
 export const PROJECT_DASHBOARD_CONTROLLER_KEY = Symbol("project-dashboard-controller");
 
@@ -187,7 +188,7 @@ export class ProjectDashboardController {
 
   // ==================== Summary & Metrics ====================
 
-  public summary: { total: number; completed: number; review: number; annotation: number } | null = $state.raw(null);
+  public summary: EntrySummary | null = $state.raw(null);
   public summaryLoading = $state(false);
   public summaryError = $state("");
 
@@ -209,7 +210,9 @@ export class ProjectDashboardController {
   }
 
   public get totalEntries(): number | null {
-    return this.scopeReady && !this.denied ? (this.summary?.total ?? this.datasetTotal) : null;
+    return this.scopeReady && !this.denied
+      ? (this.summary?.total ?? (this.summaryLoading ? this.datasetTotal : null))
+      : null;
   }
 
   public get progress(): number | null {
@@ -257,9 +260,6 @@ export class ProjectDashboardController {
     this.attentionBreakdown = null;
     this.attentionLoading = false;
     this.attentionError = "";
-    this.workflowCounts = null;
-    this.workflowLoading = false;
-    this.workflowError = "";
   }
 
   private loadMetrics(resetOverviewPages = true): void {
@@ -267,7 +267,6 @@ export class ProjectDashboardController {
     this.clearMetrics();
     void this.loadSummary();
     void this.loadAttention();
-    void this.loadWorkflowCounts();
     void this.loadCompletionHistory();
     void this.loadDatasetProgress(resetOverviewPages);
     void this.loadEntryProgress(resetOverviewPages || this.focused !== null);
@@ -281,60 +280,35 @@ export class ProjectDashboardController {
   private async loadSummary(): Promise<void> {
     const scope = this.generation;
     const ids = this.effectiveDatasetIds;
-    const datasetTotal = this.datasetTotal;
     const current = (): boolean => this.isCurrent(scope);
-
     this.summary = null;
     this.summaryLoading = true;
     this.summaryError = "";
     try {
-      const results = await Promise.allSettled([
-        datasetTotal === null ? this.countEntries(ids, {}, current) : Promise.resolve(datasetTotal),
-        this.countEntries(ids, { status__in: ["completed"] }, current),
-        this.countEntries(ids, { status__in: ["pending", "in_progress"], wf_step__in: ["review"] }, current),
-        this.countEntries(ids, { status__in: ["pending", "in_progress"], wf_step__in: ["annotate"] }, current),
-      ]);
+      const summary = await entriesBackendDataSource.summary(this.projectId, ids);
       if (!current()) return;
-
-      const [initialTotal, completed, review, annotation] = results.map((result) => {
-        if (result.status === "rejected") throw result.reason;
-        return result.value;
-      });
-      let total = initialTotal;
-      const minimumTotal = completed + review + annotation;
-
-      if (datasetTotal !== null && minimumTotal > total) {
-        total = await this.countEntries(ids, {}, current);
+      const counts = [
+        summary.total,
+        summary.completed,
+        summary.review,
+        summary.annotation,
+        summary.reviewing,
+        summary.annotating,
+      ];
+      if (
+        counts.some((count) => !Number.isSafeInteger(count) || count < 0) ||
+        summary.completed + summary.review + summary.annotation > summary.total ||
+        summary.reviewing > summary.review ||
+        summary.annotating > summary.annotation
+      ) {
+        throw new Error("Dashboard counts are inconsistent. Please retry.");
       }
-      if (!current()) return;
-      if (minimumTotal > total) {
-        throw new Error("Dashboard counts changed while loading. Please try again.");
-      }
-      this.summary = { total, completed, review, annotation };
+      this.summary = summary;
     } catch (reason) {
-      if (current()) this.summaryError = reason instanceof Error ? reason.message : "Dashboard counts unavailable.";
+      if (!current() || this.handleAccessError(reason)) return;
+      this.summaryError = reason instanceof Error ? reason.message : "Dashboard counts unavailable.";
     } finally {
       if (current()) this.summaryLoading = false;
-    }
-  }
-
-  private async countEntries(ids: string[], filters: Filters, current: () => boolean): Promise<number> {
-    if (!current()) throw new Error("Dashboard request retired");
-    try {
-      const response = await entriesBackendDataSource.list({
-        filters: { ...filters, project_id: this.projectId, ...(ids.length ? { dataset_id: ids } : {}) },
-        fields: { [EntryRecord.type]: ["id"] },
-        sort: ["id"],
-        pagination: { page: 1, itemsPerPage: 1 },
-        count: true,
-        noCache: true,
-      });
-
-      if (!current()) throw new Error("Dashboard request retired");
-      return this.exactCount(response.meta);
-    } catch (reason) {
-      if (current()) this.handleAccessError(reason);
-      throw reason;
     }
   }
 
@@ -347,26 +321,20 @@ export class ProjectDashboardController {
 
   // ==================== Entries by Status ====================
 
-  public workflowCounts: { reviewing: number; annotating: number } | null = $state.raw(null);
-  public workflowLoading = $state(false);
-  public workflowError = $state("");
-  private workflowGeneration = 0;
-
   public get workflowDistribution(): {
     total: number;
     residual: number;
     groups: { label: string; value: number; bgColor: string }[];
   } | null {
     const summary = this.summary;
-    const counts = this.workflowCounts;
-    if (!summary || !counts) return null;
+    if (!summary) return null;
 
     const values = {
       completed: summary.completed,
-      reviewing: counts.reviewing,
-      pendingReview: summary.review - counts.reviewing,
-      annotating: counts.annotating,
-      pendingAnnotation: summary.annotation - counts.annotating,
+      reviewing: summary.reviewing,
+      pendingReview: summary.review - summary.reviewing,
+      annotating: summary.annotating,
+      pendingAnnotation: summary.annotation - summary.annotating,
     };
     const residual = summary.total - summary.completed - summary.review - summary.annotation;
     if (values.pendingReview < 0 || values.pendingAnnotation < 0 || residual < 0) return null;
@@ -375,44 +343,6 @@ export class ProjectDashboardController {
       residual,
       groups: PROJECT_DASHBOARD_WORKFLOW_GROUPS.map((group) => ({ ...group, value: values[group.key] })),
     };
-  }
-
-  async retryWorkflowCounts(): Promise<void> {
-    if (this.disposed || this.denied || !this.scopeReady || this.workflowLoading) return;
-    if (this.summary && this.workflowCounts && !this.workflowDistribution) {
-      await Promise.all([this.retrySummary(), this.loadWorkflowCounts()]);
-      return;
-    }
-    await this.loadWorkflowCounts();
-  }
-
-  private async loadWorkflowCounts(): Promise<void> {
-    const scope = this.generation;
-    const request = ++this.workflowGeneration;
-    const ids = this.effectiveDatasetIds;
-    const current = (): boolean => this.isCurrent(scope) && request === this.workflowGeneration;
-    this.workflowCounts = null;
-    this.workflowLoading = true;
-    this.workflowError = "";
-    try {
-      const [reviewing, annotating] = await Promise.all([
-        this.countEntries(
-          ids,
-          { status__in: ["pending", "in_progress"], wf_step__in: ["review"], assigned: true },
-          current,
-        ),
-        this.countEntries(
-          ids,
-          { status__in: ["pending", "in_progress"], wf_step__in: ["annotate"], assigned: true },
-          current,
-        ),
-      ]);
-      if (current()) this.workflowCounts = { reviewing, annotating };
-    } catch (reason) {
-      if (current()) this.workflowError = reason instanceof Error ? reason.message : "Workflow counts unavailable.";
-    } finally {
-      if (current()) this.workflowLoading = false;
-    }
   }
 
   // ==================== Attention & Local Reporting Day ====================

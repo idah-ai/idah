@@ -1,11 +1,18 @@
 <script lang="ts">
-  import Button from "@/components/ui/button/button.svelte";
+  import Link from "@/components/ui/text/Link.svelte";
+  import {
+    PROJECT_DASHBOARD_CONTROLLER_KEY,
+    getProjectDashboardController,
+  } from "@/components/app/projects/dashboard/project-dashboard-controller.svelte";
   import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
   interface Props {
     row: DatasetRecord;
   }
   let { row: dataset }: Props = $props();
+  const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
 </script>
 
-<Button variant="link" class="px-0">{dataset.name}</Button>
+<Link href={`/projects/${controller.projectId}/datasets/${dataset.id}/entries`} showIcon target="_blank">
+  {dataset.name}
+</Link>

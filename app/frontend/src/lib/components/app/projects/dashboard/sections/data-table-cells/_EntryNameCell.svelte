@@ -6,13 +6,22 @@
 
   // Props
   let { row: entry }: { row: EntryRecord } = $props();
+
+  // Variables
+  const truncateLength = 40;
+  const entryName = $derived(entry.name || entry.resource);
+  const entryNameIsTooLong = $derived(entryName.length > truncateLength);
 </script>
 
-<Tooltips>
-  {#snippet trigger()}
-    <Text size="sm">{truncate(entry.name || entry.resource, 40)}</Text>
-  {/snippet}
-  {#snippet content()}
-    <Text size="sm">{entry.name || entry.resource}</Text>
-  {/snippet}
-</Tooltips>
+{#if entryNameIsTooLong}
+  <Tooltips>
+    {#snippet trigger()}
+      <Text size="sm">{truncate(entryName, truncateLength)}</Text>
+    {/snippet}
+    {#snippet content()}
+      <Text size="sm">{entryName}</Text>
+    {/snippet}
+  </Tooltips>
+{:else}
+  <Text size="sm">{entryName}</Text>
+{/if}

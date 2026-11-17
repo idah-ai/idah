@@ -44,7 +44,7 @@
 </script>
 
 <Table.Root>
-  <Table.Header>
+  <!-- <Table.Header>
     <Table.Row>
       {#each Object.entries(columns) as [columnKey, column] (columnKey)}
         <Table.Head
@@ -63,12 +63,62 @@
           {:else}
             {column.title}
           {/if}
-        </Table.Head>
-      {/each}
-    </Table.Row>
-  </Table.Header>
+        </Table.Head> -->
+  <div class="w-full overflow-x-auto">
+    <Table.Root>
+      <Table.Header>
+        <Table.Row>
+          {#each Object.entries(columns) as [columnKey, column] (columnKey)}
+            <Table.Head
+              class={cn("text-muted-foreground text-left font-medium", {
+                "text-center": column.align === "center",
+                "text-right": column.align === "right",
+                "hover:text-foreground cursor-pointer select-none": column.sortable,
+              })}
+              onclick={column.sortable ? () => handleSort(column.key) : undefined}
+              role={column.sortable ? "button" : undefined}
+              tabindex={column.sortable ? 0 : undefined}
+            >
+              {#if column.headerComponent}
+                {@const HeaderComponent = column.headerComponent}
+                <HeaderComponent />
+              {:else}
+                {column.title}
+              {/if}
+            </Table.Head>
+          {/each}
+        </Table.Row>
+      </Table.Header>
 
-  <Table.Body>
+      <Table.Body>
+        {#each rows as row, rowIndex (rowIndex)}
+          {#if RowComponent}
+            {@render RowComponent(row)}
+          {:else}
+            <Table.Row>
+              {#each Object.entries(columns) as [columnKey, column] (columnKey)}
+                <Table.Cell
+                  class={cn("text-left", {
+                    "text-center": column.align === "center",
+                    "text-right": column.align === "right",
+                  })}
+                >
+                  {#if column.cellComponent}
+                    {@const CellComponent = column.cellComponent}
+                    <CellComponent {row} />
+                  {:else}
+                    {row[column.key]}
+                  {/if}
+                </Table.Cell>
+              {/each}
+            </Table.Row>
+          {/if}
+        {/each}
+      </Table.Body>
+    </Table.Root>
+  </div>
+
+  <!-- <Table.Body>
     {#each rows as row, rowIndex (rowIndex)}
       {#if RowComponent}
         {@render RowComponent(row)}
@@ -92,12 +142,13 @@
         </Table.Row>
       {/if}
     {/each}
-  </Table.Body>
+  </Table.Body> -->
 </Table.Root>
 
-<div class="flex items-center gap-2">
+<!-- <div class="flex items-center gap-2"> -->
+<div class="mt-4 flex flex-wrap items-center gap-2">
   {#if caption}
-    <Table.Caption class="px-2 text-left">{caption}</Table.Caption>
+    <small class="text-muted-foreground px-2 text-left">{caption}</small>
   {/if}
 
   {#if showPaginator && pagination}

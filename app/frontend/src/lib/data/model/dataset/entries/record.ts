@@ -8,6 +8,7 @@ import {
   type EntryPriorityBadgeProps,
   type EntryStatus,
   type EntryStatusBadgeProps,
+  type EntrySummary,
   type EntryWorkflowStep,
 } from "@/data/model/dataset/entries/constants";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
@@ -108,6 +109,22 @@ export class EntryWorkTimeRecord extends Record {
 RecordFactory.registerTypes(EntryRecord, EntryWorkTimeRecord);
 
 export const entriesBackendDataSource = createBackendDataSource(EntryRecord, entriesBasePath, {
+  summary: async (projectId: string, datasetIds: string[]): Promise<EntrySummary> => {
+    const response = await fetch(
+      resourcePath(entriesBasePath, "summary", {
+        filter: { project_id: projectId, ...(datasetIds.length ? { dataset_id: datasetIds } : {}) },
+      }),
+    );
+    const body = await response.json().catch((reason) => {
+      if (!response.ok) throw parseSingleElementError({ status: response.status, errors: [] });
+      throw reason;
+    });
+    if (!response.ok || body?.errors) {
+      throw parseSingleElementError({ status: response.status, errors: body?.errors ?? [] });
+    }
+    if (!body?.meta) throw new Error("Dashboard counts unavailable.");
+    return body.meta;
+  },
   select: async (params: { id: string }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
     const res = await fetch(`${entriesBasePath}/${params.id}/select`, {
       method: "GET",

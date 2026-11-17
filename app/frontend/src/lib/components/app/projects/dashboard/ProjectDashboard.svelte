@@ -8,13 +8,13 @@
   } from "$lib/components/app/projects/dashboard/project-dashboard-controller.svelte";
 
   import ProjectDatasetSelection from "@/components/app/projects/dashboard/sections/_ProjectDatasetSelection.svelte";
-  import DatasetMetricsCard from "@/components/app/projects/dashboard/sections/_DatasetMetricsCard.svelte";
-  import EntriesByStatusCard from "@/components/app/projects/dashboard/sections/_EntriesByStatusCard.svelte";
-  import CompletedEntriesPerPeriodCard from "@/components/app/projects/dashboard/sections/_CompletedEntriesPerPeriodCard.svelte";
-  import ProgressByDatasetCard from "@/components/app/projects/dashboard/sections/_ProgressByDatasetCard.svelte";
-  import OpenEntriesCard from "@/components/app/projects/dashboard/sections/_OpenEntriesCard.svelte";
+  // import DatasetMetricsCard from "@/components/app/projects/dashboard/sections/_DatasetMetricsCard.svelte";
+  // import EntriesByStatusCard from "@/components/app/projects/dashboard/sections/_EntriesByStatusCard.svelte";
+  // import CompletedEntriesPerPeriodCard from "@/components/app/projects/dashboard/sections/_CompletedEntriesPerPeriodCard.svelte";
+  // import ProgressByDatasetCard from "@/components/app/projects/dashboard/sections/_ProgressByDatasetCard.svelte";
+  // import OpenEntriesCard from "@/components/app/projects/dashboard/sections/_OpenEntriesCard.svelte";
   import OpenEntriesCardV2 from "@/components/app/projects/dashboard/sections/_OpenEntriesCardV2.svelte";
-  import AnnotationsByCategoryCard from "@/components/app/projects/dashboard/sections/_AnnotationsByCategoryCard.svelte";
+  // import AnnotationsByCategoryCard from "@/components/app/projects/dashboard/sections/_AnnotationsByCategoryCard.svelte";
 
   // Props
   interface Props {
@@ -33,7 +33,7 @@
   });
 </script>
 
-<div class="grid gap-4">
+<div class="grid grid-cols-1 gap-4">
   <ProjectDatasetSelection />
 
   <!-- <DatasetMetricsCard />

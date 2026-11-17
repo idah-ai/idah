@@ -10,6 +10,21 @@ class EntriesExpo < BaseExpo
     that can be assigned, annotated, and tracked through workflow stages.
   MD
 
+  expose on_http(:get, "/summary") do
+    desc "Exact Dashboard Entry counts for a Project and optional Datasets"
+    input do
+      field :filter, Hash
+    end
+    output do
+      field :meta, Hash
+    end
+  end
+  def summary
+    counts = service.summary(params[:filter])
+    server.content_type "application/vnd.api+json"
+    server.halt 200, JSON.generate(meta: counts)
+  end
+
   json_api Entry::Record do
     allowed_included "dataset",
                      "dataset.project",
