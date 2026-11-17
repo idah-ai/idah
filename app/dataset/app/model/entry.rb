@@ -72,6 +72,29 @@ module Entry
     self.table = "entries"
     self.resource = Resource::Dataset::Entries
 
+    query
+    def summary(project_id:, dataset_ids: nil)
+      with_db_mode :r do
+        collection = scoped(:read).where(project_id: project_id)
+        collection = collection.where(dataset_id: dataset_ids) if dataset_ids
+        workflow = { status: %w[pending in_progress] }
+        counts = {
+          total: nil,
+          completed: { status: "completed" },
+          review: workflow.merge(wf_step: "review"),
+          annotation: workflow.merge(wf_step: "annotate"),
+          reviewing: Sequel.&(workflow.merge(wf_step: "review"), Sequel.~(assigned_to_id: nil)),
+          annotating: Sequel.&(workflow.merge(wf_step: "annotate"), Sequel.~(assigned_to_id: nil))
+        }
+        collection.select(
+          *counts.map do |name, condition|
+            count = Sequel.function(:count, Sequel.lit("*"))
+            (condition ? count.filter(condition) : count).as(name)
+          end
+        ).first
+      end
+    end
+
     custom_filter :completed_at__gte do |collection, value|
       collection.where(Sequel[:entries][:completed_at] >= completion_filter_time(value))
     end

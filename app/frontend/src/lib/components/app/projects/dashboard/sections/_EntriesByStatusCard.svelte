@@ -20,7 +20,7 @@
   </Card.Header>
 
   <Card.Content>
-    {#if controller.summaryLoading || controller.workflowLoading}
+    {#if controller.summaryLoading}
       <Spinner size="sm" />
     {:else if distribution}
       <div class="space-y-4">
@@ -59,15 +59,14 @@
     {:else}
       <ResponseBlock
         title="Entries by status unavailable"
-        description={controller.summaryError ||
-          controller.workflowError ||
-          "Workflow counts changed while loading. Please retry."}
+        description={controller.summaryError || "Workflow counts unavailable. Please retry."}
       >
         {#snippet actions()}
           <Button
             variant="outline"
             size="sm"
-            onclick={() => void (controller.summary ? controller.retryWorkflowCounts() : controller.retrySummary())}
+            disabled={controller.denied || controller.summaryLoading || !controller.scopeReady}
+            onclick={() => void controller.retrySummary()}
           >
             Retry
           </Button>

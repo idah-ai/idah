@@ -425,6 +425,158 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
   end
   let(:forged) { "2000-01-01T00:00:00Z" }
 
+  describe "GET /entries/summary" do
+    def read_summary(filters = { project_id: project_id })
+      get "/entries/summary?#{Rack::Utils.build_nested_query(filter: filters)}"
+    end
+
+    it "returns all six exact counts, including non-workflow entries" do
+      rows = [
+        ["completed", "done", nil], ["pending", "review", nil],
+        ["in_progress", "review", 7], ["pending", "annotate", nil],
+        ["in_progress", "annotate", 7], ["processing", "start", nil],
+        ["errored", "error", nil]
+      ].map do |status, step, assigned|
+        { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset_id,
+          status: status, wf_step: step, assigned_to_id: assigned }
+      end
+      entries.client { |db| db[:entries].multi_insert(rows) }
+      read_summary
+      expect(last_response.status).to eq(200), last_response.body
+      expect(JSON.parse(last_response.body)).to eq(
+        "meta" => { "total" => 7, "completed" => 1, "review" => 2,
+                    "annotation" => 2, "reviewing" => 1, "annotating" => 1 }
+      )
+    end
+
+    it "returns exact counts above the list count cap" do
+      rows = Array.new(2005) do
+        { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset_id,
+          status: "completed", wf_step: "done" }
+      end
+      entries.client { |db| db[:entries].multi_insert(rows) }
+      read_summary
+      expect(last_response.status).to eq(200), last_response.body
+      expect(JSON.parse(last_response.body).fetch("meta")).to include("total" => 2005, "completed" => 2005)
+    end
+
+    ["review", "annotate"].each do |step|
+      it "counts more than 1000 assigned Entries in #{step}" do
+        entries.client do |db|
+          db[:entries].multi_insert(
+            Array.new(1001) do
+              { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset_id,
+                status: "in_progress", wf_step: step, assigned_to_id: 7 }
+            end
+          )
+        end
+        read_summary
+        expect(last_response.status).to eq(200), last_response.body
+        counts = JSON.parse(last_response.body).fetch("meta")
+        total_key, assigned_key = step == "review" ? %w[review reviewing] : %w[annotation annotating]
+        expect(counts).to include("total" => 1001, total_key => 1001, assigned_key => 1001)
+      end
+    end
+
+    it "supports selected and focused Dataset scopes and an empty Project" do
+      other = Dataset::Repository.new(system_context).create(
+        project_id: project_id,
+        modality: "video",
+        labels: [],
+        labeling_configuration: {},
+        workflow_configuration: {}
+      )
+      read_summary
+      expect(JSON.parse(last_response.body).fetch("meta").values).to all(eq(0))
+      entries.create(project_id: project_id, dataset_id: dataset_id, status: "pending", wf_step: "annotate")
+      entries.create(project_id: project_id, dataset_id: other, status: "completed", wf_step: "done")
+      read_summary(project_id: project_id, dataset_id: [dataset_id])
+      expect(JSON.parse(last_response.body).fetch("meta")).to include("total" => 1, "completed" => 0)
+      read_summary(project_id: project_id, dataset_id: [dataset_id, other])
+      expect(JSON.parse(last_response.body).fetch("meta")).to include("total" => 2, "completed" => 1)
+    end
+
+    [{}, { project_id: "invalid" }, { dataset_id: [""] }, { dataset_id: "bad" },
+     { dataset_id: ["bad"] }, { status: "completed" }].each do |invalid|
+      it "rejects invalid filters #{invalid.inspect}" do
+        filters = invalid.empty? ? {} : { project_id: project_id }.merge(invalid)
+        read_summary(filters)
+        expect(last_response.status).to eq(422), last_response.body
+      end
+    end
+
+    it "rejects Dataset IDs belonging to a different Project" do
+      foreign_project = Project::Repository.new(system_context).create(
+        name: "Foreign", organization_id: 2, created_by_email: "other@example.com"
+      )
+      foreign_dataset = Dataset::Repository.new(system_context).create(
+        project_id: foreign_project,
+        modality: "video",
+        labels: [],
+        labeling_configuration: {},
+        workflow_configuration: {}
+      )
+      read_summary(project_id: project_id, dataset_id: [foreign_dataset])
+      expect(last_response.status).to eq(422)
+    end
+
+    context "as an Organization Owner", as: :org_owner do
+      it "denies summary access to another organization" do
+        foreign_project = Project::Repository.new(system_context).create(
+          name: "Foreign", organization_id: 2, created_by_email: "other@example.com"
+        )
+        read_summary(project_id: foreign_project)
+        expect(last_response.status).to be_between(403, 404)
+        read_summary
+        expect(last_response.status).to eq(200), last_response.body
+      end
+    end
+
+    context "as a Project Owner", as: :project_owner do
+      it "denies a foreign Project and permits the owner's Project" do
+        read_summary
+        expect(last_response.status).to be_between(403, 404)
+        ProjectMember::Repository.new(system_context).create(
+          project_id: project_id,
+          account_id: 3,
+          role: "project_owner",
+          email: "owner@example.com",
+          invited_by_id: 1
+        )
+        read_summary
+        expect(last_response.status).to eq(200), last_response.body
+      end
+    end
+  end
+
+  describe "offset-aware Entry pagination" do
+    [999, 1000, 1001, 2005].each do |total|
+      it "keeps metadata and rows correct for #{total} Entries" do
+        ids = Array.new(total) { UUIDv7.generate }.sort
+        entries.client do |db|
+          db[:entries].multi_insert(
+            ids.map do |id|
+              { id: id, project_id: project_id, dataset_id: dataset_id, status: "pending",
+                wf_step: "annotate" }
+            end
+          )
+        end
+        final = (total / 10.0).ceil
+        [99, 100, 101, final, final + 1].uniq.each do |page|
+          get "/entries?#{Rack::Utils.build_nested_query(
+            filter: { project_id: project_id }, sort: "id", page: { number: page, size: 10 }, count: true
+          )}"
+          expect(last_response.status).to eq(200), last_response.body
+          body = JSON.parse(last_response.body)
+          offset = (page - 1) * 10
+          remaining = [total - offset, 0].max
+          expect(body.fetch("meta")).to include("count" => offset + [remaining, 1000].min, "more" => remaining >= 1000)
+          expect(body.fetch("data").map { |record| record["id"] }).to eq(ids.drop(offset).take(10))
+        end
+      end
+    end
+  end
+
   it "returns an offset-bearing timestamp and cannot overwrite it through ordinary updates" do
     id = entries.create(project_id:, dataset_id:, status: "completed", wf_step: "done")
     original = entries.find!(id).completed_at
