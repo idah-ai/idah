@@ -175,6 +175,12 @@
     return leaves[0] ? iconOf(leaves[0]) : "";
   }
 
+  /**
+   * Groups whose menu is handing focus back to the trigger. That focus would open the group's
+   * tooltip and keep it open after the pointer leaves, so the trigger skips it once.
+   */
+  const returningFocus = new Set<string>();
+
   function groupLabel(node: IToolbarGroupNode): string {
     return node.label ?? node.segment;
   }
@@ -292,6 +298,10 @@
                 {#snippet child({ props })}
                   <Button
                     {...props}
+                    onfocus={(event: FocusEvent) => {
+                      if (returningFocus.delete(node.path)) return;
+                      (props.onfocus as ((event: FocusEvent) => void) | undefined)?.(event);
+                    }}
                     variant={_activeLeaf ? toggledButtonVariant(_activeLeaf) : "ghost"}
                     size="icon-sm"
                     class={cn("w-auto gap-0.5 px-1.5", _accented && accentButtonClass(node.accentVariant))}
@@ -304,7 +314,7 @@
               </Tooltip.Trigger>
             {/snippet}
           </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="start" side="bottom">
+          <DropdownMenu.Content align="start" side="bottom" onCloseAutoFocus={() => returningFocus.add(node.path)}>
             {@render groupContent(node)}
           </DropdownMenu.Content>
         </DropdownMenu.Root>
