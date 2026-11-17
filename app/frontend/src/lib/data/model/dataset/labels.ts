@@ -1,4 +1,4 @@
-import type { IConfigPropertyType } from "@/plugin/interface/Activity";
+import type { IConfigPropertyType } from "@/plugin/v2/types";
 import type { LabelValue } from "@/utils/types";
 import {
   CircleCheckBigIcon,
