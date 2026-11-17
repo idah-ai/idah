@@ -31,7 +31,13 @@
     <Card.Title>Progress by dataset</Card.Title>
     {#if controller.focused}
       <Card.Action>
-        <Link href={`/projects/${controller.projectId}/datasets/${controller.focused.id}/entries`}>All entries</Link>
+        <Link
+          href={`/projects/${controller.projectId}/datasets/${controller.focused.id}/entries`}
+          showIcon
+          target="_blank"
+        >
+          All entries
+        </Link>
       </Card.Action>
     {/if}
   </Card.Header>

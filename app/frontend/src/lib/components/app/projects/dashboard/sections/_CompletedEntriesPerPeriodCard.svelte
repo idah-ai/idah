@@ -4,7 +4,6 @@
   import { format, isSameMonth, isSameYear, parseISO } from "date-fns";
 
   import { Button } from "@/components/ui/button";
-  import { ButtonGroup } from "@/components/ui/button-group";
   import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
   import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
@@ -34,12 +33,10 @@
 
 <TooltipProvider>
   <Card>
-    <CardHeader class="flex flex-wrap items-start justify-between gap-4 md:flex-row">
-      <div class="space-y-1.5">
-        <CardTitle>Completed entries per {interval.toLowerCase()}</CardTitle>
-      </div>
+    <CardHeader class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <CardTitle>Completed entries per {interval.toLowerCase()}</CardTitle>
 
-      <div class="flex flex-wrap items-center gap-1.5">
+      <div class="flex w-full items-center justify-between gap-2 lg:w-fit lg:justify-end">
         <DateRangePicker
           value={range}
           maxDate={controller.completionToday}
@@ -49,7 +46,7 @@
           onApply={(value) => controller.applyCompletionRange(value)}
         />
 
-        <ButtonGroup aria-label="Completion chart grouping">
+        <div class="bg-secondary h-9 items-center rounded-md p-1" aria-label="Completion chart grouping">
           {#each COMPLETION_GROUPINGS as value (value)}
             {@const allowed = controller.completionGroupingAllowed(value)}
             <Tooltip disabled={allowed}>
@@ -58,7 +55,7 @@
                   <Button
                     {...props}
                     size="sm"
-                    variant={interval === value ? "secondary" : "ghost"}
+                    variant={interval === value ? "outline" : "ghost"}
                     aria-pressed={interval === value}
                     aria-disabled={!allowed}
                     class="aria-disabled:pointer-events-auto"
@@ -78,7 +75,7 @@
               </TooltipContent>
             </Tooltip>
           {/each}
-        </ButtonGroup>
+        </div>
       </div>
     </CardHeader>
 
