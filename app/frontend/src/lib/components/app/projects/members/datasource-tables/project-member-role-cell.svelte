@@ -59,7 +59,7 @@
   let selectedRole: ProjectMemberRole = $state(projectMember.role);
   let selectResetKey: number = $state(0);
   let canUpdateMember: boolean = $state(false);
-  let assignableRoles: Array<LabelValue<string | number>> = $state(projectMemberRoles);
+  let assignableRoles: Array<LabelValue<ProjectMemberRole>> = $state(projectMemberRoles);
 
   let selectedRoleLabel = $derived(projectMemberRoles.find((r) => r.value === selectedRole)?.label ?? selectedRole);
 
