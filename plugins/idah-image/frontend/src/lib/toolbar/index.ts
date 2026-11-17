@@ -90,6 +90,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
   }
   if (hasConfig(driver, IMAGE_MASK)) {
     // One dropdown titled "Mask": Mask Brush (Q), Mask Polygon (W).
+    // The group's section comes from defineGroup, so its items don't repeat it.
     t.defineGroup("mask", { label: "Mask", icon: brushIcon, section: "annotate" });
     t.add({
       icon: brushIcon,
@@ -97,7 +98,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
       name: "idah-image:tool.mask-brush",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
       group: "mask",
-      section: "annotate",
       onClick: () => {
         if (driver.mode === IMAGE_MASK && maskTool.active === "brush") {
           driver.setMode(DEFAULT_MODE);
@@ -116,7 +116,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
       name: "idah-image:tool.mask-polygon",
       modes: [DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_POLYGON, IMAGE_LINE, IMAGE_MASK],
       group: "mask",
-      section: "annotate",
       onClick: () => {
         if (driver.mode === IMAGE_MASK && maskTool.active === "polygon") {
           driver.setMode(DEFAULT_MODE);
@@ -194,9 +193,10 @@ export function initToolbar(driver: IIdahDriverV2): void {
   });
 
   // ── Done Area (Coverage Mask) ──────────────────────────────────────
-  // One dropdown titled "Done Area": Hide/Show, Add Area, Remove Area, then Clear All.
+  // One dropdown titled "Done Area": Add Area, Remove Area, Hide/Show, then Clear All.
 
   // Light green while the entry has a Done Area (ShapesContainer invalidates on change).
+  // Section is set here once; the items inside the dropdown don't need their own.
   t.defineGroup("done-area", {
     label: "Done Area",
     icon: doubleCheckIcon,
@@ -211,7 +211,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
     label: "Add Area",
     modes: DONE_AREA_MODES,
     group: "done-area",
-    section: "assist",
     toggledVariant: "success",
     onClick: () => {
       const active = ui.coverageMaskActive && !ui.coverageMaskIsRemove;
@@ -226,7 +225,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
     label: "Remove Area",
     modes: DONE_AREA_MODES,
     group: "done-area",
-    section: "assist",
     toggledVariant: "destructive",
     onClick: () => {
       const active = ui.coverageMaskActive && ui.coverageMaskIsRemove;
@@ -242,7 +240,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
     label: () => (ui.coverageMaskVisible ? "Hide" : "Show"),
     modes: DONE_AREA_MODES,
     group: "done-area",
-    section: "assist",
     // Same command as the H shortcut; hiding also leaves add/remove.
     onClick: () => driver.command.call("coverage-mask-toggle-visibility"),
   });
@@ -253,7 +250,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
     label: "Clear All",
     modes: DONE_AREA_MODES,
     group: "done-area",
-    section: "assist",
     variant: "destructive",
     separatorBefore: true,
     onClick: () => driver.command.call("coverage-mask-clear"),
