@@ -82,7 +82,7 @@
           <Button
             {...props}
             variant="outline"
-            class={cn(props.class, "w-full justify-start text-left font-normal", {
+            class={cn(props.class as string | undefined, "w-full justify-start text-left font-normal", {
               "text-muted-foreground": !value,
               "has-[>svg]:pr-10": clearable && !!value,
             })}

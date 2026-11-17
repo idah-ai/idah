@@ -44,7 +44,9 @@
 
       /** Remove organizationId from account role_scope. Only the scope delta is
        *  sent; the server auto-demotes an org_owner whose org list becomes empty. */
-      const updatedOrgRoleScope = (account.role_scope?.org || []).filter((scope) => scope !== String(organizationId));
+      const updatedOrgRoleScope = (account.role_scope?.org || []).filter(
+        (scope: string) => scope !== String(organizationId),
+      );
 
       await accountsBackendDataSource.update(account.id, {
         attributes: {
