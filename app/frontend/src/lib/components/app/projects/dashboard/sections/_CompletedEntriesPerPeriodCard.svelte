@@ -23,7 +23,9 @@
   const zone = $derived(history.zone);
   const buckets = $derived(controller.completionBuckets);
   const maximum = $derived(controller.completionMaximum);
-  const chartConfig = { count: { label: "Recorded completions", color: "var(--primary)" } } satisfies Chart.ChartConfig;
+  const chartConfig = {
+    count: { label: "Currently completed entries", color: "var(--primary)" },
+  } satisfies Chart.ChartConfig;
   const yTicks = $derived(
     [0, Math.floor(maximum / 2), maximum].filter((value, index, values) => values.indexOf(value) === index),
   );
@@ -56,7 +58,7 @@
             {["ready", "empty", "partial"].includes(history.status) ? controller.completionTotal.toLocaleString() : "—"}
           </Text>
           <Text size="xs">
-            entries completed in
+            currently completed entries with completion dates in
             {#if range.start === range.end}
               {format(rangeStart, dateFormat)}
             {:else if isSameMonth(rangeStart, rangeEnd)}
@@ -103,12 +105,12 @@
           class="text-muted-foreground flex h-64 items-center justify-center rounded-md border border-dashed text-sm"
           role="status"
         >
-          Loading recorded completions · {controller.completionTotal.toLocaleString()} rows loaded
+          Loading completed entries · {controller.completionTotal.toLocaleString()} rows loaded
         </div>
       {:else if history.status === "ready" || history.status === "partial"}
         {#if history.status === "partial"}
           <div class="text-destructive mb-3 flex flex-wrap items-center gap-2 text-sm" role="status">
-            {controller.completionTotal.toLocaleString()} recorded rows loaded — incomplete. {history.error}
+            {controller.completionTotal.toLocaleString()} completed entries loaded — incomplete. {history.error}
             <Button size="sm" variant="outline" onclick={() => void controller.retryCompletionHistory()}>Retry</Button>
           </div>
         {/if}
@@ -117,7 +119,7 @@
           config={chartConfig}
           class="aspect-auto h-72 w-full min-w-0"
           role="group"
-          aria-label="Recorded completion trend"
+          aria-label="Currently completed entries by completion date"
         >
           <BarChart
             data={buckets}
@@ -158,7 +160,7 @@
                   tabindex={0}
                   role="img"
                   aria-current={bucket.current ? "date" : undefined}
-                  aria-label={`${bucket.label}: ${bucket.count === null ? "not yet verified" : `${bucket.count} recorded completions`}${history.status === "partial" ? "; incomplete" : ""}`}
+                  aria-label={`${bucket.label}: ${bucket.count === null ? "not yet verified" : `${bucket.count} currently completed entries`}${history.status === "partial" ? "; incomplete" : ""}`}
                   onfocus={() => context.tooltip.show({ data: bucket })}
                   onblur={() => context.tooltip.hide()}
                 />
@@ -170,7 +172,9 @@
                 {#snippet formatter({ value })}
                   <div class="space-y-1">
                     <p>
-                      {value === null ? "Not yet verified" : `${Number(value).toLocaleString()} recorded completions`}
+                      {value === null
+                        ? "Not yet verified"
+                        : `${Number(value).toLocaleString()} currently completed entries`}
                     </p>
                     {#if history.status === "partial"}<p class="text-muted-foreground">Incomplete data</p>{/if}
                     {#if context.tooltip.data?.clipped}<p class="text-muted-foreground">
@@ -183,12 +187,16 @@
           </BarChart>
         </Chart.Container>
       {:else if history.status === "empty"}
-        <ResponseBlock size="sm" title="Entries completed is empty" description="No entries completed in this range." />
+        <ResponseBlock
+          size="sm"
+          title="No completed entries"
+          description="No currently completed entries have a recorded completion date in this range."
+        />
       {:else}
         <ResponseBlock
           size="sm"
-          title="Entries completed unavailable"
-          description={history.error || "Entries completed are unavailable."}
+          title="Completed entries unavailable"
+          description={history.error || "Completed entries are unavailable."}
         >
           {#snippet actions()}
             <Button
