@@ -6,14 +6,13 @@
     getProjectDashboardController,
   } from "@/components/app/projects/dashboard/project-dashboard-controller.svelte";
   import { PROJECT_DASHBOARD_OPEN_ENTRIES_TABS } from "../project-dashboard.constants";
-  import { getColumns, enrichWithTimeData, TOTAL_TIME_SORT_KEY } from "./_OpenEntriesCardV2.table";
+  import { getColumns, enrichWithTimeData } from "./_OpenEntriesCardV2.table";
   import DataTable from "@/components/app/data-table/DataTable.svelte";
-  import EntryCollapsibleRow from "./_EntryCollapsibleRow.svelte";
+  import EntryTimeCollapsibleTableRow from "./_EntryTimeCollapsibleTableRow.svelte";
   import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
 
-  import type { DataTableSortState } from "@/components/app/data-table/types";
   import type { EntryWithTimeData } from "./_OpenEntriesCardV2.table";
 
   // ── Controller ──────────────────────────────────────────────────
@@ -27,31 +26,6 @@
     controller.entryProgressRows.map((entry) => enrichWithTimeData(entry)),
   );
 
-  // ── Sort (client-side on current page, placeholder until BE support) ──
-  let sort: DataTableSortState = $state({ key: TOTAL_TIME_SORT_KEY, dir: "desc" });
-
-  function handleSort(next: DataTableSortState): void {
-    sort = next;
-  }
-
-  const sortedRows = $derived.by(() => {
-    const arr = [...rows];
-    const { key, dir } = sort;
-    const mul = dir === "asc" ? 1 : -1;
-    arr.sort((a, b) => {
-      let va: number, vb: number;
-      if (key === TOTAL_TIME_SORT_KEY) {
-        va = a.totalSeconds;
-        vb = b.totalSeconds;
-      } else {
-        va = (a[key as keyof EntryWithTimeData] as any) ?? 0;
-        vb = (b[key as keyof EntryWithTimeData] as any) ?? 0;
-      }
-      return (va < vb ? -1 : va > vb ? 1 : 0) * mul;
-    });
-    return arr;
-  });
-
   // ── Expand / collapse ────────────────────────────────────────────
   let expandedIds: string[] = $state([]);
 
@@ -64,14 +38,14 @@
   }
 
   const allVisibleExpanded = $derived(
-    sortedRows.length > 0 && sortedRows.every((r) => expandedIds.includes(r.id)),
+    rows.length > 0 && rows.every((r) => expandedIds.includes(r.id)),
   );
 
   function toggleAll(): void {
     if (allVisibleExpanded) {
       expandedIds = [];
     } else {
-      expandedIds = sortedRows.map((r) => r.id);
+      expandedIds = rows.map((r) => r.id);
     }
   }
 
@@ -102,7 +76,7 @@
 
         <button
           class="text-sm font-medium text-link hover:text-link-hover disabled:text-muted-foreground disabled:cursor-not-allowed"
-          disabled={sortedRows.length === 0}
+          disabled={rows.length === 0}
           onclick={toggleAll}
         >
           {allVisibleExpanded ? "Collapse all" : "Expand all"}
@@ -125,7 +99,7 @@
           <Spinner size="sm" />
         </div>
       {:else}
-        {#if sortedRows.length === 0}
+        {#if rows.length === 0}
           <ResponseBlock
             size="sm"
             title="No entries to display"
@@ -135,9 +109,7 @@
         <div class="overflow-x-auto">
           <DataTable
             {columns}
-            rows={sortedRows}
-            {sort}
-            onSort={handleSort}
+            rows={rows}
             showPaginator={pagination !== undefined}
             {pagination}
             onPageChange={(page) =>
@@ -148,7 +120,7 @@
             caption={controller.entryProgressCaption}
           >
             {#snippet RowComponent(row: EntryWithTimeData)}
-              <EntryCollapsibleRow
+              <EntryTimeCollapsibleTableRow
                 {row}
                 expanded={expandedIds.includes(row.id)}
                 onToggle={toggleRow}

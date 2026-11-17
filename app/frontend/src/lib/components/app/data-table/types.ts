@@ -6,7 +6,8 @@ export interface DataTableColumnSetting<T extends Record> {
   title: string;
   align?: "left" | "center" | "right"; // default: left
   cellComponent?: Component<{ row: T }>;
-  sortable?: boolean; // enables column header sorting
+  headerComponent?: Component;
+  sortable?: boolean;
 }
 
 export interface DataTableColumnSettings<T extends Record> {

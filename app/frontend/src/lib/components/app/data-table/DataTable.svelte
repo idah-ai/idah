@@ -51,17 +51,17 @@
           class={cn("text-muted-foreground text-left font-medium", {
             "text-center": column.align === "center",
             "text-right": column.align === "right",
-            "cursor-pointer select-none hover:text-foreground": column.sortable,
+            "hover:text-foreground cursor-pointer select-none": column.sortable,
           })}
           onclick={column.sortable ? () => handleSort(column.key) : undefined}
           role={column.sortable ? "button" : undefined}
-          tabindex={column.sortable ? "0" : undefined}
+          tabindex={column.sortable ? 0 : undefined}
         >
-          {column.title}
-          {#if column.sortable && sort?.key === column.key}
-            <span class="arr ml-1 inline-block w-3 text-primary">
-              {sort.dir === "asc" ? "↑" : "↓"}
-            </span>
+          {#if column.headerComponent}
+            {@const HeaderComponent = column.headerComponent}
+            <HeaderComponent />
+          {:else}
+            {column.title}
           {/if}
         </Table.Head>
       {/each}

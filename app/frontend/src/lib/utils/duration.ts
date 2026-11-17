@@ -20,3 +20,20 @@ export function formatDuration(totalSeconds: number): string {
   }
   return `${minutes}:${pad(seconds)}`;
 }
+
+/**
+ * Format a duration in seconds into padded hh:mm:ss.
+ *
+ * - 0       → "—"
+ * - 45      → "00:00:45"
+ * - 3661    → "01:01:01"
+ *
+ * Pure logic — no dependencies, unit-testable.
+ */
+export function formatSeconds(totalSeconds: number): string {
+  if (totalSeconds <= 0) return "—";
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}

@@ -451,6 +451,28 @@ module Entry
       end
     end
 
+    # Custom sort handler for `total_time_spent` — sums all values in the
+    # `time_tracking` JSONB column.  Falls back to the default behaviour for
+    # every other sort key.
+    def prepare_ordering(query, sort)
+      sort = Array(sort).dup
+      rest = []
+
+      sort.each do |x|
+        if x.end_with?("total_time_spent")
+          direction = x.start_with?("-") ? :desc : :asc
+          expr = Sequel.lit(
+            "(SELECT COALESCE(SUM(value::integer), 0) FROM jsonb_each_text(entries.time_tracking))"
+          )
+          query = query.order(Sequel.public_send(direction, expr, nulls: :last))
+        else
+          rest << x
+        end
+      end
+
+      super(query, rest)
+    end
+
     private
 
     def add_event_metadata(**opts)
