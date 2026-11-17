@@ -17,7 +17,7 @@
   import type { IToolbarItem, IToolbarNode, IToolbarGroupNode } from "@/plugin/v2/types";
   import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
   import {
-    toggledButton,
+    toggledButtonVariant,
     resolveToolbarText,
     itemClass,
     groupActiveVariantClass,
@@ -200,15 +200,13 @@
 <!-- Leaf item as a header-bar button -->
 {#snippet leafButton(item: IToolbarItem)}
   {@const isToggled = isItemToggled(item)}
-  {@const toggled = toggledButton(item)}
   <KbdTooltipButton
     label={labelOf(item)}
     {driver}
     commandName={item.name}
     align="center"
     delayDuration={100}
-    variant={isToggled ? toggled.variant : "ghost"}
-    class={isToggled ? toggled.class : undefined}
+    variant={isToggled ? toggledButtonVariant(item) : "ghost"}
     size="icon-sm"
     onclick={item.onClick}
     disabled={disabledToolsIfWorkflowSteps.includes(driver.workflowStep)}
@@ -284,7 +282,6 @@
 {#snippet groupButton(node: IToolbarGroupNode)}
   {#if visibleLeaves(node).length > 0}
     {@const _activeLeaf = visibleLeaves(node).find(isItemToggled)}
-    {@const _toggled = toggledButton(_activeLeaf)}
     {@const _accented = !_activeLeaf && isGroupAccented(node)}
     <Tooltip.Provider>
       <Tooltip.Root delayDuration={100}>
@@ -295,13 +292,9 @@
                 {#snippet child({ props })}
                   <Button
                     {...props}
-                    variant={_activeLeaf ? _toggled.variant : "ghost"}
+                    variant={_activeLeaf ? toggledButtonVariant(_activeLeaf) : "ghost"}
                     size="icon-sm"
-                    class={cn(
-                      "w-auto gap-0.5 px-1.5",
-                      _activeLeaf && _toggled.class,
-                      _accented && accentButtonClass(node.accentVariant),
-                    )}
+                    class={cn("w-auto gap-0.5 px-1.5", _accented && accentButtonClass(node.accentVariant))}
                   >
                     <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                     {@html groupIcon(node)}

@@ -62,11 +62,11 @@ export function accentSubTriggerClass(variant: Tone | undefined): string {
 // ── Header-bar buttons ─────────────────────────────────────────────────
 
 /**
- * Button variant + extra class for a toggled item — the item itself for a leaf button, or
- * the group's active child for a collapsed group button.
+ * Button variant for a toggled item — the item itself for a leaf button, or the group's
+ * active child for a collapsed group button.
  */
-export function toggledButton(item: IToolbarItem | undefined): { variant: ButtonVariant; class: string } {
-  return { variant: toneOf(item) ?? "default", class: "" };
+export function toggledButtonVariant(item: IToolbarItem | undefined): ButtonVariant {
+  return toneOf(item) ?? "default";
 }
 
 // ── Dynamic text ───────────────────────────────────────────────────────

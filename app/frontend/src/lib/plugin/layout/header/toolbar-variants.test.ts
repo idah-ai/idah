@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   resolveToolbarText,
   itemClass,
-  toggledButton,
+  toggledButtonVariant,
   accentButtonClass,
   accentSubTriggerClass,
 } from "./toolbar-variants";
@@ -50,15 +50,15 @@ describe("itemClass", () => {
   });
 });
 
-describe("toggledButton", () => {
+describe("toggledButtonVariant", () => {
   it("uses the matching solid button variant for a toned item", () => {
-    expect(toggledButton(item({ toggledVariant: "success" }))).toEqual({ variant: "success", class: "" });
-    expect(toggledButton(item({ toggledVariant: "destructive" }))).toEqual({ variant: "destructive", class: "" });
+    expect(toggledButtonVariant(item({ toggledVariant: "success" }))).toBe("success");
+    expect(toggledButtonVariant(item({ toggledVariant: "destructive" }))).toBe("destructive");
   });
 
   it("keeps the default solid button for items without a tone", () => {
-    expect(toggledButton(item())).toEqual({ variant: "default", class: "" });
-    expect(toggledButton(undefined)).toEqual({ variant: "default", class: "" });
+    expect(toggledButtonVariant(item())).toBe("default");
+    expect(toggledButtonVariant(undefined)).toBe("default");
   });
 });
 
