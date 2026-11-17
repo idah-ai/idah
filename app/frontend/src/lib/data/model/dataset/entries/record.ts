@@ -115,10 +115,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     throw "No data returned";
   },
-  assign: async (params: {
-    id: string;
-    memberAccountId: number;
-  }): Promise<RecordResponse<EntryRecord>> => {
+  assign: async (params: { id: string; memberAccountId: number }): Promise<RecordResponse<EntryRecord>> => {
     const res = await fetch(`${entriesBasePath}/${params.id}/assign`, {
       method: "PATCH",
       body: encodeModel(EntryRecord, { attributes: { assigned_to_id: params.memberAccountId } }),
