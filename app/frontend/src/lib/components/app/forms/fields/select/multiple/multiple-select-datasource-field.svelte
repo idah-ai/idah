@@ -334,6 +334,10 @@
     </PopoverContent>
   </Popover>
 
+  {#if allChoicesSelected && values.length >= maxSelections}
+    <FieldDescription role="status">Selection limit reached: {maxSelections} options.</FieldDescription>
+  {/if}
+
   {#if slotInfo}
     {@render slotInfo()}
   {:else if info}
