@@ -26,6 +26,16 @@
     controller.entryProgressRows.map((entry) => enrichWithTimeData(entry)),
   );
 
+  // Cache the last visible rows so the table never goes empty during loading
+  let cachedRows: EntryWithTimeData[] = $state([]);
+  $effect(() => {
+    if (rows.length > 0) cachedRows = rows;
+  });
+
+  const displayRows = $derived(
+    controller.entryProgressLoading && cachedRows.length > 0 ? cachedRows : rows,
+  );
+
   // ── Expand / collapse ────────────────────────────────────────────
   let expandedIds: string[] = $state([]);
 
@@ -38,14 +48,14 @@
   }
 
   const allVisibleExpanded = $derived(
-    rows.length > 0 && rows.every((r) => expandedIds.includes(r.id)),
+    displayRows.length > 0 && displayRows.every((r) => expandedIds.includes(r.id)),
   );
 
   function toggleAll(): void {
     if (allVisibleExpanded) {
       expandedIds = [];
     } else {
-      expandedIds = rows.map((r) => r.id);
+      expandedIds = displayRows.map((r) => r.id);
     }
   }
 
@@ -76,14 +86,14 @@
 
         <button
           class="text-sm font-medium text-link hover:text-link-hover disabled:text-muted-foreground disabled:cursor-not-allowed"
-          disabled={rows.length === 0}
+          disabled={displayRows.length === 0}
           onclick={toggleAll}
         >
           {allVisibleExpanded ? "Collapse all" : "Expand all"}
         </button>
       </div>
 
-      {#if controller.entryProgressError}
+      {#if controller.entryProgressError && displayRows.length === 0 && !controller.entryProgressLoading}
         <ResponseBlock size="sm" title="Entries unavailable" description={controller.entryProgressError}>
           {#snippet actions()}
             <Button
@@ -94,40 +104,51 @@
             >
           {/snippet}
         </ResponseBlock>
-      {:else if controller.loading || controller.entryProgressLoading || !controller.scopeReady}
+      {:else if displayRows.length === 0 && !controller.scopeReady}
         <div class="flex min-h-32 items-center justify-center" role="status" aria-label="Loading entries">
           <Spinner size="sm" />
         </div>
       {:else}
-        {#if rows.length === 0}
-          <ResponseBlock
-            size="sm"
-            title="No entries to display"
-            description="No entries were returned for this tab and scope."
-          />
-        {/if}
-        <div class="overflow-x-auto">
-          <DataTable
-            {columns}
-            rows={rows}
-            showPaginator={pagination !== undefined}
-            {pagination}
-            onPageChange={(page) =>
-              controller.changeEntryProgressPage({
-                page,
-                itemsPerPage: controller.entryProgressPagination.itemsPerPage,
-              })}
-            caption={controller.entryProgressCaption}
-          >
-            {#snippet RowComponent(row: EntryWithTimeData)}
-              <EntryTimeCollapsibleTableRow
-                {row}
-                expanded={expandedIds.includes(row.id)}
-                onToggle={toggleRow}
-                showDataset={!controller.singleDatasetView}
-              />
-            {/snippet}
-          </DataTable>
+        <div class="relative">
+          {#if controller.entryProgressLoading}
+            <div class="absolute inset-0 z-10 flex items-start justify-center rounded-lg bg-background/60 pt-8">
+              <Spinner size="sm" />
+            </div>
+          {/if}
+
+          {#if displayRows.length === 0}
+            <ResponseBlock
+              size="sm"
+              title="No entries to display"
+              description="No entries were returned for this tab and scope."
+            />
+          {/if}
+
+          <div class={controller.entryProgressLoading ? "opacity-40 pointer-events-none" : ""}>
+            <div class="overflow-x-auto">
+              <DataTable
+                {columns}
+                rows={displayRows}
+                showPaginator={pagination !== undefined}
+                {pagination}
+                onPageChange={(page) =>
+                  controller.changeEntryProgressPage({
+                    page,
+                    itemsPerPage: controller.entryProgressPagination.itemsPerPage,
+                  })}
+                caption={controller.entryProgressCaption}
+              >
+                {#snippet RowComponent(row: EntryWithTimeData)}
+                  <EntryTimeCollapsibleTableRow
+                    {row}
+                    expanded={expandedIds.includes(row.id)}
+                    onToggle={toggleRow}
+                    showDataset={!controller.singleDatasetView}
+                  />
+                {/snippet}
+              </DataTable>
+            </div>
+          </div>
         </div>
       {/if}
     </Tabs>
