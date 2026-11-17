@@ -8,7 +8,7 @@
     SquareIcon,
     XIcon,
   } from "@lucide/svelte";
-  import { onMount, setContext } from "svelte";
+  import { onMount, setContext, untrack } from "svelte";
   import { SvelteURL } from "svelte/reactivity";
   import { slide } from "svelte/transition";
 
@@ -44,7 +44,10 @@
   }
   let { driver, open, onSidebarClose }: Props = $props();
 
-  setContext("driver", driver);
+  setContext(
+    "driver",
+    untrack(() => driver),
+  );
 
   // Variables
   let selectedNoteFeed = $state<NoteFeedRecord | null>(null);

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ChevronDownIcon, RedoIcon, UndoIcon } from "@lucide/svelte";
-  import { onMount } from "svelte";
+  import { untrack } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
 
   import KbdTooltipButton from "@/components/app/tooltips/KbdTooltipButton.svelte";
@@ -24,7 +24,8 @@
 
   // Variables
   const disabledToolsIfWorkflowSteps = ["done", "error"];
-  let currentMode = $state(driver.mode);
+  // Initial values; kept current by the driver subscriptions below.
+  let currentMode = $state(untrack(() => driver.mode));
   let toolbarNodes: IToolbarNode[] = $derived.by(() => driver.toolbar.getNodesForMode(currentMode));
 
   /** Flatten every leaf item in the tree (used for the toggle map). */
@@ -46,8 +47,8 @@
     }
     return map;
   });
-  let canUndo = $state(driver.command.canUndo());
-  let canRedo = $state(driver.command.canRedo());
+  let canUndo = $state(untrack(() => driver.command.canUndo()));
+  let canRedo = $state(untrack(() => driver.command.canRedo()));
 
   function refreshToolbar() {
     currentMode = driver.mode;
@@ -55,11 +56,18 @@
     canRedo = driver.command.canRedo();
   }
 
-  driver.onModeChange((_) => refreshToolbar());
-  driver.onSyncChange(() => refreshToolbar());
-  driver.command.onStackChange(() => refreshToolbar());
-
-  onMount(refreshToolbar);
+  $effect(() => {
+    const d = driver;
+    return untrack(() => {
+      const unsubscribers = [
+        d.onModeChange(() => refreshToolbar()),
+        d.onSyncChange(() => refreshToolbar()),
+        d.command.onStackChange(() => refreshToolbar()),
+      ];
+      refreshToolbar();
+      return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
+    });
+  });
 
   /** Shortcut label for the dropdown-menu items (KbdTooltipButton resolves its own leaf shortcuts). */
   function cmdShortcut(name: string): string | undefined {

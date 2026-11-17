@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount, setContext } from "svelte";
+  import { onDestroy, onMount, setContext, untrack } from "svelte";
   import { page } from "$app/state";
   import { XIcon } from "@lucide/svelte";
 
@@ -26,7 +26,10 @@
   }
   let { driver, notesAdapter }: Props = $props();
 
-  setContext("driver", driver);
+  setContext(
+    "driver",
+    untrack(() => driver),
+  );
 
   let x: number | undefined = $state(undefined);
   let y: number | undefined = $state(undefined);
