@@ -81,14 +81,30 @@
   onMount(async () => {
     choices = [...additionalChoices, ...(await fetchChoices())];
 
-    /** Get selected choice if value is defined */
-    if (value) {
-      const choiceRes = await dataSource.get(String(value));
-      selectedChoice = {
-        label: choiceRes.data[displayKey],
-        value: choiceRes.data[valueKey],
-        data: choiceRes.data,
-      };
+    /** Resolve the selected choice when the value is not among the loaded choices */
+    if (value && !choices.some((choice) => choice.value == value)) {
+      try {
+        // `get` looks records up by id; any other value key needs a filtered list.
+        const record =
+          valueKey === "id"
+            ? (await dataSource.get(String(value))).data
+            : (
+                await dataSource.list({
+                  filters: { [valueKey]: value },
+                  pagination: { page: 1, itemsPerPage: 1 },
+                })
+              ).data[0];
+
+        if (record) {
+          selectedChoice = {
+            label: record[displayKey],
+            value: record[valueKey],
+            data: record,
+          };
+        }
+      } catch (error) {
+        console.error(`Unable to load the selected ${String(valueKey)} "${value}"`, error);
+      }
     }
   });
 
