@@ -14,7 +14,7 @@ with settings in `config/development/`.
 | `install/` | The installer's steps, numbered in the order `install.sh` runs them: `01-settings.sh` to `10-summary.sh`, with shared helpers in `lib.sh`. `06-copy-database.sh` runs only with `--provision`. |
 | `compose.yml` | The stack, pulling published images pinned to one release. nginx, PostgreSQL and Redis are pinned to exact versions too. |
 | `.env.example` | Every setting a customer may change, documented. Copy it to `.env` to configure an install; without one, `install.sh` creates it. |
-| `config/nginx/` | The reverse proxy: `nginx.conf`, `routes.conf` for the routes it serves, and `tls.conf` for an HTTPS server from your own certificate (off unless `IDAH_TLS_CONF` names it). |
+| `config/nginx/` | The reverse proxy: `nginx.conf`, `routes.conf` for the routes it serves (a template: its `${IDAH_*}` values come from `.env` when nginx starts), and `tls.conf` for an HTTPS server from your own certificate (off unless `IDAH_TLS_CONF` names it). |
 | `config/` | Also where the install keeps its signing key (`keys/`) and any certificates (`certs/`). |
 
 Customers keep their own changes in a `compose.override.yml` next to
@@ -116,6 +116,7 @@ PostgreSQL" covers it.
 | Send email notifications | `MAIL_SMTP_*` | any time |
 | Store files in S3 | `MEDIAS_FILES_*`, `SYNC_FILES_*` | before files are uploaded |
 | Keep more or less log per container | `IDAH_LOG_MAX_SIZE`, `IDAH_LOG_MAX_FILES` (10m × 5) | any time |
+| Allow slower zip uploads (unpacked before nginx gets an answer) | `IDAH_UPLOAD_TIMEOUT` (default 1800s) | any time |
 | Process more uploads or exports at once | `IDAH_MEDIA_JOBS_CONCURRENCY`, `IDAH_VIDEO_*_THREADS`, `IDAH_SYNC_JOBS_CONCURRENCY` | any time |
 | Report errors to your own Sentry | `SENTRY_*` | any time |
 | Use your own PostgreSQL | `POSTGRES_*` | at install, or with `--provision` |
