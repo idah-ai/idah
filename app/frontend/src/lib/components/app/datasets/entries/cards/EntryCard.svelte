@@ -326,7 +326,11 @@
       {/if}
 
       <!-- THUMBNAIL -->
-      <div class="shrink-0 self-start overflow-hidden" style:width="{containerWidth}px" style:max-width="{containerWidth}px">
+      <div
+        class="shrink-0 self-start overflow-hidden"
+        style:width="{containerWidth}px"
+        style:max-width="{containerWidth}px"
+      >
         <AspectRatio ratio={16 / 9} class="bg-muted h-full rounded-lg">
           {#if thumbnailUrl}
             {#if dataset.modality === "idah-image"}
