@@ -4,10 +4,10 @@
     PROJECT_DASHBOARD_CONTROLLER_KEY,
     getProjectDashboardController,
   } from "@/components/app/projects/dashboard/project-dashboard-controller.svelte";
-  import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Text from "@/components/ui/text/Text.svelte";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import Skeleton from "@/components/ui/skeleton/skeleton.svelte";
 
   // Variables
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
@@ -21,9 +21,21 @@
 
   <Card.Content>
     {#if controller.summaryLoading}
-      <Spinner size="sm" />
+      <div class="flex flex-col gap-4">
+        <Skeleton class="h-4 w-full" />
+
+        <div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+          {#each Array.from({ length: 5 }) as _, index (index)}
+            <div class="grid gap-2">
+              <Skeleton class="h-3 w-24" />
+              <Skeleton class="h-6 w-4" />
+              <Skeleton class="h-2 w-30" />
+            </div>
+          {/each}
+        </div>
+      </div>
     {:else if distribution}
-      <div class="space-y-4">
+      <div class="flex flex-col gap-4">
         <div
           class="bg-muted flex h-4 overflow-hidden rounded-sm"
           role="img"

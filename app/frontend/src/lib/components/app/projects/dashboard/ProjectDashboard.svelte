@@ -13,7 +13,7 @@
   import CompletedEntriesPerPeriodCard from "@/components/app/projects/dashboard/sections/_CompletedEntriesPerPeriodCard.svelte";
   import ProgressByDatasetCard from "@/components/app/projects/dashboard/sections/_ProgressByDatasetCard.svelte";
   import OpenEntriesCard from "@/components/app/projects/dashboard/sections/_OpenEntriesCard.svelte";
-  import AnnotationsByCategoryCard from "@/components/app/projects/dashboard/sections/_AnnotationsByCategoryCard.svelte";
+  // import AnnotationsByCategoryCard from "@/components/app/projects/dashboard/sections/_AnnotationsByCategoryCard.svelte";
 
   // Props
   interface Props {
@@ -32,7 +32,7 @@
   });
 </script>
 
-<div class="grid gap-4">
+<div class="grid grid-cols-1 gap-4">
   <ProjectDatasetSelection />
 
   <DatasetMetricsCard />
@@ -45,5 +45,5 @@
 
   <OpenEntriesCard />
 
-  <AnnotationsByCategoryCard />
+  <!-- <AnnotationsByCategoryCard /> -->
 </div>
