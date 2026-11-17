@@ -1,5 +1,6 @@
 <script lang="ts">
   import Text from "@/components/ui/text/Text.svelte";
+
   import { cn } from "@/utils";
 
   interface Props {
