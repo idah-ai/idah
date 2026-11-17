@@ -6,7 +6,7 @@ describe("KeyMapBuilder", () => {
     const action = vi.fn();
 
     const keyMap = BuildKeymap((b) => {
-      b.on(null, "A", action, "A Command", "Executes A command");
+      b.on(null, "A", action, "A Command", "A", "Executes A command");
     });
 
     expect(keyMap).toHaveProperty("A");
@@ -19,14 +19,14 @@ describe("KeyMapBuilder", () => {
     const action = vi.fn();
 
     const keyMap = BuildKeymap((b) => {
-      b.on([b.Shift, b.Ctrl], "A", action, "Ctrl+Shift+A Command", "Executes Ctrl+Shift+A command");
+      b.on([b.Shift, b.Ctrl], "A", action, "Ctrl+Shift+A Command", "Ctrl+Shift+A", "Executes Ctrl+Shift+A command");
     });
 
     // Modifiers are sorted alphabetically for consistency
-    expect(keyMap).toHaveProperty("Ctrl+Shift+A");
-    expect(keyMap["Ctrl+Shift+A"].action).toBe(action);
-    expect(keyMap["Ctrl+Shift+A"].name).toBe("Ctrl+Shift+A Command");
-    expect(keyMap["Ctrl+Shift+A"].description).toBe("Executes Ctrl+Shift+A command");
+    expect(keyMap).toHaveProperty("Control+Shift+A");
+    expect(keyMap["Control+Shift+A"].action).toBe(action);
+    expect(keyMap["Control+Shift+A"].name).toBe("Ctrl+Shift+A Command");
+    expect(keyMap["Control+Shift+A"].description).toBe("Executes Ctrl+Shift+A command");
   });
 
   it("should create a key map with multiple shortcuts", () => {
@@ -34,13 +34,13 @@ describe("KeyMapBuilder", () => {
     const action2 = vi.fn();
 
     const keyMap = BuildKeymap((b) => {
-      b.on([b.Shift, b.Ctrl], "A", action1, "Ctrl+Shift+A Command", "Executes Ctrl+Shift+A command");
-      b.on(null, "B", action2, "B Command", "Executes B command");
+      b.on([b.Shift, b.Ctrl], "A", action1, "Ctrl+Shift+A Command", "Ctrl+Shift+A", "Executes Ctrl+Shift+A command");
+      b.on(null, "B", action2, "B Command", "B", "Executes B command");
     });
 
-    expect(keyMap).toHaveProperty("Ctrl+Shift+A");
+    expect(keyMap).toHaveProperty("Control+Shift+A");
     expect(keyMap).toHaveProperty("B");
-    expect(keyMap["Ctrl+Shift+A"].action).toBe(action1);
+    expect(keyMap["Control+Shift+A"].action).toBe(action1);
     expect(keyMap["B"].action).toBe(action2);
   });
 
@@ -48,11 +48,12 @@ describe("KeyMapBuilder", () => {
     const action = vi.fn();
 
     const keyMap = BuildKeymap((b) => {
-      b.on([b.Shift], "A", action, "Custom Name", "Custom Description");
+      b.on([b.Shift], "A", action, "Custom Name", "Custom Label", "Custom Description");
     });
 
     expect(keyMap).toHaveProperty("Shift+A");
     expect(keyMap["Shift+A"].name).toBe("Custom Name");
+    expect(keyMap["Shift+A"].label).toBe("Custom Label");
     expect(keyMap["Shift+A"].description).toBe("Custom Description");
   });
 
@@ -60,11 +61,11 @@ describe("KeyMapBuilder", () => {
     const action = vi.fn();
 
     const keyMap = BuildKeymap((b) => {
-      b.on([b.Shift, b.Ctrl, b.Alt, b.Meta], "A", action, "All Modifiers", "Uses all modifier keys");
+      b.on([b.Shift, b.Ctrl, b.Alt, b.Meta], "A", action, "All Modifiers", "All", "Uses all modifier keys");
     });
 
     // Modifiers are sorted alphabetically for consistency
-    expect(keyMap).toHaveProperty("Alt+Ctrl+Meta+Shift+A");
+    expect(keyMap).toHaveProperty("Alt+Control+Meta+Shift+A");
   });
 
   it("should allow chaining of on() calls", () => {
@@ -72,16 +73,17 @@ describe("KeyMapBuilder", () => {
     const action2 = vi.fn();
 
     const keyMap = BuildKeymap((b) => {
-      b.on([b.Shift], "A", action1, "Shift+A Command", "Executes Shift+A command").on(
+      b.on([b.Shift], "A", action1, "Shift+A Command", "Shift+A", "Executes Shift+A command").on(
         [b.Ctrl],
         "B",
         action2,
         "Ctrl+B Command",
+        "Ctrl+B",
         "Executes Ctrl+B command",
       );
     });
 
     expect(keyMap).toHaveProperty("Shift+A");
-    expect(keyMap).toHaveProperty("Ctrl+B");
+    expect(keyMap).toHaveProperty("Control+B");
   });
 });
