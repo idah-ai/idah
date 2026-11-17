@@ -27,5 +27,3 @@ export const datasetsStatuses: DatasetStatusBadgeProps[] = [
   { label: "In Progress", value: "in_progress", variant: "warning" },
   { label: "Completed", value: "completed", variant: "success" },
 ];
-
-export const DATASET_STATUS_MAP: Record<string, BadgeConfig> = arrayToBadgeMap(datasetsStatuses);

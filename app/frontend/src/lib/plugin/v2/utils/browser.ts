@@ -20,20 +20,6 @@ export function modKey(e: KeyboardEvent | MouseEvent | WheelEvent): boolean {
 }
 
 /**
- * Convert a shortcut string from the canonical `Control+...` form to
- * the platform-appropriate form.
- *
- * On non-Mac:
- *   `"Control+Z"` → `"Control+Z"`
- * On Mac:
- *   `"Control+Z"` → `"Meta+Z"`
- */
-export function platformShortcut(shortcut: string | null): string | null {
-  if (!shortcut || !isMac()) return shortcut;
-  return shortcut.replace(/\bControl\b/g, "Meta");
-}
-
-/**
  * Return the display label for the Control/Ctrl modifier key.
  * On Mac: `"⌘"` (Cmd symbol)
  * On other platforms: `"Ctrl"`
