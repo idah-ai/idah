@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ChevronDownIcon, RedoIcon, UndoIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
-  import { SvelteMap } from "svelte/reactivity";
+  import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
   import KbdTooltipButton from "@/components/app/tooltips/KbdTooltipButton.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -179,7 +179,7 @@
    * Groups whose menu is handing focus back to the trigger. That focus would open the group's
    * tooltip and keep it open after the pointer leaves, so the trigger skips it once.
    */
-  const returningFocus = new Set<string>();
+  const returningFocus = new SvelteSet<string>();
 
   function groupLabel(node: IToolbarGroupNode): string {
     return node.label ?? node.segment;
