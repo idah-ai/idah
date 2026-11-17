@@ -119,7 +119,8 @@
       <DialogDescription>{description}</DialogDescription>
     {/if}
 
-    <ScrollArea class="max-h-[80vh]">
+    <!-- min-w-0: a grid item otherwise widens the dialog to its longest unbreakable line (e.g. a file path) -->
+    <ScrollArea class="max-h-[80vh] min-w-0">
       {@render children?.()}
     </ScrollArea>
 
