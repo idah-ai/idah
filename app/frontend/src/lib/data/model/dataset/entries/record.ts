@@ -14,7 +14,7 @@ import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/
 import { isOverdue } from "@/utils/date";
 
 import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
-import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
+import type { RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
 
 @type("dataset:entries")
@@ -88,7 +88,7 @@ export const entriesBasePath: string = `/api/v1/dataset/entries`;
 RecordFactory.registerTypes(EntryRecord);
 
 export const entriesBackendDataSource = createBackendDataSource(EntryRecord, entriesBasePath, {
-  select: async (params: { id: string }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+  select: async (params: { id: string }): Promise<RecordResponse<EntryRecord>> => {
     const res = await fetch(`${entriesBasePath}/${params.id}/select`, {
       method: "GET",
     });
@@ -118,7 +118,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
   assign: async (params: {
     id: string;
     memberAccountId: number;
-  }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+  }): Promise<RecordResponse<EntryRecord>> => {
     const res = await fetch(`${entriesBasePath}/${params.id}/assign`, {
       method: "PATCH",
       body: encodeModel(EntryRecord, { attributes: { assigned_to_id: params.memberAccountId } }),
@@ -148,7 +148,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     throw "No data returned";
   },
-  unassign: async (entryId: string): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+  unassign: async (entryId: string): Promise<RecordResponse<EntryRecord>> => {
     const res = await fetch(`${entriesBasePath}/${entryId}/unassign`, {
       method: "PATCH",
     });
@@ -178,7 +178,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     throw "No data returned";
   },
-  reopen: async (entryId: string, targetStep: string): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+  reopen: async (entryId: string, targetStep: string): Promise<RecordResponse<EntryRecord>> => {
     const res = await fetch(`${entriesBasePath}/${entryId}/reopen`, {
       method: "POST",
       body: JSON.stringify({
