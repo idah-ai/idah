@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import Text from "@/components/ui/text/Text.svelte";
+
   import { cn } from "@/utils";
 
   interface Props {

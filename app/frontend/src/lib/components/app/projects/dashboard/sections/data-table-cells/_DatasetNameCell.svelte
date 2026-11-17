@@ -13,6 +13,6 @@
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
 </script>
 
-<Link href={`/projects/${controller.projectId}/datasets/${dataset.id}/entries`} target="_blank" showIcon>
+<Link href={`/projects/${controller.projectId}/datasets/${dataset.id}/entries`} showIcon target="_blank">
   {dataset.name}
 </Link>

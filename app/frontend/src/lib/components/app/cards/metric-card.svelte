@@ -1,24 +1,25 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+  import * as Card from "@/components/ui/card/index";
 
   // Props
   interface Props {
     title: string;
     value?: string | number;
-    slotValue?: Snippet<[{ value?: string | number }]>;
+    SlotValue?: Snippet<[{ value?: string | number }]>;
   }
-  let { title, value, slotValue }: Props = $props();
+  let { title, value, SlotValue }: Props = $props();
 </script>
 
-<Card>
-  <CardHeader>
-    <CardDescription>{title}</CardDescription>
-    {#if slotValue}
-      {@render slotValue({ value })}
+<Card.Root>
+  <Card.Header>
+    <Card.Description>{title}</Card.Description>
+
+    {#if SlotValue}
+      {@render SlotValue({ value })}
     {:else}
-      <CardTitle class="text-2xl">{value}</CardTitle>
+      <Card.Title class="text-2xl">{value}</Card.Title>
     {/if}
-  </CardHeader>
-</Card>
+  </Card.Header>
+</Card.Root>
