@@ -780,8 +780,9 @@ export interface IToolbarDriverV2 {
   orderGroups(mode: string, groups: string[]): void;
 
   /**
-   * Give a group (by its full colon path) a title and an icon. The title heads the group's
-   * dropdown; the icon shows on the collapsed trigger while no child is toggled.
+   * Give a group (by its full colon path) display options: a title (dropdown header and
+   * trigger tooltip), a resting icon, a light accent tint (`whenAccented`, `accentVariant`)
+   * and a toolbar section. See {@link ToolbarGroupOptions}.
    */
   defineGroup(path: string, options: ToolbarGroupOptions): void;
 

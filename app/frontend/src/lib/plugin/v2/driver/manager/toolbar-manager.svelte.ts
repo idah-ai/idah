@@ -17,7 +17,7 @@ export class ToolbarManagerV2 {
   /** Per-mode group ordering. */
   private groupOrders: Map<string, string[]> = new SvelteMap();
 
-  /** Group display metadata (title, icon), keyed by full colon path. */
+  /** Group display options from `defineGroup` (title, icon, accent, section), keyed by full colon path. */
   private groupMeta: Map<string, ToolbarGroupOptions> = new SvelteMap();
 
   /**
@@ -58,7 +58,7 @@ export class ToolbarManagerV2 {
     this.groupOrders.set(mode, groups);
   }
 
-  /** Give a group (by full colon path) a title and an icon for the renderer. */
+  /** Store a group's display options (by full colon path) for the renderer. */
   defineGroup(path: string, options: ToolbarGroupOptions): void {
     this.groupMeta.set(path, options);
   }
