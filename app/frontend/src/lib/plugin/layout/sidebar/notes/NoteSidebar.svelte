@@ -47,7 +47,7 @@
   setContext("driver", driver);
 
   // Variables
-  let selectedNoteFeed: NoteFeedRecord | null = $state(null);
+  let selectedNoteFeed = $state<NoteFeedRecord | null>(null);
   let selectedNoteCommentId: string | null = $state(null);
   let isAllowToCreateNewNote = $derived(["annotate", "review"].includes(driver.workflowStep));
   let isListView = $derived(!selectedNoteFeed);
@@ -208,7 +208,7 @@
   }
 
   async function loadNoteComments() {
-    if (!selectedNoteFeed) return {};
+    if (!selectedNoteFeed) return { noteFeed: null, noteComments: [] };
 
     const noteFeedRes = await noteFeedsBackendDataSource.get(selectedNoteFeed.id);
 
