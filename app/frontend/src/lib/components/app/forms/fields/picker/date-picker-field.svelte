@@ -44,7 +44,7 @@
   }: Props = $props();
 
   // Variables
-  const df = new DateFormatter("en-US", { dateStyle });
+  const df = $derived(new DateFormatter("en-US", { dateStyle }));
 
   let calendarValue = $state<DateValue | undefined>();
 
