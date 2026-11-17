@@ -212,6 +212,84 @@ RSpec.describe Entry, database: true do
       end
     end
 
+    describe "sorting by total_time_spent" do
+      context "As Admin", as: :admin do
+        subject { described_class.new(current_auth_context) }
+
+        let!(:entry_fast) do
+          id = entry_repo.create(
+            priority: 1,
+            wf_step: "annotate",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
+          )
+          entry_repo.table.where(id:).update(
+            time_tracking: Sequel.pg_jsonb({ "annotate" => 60 }),
+            updated_at: Time.now
+          )
+          id
+        end
+
+        let!(:entry_medium) do
+          id = entry_repo.create(
+            priority: 1,
+            wf_step: "annotate",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
+          )
+          entry_repo.table.where(id:).update(
+            time_tracking: Sequel.pg_jsonb({ "annotate" => 1800, "review" => 600 }),
+            updated_at: Time.now
+          )
+          id
+        end
+
+        let!(:entry_slow) do
+          id = entry_repo.create(
+            priority: 1,
+            wf_step: "review",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
+          )
+          entry_repo.table.where(id:).update(
+            time_tracking: Sequel.pg_jsonb({ "annotate" => 3600, "review" => 1800 }),
+            updated_at: Time.now
+          )
+          id
+        end
+
+        it "sorts ascending by total_time_spent" do
+          result = subject.index({}, sort: ["total_time_spent"])
+          ids = result.map(&:id)
+          # Fast (60) → Medium (2400) → Slow (5400)
+          expect(ids).to eq([entry_fast, entry_medium, entry_slow])
+        end
+
+        it "sorts descending by total_time_spent" do
+          result = subject.index({}, sort: ["-total_time_spent"])
+          ids = result.map(&:id)
+          # Slow (5400) → Medium (2400) → Fast (60)
+          expect(ids).to eq([entry_slow, entry_medium, entry_fast])
+        end
+
+        it "sorts entries without time_tracking last (nulls last)" do
+          id_no_tracking = entry_repo.create(
+            priority: 1,
+            wf_step: "annotate",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
+          )
+          result = subject.index({}, sort: ["total_time_spent"])
+          ids = result.map(&:id)
+          expect(ids.last).to eq(id_no_tracking)
+        end
+      end
+    end
+
     describe "completion timestamps" do
       let!(:entry_id) {
         entry_repo.create(project_id:, dataset_id:, resource: UUIDv7.generate, status: "pending", wf_step: "annotate")

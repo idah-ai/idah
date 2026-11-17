@@ -2,7 +2,7 @@
   import * as Table from "@/components/ui/table/index";
   import { getEntryWorkflowGroup } from "../project-dashboard.constants";
   import { entryWorkflowSteps } from "@/data/model/dataset/entries/constants";
-  import Badge from "@/components/ui/badge/badge.svelte";
+  import Badge, { type BadgeVariant } from "@/components/ui/badge/badge.svelte";
   import Text from "@/components/ui/text/Text.svelte";
   import { formatSeconds } from "@/utils/duration";
   import { type EntryWithTimeData } from "./_OpenEntriesCardV2.table";
@@ -50,7 +50,7 @@
   {/if}
 
   <Table.Cell>
-    <Badge variant={(getEntryWorkflowGroup(entry)?.badgeColor ?? entry.statusBadge.variant) as any}>
+    <Badge variant={(getEntryWorkflowGroup(entry)?.badgeColor ?? entry.statusBadge.variant) as BadgeVariant}>
       {getEntryWorkflowGroup(entry)?.label ?? entry.statusBadge.label}
     </Badge>
   </Table.Cell>
@@ -86,18 +86,19 @@
               <tbody>
                 {#each entry.steps as step, i (i)}
                   {@const multi = step.people && step.people.length > 1}
-                  <tr class="border-b border-border/60 last:border-b-0">
-                    <td class="py-1.5 pr-2 text-[13px] font-medium">
-                      {step.stage}{multi ? ` (${step.people!.length} users)` : ""}
+                  <tr class={multi ? "border-b-0" : "border-b border-border/60 last:border-b-0"}>
+                    <td class="py-1.5 pr-2 text-[13px] font-medium">{step.stage}</td>
+                    <td class="py-1.5 pr-2 text-[13px] text-muted-foreground">
+                      {multi ? `${step.people!.length} users` : step.performedBy}
                     </td>
-                    <td class="py-1.5 pr-2 text-[13px] text-muted-foreground">{step.performedBy}</td>
                     <td class="py-1.5 text-right text-[13px] tabular-nums font-medium">
                       {step.seconds > 0 ? formatSeconds(step.seconds) : "Unsubmitted"}
                     </td>
                   </tr>
                   {#if multi}
-                    {#each step.people!.slice(1) as person (person.who)}
-                      <tr class="border-b border-border/60 last:border-b-0">
+                    {@const people = step.people!}
+                    {#each people as person, j (person.who)}
+                      <tr class={j === people.length - 1 ? "border-b border-border/60 last:border-b-0" : "border-b-0"}>
                         <td></td>
                         <td class="py-1 pr-2 text-[12px] text-muted-foreground">{person.who}</td>
                         <td class="py-1 text-right text-[12px] tabular-nums text-muted-foreground">
