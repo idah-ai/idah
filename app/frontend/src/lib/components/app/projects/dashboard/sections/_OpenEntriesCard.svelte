@@ -9,6 +9,7 @@
   import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
   import ScrollArea from "@/components/ui/scroll-area/scroll-area.svelte";
   import DataTable from "@/components/app/data-table/DataTable.svelte";
+  import DataTablePaginator from "@/components/app/data-table/_DataTablePaginator.svelte";
   import { getColumns } from "@/components/app/projects/dashboard/sections/_OpenEntriesCard.table";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
@@ -18,6 +19,13 @@
   const columns = $derived(getColumns(!controller.focused));
   const rows = $derived(controller.entryProgressRows);
   const pagination = $derived(controller.entryProgressTablePagination);
+
+  function changePage(page: number): Promise<void> {
+    return controller.changeEntryProgressPage({
+      page,
+      itemsPerPage: controller.entryProgressPagination.itemsPerPage,
+    });
+  }
 </script>
 
 <Card.Root>
@@ -58,25 +66,23 @@
         <div class="flex min-h-32 items-center justify-center" role="status" aria-label="Loading entries">
           <Spinner size="sm" />
         </div>
-      {:else}
-        {#if !rows.length}
-          <ResponseBlock
-            size="sm"
-            title="No entries to display"
-            description="No entries were returned for this tab and scope."
-          />
+      {:else if !rows.length}
+        <ResponseBlock
+          size="sm"
+          title="No entries to display"
+          description="No entries were returned for this tab and scope."
+        />
+        {#if pagination && pagination.page > 1}
+          <DataTablePaginator {...pagination} onPageChange={changePage} class="mt-3" />
         {/if}
+      {:else}
         <ScrollArea class="max-h-[80vh]">
           <DataTable
             {columns}
             {rows}
             {pagination}
             showPaginator={pagination !== undefined}
-            onPageChange={(page) =>
-              controller.changeEntryProgressPage({
-                page,
-                itemsPerPage: controller.entryProgressPagination.itemsPerPage,
-              })}
+            onPageChange={changePage}
             caption={controller.entryProgressCaption}
           />
         </ScrollArea>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as Card from "$lib/components/ui/card/index";
   import DataTable from "@/components/app/data-table/DataTable.svelte";
+  import DataTablePaginator from "@/components/app/data-table/_DataTablePaginator.svelte";
   import Link from "@/components/ui/text/Link.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
@@ -16,6 +17,13 @@
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
   const rows = $derived(controller.datasetProgressRows);
   const pagination = $derived(controller.datasetProgressTablePagination);
+
+  function changePage(page: number): Promise<void> {
+    return controller.changeDatasetProgressPage({
+      page,
+      itemsPerPage: controller.datasetProgressPagination.itemsPerPage,
+    });
+  }
 </script>
 
 <Card.Root>
@@ -43,25 +51,23 @@
       <div class="flex min-h-32 items-center justify-center" role="status" aria-label="Loading dataset progress">
         <Spinner size="sm" />
       </div>
-    {:else}
-      {#if !rows.length}
-        <ResponseBlock
-          size="sm"
-          title="No datasets to display"
-          description="No datasets were returned for this page and scope."
-        />
+    {:else if !rows.length}
+      <ResponseBlock
+        size="sm"
+        title="No datasets to display"
+        description="No datasets were returned for this page and scope."
+      />
+      {#if pagination && pagination.page > 1}
+        <DataTablePaginator {...pagination} onPageChange={changePage} class="mt-3" />
       {/if}
+    {:else}
       <ScrollArea class="max-h-[80vh]">
         <DataTable
           {columns}
           {rows}
           {pagination}
           showPaginator={pagination !== undefined}
-          onPageChange={(page) =>
-            controller.changeDatasetProgressPage({
-              page,
-              itemsPerPage: controller.datasetProgressPagination.itemsPerPage,
-            })}
+          onPageChange={changePage}
           caption={controller.datasetProgressCaption}
         />
       </ScrollArea>
