@@ -49,6 +49,16 @@ function retryDelay(attempt: number): number {
 // never retried and stops the files still waiting for that dataset.
 class DatasetCreationError extends Error {}
 
+// The proxy gave up waiting, but the media service is still storing the file: sending it
+// again would store every file once more. Uploading a zip of thousands of files hit this.
+export const UPLOAD_TIMEOUT_MESSAGE =
+  "The server took too long to answer and may still be processing this file. " +
+  "Its entries were not created; uploading it again would store its files twice.";
+
+function isGatewayTimeout(error: unknown): boolean {
+  return (error as JsonApiErrorResponse)?.status === 504;
+}
+
 function errorMessageOf(error: unknown, fallback: string): string {
   const apiError = error as JsonApiErrorResponse;
   return apiError?.errors?.[0]?.detail ?? apiError?.errors?.[0]?.title ?? fallback;
@@ -128,6 +138,12 @@ export async function uploadSingleMedia(media: UploadItem, context: UploadContex
         media.errorMessage = error.message;
         media.status = "completed";
         throw error; // no retry; uploadAll stops the remaining items
+      }
+
+      if (isGatewayTimeout(error)) {
+        media.errorMessage = UPLOAD_TIMEOUT_MESSAGE;
+        media.status = "completed";
+        return; // no retry, but the next items still go
       }
 
       media.errorMessage = errorMessageOf(error, "Upload failed");

@@ -62,8 +62,15 @@ services:
       - "8080:80"
       - "8443:443"
     volumes:
-      - ./config/development/nginx.conf:/etc/nginx/nginx.conf:ro
+      # A template: the image fills in the IDAH_* variables below and writes the
+      # result to /etc/nginx/nginx.conf when the container starts.
+      - ./config/development/nginx.conf:/etc/nginx/templates/nginx.conf.template:ro
       - ./config/development/ssl:/etc/nginx/ssl:ro
+    environment:
+      NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx
+      # Only IDAH_* variables are replaced; nginx's own ($host, …) stay as they are.
+      NGINX_ENVSUBST_FILTER: ^IDAH_
+      IDAH_UPLOAD_TIMEOUT: ${IDAH_UPLOAD_TIMEOUT:-1800s}
     depends_on:
       - frontend
       - media

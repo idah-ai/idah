@@ -13,7 +13,7 @@ vi.mock("@/components/ui/toast/index.svelte", () => ({
 }));
 
 import { createUploadItem } from "./upload-item.types";
-import { once, uploadAll } from "./upload-pipeline";
+import { once, UPLOAD_TIMEOUT_MESSAGE, uploadAll } from "./upload-pipeline";
 
 const media = (filename: string) => ({ resource: `res-${filename}`, filename });
 const uploaded = (...filenames: string[]) => ({ data: filenames.map(media) });
@@ -132,6 +132,20 @@ describe("uploadAll", () => {
 
     expect(items[0].status).toBe("completed");
     expect(items[0].errorMessage).toBeTruthy();
+    expect(entryNames()).toEqual(["ok.jpg"]);
+  });
+
+  it("never resends a file after a gateway timeout, since the server is still processing it", async () => {
+    upload
+      .mockRejectedValueOnce({ status: 504, errors: [{ status: "504", title: "Gateway Timeout" }] })
+      .mockResolvedValueOnce(uploaded("ok.jpg"));
+    const items = [item("batch.zip"), item("ok.jpg")];
+
+    await run(items, async () => "ds1");
+
+    expect(upload).toHaveBeenCalledTimes(2); // once per item: the zip is not retried
+    expect(items[0].status).toBe("completed");
+    expect(items[0].errorMessage).toBe(UPLOAD_TIMEOUT_MESSAGE);
     expect(entryNames()).toEqual(["ok.jpg"]);
   });
 

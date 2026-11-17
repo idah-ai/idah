@@ -128,6 +128,41 @@ export function truncateFront(str: string, length: number = 20): string {
   return str.length > length ? "..." + str.slice(-length) : str;
 }
 
+/**
+ * Shortens a path-like name ("cam_a/2024/clip/0001.jpg") to at most `maxLength` characters
+ * by dropping folders from the middle, so both its top folder and its file stay readable:
+ * "cam_a/…/clip/0001.jpg". The closest parent folders are kept first. When the top folder
+ * does not fit next to the file it goes too ("…/clip/0001.jpg"); a name that is not a path,
+ * or a file name too long on its own, keeps its end ("…_0001.jpg"). Show the full name in a
+ * tooltip next to it.
+ */
+export function truncatePath(path: string, maxLength: number = 60): string {
+  if (path.length <= maxLength) return path;
+
+  const keepEnd = (text: string) => "…" + text.slice(-(maxLength - 1));
+  const segments = path.split("/");
+  const file = segments.pop() ?? "";
+  if (segments.length === 0) return keepEnd(path);
+
+  const root = segments.shift() ?? "";
+  // The file, then as many of its closest parents as fit after `prefix`.
+  const withParents = (prefix: string) => {
+    let tail = file;
+    for (let i = segments.length - 1; i >= 0; i--) {
+      const longer = `${segments[i]}/${tail}`;
+      if (prefix.length + longer.length > maxLength) break;
+      tail = longer;
+    }
+    return prefix + tail;
+  };
+
+  for (const prefix of [`${root}/…/`, "…/"]) {
+    const shortened = withParents(prefix);
+    if (shortened.length <= maxLength) return shortened;
+  }
+  return keepEnd(file);
+}
+
 export function truncateFilename(
   filename: string,
   maxFrontChars: number = 20,
