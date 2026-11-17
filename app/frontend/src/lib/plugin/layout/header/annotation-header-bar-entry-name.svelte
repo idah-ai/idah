@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-  import { truncate } from "@/utils/string";
+  import { truncatePath } from "@/utils/string";
 
   // Props
   interface Props {
@@ -15,7 +15,7 @@
       <div
         class="text-accent-foreground max-w-full overflow-hidden text-xs font-semibold text-ellipsis whitespace-nowrap hover:cursor-default"
       >
-        {truncate(name, 80)}
+        {truncatePath(name, 80)}
       </div>
     </TooltipTrigger>
 

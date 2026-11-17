@@ -28,7 +28,7 @@
   import { JobRecord, jobsBackendDataSource } from "@/data/model/media/jobs/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
   import { authStatus } from "@/security/AuthContext";
-  import { humanize } from "@/utils/string";
+  import { humanize, truncatePath } from "@/utils/string";
 
   import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
@@ -42,6 +42,9 @@
     onEntryUpdated: () => void;
   }
   let { entry, orphanCategoryCount, today, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
+  // Entry names are often paths inside an uploaded zip: shortened from the middle, in full on hover.
+  let fullName = $derived(entry.name || entry.id);
+  let shortName = $derived(truncatePath(fullName, 80));
   let effectiveDeliveryDate = $derived(entry.delivery_date || entry.dataset?.delivery_date);
 
   let deliveryDateWarning = $derived(
@@ -293,6 +296,23 @@
   }
 </script>
 
+{#snippet entryName()}
+  {#if shortName === fullName}
+    {fullName}
+  {:else}
+    <TooltipProvider>
+      <Tooltip delayDuration={200}>
+        <TooltipTrigger>
+          {#snippet child({ props })}
+            <span {...props}>{shortName}</span>
+          {/snippet}
+        </TooltipTrigger>
+        <TooltipContent><p class="max-w-md break-all">{fullName}</p></TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  {/if}
+{/snippet}
+
 <Card class="hover:bg-primary/5 hover:shadow-primary/10 group transition-shadow hover:shadow-md">
   <CardContent class="flex">
     <!-- SECTION::LEFT -->
@@ -354,13 +374,13 @@
             class="group-hover:text-primary justify-start px-0 group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
             onclick={selectEntry}
           >
-            <span class="-ml-3">{entry.name || entry.id}</span>
+            <span class="-ml-3">{@render entryName()}</span>
 
             <ExternalLinkIcon class="opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
           </Button>
         {:else}
           <Text size="sm" weight="medium" class="text-muted-foreground">
-            {entry.name || entry.id}
+            {@render entryName()}
           </Text>
         {/if}
 
