@@ -7,11 +7,11 @@ type AnyZodObject = z.ZodObject<any>;
 export type ZodSchema = z.ZodType<any> | z.ZodUnion | AnyZodObject | z.ZodArray<AnyZodObject>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function validateData(schema: ZodSchema, data: any) {
-  return schema.safeParse(data);
+export function validateData<S extends ZodSchema>(schema: S, data: any) {
+  return schema.safeParse(data) as z.ZodSafeParseResult<z.output<S>>;
 }
 
-export function getFieldErrors(error: z.ZodError) {
+export function getFieldErrors<T>(error: z.ZodError<T>) {
   return z.flattenError(error).fieldErrors;
 }
 
