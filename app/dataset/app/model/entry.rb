@@ -486,7 +486,9 @@ module Entry
         if x.end_with?("total_time_spent")
           direction = x.start_with?("-") ? :desc : :asc
           expr = Sequel.lit(
-            "CASE WHEN entries.time_tracking IS NOT NULL THEN (SELECT SUM(value::integer) FROM jsonb_each_text(entries.time_tracking)) END"
+            "CASE WHEN entries.time_tracking IS NOT NULL " \
+            "THEN (SELECT SUM(value::integer) " \
+            "FROM jsonb_each_text(entries.time_tracking)) END"
           )
           query = query.order(Sequel.public_send(direction, expr, nulls: :last))
         else

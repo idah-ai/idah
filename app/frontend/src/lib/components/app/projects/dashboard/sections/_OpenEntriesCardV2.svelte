@@ -22,9 +22,7 @@
   const columns = $derived(getColumns(!controller.singleDatasetView));
 
   // ── Enrich entries with time tracking data ───────────────────────
-  const rows: EntryWithTimeData[] = $derived(
-    controller.entryProgressRows.map((entry) => enrichWithTimeData(entry)),
-  );
+  const rows: EntryWithTimeData[] = $derived(controller.entryProgressRows.map((entry) => enrichWithTimeData(entry)));
 
   // Cache the last visible rows so the table never goes empty during loading
   let cachedRows: EntryWithTimeData[] = $state([]);
@@ -32,9 +30,7 @@
     if (rows.length > 0) cachedRows = rows;
   });
 
-  const displayRows = $derived(
-    controller.entryProgressLoading && cachedRows.length > 0 ? cachedRows : rows,
-  );
+  const displayRows = $derived(controller.entryProgressLoading && cachedRows.length > 0 ? cachedRows : rows);
 
   // ── Expand / collapse ────────────────────────────────────────────
   let expandedIds: string[] = $state([]);
@@ -47,9 +43,7 @@
     }
   }
 
-  const allVisibleExpanded = $derived(
-    displayRows.length > 0 && displayRows.every((r) => expandedIds.includes(r.id)),
-  );
+  const allVisibleExpanded = $derived(displayRows.length > 0 && displayRows.every((r) => expandedIds.includes(r.id)));
 
   function toggleAll(): void {
     if (allVisibleExpanded) {
@@ -85,7 +79,7 @@
         </TabsList>
 
         <button
-          class="text-sm font-medium text-link hover:text-link-hover disabled:text-muted-foreground disabled:cursor-not-allowed"
+          class="text-link hover:text-link-hover disabled:text-muted-foreground text-sm font-medium disabled:cursor-not-allowed"
           disabled={displayRows.length === 0}
           onclick={toggleAll}
         >
@@ -111,7 +105,7 @@
       {:else}
         <div class="relative">
           {#if controller.entryProgressLoading}
-            <div class="absolute inset-0 z-10 flex items-start justify-center rounded-lg bg-background/60 pt-8">
+            <div class="bg-background/60 absolute inset-0 z-10 flex items-start justify-center rounded-lg pt-8">
               <Spinner size="sm" />
             </div>
           {/if}
@@ -124,7 +118,7 @@
             />
           {/if}
 
-          <div class={controller.entryProgressLoading ? "opacity-40 pointer-events-none" : ""}>
+          <div class={controller.entryProgressLoading ? "pointer-events-none opacity-40" : ""}>
             <div class="overflow-x-auto">
               <DataTable
                 {columns}
