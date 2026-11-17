@@ -1,4 +1,5 @@
 <script lang="ts" generics="T extends Record">
+  import { untrack } from "svelte";
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
   import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
   import { CommandItem } from "@/components/ui/command";
@@ -16,17 +17,21 @@
   let { columnSetting, contexts, filters, onFilter }: DataTableFilterBaseProps<T> = $props();
 
   // Contexts
-  if (!contexts || !("projectId" in contexts)) {
-    throw new Error("`projectId` is required in contexts for FilterByProjectMember");
-  }
+  untrack(() => {
+    if (!contexts || !("projectId" in contexts)) {
+      throw new Error("`projectId` is required in contexts for FilterByProjectMember");
+    }
+  });
 
-  let { projectId } = contexts as { projectId: string };
+  let { projectId } = $derived(contexts as { projectId: string });
 
   // Variables
   const resource: string = ProjectMemberRecord.type;
-  const filterKey: string = columnSetting.filterOptions?.filterKey || "project_member_id";
-  const filterOperation: DataTableColumnFilterOperation = columnSetting.filterOptions?.filterOperation || "eq";
-  const filterKeyWithOperation: string = `${filterKey}__${filterOperation}`;
+  const filterKey: string = $derived(columnSetting.filterOptions?.filterKey || "project_member_id");
+  const filterOperation: DataTableColumnFilterOperation = $derived(
+    columnSetting.filterOptions?.filterOperation || "eq",
+  );
+  const filterKeyWithOperation: string = $derived(`${filterKey}__${filterOperation}`);
 
   // Functions
   function handleFilter(value: string | number | null): void {
