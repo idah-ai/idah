@@ -90,6 +90,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private _workflowStep: string;
   private _workflowName: string;
   private _allowedNoteFeed: string[] = [];
+  private _externalSteps: string[] = [];
   private _entryStatus: string;
   private _mode = "editor";
   private _ready = false;
@@ -117,6 +118,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     workflowStep: string;
     workflowName: string;
     allowedNoteFeed?: string[];
+    externalSteps?: string[];
     entryStatus: string;
   }) {
     this._id = opts.id;
@@ -129,6 +131,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this._workflowStep = opts.workflowStep;
     this._workflowName = opts.workflowName;
     this._allowedNoteFeed = opts.allowedNoteFeed ?? [];
+    this._externalSteps = opts.externalSteps ?? [];
     this._entryStatus = opts.entryStatus;
     this.accountSettingsMgr = new AccountSettingsManager(this._dataset.modality);
     this.rpc.setErrorObserver((err) => {
@@ -324,6 +327,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   get allowedNoteFeed(): string[] {
     return this._allowedNoteFeed;
   }
+  get externalSteps(): string[] {
+    return this._externalSteps;
+  }
   get entryStatus(): string {
     return this._entryStatus;
   }
@@ -445,6 +451,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       get allowedNoteFeed() {
         return driver.allowedNoteFeed;
       },
+      get externalSteps() {
+        return driver.externalSteps;
+      },
       get entryStatus() {
         return driver.entryStatus;
       },
@@ -545,16 +554,19 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
   // Fetch workflow configuration to get workflowName and allowedNoteFeed
   const workflowName = dataset.workflow_name ?? "default";
   let allowedNoteFeed: string[] = [];
+  let externalSteps: string[] = [];
 
   try {
     const workflowsRes = await fetch(workflowsBasePath);
     const jsonData = await workflowsRes.json();
-    const workflows: Array<{ name: string; allowed_note_feed?: string[] }> = jsonData.data?.workflows ?? [];
+    const workflows: Array<{ name: string; allowed_note_feed?: string[]; external_steps?: string[] }> =
+      jsonData.data?.workflows ?? [];
 
     if (workflowName) {
       const workflow = workflows.find((w) => w.name === workflowName);
       if (workflow) {
         allowedNoteFeed = workflow.allowed_note_feed ?? [];
+        externalSteps = workflow.external_steps ?? [];
       }
     }
   } catch (error) {
@@ -572,6 +584,7 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
     workflowStep: entry.wf_step,
     workflowName,
     allowedNoteFeed,
+    externalSteps,
     entryStatus: entry.status,
   });
 

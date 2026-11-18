@@ -19,6 +19,7 @@ export class WorkflowRecord extends Record {
     }>;
   }>;
   @field() public allowed_note_feed?: Array<string>;
+  @field() public external_steps?: Array<string>;
 }
 
 export const workflowsBasePath: string = `/api/v1/dataset/workflows`;

@@ -10,7 +10,8 @@ module Workflow
           label: wf[:definition].label,
           description: wf[:definition].description,
           steps: wf[:definition].steps,
-          allowed_note_feed: wf[:definition].allowed_note_feed
+          allowed_note_feed: wf[:definition].allowed_note_feed,
+          external_steps: wf[:definition].external_steps
         }
       end
 
