@@ -567,7 +567,7 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
     end
 
     it "rejects an explicit empty Dataset array in the input schema" do
-      result = BaseExpo::PROJECT_DATASET_FILTER_SCHEMA.validate({ project_id: project_id, dataset_id: [] })
+      result = Schemas::ProjectDatasetFilter.validate({ project_id: project_id, dataset_id: [] })
       expect(result.success?).to be(false)
     end
 

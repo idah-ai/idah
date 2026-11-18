@@ -13,7 +13,7 @@ class EntriesExpo < BaseExpo
   expose on_http(:get, "/summary") do
     desc "Exact Dashboard Entry counts for a Project and optional Datasets"
     input do
-      field :filter, PROJECT_DATASET_FILTER_SCHEMA
+      field :filter, Schemas::ProjectDatasetFilter
     end
     output do
       field :meta, Hash
@@ -28,7 +28,7 @@ class EntriesExpo < BaseExpo
   expose on_http(:get, "/completion_history") do
     desc "Daily currently completed Entry counts in the viewer's timezone"
     input do
-      field :filter, PROJECT_DATASET_FILTER_SCHEMA
+      field :filter, Schemas::ProjectDatasetFilter
       field :from, String
       field :to, String
       field :tz, String
