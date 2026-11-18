@@ -12,11 +12,17 @@ RSpec.describe Exports::Context do
     it "initializes with job, dataset_ids, and options" do
       expect(context.dataset_ids).to eq(dataset_ids)
       expect(context.options).to eq(options)
+      expect(context.entry_ids).to be_nil
     end
 
     it "initializes with default empty options" do
       ctx = described_class.new(job, dataset_ids)
       expect(ctx.options).to eq({})
+    end
+
+    it "initializes with entry_ids when provided" do
+      ctx = described_class.new(job, dataset_ids, options, %w[e1 e2])
+      expect(ctx.entry_ids).to eq(%w[e1 e2])
     end
   end
 
@@ -64,9 +70,9 @@ RSpec.describe Exports::Context do
     let(:dataset3) { double("Dataset3") }
 
     before do
-      allow(Exports::DatasetContext).to receive(:new).with(1).and_return(dataset1)
-      allow(Exports::DatasetContext).to receive(:new).with(2).and_return(dataset2)
-      allow(Exports::DatasetContext).to receive(:new).with(3).and_return(dataset3)
+      allow(Exports::DatasetContext).to receive(:new).with(1, nil).and_return(dataset1)
+      allow(Exports::DatasetContext).to receive(:new).with(2, nil).and_return(dataset2)
+      allow(Exports::DatasetContext).to receive(:new).with(3, nil).and_return(dataset3)
     end
 
     it "returns an Enumerator" do
@@ -102,6 +108,18 @@ RSpec.describe Exports::Context do
 
       expect(first_two).to eq([dataset1, dataset2])
       expect(first_two.size).to eq(2)
+    end
+
+    context "with entry_ids" do
+      let(:context) { described_class.new(job, dataset_ids, options, %w[e1 e2]) }
+
+      it "passes entry_ids to each DatasetContext" do
+        expect(Exports::DatasetContext).to receive(:new).with(1, %w[e1 e2]).and_return(dataset1)
+        expect(Exports::DatasetContext).to receive(:new).with(2, %w[e1 e2]).and_return(dataset2)
+        expect(Exports::DatasetContext).to receive(:new).with(3, %w[e1 e2]).and_return(dataset3)
+
+        expect(context.datasets.to_a).to eq([dataset1, dataset2, dataset3])
+      end
     end
 
     context "with empty dataset_ids" do

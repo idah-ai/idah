@@ -33,7 +33,7 @@
 
   function handleFrameClick(e: MouseEvent, ann: IVideoAnnotationRecord) {
     e.preventDefault();
-    const frame = ann.shape.start;
+    const frame = ann.shape_args.start;
     viewport.video.goToFrame(frame);
     // Select the frame tagging so the right sidebar switches to tagging > frame.
     selection.selectAnnotation(ann as any);
@@ -48,7 +48,7 @@
 
 <div class="relative h-full w-full bg-transparent">
   {#each frameAnnotations as ann (ann.id)}
-    {@const frame = ann.shape.start}
+    {@const frame = ann.shape_args.start}
     {@const position = ((frame - startRange) / rangeSize) * 100}
     {@const width = (100 / rangeSize) * 0.9}
     {@const color = frameColors.get(ann.id)}

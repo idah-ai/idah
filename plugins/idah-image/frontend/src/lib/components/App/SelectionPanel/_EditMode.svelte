@@ -95,7 +95,7 @@
   {/if}
 
   {#if annotation}
-    {@const entries = getShapeDimensions(annotation.shape, media.width, media.height)}
+    {@const entries = getShapeDimensions(annotation.shape_args, media.width, media.height, annotation.shape_type)}
     {#if entries}
       <Separator class="mt-3" />
       <section class="flex flex-col gap-2">

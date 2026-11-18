@@ -17,16 +17,17 @@ export async function computeCoreStats(driver: IIdahDriverV2): Promise<IStatEntr
   const annotations = await driver.annotations.fetch();
   const rawConfig = driver.config as Record<string, unknown>;
 
-  // Category field can be overridden at the top level of labeling_configuration
-  const categoryField = typeof rawConfig.category_field === "string" ? rawConfig.category_field : "category";
-
   // Zero-fill all configured category ids
   const categoryCounts = new Map<string, number>();
+  const configuredIds = new Set<string>();
   for (const shapeConfig of Object.values(rawConfig)) {
     if (typeof shapeConfig !== "object" || !shapeConfig || !("values" in shapeConfig)) continue;
     const values = (shapeConfig as { values?: { id?: string }[] }).values ?? [];
     for (const v of values) {
-      if (typeof v.id === "string") categoryCounts.set(v.id, 0);
+      if (typeof v.id === "string") {
+        configuredIds.add(v.id);
+        categoryCounts.set(v.id, 0);
+      }
     }
   }
 
@@ -47,14 +48,17 @@ export async function computeCoreStats(driver: IIdahDriverV2): Promise<IStatEntr
   }
 
   for (const ann of representativeByGroup.values()) {
-    // Category — read from annotation.value[categoryField]
-    const category = (ann.value as Record<string, unknown> | undefined)?.[categoryField];
+    // Skip soft-deleted annotations (mirrors backend CoreStats)
+    if (ann.deleted_at) continue;
+
+    // Category — read from ann.category
+    const category = ann.category;
     if (typeof category === "string") {
       categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
     }
 
     // Shape type — strip "<modality>:" prefix (mirrors backend CoreStats)
-    const rawType = (ann.shape as Record<string, unknown> | undefined)?.type;
+    const rawType = ann.shape_type;
     if (typeof rawType === "string") {
       const colonIdx = rawType.indexOf(":");
       const shapeKey = colonIdx >= 0 ? rawType.slice(colonIdx + 1) : rawType;
@@ -62,12 +66,45 @@ export async function computeCoreStats(driver: IIdahDriverV2): Promise<IStatEntr
     }
   }
 
+  // Total count of live (non-deleted) representative annotations
+  const liveCount = [...representativeByGroup.values()].filter((a) => !a.deleted_at).length;
+
+  // Count annotations whose category is not present in the labeling config
+  // (mirrors backend EntryStats::CoreStats "orphan_category.count"). Computed
+  // over the same deduplicated live set as the other counts so orphan ≤ total.
+  let orphanCategoryCount = 0;
+  for (const ann of representativeByGroup.values()) {
+    if (ann.deleted_at) continue;
+    const category = ann.category;
+    if (typeof category === "string" && category && !configuredIds.has(category)) {
+      orphanCategoryCount += 1;
+    }
+  }
+
   const stats: IStatEntry[] = [
-    { ...ANNOTATION_SECTION, key: "annotation.count", value: String(representativeByGroup.size), label: "Total" },
+    {
+      ...ANNOTATION_SECTION,
+      key: "annotation.count",
+      value: String(liveCount),
+      label: "Total",
+    },
+    {
+      ...ANNOTATION_SECTION,
+      key: "orphan_category.count",
+      value: String(orphanCategoryCount),
+      label: "Label Not Found",
+    },
   ];
 
   for (const [id, count] of categoryCounts) {
-    stats.push({ ...CATEGORY_SECTION, key: `category.${id}.count`, value: String(count) });
+    stats.push({
+      ...CATEGORY_SECTION,
+      key: `category.${id}.count`,
+      value: String(count),
+      // Category ids not present in the labeling config are orphans — their
+      // label was deleted, renamed, or never configured.
+      tags: !configuredIds.has(id) ? [{ label: "Deleted", variant: "destructive-outline" }] : undefined,
+    });
   }
 
   for (const [shape, count] of shapeCounts) {

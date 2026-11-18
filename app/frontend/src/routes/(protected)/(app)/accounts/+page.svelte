@@ -31,7 +31,7 @@
 
   // Functions
   async function checkRights() {
-    canCreateAccount = (await $authStatus.authContext?.can("create", "iam:accounts")) || false;
+    canCreateAccount = (await $authStatus.authContext?.can("invite", "iam:accounts")) || false;
     canDeleteAccount = (await $authStatus.authContext?.can("delete", "iam:accounts")) || false;
     columns.action.visible = canCreateAccount || canDeleteAccount;
   }
@@ -42,7 +42,7 @@
 </script>
 
 {#snippet AddNewAccountButton()}
-  <Can action="create" resource="iam:accounts" roles={["admin"]}>
+  <Can action="invite" resource="iam:accounts">
     <Button onclick={openNewAccountModal}>
       <PlusIcon />
       New Account

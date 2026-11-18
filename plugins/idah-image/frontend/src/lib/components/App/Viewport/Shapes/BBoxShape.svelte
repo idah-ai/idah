@@ -54,7 +54,7 @@
 
   // ── Interpolated values ──────────────────────────────────────────────
   let baseAngle = $derived.by((): number => {
-    const shape = annotation?.shape as IImageAnnotationShape | undefined;
+    const shape = annotation?.shape_args as IImageAnnotationShape | undefined;
     return shape?.angle as number ?? 0;
   });
 
@@ -73,7 +73,7 @@
   let isEditing = $derived(editable && (!!panStart || !!rotateStart || resizeHandleIndex !== undefined));
 
   let basePoints = $derived.by((): Point[] => {
-    const shape = annotation?.shape as IImageAnnotationShape | undefined;
+    const shape = annotation?.shape_args as IImageAnnotationShape | undefined;
     return shape?.points ?? [];
   });
 

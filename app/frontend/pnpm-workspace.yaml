@@ -1,0 +1,5 @@
+# Dependency install scripts pnpm should skip: both only fetch binaries that
+# their platform packages already provide.
+ignoredBuiltDependencies:
+  - "@sentry/cli"
+  - "@tailwindcss/oxide"

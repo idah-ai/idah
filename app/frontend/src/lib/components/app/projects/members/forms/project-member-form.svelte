@@ -18,10 +18,13 @@
   } from "@/data/model/dataset/projects/members/record";
   import { assignProjectMemberRoleSchema } from "@/data/model/dataset/projects/members/schema";
   import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { authStatus } from "@/security/AuthContext";
+  import { filterAssignableProjectRoles } from "@/security/roleHierarchy";
   import { cn } from "@/utils";
   import { getFieldErrors, validateData } from "@/utils/validate";
 
   import type { AssignProjectMemberType } from "@/data/model/dataset/projects/members/type";
+  import type { LabelValue } from "@/utils/types";
 
   // Props
   interface Props {
@@ -34,10 +37,22 @@
 
   let projectId = page.params.projectId as string;
   let projectMemberEmails: Array<string> = $state([]);
+  let assignableRoles: Array<LabelValue<string | number>> = $state(projectMemberRoles);
 
   // Lifecycle
-  onMount(() => {
+  onMount(async () => {
     fetchProjectMembers();
+
+    // Filter the assignable roles by the actor's effective rank on the project.
+    const currentAccount = $authStatus.authContext;
+    const effectiveRank = currentAccount ? await currentAccount.effectiveProjectRank(projectId) : null;
+    if (effectiveRank !== null) {
+      const allowed = filterAssignableProjectRoles(
+        effectiveRank,
+        projectMemberRoles.map((r) => String(r.value)),
+      );
+      assignableRoles = projectMemberRoles.filter((r) => allowed.includes(String(r.value)));
+    }
   });
 
   // Functions
@@ -151,7 +166,7 @@
           label="Role"
           slotLabel={index === 0 ? undefined : noLabel}
           placeholder="Select a role"
-          choices={projectMemberRoles}
+          choices={assignableRoles}
           required
           searchable
           searchPlaceholder="Search a role"

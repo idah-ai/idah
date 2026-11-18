@@ -7,6 +7,7 @@
 // makes this testable — getDriver() throws when no driver is initialised.
 // ---------------------------------------------------------------------------
 import { getDriver } from "$lib/state/driver.svelte";
+import type { LabelVisibility } from "$lib/state/ui.svelte";
 import { IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON } from "$lib/types";
 import { categoryValueToLabel } from "$lib/utils/annotation";
 import { centroid, type Point } from "$lib/utils/math/point";
@@ -15,14 +16,30 @@ import { polygonVisualCenter } from "$lib/utils/math/polylabel";
 /** Minimal structural view of an annotation — avoids coupling to the full record type. */
 type LabelAnnotation = {
   id?: string;
-  value?: { category?: string };
-  shape?: { type?: string; points?: number[][]; angle?: number; radius?: number };
+  category?: string;
+  shape_type?: string;
+  shape_args?: { points?: number[][]; angle?: number; radius?: number };
 };
 
 /** A resolved category label. `unresolved` means the id is not in the label config. */
 export interface AnnotationLabel {
   text: string;
   unresolved: boolean;
+}
+
+/**
+ * Decide whether an annotation label should be rendered.
+ *
+ * Unresolved labels are data errors and stay visible regardless of the user's
+ * category-label visibility setting. Resolved labels use the normal visibility
+ * decision supplied by the caller (always/hover/never plus interaction state).
+ */
+export function isAnnotationLabelVisible(
+  label: AnnotationLabel,
+  visibility: LabelVisibility,
+  normalVisibility: boolean,
+): boolean {
+  return label.unresolved || (visibility !== "never" && normalVisibility);
 }
 
 /** Uppercase the first character, matching categoryValueToLabel's own segment casing. */
@@ -49,7 +66,7 @@ export function annotationLabel(
   annotation: LabelAnnotation,
   getCategory: (categoryId: string) => { id: string; label?: string | null } | null | undefined,
 ): AnnotationLabel | null {
-  const raw = annotation?.value?.category;
+  const raw = annotation?.category;
   if (!raw) return null;
 
   const category = getCategory(raw);
@@ -71,7 +88,7 @@ export function annotationLabel(
 /** Convenience wrapper resolving the category against the driver's label config. */
 export function resolveAnnotationLabel(annotation: LabelAnnotation): AnnotationLabel | null {
   return annotationLabel(annotation, (categoryId: string) => {
-    const config = getDriver().config[annotation?.shape?.type ?? ""];
+    const config = getDriver().config[annotation?.shape_type ?? ""];
     return config?.values?.find((v) => v.id === categoryId) ?? null;
   });
 }
@@ -89,10 +106,10 @@ export function resolveAnnotationLabel(annotation: LabelAnnotation): AnnotationL
  * shape whose points are missing or malformed.
  */
 export function labelCenterPx(annotation: LabelAnnotation, w: number, h: number): Point | null {
-  const shape = annotation?.shape;
+  const shape = annotation?.shape_args;
   const points = (shape?.points ?? []) as Point[];
 
-  switch (shape?.type) {
+  switch (annotation?.shape_type) {
     case IMAGE_BOUNDING_BOX: {
       // Stored as 4 unrotated AABB corners plus a separate `angle`. Rotation is
       // about the centroid, so the box centre is the corner centroid either way.

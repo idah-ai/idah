@@ -45,6 +45,7 @@ function matchesFilter(fieldValue: unknown, filterValue: IFilterValue): boolean 
 // ---------------------------------------------------------------------------
 export class InMemoryStore<T extends { id: string }> {
   private records: T[] = [];
+  private deleted: Map<string, T> = new Map();
   private virtualFields: Map<string, (rec: T) => unknown> = new Map();
 
   seed(data: T[]): void {
@@ -73,12 +74,22 @@ export class InMemoryStore<T extends { id: string }> {
 
   /** Return a deep-ish copy of all records matching the filter. */
   fetch(filter?: IFilter): T[] {
-    let result = this.records;
+    // The `deleted` filter is virtual: it selects on the tombstone state rather
+    // than a stored field. "true" returns only tombstones, "all" returns
+    // everything, and anything else (or no filter) hides tombstones.
+    const deletedMode = filter?.deleted;
+    let result =
+      deletedMode === "true"
+        ? Array.from(this.deleted.values())
+        : deletedMode === "all"
+          ? [...this.records, ...Array.from(this.deleted.values())]
+          : this.records;
 
     if (filter && Object.keys(filter).length > 0) {
       result = result.filter((rec) => {
         const record = rec as Record<string, unknown>;
         for (const [field, filterValue] of Object.entries(filter)) {
+          if (field === "deleted") continue;
           // Resolve value — dotted paths then virtual fields
           let fieldValue: unknown = this.resolvePath(record, field);
           if (fieldValue === undefined && this.virtualFields.has(field)) {
@@ -107,7 +118,16 @@ export class InMemoryStore<T extends { id: string }> {
   delete(id: string): void {
     const idx = this.records.findIndex((r) => r.id === id);
     if (idx === -1) throw new Error(`Annotation not found: ${id}`);
+    this.deleted.set(id, this.records[idx]);
     this.records.splice(idx, 1);
+  }
+
+  restore(id: string): T {
+    const record = this.deleted.get(id);
+    if (!record) throw new Error(`Annotation not found: ${id}`);
+    this.deleted.delete(id);
+    this.records.push(record);
+    return { ...record };
   }
 
   create(data: T): T {

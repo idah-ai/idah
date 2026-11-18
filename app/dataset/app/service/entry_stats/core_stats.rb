@@ -17,11 +17,14 @@ module EntryStats
     #                                         Shape types from tool-type config keys are zero-filled
     #                                         (like categories). Generic across modalities, so it
     #                                         lives here rather than in a per-plugin generator.
+    #   "orphan_category.count"             → count of annotations whose category is not
+    #                                         present in labeling_configuration (e.g. was
+    #                                         deleted or renamed). Each annotation counted
+    #                                         individually.
     #
     # Category ids are collected by flattening values[*][:id] across all tool-type keys
     # in labeling_configuration (e.g. "idah-video:bounding-box" → :values → :id).
-    # The category field read from each annotation defaults to :category and can be
-    # overridden via labeling_configuration[:category_field].
+    # The category field is always `category` — no per-dataset override is supported.
     #
     # Note: Verse::Sequel::JsonEncoder deserialises JSON with symbolized keys.
     #
@@ -29,17 +32,8 @@ module EntryStats
     # @return [Hash{String => String}]
     def self.call(entry)
       config = entry.dataset.labeling_configuration || {}
-
-      category_field = (config[:category_field] || :category).to_sym
-
       # Collect all configured category ids across all tool types (flat).
-      # Values of labeling_configuration are tool configs (Hashes); skip anything else
-      # (e.g. the :category_field scalar override).
-      configured_ids = config.each_value.flat_map do |tool_config|
-        next [] unless tool_config.is_a?(Hash)
-
-        Array(tool_config[:values]).filter_map { |v| v[:id] }
-      end
+      configured_ids = entry.dataset.configured_category_ids
 
       # Zero-fill all configured ids upfront
       label_counts = Hash.new(0)
@@ -58,19 +52,30 @@ module EntryStats
       end
 
       annotations = entry.annotations || []
-      annotations.each do |annotation|
-        category = annotation.annotation&.dig(category_field)
+      live_annotations = annotations.reject(&:deleted_at)
+      live_annotations.each do |annotation|
+        category = annotation.category
         label_counts[category] += 1 if category
 
-        type = annotation.dimensions&.dig(:type)
+        type = annotation.shape_type
         shape_counts[type.split(":", 2).last] += 1 if type
       end
 
-      stats = { "annotation.count" => annotations.size.to_s }
+      stats = { "annotation.count" => live_annotations.size.to_s }
 
       label_counts.each do |label, count|
         stats["category.#{label}.count"] = count.to_s
       end
+
+      # Count annotations whose category is not present in the labeling configuration.
+      # These are "orphan" annotations — the category was deleted, renamed, or never
+      # configured. Each annotation is counted individually (not per distinct category).
+      configured_set = configured_ids.to_set
+      orphan_annotation_count = live_annotations.count do |annotation|
+        category = annotation.category
+        category && !configured_set.include?(category)
+      end
+      stats["orphan_category.count"] = orphan_annotation_count.to_s
 
       shape_counts.each do |shape, count|
         stats["shape.#{shape}.count"] = count.to_s

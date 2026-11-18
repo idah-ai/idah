@@ -17,7 +17,7 @@ vi.mock("$lib/state/data.svelte", () => ({
   },
 }));
 
-const mockAnn = (id: string) => ({ id, shape: {}, value: {} });
+const mockAnn = (id: string) => ({ id, shape_type: "idah-video:bounding-box", shape_args: {}, category: "person" });
 
 describe("selection state", () => {
   beforeEach(() => {
@@ -80,10 +80,10 @@ describe("selection state", () => {
       expect(selection.selectedCount).toBe(1);
     });
 
-    it("clears group selection when toggling annotations", () => {
+    it("keeps a selected group when Shift+click adds an annotation", () => {
       selection.selectGroup("group-1");
       selection.toggleAnnotation("ann-001");
-      expect(selection.isGroupSelected("group-1")).toBe(false);
+      expect(selection.isGroupSelected("group-1")).toBe(true);
       expect(selection.isAnnotationSelected("ann-001")).toBe(true);
     });
   });

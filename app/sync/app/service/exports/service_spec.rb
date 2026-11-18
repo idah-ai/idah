@@ -43,6 +43,7 @@ RSpec.describe Exports::Service, database: true do
         expect(export.job_id).not_to be_nil
         expect(export.project_id).to eq(project_id)
         expect(export.created_by_id).to eq(account_id)
+        expect(subject.auth_context.checked?).to be(true)
 
         job = Jobs::Service.new(auth_context).show(export.job_id)
 
@@ -74,6 +75,52 @@ RSpec.describe Exports::Service, database: true do
         expect(Exports::Registry).to receive(:valid_export_class?).with(exporter).and_return(true)
 
         subject.create(project_id, dataset_ids, exporter)
+      end
+    end
+
+    context "with an exporter that has options" do
+      # rubocop:disable Lint/ConstantDefinitionInBlock
+      class ServiceSpecExporterWithOptions
+        def options
+          Verse::Schema.define do
+            field(:task, String).default("detect").meta(choices: %w[detect segment])
+          end
+        end
+      end
+      # rubocop:enable Lint/ConstantDefinitionInBlock
+
+      let(:exporter) { "ServiceSpecExporterWithOptions" }
+
+      before do
+        allow(Exports::Registry).to receive(:export_class).with(exporter).and_return(ServiceSpecExporterWithOptions)
+        allow_any_instance_of(described_class).to receive(:filter_dataset_ids_by_rights)
+          .with(project_id, dataset_ids).and_return(dataset_ids)
+      end
+
+      it "stores the options in the job, defaults filled in" do
+        export = subject.create(project_id, dataset_ids, exporter, { include_medias: "none" })
+
+        job = Jobs::Service.new(auth_context).show(export.job_id)
+        expect(job.arguments[:options]).to eq({ include_medias: "none", task: "detect" })
+      end
+
+      it "keeps a given option" do
+        export = subject.create(project_id, dataset_ids, exporter, { task: "segment" })
+
+        expect(Jobs::Service.new(auth_context).show(export.job_id).arguments[:options]).to eq({ task: "segment" })
+      end
+
+      it "refuses an invalid option before creating anything" do
+        initial_job_count = Jobs::Service.new(auth_context).index.to_a.size
+
+        expect { subject.create(project_id, dataset_ids, exporter, { task: "pose" }) }
+          .to raise_error(Verse::Error::ValidationFailed, /options.task: must be one of: detect, segment/)
+        expect(Jobs::Service.new(auth_context).index.to_a.size).to eq(initial_job_count)
+      end
+
+      it "refuses an option the exporter does not declare" do
+        expect { subject.create(project_id, dataset_ids, exporter, { colour: "red" }) }
+          .to raise_error(Verse::Error::ValidationFailed, /options.colour/)
       end
     end
 
@@ -158,6 +205,49 @@ RSpec.describe Exports::Service, database: true do
       end
     end
 
+    context "entry ids" do
+      let(:entry_ids) { %w[e1 e2] }
+
+      before do
+        allow_any_instance_of(described_class).to receive(:filter_dataset_ids_by_rights)
+          .with(project_id, dataset_ids).and_return(dataset_ids)
+      end
+
+      it "stores entry_ids in the job arguments when provided" do
+        allow(Api[:idah].dataset.entries).to receive(:index_all)
+          .with(
+            filter: { dataset_id: dataset_ids, id: entry_ids },
+            fields: { "dataset:entries": ["id"] }
+          )
+          .and_return([double("e1", id: "e1"), double("e2", id: "e2")])
+
+        export = subject.create(project_id, dataset_ids, exporter, {}, entry_ids:)
+
+        job = Jobs::Service.new(auth_context).show(export.job_id)
+        expect(job.arguments[:entry_ids]).to eq(entry_ids)
+      end
+
+      it "does not include entry_ids in the job arguments when not provided" do
+        export = subject.create(project_id, dataset_ids, exporter)
+
+        job = Jobs::Service.new(auth_context).show(export.job_id)
+        expect(job.arguments.key?(:entry_ids)).to be(false)
+      end
+
+      it "raises ValidationFailed when some entries do not belong to the datasets" do
+        allow(Api[:idah].dataset.entries).to receive(:index_all)
+          .with(
+            filter: { dataset_id: dataset_ids, id: entry_ids },
+            fields: { "dataset:entries": ["id"] }
+          )
+          .and_return([double("e1", id: "e1")])
+
+        expect {
+          subject.create(project_id, dataset_ids, exporter, {}, entry_ids:)
+        }.to raise_error(Verse::Error::ValidationFailed, /do not belong/)
+      end
+    end
+
     context "authorization flow" do
       it "calls filter_dataset_ids_by_rights with correct parameters" do
         allow_any_instance_of(described_class).to receive(:filter_dataset_ids_by_rights)
@@ -220,26 +310,26 @@ RSpec.describe Exports::Service, database: true do
       subject { described_class.new(current_auth_context) }
 
       it "allows access to datasets in projects they own" do
-        # Export Service
-        allow(Api[:idah].dataset.projects).to receive(:index_all).with(
-          filter: { id: project_id, organization_id: current_auth_context.custom_scopes[:org] },
-          fields: { "dataset:projects": ["id"] }
-        ).and_return(
-          [double(id: project_id)]
-        )
+        lookup = double(ProjectMembership::Lookup)
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(lookup)
+        allow(lookup).to receive(:project_ids_for_organizations).with(
+          current_auth_context.custom_scopes[:org]
+        ).and_return([project_id])
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
+        ).and_return([])
         allow(Api[:idah].dataset.datasets).to receive(:index_all).with(
           filter: { project_id:, id: dataset_ids },
-          fields: { "dataset:dataset": ["id"] }
+          fields: { "dataset:datasets": ["id"] }
         ).and_return(
           dataset_ids.map { |id| double(id:) }
         )
 
         # Export Repository
-        allow(Api[:idah].dataset.projects).to receive(:index_all).with(
-          filter: { organization_id: current_auth_context.custom_scopes[:org] },
-          fields: { "dataset:projects": ["id"] }
+        allow(lookup).to receive(:project_ids_for_organizations).with(
+          current_auth_context.custom_scopes[:org]
         ).and_return(
-          [double(id: project_id)]
+          [project_id]
         )
 
         export = subject.create(project_id, dataset_ids, exporter)
@@ -251,14 +341,62 @@ RSpec.describe Exports::Service, database: true do
       end
 
       it "denies access to datasets if project does not belong to their organization" do
-        allow(Api[:idah].dataset.projects).to receive(:index_all).with(
-          filter: { id: project_id, organization_id: current_auth_context.custom_scopes[:org] },
-          fields: { "dataset:projects": ["id"] }
+        lookup = double(ProjectMembership::Lookup)
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(lookup)
+        allow(lookup).to receive(:project_ids_for_organizations).with(
+          current_auth_context.custom_scopes[:org]
         ).and_return([]) # Project does not belong to org owner's organization
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
+        ).and_return([]) # Nor is the org owner a project_owner member of it
 
         expect {
           subject.create(project_id, dataset_ids, exporter)
         }.to raise_error(Verse::Error::Authorization, "You do not have access to the project provided")
+      end
+
+      it "denies sync access to a foreign project where the org_owner is only a reviewer member" do
+        # The sync as_user rule grants access only to enabled project_owner
+        # memberships, so a reviewer membership on a foreign project yields no
+        # sync access (the intended asymmetry vs dataset/media).
+        lookup = double(ProjectMembership::Lookup)
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(lookup)
+        allow(lookup).to receive(:project_ids_for_organizations).with(
+          current_auth_context.custom_scopes[:org]
+        ).and_return([]) # Project is not in the org owner's orgs
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
+        ).and_return(
+          [double(project_id:, role: "reviewer", organization_id: 999)]
+        )
+
+        expect {
+          subject.create(project_id, dataset_ids, exporter)
+        }.to raise_error(Verse::Error::Authorization, "You do not have access to the project provided")
+      end
+
+      it "allows sync access to a foreign project where the org_owner is a project_owner member" do
+        lookup = double(ProjectMembership::Lookup)
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(lookup)
+        allow(lookup).to receive(:project_ids_for_organizations).with(
+          current_auth_context.custom_scopes[:org]
+        ).and_return([]) # Project is not in the org owner's orgs
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
+        ).and_return(
+          [double(project_id:, role: "project_owner", organization_id: 999)]
+        )
+        allow(Api[:idah].dataset.datasets).to receive(:index_all).with(
+          filter: { project_id:, id: dataset_ids },
+          fields: { "dataset:datasets": ["id"] }
+        ).and_return(
+          dataset_ids.map { |id| double(id:) }
+        )
+
+        export = subject.create(project_id, dataset_ids, exporter)
+
+        expect(export).not_to be_nil
+        expect(export.project_id).to eq(project_id)
       end
     end
 
@@ -266,26 +404,26 @@ RSpec.describe Exports::Service, database: true do
       subject { described_class.new(current_auth_context) }
 
       it "allows access to datasets in projects they own" do
-        # Export Service
-        allow(Api[:idah].dataset.project_members).to receive(:index_all).with(
-          filter: { project_id:, account_id: current_auth_context.metadata[:id], role: "project_owner", enabled: true },
-          fields: { "dataset:project_members": ["project_id"] }
+        lookup = double(ProjectMembership::Lookup)
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(lookup)
+        allow(lookup).to receive(:project_ids_for_organizations).and_return([])
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
         ).and_return(
-          [double(project_id:)]
+          [double(project_id:, role: "project_owner", organization_id: 1)]
         )
         allow(Api[:idah].dataset.datasets).to receive(:index_all).with(
-          filter: { project_id: [project_id], id: dataset_ids },
-          fields: { "dataset:dataset": ["id"] }
+          filter: { project_id:, id: dataset_ids },
+          fields: { "dataset:datasets": ["id"] }
         ).and_return(
           dataset_ids.map { |id| double(id:) }
         )
 
         # Export Repository
-        allow(Api[:idah].dataset.project_members).to receive(:index_all).with(
-          filter: { account_id: current_auth_context.metadata[:id], role: "project_owner", enabled: true },
-          fields: { "dataset:project_members": ["project_id"] }
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
         ).and_return(
-          [double(project_id:)]
+          [double(project_id:, role: "project_owner", organization_id: 1)]
         )
 
         export = subject.create(project_id, dataset_ids, exporter)
@@ -297,9 +435,11 @@ RSpec.describe Exports::Service, database: true do
       end
 
       it "denies access to datasets if user is not a project owner" do
-        allow(Api[:idah].dataset.project_members).to receive(:index_all).with(
-          filter: { project_id:, account_id: current_auth_context.metadata[:id], role: "project_owner", enabled: true },
-          fields: { "dataset:project_members": ["project_id"] }
+        lookup = double(ProjectMembership::Lookup)
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(lookup)
+        allow(lookup).to receive(:project_ids_for_organizations).and_return([])
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
         ).and_return([]) # User is not a project owner
 
         expect {
@@ -308,16 +448,18 @@ RSpec.describe Exports::Service, database: true do
       end
 
       it "denies access to datasets if they do not belong to the project" do
-        allow(Api[:idah].dataset.project_members).to receive(:index_all).with(
-          filter: { project_id:, account_id: current_auth_context.metadata[:id], role: "project_owner", enabled: true },
-          fields: { "dataset:project_members": ["project_id"] }
+        lookup = double(ProjectMembership::Lookup)
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(lookup)
+        allow(lookup).to receive(:project_ids_for_organizations).and_return([])
+        allow(lookup).to receive(:memberships_for).with(
+          current_auth_context.metadata[:id]
         ).and_return(
-          [double(project_id:)]
+          [double(project_id:, role: "project_owner", organization_id: 1)]
         )
 
         allow(Api[:idah].dataset.datasets).to receive(:index_all).with(
-          filter: { project_id: [project_id], id: dataset_ids },
-          fields: { "dataset:dataset": ["id"] }
+          filter: { project_id:, id: dataset_ids },
+          fields: { "dataset:datasets": ["id"] }
         ).and_return([]) # No datasets belong to the project
 
         expect {
@@ -404,6 +546,12 @@ RSpec.describe Exports::Service, database: true do
         expect(File).to receive(:basename).with(file_path).and_return("test_export.csv")
 
         service.upload(export_id, mock_file)
+      end
+
+      it "uses the filename given" do
+        service.upload(export_id, mock_file, filename: "idah-coco-image_2026-10-16_0430.zip")
+
+        expect(repo.find!(export_id).filename).to eq("idah-coco-image_2026-10-16_0430.zip")
       end
 
       it "registers rollback callback for file cleanup" do
@@ -594,6 +742,32 @@ RSpec.describe Exports::Service, database: true do
       it "indexes the exports" do
         expect(service.index.to_a.size).to eq(1)
       end
+    end
+  end
+
+  describe "actor seeding from a request context" do
+    it "emits the actor on a created event without per-write actor code" do
+      captured = []
+      allow(Verse).to receive(:publish_resource_event) do |**opts|
+        captured << opts[:payload][:metadata]
+      end
+
+      actor = Verse::Auth::Context.new(
+        ["sync:exports.*.*"],
+        role: :admin,
+        metadata: { id: 7, email: "admin@example.com", role: :admin }
+      )
+      described_class.new(actor).exports.create(
+        project_id: project_id,
+        created_by_id: 7,
+        job_id: job_id
+      )
+
+      expect(captured.last).to include(
+        actor_account_id: 7,
+        actor_account_email: "admin@example.com",
+        actor_account_role_name: :admin
+      )
     end
   end
 end

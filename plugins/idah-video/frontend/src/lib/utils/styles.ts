@@ -36,30 +36,30 @@ const STYLE_SVG_MAP: Record<string, string> = {
  * are merged, translated to SVG/CSS properties, and returned as a
  * semicolon-separated CSS string (e.g. `"stroke-dasharray:6, 3;opacity:4"`).
  *
- * @param annotation  The annotation record (must have `shape.type` and
- *                    `value.attributes`).
+ * @param annotation  The annotation record (must have `shape_type` and
+ *                    `properties`).
  * @returns           A CSS string of property:value pairs, or empty string.
  *
  * @example
- *   // annotation has attributes: { "shape-proprety": "option_2" }
+ *   // annotation has properties: { "shape-proprety": "option_2" }
  *   // option_2.styles = { border: "dashed", opacity: 4 }
  *   // Returns: "stroke-dasharray:6, 3;opacity:4"
  */
 export function resolveShapeStyles(
   annotation: {
-    value?: { attributes?: Record<string, unknown> };
-    shape?: { type?: string };
+    properties?: Record<string, unknown>;
+    shape_type?: string;
   },
 ): string {
-  const config = getDriver().config[annotation?.shape?.type ?? ""];
+  const config = getDriver().config[annotation?.shape_type ?? ""];
   if (!config?.properties) return "";
 
-  const attributes = annotation.value?.attributes ?? {};
+  const properties = annotation.properties ?? {};
   const mergedStyles: Record<string, unknown> = {};
 
   for (const prop of config.properties) {
     if (prop.type === "single-select" && prop.format?.options) {
-      const selectedValue = attributes[prop.id];
+      const selectedValue = properties[prop.id];
       if (selectedValue !== undefined && selectedValue !== null) {
         const option: IConfigPropertyOption | undefined = prop.format.options.find(
           (o: IConfigPropertyOption) => o.id === selectedValue,

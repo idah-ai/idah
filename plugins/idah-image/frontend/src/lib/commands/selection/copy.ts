@@ -44,8 +44,10 @@ export function register(driver: IIdahDriverV2): void {
           // Collect all annotations from the selected groups
           const copySet = new Set<string>();
           const entries: {
-            shape: Record<string, unknown>;
-            value: Record<string, unknown> | undefined;
+            shape_type: string;
+            shape_args: Record<string, unknown>;
+            category: string;
+            properties: Record<string, unknown> | undefined;
             metadata: Record<string, unknown> | undefined;
             centroidOffset: [number, number];
           }[] = [];
@@ -54,11 +56,12 @@ export function register(driver: IIdahDriverV2): void {
             if (selectedIds.has(ann.id) && !copySet.has(ann.id)) {
               copySet.add(ann.id);
               entries.push({
-                shape: { ...(ann.shape as any) },
-                value: ann.value ? { ...(ann.value as any) } : undefined,
-                metadata: ann.metadata ? { ...(ann.metadata as any) } : undefined,
-                centroidOffset: [0, 0], // computed below
-                // groupId: gid,
+                shape_type: ann.shape_type,
+                shape_args: { ...ann.shape_args },
+                category: ann.category,
+                properties: ann.properties ? { ...ann.properties } : undefined,
+                metadata: ann.metadata ? { ...ann.metadata } : undefined,
+                centroidOffset: [0, 0],
               });
             }
           }
@@ -69,10 +72,7 @@ export function register(driver: IIdahDriverV2): void {
           let cx = 0, cy = 0, count = 0;
 
           for (const entry of entries) {
-            const shapes = entry.shape as any;
-            // if (!frames?.length) continue;
-            // Find the interpolated frame (use frames[0] as approximation)
-            const pts = shapes?.points as [number, number][] | undefined;
+            const pts = (entry.shape_args as any)?.points as [number, number][] | undefined;
             if (!pts?.length) continue;
             for (const [px, py] of pts) { cx += px; cy += py; count++; }
           }
@@ -82,8 +82,7 @@ export function register(driver: IIdahDriverV2): void {
 
           // Compute centroid-relative offset for each entry
           for (const entry of entries) {
-            const shapes = entry.shape as any;
-            const pts = shapes?.points as [number, number][] | undefined;
+            const pts = (entry.shape_args as any)?.points as [number, number][] | undefined;
             if (pts?.length) {
               const ex = pts.reduce((s, p) => s + p[0], 0) / pts.length;
               const ey = pts.reduce((s, p) => s + p[1], 0) / pts.length;

@@ -22,7 +22,8 @@ export const command = {
 
 export interface AnnotationUpdateProps {
   annotation: AnnotationItem;
-  value: Record<string, unknown>;
+  category?: string;
+  properties?: Record<string, unknown>;
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -41,14 +42,15 @@ export function register(driver: IIdahDriverV2): void {
       const record = data.annotations.items.find((r) => r.id === props.annotation.id);
       if (!record) return noopAction(command);
 
-      const snapshot: AnnotationItem = { ...record, value: { ...record.value } };
+      const snapshot: AnnotationItem = { ...record };
 
       return {
         command: { ...command },
         async do() {
           await data.annotations!.update({
             ...snapshot,
-            value: { ...(snapshot.value ?? {}), ...props.value },
+            ...(props.category !== undefined ? { category: props.category } : {}),
+            ...(props.properties !== undefined ? { properties: props.properties } : {}),
           });
         },
         async undo() {

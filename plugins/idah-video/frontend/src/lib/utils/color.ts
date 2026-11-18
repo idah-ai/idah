@@ -57,11 +57,11 @@ function hslToHex(h: number, s: number, l: number): string {
  */
 export function annotationColor(
   colorMode: "category" | "random",
-  annotation: { id?: string; value?: { category?: string }; shape?: { type?: string }; metadata?: { group_id?: string } },
+  annotation: { id?: string; category?: string; shape_type?: string; metadata?: { group_id?: string } },
   getCategoryColor?: (categoryId: string) => string | null | undefined,
 ): string {
-  if (colorMode === "category" && getCategoryColor && annotation.value?.category) {
-    const catColor = getCategoryColor(annotation.value.category);
+  if (colorMode === "category" && getCategoryColor && annotation.category) {
+    const catColor = getCategoryColor(annotation.category);
     if (catColor) return catColor;
   }
   // Fallback: deterministic HSL from group_id (shared across grouped annotations) or annotation id
@@ -77,10 +77,10 @@ export function annotationColor(
  *   let color = $derived.by(() => resolveAnnotationColor(annotation));
  */
 export function resolveAnnotationColor(
-  annotation: { id?: string; value?: { category?: string }; shape?: { type?: string } },
+  annotation: { id?: string; category?: string; shape_type?: string },
 ): string {
   return annotationColor(ui.colorMode, annotation, (catId: string) => {
-    const config = getDriver().config[annotation?.shape?.type ?? ""];
+    const config = getDriver().config[annotation?.shape_type ?? ""];
     return config?.values?.find((v) => v.id === catId)?.color ?? null;
   });
 }

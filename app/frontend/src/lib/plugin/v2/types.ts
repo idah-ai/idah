@@ -189,6 +189,18 @@ export interface IConfig {
   [shape_type: string]: IShapeConfig;
 }
 
+/**
+ * Project feedback configuration
+ */
+export interface IFeedbackItem {
+  label: string;
+  description: string | null;
+}
+
+export interface IFeedbackConfig {
+  [key: string]: IFeedbackItem;
+}
+
 // ─── AST (conditional visibility) ────────────────────────────────────────
 
 export type ASTValue = string | number | string[] | boolean | undefined;
@@ -289,7 +301,7 @@ export interface IAnnotationMetadata {
 // ─── Annotation value ──────────────────────────────────────────────────
 
 /**
- * Base annotation value payload (maps to DB `annotation` JSONB column).
+ * Base annotation properties payload (maps to DB `properties` JSONB column).
  * This is a generic base; specific modalities extend it
  * (e.g. IVideoAnnotationValue for video).
  */
@@ -303,32 +315,49 @@ export interface IAnnotationValue {
  * A raw annotation record as stored and returned by the driver.
  *
  * Generic over two type parameters to mirror the DB structure:
- * - `Shape`      – the `dimensions` JSONB column (polygon, bbox, …)
- * - `Annotation` – the `annotation` JSONB column (category, label, attributes, …)
+ * - `ShapeArgs`  – the `shape_args` JSONB column (polygon, bbox, …)
+ * - `Properties` – the `properties` JSONB column (property values, …)
  */
-export interface IAnnotationRecord<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
+export interface IAnnotationRecord<ShapeArgs = Record<string, unknown>, Properties = Record<string, unknown>> {
   id: string;
 
   /**
-   * Shape geometry — corresponds to the DB `dimensions` JSONB column.
+   * Shape type — corresponds to the DB `shape_type` text column.
    * Type-specific (e.g. IVideoAnnotationShape for video).
    */
-  shape: Shape;
+  shape_type: string;
 
   /**
-   * The annotation payload — corresponds to the DB `annotation` JSONB column.
-   * Contains category, label, attributes, etc.
+   * Shape geometry — corresponds to the DB `shape_args` JSONB column.
+   * Type-specific (e.g. IVideoAnnotationShape for video).
    */
-  value?: Annotation;
+  shape_args: ShapeArgs;
+
+  /**
+   * The annotation category — corresponds to the DB `category` text column.
+   */
+  category: string;
+
+  /**
+   * The annotation properties — corresponds to the DB `properties` JSONB column.
+   * Contains property values, etc.
+   */
+  properties?: Properties;
 
   /**
    * Annotation metadata — corresponds to the DB `metadata` JSONB column.
    */
   metadata?: IAnnotationMetadata;
 
+  deleted_at?: Date | null;
+  deleted_by_id?: string | null;
+
   created_by_id?: string;
   created_at?: Date;
   updated_at?: Date;
+
+  /** Server-set version, bumped on every write. Absent on locally-built records until the next sync. */
+  version?: number;
 
   /** Allow extensibility. */
   [key: string]: unknown;
@@ -393,7 +422,10 @@ export interface INoteRecord {
   anchor: INoteAnchor;
 
   /** Markdown content of the initial note (first message in the thread). */
-  content_md?: string;
+  content_md?: string | null;
+
+  /** Feedback keys */
+  feedback_keys?: string[] | null;
 
   /** Whether the note thread is resolved. */
   resolved?: boolean;
@@ -410,26 +442,90 @@ export interface INoteRecord {
   [key: string]: unknown;
 }
 
+// ─── V2 Driver — Annotation change history ────────────────────────────────
+
+/** One recorded annotation change. `changes` is present when `fields` includes "changes". */
+export interface IAnnotationChange {
+  id: string;
+  annotation_id: string;
+  account_id: number | null;
+  account_email: string | null;
+  op: "baseline" | "created" | "updated" | "deleted" | "restored";
+  version: number;
+  /** Epoch ms, parsed explicitly from the API value (second precision, not ISO). */
+  changed_at: number;
+  /** Diff payload: [op, path, old, new] entries. Only set when `fields` includes "changes". */
+  changes?: ["+" | "-" | "~", string, unknown, unknown][];
+}
+
+/**
+ * Query for the annotation change history, mirroring the backend
+ * `/annotation_changes` index endpoint. `entry_id` is always bound by the
+ * driver. Filters use the raw API keys; time values are epoch-ms and are
+ * converted to ISO by the adapter. Include `changes` in `fields` to get the
+ * diff payload.
+ */
+export interface IChangesQuery {
+  /** Raw API filters (keys mirror the backend's allowed_filters). */
+  filters?: {
+    annotation_id__in?: string[];
+    id__in?: string[];
+    op__in?: IAnnotationChange["op"][];
+    changed_at__gte?: number;
+    changed_at__lte?: number;
+  };
+  /** Sort fields, newest first by default (`-changed_at`). */
+  sort?: string[];
+  /** Page number, 1-based (default 1). */
+  page?: number;
+  /** Page size (default 50, server max 1000). */
+  size?: number;
+  /** Sparse fieldset; include `changes` to get the diff payload. */
+  fields?: IAnnotationChangeField[];
+  /** Request the true total count. */
+  count?: boolean;
+}
+
+/** A selectable field on an annotation change row. */
+export type IAnnotationChangeField =
+  | "annotation_id"
+  | "account_id"
+  | "account_email"
+  | "op"
+  | "version"
+  | "changed_at"
+  | "changes";
+
+export interface IChangesResult {
+  items: IAnnotationChange[];
+  total: number;
+  /** True when the server's count is a lower bound (rows exist past it). */
+  hasMore: boolean;
+}
+
 // ─── V2 Driver — Annotations submodule ────────────────────────────────────
 
-export interface IAnnotationsDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
+export interface IAnnotationsDriverV2<ShapeArgs = Record<string, unknown>, Properties = Record<string, unknown>> {
   /**
    * Register a virtual (computed) field. The callback receives the raw annotation
    * and returns the computed value. Virtual fields can be used in filters.
    */
-  registerField(name: string, fn: (ann: IAnnotationRecord<Shape, Annotation>) => unknown): void;
+  registerField(name: string, fn: (ann: IAnnotationRecord<ShapeArgs, Properties>) => unknown): void;
 
   /** Fetch annotations, optionally filtered. */
-  fetch(filter?: IFilter): Promise<IAnnotationRecord<Shape, Annotation>[]>;
+  fetch(filter?: IFilter): Promise<IAnnotationRecord<ShapeArgs, Properties>[]>;
 
   /** Update a single annotation. */
-  update(id: string, data: Partial<IAnnotationRecord<Shape, Annotation>>): Promise<void>;
+  update(id: string, data: Partial<IAnnotationRecord<ShapeArgs, Properties>>): Promise<void>;
 
   /** Delete a single annotation. */
   delete(id: string): Promise<void>;
 
+  /** Restore a soft-deleted annotation; local-first, enqueued like all writes. The backend failure surfaces via onSyncError. */
+  restore(id: string): Promise<void>;
+
   /** Create a new annotation (id is auto-generated via uuidv7). */
-  create(data: IAnnotationRecord<Shape, Annotation>): Promise<IAnnotationRecord<Shape, Annotation>>;
+  create(data: IAnnotationRecord<ShapeArgs, Properties>): Promise<IAnnotationRecord<ShapeArgs, Properties>>;
 
   /**
    * Write (upsert) or delete a single child-record (annotation_shape) row.
@@ -442,6 +538,17 @@ export interface IAnnotationsDriverV2<Shape = Record<string, unknown>, Annotatio
    */
   setShape(annotationId: string, key: string, value: object | null): Promise<void>;
   setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
+
+  /**
+   * Read the entry's annotation change history, newest first. `size` defaults
+   * to 50. Each call queries the backend directly and returns the page, the
+   * server's count (`total`), and whether rows exist past that count
+   * (`hasMore`).
+   */
+  changes(query?: IChangesQuery): Promise<IChangesResult>;
+
+  /** Rebuild an annotation as it was at a past version. */
+  version(id: string, version: number): Promise<IAnnotationRecord<ShapeArgs, Properties>>;
 }
 
 // ─── V2 Driver — Notes submodule ──────────────────────────────────────────
@@ -737,6 +844,24 @@ export interface ISettingItemBase {
   label: string;
   /** Optional description shown behind a hover "?" icon next to the label. */
   description?: string;
+  /**
+   * Optional sub-section header within the section. Items sharing the same
+   * `subSection` value are rendered under a sub-header; items without one
+   * are shown directly under the section header with no sub-header.
+   */
+  subSection?: string;
+  /**
+   * When true, the control is rendered inline on the sub-section header line
+   * instead of as its own row. Useful for on/off toggles that control the
+   * sub-section.
+   */
+  subSectionHeader?: boolean;
+  /**
+   * When true (or a function that returns true), the control is greyed out
+   * and cannot be interacted with. Used for settings that depend on another
+   * control's state (e.g. grid size/opacity when the grid is off).
+   */
+  disabled?: boolean | (() => boolean);
 }
 
 /** A slider control (continuous numeric value). */
@@ -747,6 +872,9 @@ export interface ISliderSetting extends ISettingItemBase {
   min: number;
   max: number;
   step: number;
+  /** Optional default value — when set, the sub-section header shows a "Reset"
+   * button that restores every item in that sub-section to its declared default. */
+  default?: number;
   /** Read the current value (plugin-owned). */
   get(): number;
   /** Write a new value (plugin-owned). */
@@ -759,14 +887,30 @@ export interface IOptionsSetting extends ISettingItemBase {
   type: "options";
   /** The selectable options, rendered as a segmented button group. */
   options: { value: string; label: string }[];
+  /** Optional default value — when set, the sub-section header shows a "Reset"
+   * button that restores every item in that sub-section to its declared default. */
+  default?: string;
   /** Read the currently-selected option value (plugin-owned). */
   get(): string;
   /** Write the selected option value (plugin-owned). */
   set(value: string): void;
 }
 
+/** A switch/toggle control (on/off boolean). */
+export interface ISwitchSetting extends ISettingItemBase {
+  /** Discriminant — the control the plugin wants core to render. */
+  type: "switch";
+  /** Optional default value — when set, the sub-section header shows a "Reset"
+   * button that restores every item in that sub-section to its declared default. */
+  default?: boolean;
+  /** Read the current value (plugin-owned). */
+  get(): boolean;
+  /** Write a new value (plugin-owned). */
+  set(value: boolean): void;
+}
+
 /** What consumers hold and the renderer narrows on `type`. Grows per control. */
-export type ISettingItem = ISliderSetting | IOptionsSetting;
+export type ISettingItem = ISliderSetting | IOptionsSetting | ISwitchSetting;
 
 /**
  * A group of settings under one section. `section` is a raw key (e.g.
@@ -809,6 +953,24 @@ export interface ISettingsDriverV2 {
 
 // ─── V2 Driver — Stats submodule ──────────────────────────────────────────
 
+// /** Badge variants for stat tags — mirrors BadgeVariant from the UI badge component. */
+export type IStatTagVariant =
+  | "default"
+  | "secondary"
+  | "destructive"
+  | "destructive-outline"
+  | "outline"
+  | "warning"
+  | "success"
+  | "info"
+  | "gray";
+
+/** A small badge rendered next to a stat row label (e.g. "Deleted" for orphan categories). */
+export interface IStatTag {
+  label: string;
+  variant: IStatTagVariant;
+}
+
 /**
  * A single computed statistic for the entry-stats modal.
  *
@@ -830,6 +992,8 @@ export interface IStatEntry {
   unitHeader?: string;
   /** Optional explicit row label; falls back to a humanized key remainder. */
   label?: string;
+  /** Optional badges rendered next to the row label. */
+  tags?: IStatTag[];
 }
 
 /** Contributes a set of stats. Registered by plugins via `driver.stats.register`. */
@@ -846,9 +1010,10 @@ export interface IStatsDriverV2 {
 
 // ─── V2 Driver — Complete interface ──────────────────────────────────────
 
-export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Record<string, unknown>> {
+export interface IIdahDriverV2<ShapeArgs = Record<string, unknown>, Properties = Record<string, unknown>> {
   // ── Activity context ──────────────────────────────────────────────────
   readonly id: string;
+  readonly entryName: string;
   readonly dataset: IDatasetInfo;
   readonly project: IProjectInfo;
   readonly media: IMediaInfo;
@@ -895,7 +1060,7 @@ export interface IIdahDriverV2<Shape = Record<string, unknown>, Annotation = Rec
   // ── Sub-modules ───────────────────────────────────────────────────────
   readonly command: ICommandDriverV2;
   readonly toolbar: IToolbarDriverV2;
-  readonly annotations: IAnnotationsDriverV2<Shape, Annotation>;
+  readonly annotations: IAnnotationsDriverV2<ShapeArgs, Properties>;
   readonly notes: INotesDriverV2;
   readonly accountSettings: IAccountSettingsDriverV2;
   readonly stats: IStatsDriverV2;

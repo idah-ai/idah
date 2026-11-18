@@ -9,9 +9,10 @@
   interface Props {
     required: boolean;
     class?: string | null;
+    onclick?: () => void;
     children?: Snippet;
   }
-  let { required = false, class: className, children, ...restProps }: Props = $props();
+  let { required = false, class: className, onclick, children, ...restProps }: Props = $props();
 </script>
 
 <Label
@@ -22,6 +23,7 @@
     },
     className,
   )}
+  {onclick}
   {...restProps}
 >
   {@render children?.()}

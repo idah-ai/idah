@@ -1,6 +1,7 @@
 <script lang="ts">
   import {
     CrosshairIcon,
+    MergeIcon,
     SquareSplitHorizontalIcon,
     Trash2Icon,
     FramerIcon,
@@ -19,6 +20,8 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { annotation } from "$lib/state/annotation.svelte";
   import { isEditable } from "$lib/state/editor.svelte";
+  import { resolveTargets } from "$lib/commands/annotation/_extend_utils";
+  import { canMerge } from "$lib/commands/annotation/_merge_utils";
 
   // Props
   interface Props extends ContextMenuComponentProps {
@@ -30,10 +33,10 @@
   // Variables
   let { trackId, startRange, endRange, rawData } = $derived(item);
   let frame = $derived(currentFrame ?? viewport.video.currentFrame.value);
-  let isKeyframe = $derived(rawData.shape.frames.some((f: {frame: number, x?: number, y?: number}) => f.frame === frame));
+  let isKeyframe = $derived(rawData.shape_args.frames.some((f: {frame: number, x?: number, y?: number}) => f.frame === frame));
   // When this is the annotation's only keyframe, deleting it would empty the annotation.
   // Hide the "Delete keyframe" action and steer the user to "Delete annotation" instead.
-  let isLastKeyframe = $derived(isKeyframe && rawData.shape.frames.length <= 1);
+  let isLastKeyframe = $derived(isKeyframe && rawData.shape_args.frames.length <= 1);
   let annotationIsLocked = $derived(annotation.isLocked(rawData));
 
   let menus = $derived<Menus>({
@@ -97,12 +100,20 @@
             });
           },
         },
+        merge: {
+          label: "Merge selected",
+          icon: MergeIcon,
+          disabled: !isEditable() || !canMerge(resolveTargets()),
+          onClick: () => {
+            getDriver().command.call("idah-video:annotation.merge");
+          },
+        },
       },
     },
     danger: {
       items: {
         delete: {
-          label: `Delete annotation`,
+          label: `Delete annotation track`,
           icon: Trash2Icon,
           disabled: annotationIsLocked || !isEditable(),
           destructive: true,

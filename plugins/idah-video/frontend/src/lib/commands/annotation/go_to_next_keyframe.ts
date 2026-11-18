@@ -28,7 +28,7 @@ function getGroupKeyframes(groupId: string): number[] {
   for (const ann of data.annotations.items) {
     const annGroupId = (ann as any).metadata?.group_id ?? ann.id;
     if (annGroupId !== groupId) continue;
-    const shape = ann.shape as IVideoAnnotationShape;
+    const shape = ann.shape_args as IVideoAnnotationShape;
     if (!shape.frames) continue;
     for (const f of shape.frames) frames.add(f.frame);
   }
@@ -88,7 +88,7 @@ export function register(driver: IIdahDriverV2): void {
       for (const ann of data.annotations?.items ?? []) {
         const annGroupId = (ann as any).metadata?.group_id ?? ann.id;
         if (annGroupId !== groupId) continue;
-        const shape = ann.shape as IVideoAnnotationShape;
+        const shape = ann.shape_args as IVideoAnnotationShape;
         if (!shape.frames) continue;
         if (shape.frames.some((f) => f.frame === target)) {
           targetAnnotation = ann;

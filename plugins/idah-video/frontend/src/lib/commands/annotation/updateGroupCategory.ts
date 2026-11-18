@@ -50,7 +50,7 @@ export function register(driver: IIdahDriverV2): void {
       // Snapshot old values
       const snapshots: Array<{ annotation: AnnotationItem; oldCategory?: string }> = groupAnnotations.map((ann) => ({
         annotation: ann,
-        oldCategory: ann.value?.category as string | undefined,
+        oldCategory: ann.category as string | undefined,
       }));
 
       return {
@@ -59,10 +59,7 @@ export function register(driver: IIdahDriverV2): void {
           for (const { annotation } of snapshots) {
             await data.annotations!.update({
               ...annotation,
-              value: {
-                ...(annotation.value ?? {}),
-                category: props.categoryIdToBeUpdate,
-              },
+              category: props.categoryIdToBeUpdate,
             });
           }
         },
@@ -71,10 +68,7 @@ export function register(driver: IIdahDriverV2): void {
           for (const { annotation, oldCategory } of snapshots) {
             await data.annotations!.update({
               ...annotation,
-              value: {
-                ...(annotation.value ?? {}),
-                ...(oldCategory ? { category: oldCategory } : {}),
-              },
+              ...(oldCategory ? { category: oldCategory } : {}),
             });
           }
         },

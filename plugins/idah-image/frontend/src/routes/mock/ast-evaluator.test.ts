@@ -33,10 +33,10 @@ describe("objectVariables", () => {
       attributes: { color: "red", size: "large" },
       category: "my-cat",
     };
-    const result = objectVariables(obj, "value");
-    expect(result).toContainEqual(["value.attributes.color", "red"]);
-    expect(result).toContainEqual(["value.attributes.size", "large"]);
-    expect(result).toContainEqual(["value.category", "my-cat"]);
+    const result = objectVariables(obj);
+    expect(result).toContainEqual(["attributes.color", "red"]);
+    expect(result).toContainEqual(["attributes.size", "large"]);
+    expect(result).toContainEqual(["category", "my-cat"]);
   });
 
   it("handles null values (not recursing into null)", () => {
@@ -55,7 +55,7 @@ describe("AstProcessor", () => {
 
   describe("get", () => {
     it("returns the value of an existing variable via eq", () => {
-      expect(proc({ "value.properties.number": 42 }).processAST(["eq", [["get", ["value.properties.number"]], 42]])).toBe(true);
+      expect(proc({ "properties.number": 42 }).processAST(["eq", [["get", ["properties.number"]], 42]])).toBe(true);
     });
 
     it("causes eq to fail when variable is missing", () => {
@@ -197,21 +197,21 @@ describe("AstProcessor", () => {
     const defaultVisibility: ASTNode = [
       "eq",
       [
-        ["get", ["value.properties.number"]],
+        ["get", ["properties.number"]],
         42,
       ],
     ];
 
     it("evaluates the example from the config (eq + get)", () => {
       const vars = {
-        "value.properties.number": 42,
+        "properties.number": 42,
       };
       expect(new AstProcessor(new Map(Object.entries(vars))).processAST(defaultVisibility)).toBe(true);
     });
 
     it("rejects when the variable doesn't match", () => {
       const vars = {
-        "value.properties.number": 0,
+        "properties.number": 0,
       };
       expect(new AstProcessor(new Map(Object.entries(vars))).processAST(defaultVisibility)).toBe(false);
     });
@@ -220,13 +220,13 @@ describe("AstProcessor", () => {
       const ast: ASTNode = [
         "and",
         [
-          ["eq", [["get", ["value.properties.color"]], "red"]],
-          ["gt", [["get", ["value.properties.size"]], 10]],
+          ["eq", [["get", ["properties.color"]], "red"]],
+          ["gt", [["get", ["properties.size"]], 10]],
         ],
       ];
       const vars = {
-        "value.properties.color": "red",
-        "value.properties.size": 42,
+        "properties.color": "red",
+        "properties.size": 42,
       };
       expect(new AstProcessor(new Map(Object.entries(vars))).processAST(ast)).toBe(true);
     });
@@ -235,13 +235,13 @@ describe("AstProcessor", () => {
       const ast: ASTNode = [
         "and",
         [
-          ["eq", [["get", ["value.properties.color"]], "red"]],
-          ["gt", [["get", ["value.properties.size"]], 10]],
+          ["eq", [["get", ["properties.color"]], "red"]],
+          ["gt", [["get", ["properties.size"]], 10]],
         ],
       ];
       const vars = {
-        "value.properties.color": "blue",
-        "value.properties.size": 42,
+        "properties.color": "blue",
+        "properties.size": 42,
       };
       expect(new AstProcessor(new Map(Object.entries(vars))).processAST(ast)).toBe(false);
     });
@@ -254,19 +254,47 @@ describe("AstProcessor", () => {
           [
             "or",
             [
-              ["eq", [["get", ["value.properties.number"]], 42]],
-              ["eq", [["get", ["value.properties.color"]], "red"]],
+              ["eq", [["get", ["properties.number"]], 42]],
+              ["eq", [["get", ["properties.color"]], "red"]],
             ],
           ],
-          ["gte", [["get", ["value.properties.size"]], 10]],
+          ["gte", [["get", ["properties.size"]], 10]],
         ],
       ];
       const vars = {
-        "value.properties.number": 0,
-        "value.properties.color": "red",
-        "value.properties.size": 10,
+        "properties.number": 0,
+        "properties.color": "red",
+        "properties.size": 10,
       };
       expect(new AstProcessor(new Map(Object.entries(vars))).processAST(ast)).toBe(true);
+    });
+  });
+
+  // ── contains any / all / none ────────────────────────────────────────────
+
+  describe("has_any / has_all / has_none", () => {
+    const colors = ["get", ["colors"]];
+    const run = (op: string, list: string[], variables: Record<string, unknown> = { colors: ["red", "blue"] }) =>
+      proc(variables).processAST([op, [colors, [list]]] as unknown as ASTNode);
+
+    it("has_any is true when the selection includes one of the values", () => {
+      expect(run("has_any", ["red", "green"])).toBe(true);
+      expect(run("has_any", ["green"])).toBe(false);
+    });
+
+    it("has_all is true when the selection includes every value", () => {
+      expect(run("has_all", ["red", "blue"])).toBe(true);
+      expect(run("has_all", ["red", "green"])).toBe(false);
+    });
+
+    it("has_none is true when the selection includes none of the values", () => {
+      expect(run("has_none", ["green"])).toBe(true);
+      expect(run("has_none", ["blue"])).toBe(false);
+    });
+
+    it("treats a missing selection as empty", () => {
+      expect(run("has_any", ["red"], {})).toBe(false);
+      expect(run("has_none", ["red"], {})).toBe(true);
     });
   });
 
@@ -281,16 +309,24 @@ describe("AstProcessor", () => {
       expect(true).toBe(true);
     });
 
-    it("throws on unknown operator", () => {
-      expect(() =>
-        proc({}).processAST(["unknown_op", [1, 2]] as unknown as ASTNode),
-      ).toThrow("Operator not found: unknown_op");
+    it("evaluates an unknown operator to false instead of throwing", () => {
+      expect(proc({}).processAST(["unknown_op", [1, 2]] as unknown as ASTNode)).toBe(false);
     });
 
-    it("throws on invalid operator type", () => {
-      expect(() =>
-        proc({}).processAST([42 as unknown as string, [1, 2]] as unknown as ASTNode),
-      ).toThrow("Invalid operator type");
+    it("fails only the branch with the unknown operator", () => {
+      const rule = ["or", [["unknown_op", [1, 2]], ["eq", [1, 1]]]] as unknown as ASTNode;
+      expect(proc({}).processAST(rule)).toBe(true);
+    });
+
+    it("fails a comparison on an unknown operator instead of comparing the failure", () => {
+      // neq(false, "x") would be true and show the property.
+      const rule = ["neq", [["unknown_op", [1, 2]], "x"]] as unknown as ASTNode;
+      expect(proc({}).processAST(rule)).toBe(false);
+      expect(proc({}).processAST(["and", [rule, ["eq", [1, 1]]]] as unknown as ASTNode)).toBe(false);
+    });
+
+    it("evaluates an invalid operator type to false instead of throwing", () => {
+      expect(proc({}).processAST([42 as unknown as string, [1, 2]] as unknown as ASTNode)).toBe(false);
     });
   });
 });

@@ -8,10 +8,12 @@ Verse.on_boot do
     DatasetsExpo,
     EntriesExpo,
     AnnotationsExpo,
+    AnnotationChangesExpo,
     NoteFeedsExpo,
     NoteCommentsExpo,
     WorkflowsExpo,
     EntryStatsExpo,
-    LabelConfigTemplatesExpo
+    LabelConfigTemplatesExpo,
+    FeedbackConfigTemplatesExpo
   ].each(&:register)
 end

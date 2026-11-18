@@ -134,6 +134,59 @@ RSpec.describe Exports::Registry do
     end
   end
 
+  # An exporter with options of its own.
+  # rubocop:disable Lint/ConstantDefinitionInBlock
+  class TestExportFormatWithOptions
+    def name = "Format With Options"
+    def description = "Description"
+
+    def options
+      Verse::Schema.define do
+        field(:task, String).default("detect").meta(label: "Task", choices: %w[detect segment])
+      end
+    end
+  end
+
+  class TestExportFormatWithBadOptions
+    def name = "Format With Bad Options"
+    def description = "Description"
+    def options = Verse::Schema.define { field(:datasets, Array) }
+  end
+  # rubocop:enable Lint/ConstantDefinitionInBlock
+
+  describe "options" do
+    it "lists each format's options in its details" do
+      subject.register("options-plugin", "optioned", TestExportFormatWithOptions)
+
+      detail = subject.list_export_format_details(["optioned"]).first
+
+      expect(detail[:options]).to eq(
+        [{ name: "task", type: "string", default: "detect", required: false, label: "Task",
+           choices: [{ value: "detect", label: "detect" }, { value: "segment", label: "segment" }] }]
+      )
+    end
+
+    it "lists no options for a format without any" do
+      subject.register("plain-plugin", "plain", format_a)
+
+      expect(subject.list_export_format_details(["plain"]).first[:options]).to eq([])
+    end
+
+    it "refuses to register a format whose options the export dialog cannot show" do
+      expect { subject.register("bad-plugin", "bad", TestExportFormatWithBadOptions) }
+        .to raise_error(ArgumentError, /datasets/)
+    end
+  end
+
+  describe "#export_class" do
+    it "finds a registered class by name" do
+      subject.register("options-plugin", "optioned", TestExportFormatWithOptions)
+
+      expect(subject.export_class("TestExportFormatWithOptions")).to eq(TestExportFormatWithOptions)
+      expect(subject.export_class("Unknown")).to be_nil
+    end
+  end
+
   describe "#list_export_format_details" do
     before do
       subject.register("detailed-plugin", "detailed", format_a)

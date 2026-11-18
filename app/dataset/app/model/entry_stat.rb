@@ -24,36 +24,39 @@ module EntryStat
         scope.all? { table }
 
         scope.as_org_owner? do
-          org_ids = auth_context.custom_scopes[:org]
-          project_ids = auth_context.custom_scopes[:project]
-          if org_ids
+          if auth_context.custom_scopes[:project]
+            # API-key project scope: no membership union.
             table.where(
               table.db[:entries]
-                .join(:projects, id: :project_id)
-                .where(organization_id: org_ids)
-                .where(Sequel[:entries][:id] => Sequel[:entry_stats][:entry_id])
-                .select(1).exists
-            )
-          elsif project_ids
-            table.where(
-              table.db[:entries]
-                .where(project_id: project_ids)
+                .where(project_id: auth_context.custom_scopes[:project])
                 .where(id: Sequel[:entry_stats][:entry_id])
                 .select(1).exists
             )
           else
-            table.where(Sequel.lit("false"))
+            table.where(org_projects_condition | user_project_scoped_condition(action))
           end
         end
 
-        scope.as_user? { user_project_scoped_query(action) }
+        scope.as_user? { table.where(user_project_scoped_condition(action)) }
       end
     end
 
     # Actions | Roles
     # read    | project_owner, annotator (assigned), reviewer (assigned)
+
+    def org_projects_condition
+      org_ids = auth_context.custom_scopes[:org]
+      return Sequel.lit("false") unless org_ids&.any?
+
+      table.db[:entries]
+           .join(:projects, id: :project_id)
+           .where(organization_id: org_ids)
+           .where(Sequel[:entries][:id] => Sequel[:entry_stats][:entry_id])
+           .select(1).exists
+    end
+
     query
-    def user_project_scoped_query(action)
+    def user_project_scoped_condition(action)
       account_id = auth_context.metadata[:id]
 
       case action
@@ -73,13 +76,11 @@ module EntryStat
           )
         SQL
 
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            owner_roles: %w[project_owner],
-            member_roles: %w[annotator reviewer]
-          )
+        Sequel.lit(
+          scoped_fragment,
+          account_id:,
+          owner_roles: %w[project_owner],
+          member_roles: %w[annotator reviewer]
         )
       else
         raise Verse::Error::Unauthorized,
@@ -89,6 +90,29 @@ module EntryStat
 
     def delete_by_entry_id(entry_id)
       table.where(entry_id:).delete
+    end
+
+    def bulk_upsert(entry_id, stats_hash)
+      return if stats_hash.empty?
+
+      now = Time.now
+      rows = stats_hash.map do |key, value|
+        {
+          id: UUIDv7.generate,
+          entry_id: entry_id,
+          key: key.to_s,
+          value: value.to_s,
+          created_at: now,
+          updated_at: now
+        }
+      end
+
+      table.db[:entry_stats]
+           .insert_conflict(
+             target: [:entry_id, :key],
+             update: { value: Sequel[:excluded][:value], updated_at: Sequel[:excluded][:updated_at] }
+           )
+           .multi_insert(rows)
     end
 
     def bulk_insert(entry_id, stats_hash)
@@ -105,6 +129,14 @@ module EntryStat
       end
 
       table.db[:entry_stats].multi_insert(rows) unless rows.empty?
+    end
+
+    # Returns true if the entry has an orphan_category.count stat with a value
+    # greater than zero. Used by the annotation-update handler to decide whether
+    # a recompute is needed.
+    def orphan_category(entry_id)
+      record = table.where(entry_id: entry_id, key: "orphan_category.count").first
+      record ? record[:value] != "0" : false
     end
   end
 end

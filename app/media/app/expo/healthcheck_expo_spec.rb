@@ -15,7 +15,12 @@ RSpec.describe HealthcheckExpo, type: :exposition do
     get "/healthcheck"
 
     expect(last_response.status).to eq 200
-    expect(last_response.body).to eq({ db: "OK", redis: "OK" }.to_json)
+    expect(JSON.parse(last_response.body)).to eq(
+      "version" => IdahVersion.number,
+      "revision" => IdahVersion.revision,
+      "db" => "OK",
+      "redis" => "OK"
+    )
   end
 
   it "is a failure when a service is down" do
@@ -32,6 +37,11 @@ RSpec.describe HealthcheckExpo, type: :exposition do
     get "/healthcheck"
 
     expect(last_response.status).to eq 500
-    expect(last_response.body).to eq({ db: "OK", redis: "FAILED" }.to_json)
+    expect(JSON.parse(last_response.body)).to eq(
+      "version" => IdahVersion.number,
+      "revision" => IdahVersion.revision,
+      "db" => "OK",
+      "redis" => "FAILED"
+    )
   end
 end

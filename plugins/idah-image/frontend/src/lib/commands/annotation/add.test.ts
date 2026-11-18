@@ -6,9 +6,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ─── Mocks ───────────────────────────────────────────────────────────────
 
-const { mockCreate, mockDelete, mockSetShape, mockSetShapes, mockSelectAnnotation } = vi.hoisted(() => ({
+const { mockCreate, mockDelete, mockRestore, mockSetShape, mockSetShapes, mockSelectAnnotation } = vi.hoisted(() => ({
   mockCreate: vi.fn(),
   mockDelete: vi.fn(),
+  mockRestore: vi.fn(),
   mockSetShape: vi.fn(),
   mockSetShapes: vi.fn(),
   mockSelectAnnotation: vi.fn(),
@@ -33,6 +34,7 @@ vi.mock("$lib/state/data.svelte", () => ({
       items: [] as Array<{ id: string; shape: Record<string, unknown>; value?: Record<string, unknown> }>,
       create: mockCreate,
       delete: mockDelete,
+      restore: mockRestore,
       setShape: mockSetShape,
       setShapes: mockSetShapes,
     },
@@ -110,6 +112,8 @@ describe("annotation.add (mask path)", () => {
     _mockMaskToolActive = "brush";
 
     mockCreate.mockResolvedValue({ id: "created-ann-id" });
+    // Resolve to a record carrying the original id, like the real store now does.
+    mockRestore.mockImplementation((record: any) => Promise.resolve({ ...record }));
 
     mockDriver = {
       command: { register: vi.fn() },
@@ -128,8 +132,8 @@ describe("annotation.add (mask path)", () => {
     register(mockDriver);
     const registered = mockDriver.command.register.mock.calls[0][0];
     const action = registered.callback({
-      shape: { type: "idah-image:mask" },
-      value: { category: "cat" },
+      shape: {}, shape_type: "idah-image:mask",
+      category: "cat",
     });
 
     await action.do();
@@ -137,8 +141,10 @@ describe("annotation.add (mask path)", () => {
     // Should have created the annotation
     expect(mockCreate).toHaveBeenCalledWith({
       id: "generated-uuid-123",
-      shape: { type: "idah-image:mask" },
-      value: { category: "cat" },
+      shape_type: "idah-image:mask",
+      shape_args: {},
+      category: "cat",
+      properties: undefined,
     });
 
     // Should have flushed tiles via setShapes (batched, since 2 dirty tiles)
@@ -155,6 +161,70 @@ describe("annotation.add (mask path)", () => {
     expect(_mockResetCalled).toBe(false);
   });
 
+  it("records the category for category.reuse-last", async () => {
+    const { recentCategory } = await import("$lib/state/recent-category");
+    recentCategory.reset();
+    register(mockDriver);
+    const registered = mockDriver.command.register.mock.calls[0][0];
+    await registered.callback({ shape: {}, shape_type: "idah-image:mask", category: "cat" }).do();
+    expect(recentCategory.get()).toEqual({ category: "cat", shapeType: "idah-image:mask" });
+  });
+
+  it("redo of a mask add calls restore (not create) and re-flushes tiles", async () => {
+    _mockDirtyTiles = ["0:0", "0:1"];
+    _mockTileBuffers.set("0:0", createFullBuffer());
+    _mockTileBuffers.set("0:1", createFullBuffer());
+
+    register(mockDriver);
+    const registered = mockDriver.command.register.mock.calls[0][0];
+    const action = registered.callback({
+      shape: {}, shape_type: "idah-image:mask",
+      category: "cat",
+    });
+
+    // First run: create
+    await action.do();
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(mockCreate).toHaveBeenCalledWith({
+      id: "generated-uuid-123",
+      shape_type: "idah-image:mask",
+      shape_args: {},
+      category: "cat",
+      properties: undefined,
+    });
+
+    // Undo: soft-deletes
+    await action.undo();
+    expect(mockDelete).toHaveBeenCalledWith("generated-uuid-123");
+
+    // Redo: restore with the same id, never re-create
+    mockCreate.mockClear();
+    mockRestore.mockClear();
+    mockSetShapes.mockClear();
+    mockSelectAnnotation.mockClear();
+    await action.do();
+
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(mockRestore).toHaveBeenCalledTimes(1);
+    expect(mockRestore).toHaveBeenCalledWith({
+      id: "generated-uuid-123",
+      shape_type: "idah-image:mask",
+      shape_args: {},
+      category: "cat",
+      properties: undefined,
+    });
+    // do() finishes: the restored record is selected...
+    expect(mockSelectAnnotation).toHaveBeenCalledWith(expect.objectContaining({ id: "generated-uuid-123" }));
+    // ...and tiles are still flushed on redo (backend upserts; soft-deleted tiles restore)
+    expect(mockSetShapes).toHaveBeenCalledWith(
+      "generated-uuid-123",
+      expect.arrayContaining([
+        expect.objectContaining({ key: "tile-0x0", value: expect.objectContaining({ rle: expect.any(String) }) }),
+        expect.objectContaining({ key: "tile-0x1", value: expect.objectContaining({ rle: expect.any(String) }) }),
+      ]),
+    );
+  });
+
   it("undo deletes the annotation (cascade cleans up tiles)", async () => {
     _mockDirtyTiles = ["0:0"];
     _mockTileBuffers.set("0:0", createFullBuffer());
@@ -162,8 +232,8 @@ describe("annotation.add (mask path)", () => {
     register(mockDriver);
     const registered = mockDriver.command.register.mock.calls[0][0];
     const action = registered.callback({
-      shape: { type: "idah-image:mask" },
-      value: { category: "cat" },
+      shape: {}, shape_type: "idah-image:mask",
+      category: "cat",
     });
 
     // Do the creation
@@ -184,8 +254,8 @@ describe("annotation.add (mask path)", () => {
     register(mockDriver);
     const registered = mockDriver.command.register.mock.calls[0][0];
     const action = registered.callback({
-      shape: { type: "idah-image:mask" },
-      value: { category: "cat" },
+      shape: {}, shape_type: "idah-image:mask",
+      category: "cat",
     });
 
     await action.do();
@@ -205,8 +275,8 @@ describe("annotation.add (mask path)", () => {
     register(mockDriver);
     const registered = mockDriver.command.register.mock.calls[0][0];
     const action = registered.callback({
-      shape: { type: "idah-image:mask" },
-      value: { category: "cat" },
+      shape: {}, shape_type: "idah-image:mask",
+      category: "cat",
     });
 
     await action.do();
@@ -229,8 +299,8 @@ describe("annotation.add (mask path)", () => {
 
       // Act: create the command while closedPoints is still set
       const action = registered.callback({
-        shape: { type: "idah-image:mask" },
-        value: { category: "cat" },
+        shape: {}, shape_type: "idah-image:mask",
+        category: "cat",
       });
 
       // Assert: the shared global was cleared at callback time
@@ -251,8 +321,8 @@ describe("annotation.add (mask path)", () => {
       register(mockDriver);
       const registered = mockDriver.command.register.mock.calls[0][0];
       const action = registered.callback({
-        shape: { type: "idah-image:mask" },
-        value: { category: "cat" },
+        shape: {}, shape_type: "idah-image:mask",
+        category: "cat",
       });
 
       // Act: do then undo
@@ -280,16 +350,16 @@ describe("annotation.add (mask path)", () => {
 
       // First command captures the close
       const firstAction = registered.callback({
-        shape: { type: "idah-image:mask" },
-        value: { category: "cat" },
+        shape: {}, shape_type: "idah-image:mask",
+        category: "cat",
       });
       // closedPoints should be null now
       expect(_mockClosedPoints).toBeNull();
 
       // Second command (created after the close — e.g. a later brush stroke)
       const secondAction = registered.callback({
-        shape: { type: "idah-image:mask" },
-        value: { category: "cat" },
+        shape: {}, shape_type: "idah-image:mask",
+        category: "cat",
       });
 
       // Undo the second command — it should NOT restore polygon preview
@@ -312,8 +382,8 @@ describe("annotation.add (mask path)", () => {
       register(mockDriver);
       const registered = mockDriver.command.register.mock.calls[0][0];
       const action = registered.callback({
-        shape: { type: "idah-image:mask" },
-        value: { category: "cat" },
+        shape: {}, shape_type: "idah-image:mask",
+        category: "cat",
       });
 
       // First undo — should restore polygon preview

@@ -18,6 +18,8 @@
 | REDIS_STREAM_URL | Redis connection string |
 | LOG_LEVEL | Logging level (info/debug) |
 | LOG_SHOW_ERROR_DETAILS | Detailed errors in HTTP responses |
+| SENTRY_DSN | Sentry DSN; empty disables reporting |
+| SENTRY_ENVIRONMENT | Sentry environment label; empty uses APP_ENVIRONMENT |
 | PORT | HTTP port (default: 3000) |
 | PUMA_WORKERS | Puma worker count |
 | PUMA_THREADS | Puma thread count |
@@ -36,7 +38,7 @@
 | media | IDAH_FFMPEG_PATH, IDAH_FFPROBE_PATH | FFmpeg paths |
 | media | IDAH_DECODING_THREADS, IDAH_ENCODING_THREADS | Video processing threads |
 | notification | SMTP_* variables | SMTP server settings |
-| frontend | VITE_IDAH_HOST | Backend API base URL |
+| frontend | PUBLIC_SENTRY_DSN | Sentry DSN, read at run time; empty disables |
 
 ## Configuration Pattern
 YAML config files use Verse's config system with environment overrides. Each service loads its config via `config/boot.rb`:

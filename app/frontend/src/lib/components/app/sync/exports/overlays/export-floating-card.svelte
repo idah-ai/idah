@@ -18,6 +18,7 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
 
   import { exportingExportRecords } from "@/components/app/sync/exports/store";
+  import { buildExportItemName, exportSummaryLabel } from "@/components/app/sync/exports/utils";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ExportRecord, ExportsBackendDataSource, exportsBasePath } from "@/data/model/sync/exports/record";
   import { SyncJobRecord, SyncJobsBackendDataSource } from "@/data/model/sync/jobs/record";
@@ -35,19 +36,26 @@
     ).length > 0,
   );
 
+  /** Computed once per state change — avoids re-classifying every export in each template branch. */
+  let summaryLabel: string = $derived.by(() => {
+    const status = isDownloadReady ? "ready" : isDownloadError ? "error" : "inProgress";
+    return exportSummaryLabel($exportingExportRecords, status);
+  });
+
   // Functions
   function hideFloatingCard(): void {
     isDownloadReady = false;
     $exportingExportRecords = [];
   }
 
-  async function getExportDatasetsName(jobId: string): Promise<Array<string>> {
+  async function getExportDatasetNames(jobId: string): Promise<Array<string>> {
     const jobRes = await SyncJobsBackendDataSource.get(jobId, {
       fields: {
         [SyncJobRecord.type]: ["id", "arguments"],
       },
     });
-    const datasetIds = jobRes.data.arguments.dataset_ids;
+    const jobArguments = jobRes.data.arguments as Record<string, unknown>;
+    const datasetIds = jobArguments.dataset_ids as Array<string>;
 
     const datasetsRes = await datasetsBackendDataSource.list({
       fields: {
@@ -82,7 +90,7 @@
             const exportRes = await ExportsBackendDataSource.get(exportingExportRecord.id, {
               included: ["job"],
               fields: {
-                [SyncJobRecord.type]: ["id", "status", "progress"],
+                [SyncJobRecord.type]: ["id", "status", "progress", "arguments"],
                 [ExportRecord.type]: ["id", "job_id", "filename"],
               },
               noCache: true,
@@ -126,13 +134,15 @@
 </script>
 
 {#if showFloatingCard}
-  <div class="bg-background fixed right-2 bottom-0 z-50 h-auto rounded-md rounded-br-none rounded-bl-none border">
+  <div
+    class="bg-background fixed right-2 bottom-0 z-50 h-auto min-w-96 rounded-md rounded-br-none rounded-bl-none border"
+  >
     <Collapsible bind:open>
-      <CollapsibleTrigger>
+      <CollapsibleTrigger class="w-full">
         <Button
           variant="ghost"
           size="lg"
-          class={cn("w-96 justify-start rounded-br-none rounded-bl-none", {
+          class={cn("w-full justify-start rounded-br-none rounded-bl-none", {
             "bg-emerald-100 text-emerald-600 hover:bg-emerald-200 hover:text-emerald-700 dark:bg-emerald-900 dark:text-emerald-100 dark:hover:bg-emerald-800 dark:hover:text-emerald-200":
               isDownloadReady,
             "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary dark:bg-primary/10 dark:text-primary dark:hover:bg-primary/20 dark:hover:text-primary":
@@ -143,13 +153,13 @@
         >
           {#if isDownloadReady}
             <CircleCheckBigIcon />
-            Dataset export ready
+            {summaryLabel}
           {:else if isDownloadError}
             <CircleAlertIcon />
-            Dataset export error
+            {summaryLabel}
           {:else}
             <Spinner size="sm" />
-            Dataset export in progress...
+            {summaryLabel}
           {/if}
 
           <div class="ml-auto flex items-center gap-2">
@@ -167,19 +177,20 @@
       </CollapsibleTrigger>
 
       <CollapsibleContent>
-        <div class="min-w-96 border-t">
+        <div class="border-t">
           {#each $exportingExportRecords as exportingExportRecord (exportingExportRecord.id)}
             {@const { id, job_id, job, filename } = exportingExportRecord}
-            {#await getExportDatasetsName(job_id) then datasetsName}
+            {#await getExportDatasetNames(job_id) then datasetNames}
+              {@const itemName = buildExportItemName(exportingExportRecord, datasetNames)}
               <Item>
                 <ItemContent>
                   <Tooltips>
                     {#snippet trigger()}
-                      <ItemTitle>{truncate(datasetsName.join(", "), 40)}</ItemTitle>
+                      <ItemTitle>{truncate(itemName, 40)}</ItemTitle>
                     {/snippet}
 
                     {#snippet content()}
-                      {datasetsName.join(", ")}
+                      {itemName}
                     {/snippet}
                   </Tooltips>
                 </ItemContent>

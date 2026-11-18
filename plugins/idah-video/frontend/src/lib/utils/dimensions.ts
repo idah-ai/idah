@@ -33,6 +33,7 @@ export function getShapeDimensions(
   shape: Record<string, unknown> | undefined | null,
   mediaWidth: number,
   mediaHeight: number,
+  shapeType: string,
 ): { label: string; value: string }[] | null {
   if (!shape) return null;
 
@@ -58,7 +59,7 @@ export function getShapeDimensions(
   const points = shape.points as Point[] | undefined;
   if (!points || points.length < 2) return null;
 
-  const type = shape.type as string;
+  const type = shapeType;
 
   // ── Bounding box ────────────────────────────────────────────────
   if (type === VIDEO_BOUNDING_BOX) {

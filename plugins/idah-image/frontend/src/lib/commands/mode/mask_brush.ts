@@ -117,7 +117,7 @@ export function onPointerDown(
   if (annotationId && data.annotations) {
     const record = data.annotations.items.find((a) => a.id === annotationId);
     if (record) {
-      const shape = record.shape as Record<string, unknown>;
+      const shape = record.shape_args as Record<string, unknown>;
       for (const [key, val] of Object.entries(shape)) {
         if (!key.startsWith("tile-")) continue;
         const match = key.match(/^tile-(\d+)x(\d+)$/);

@@ -86,7 +86,7 @@
   let clickedGroupFirstStart = $derived.by((): number => {
     let best = Infinity;
     for (const ann of clickedGroupAnnotations) {
-      const frames = (ann.shape as any)?.frames as any[] | undefined;
+      const frames = (ann.shape_args as any)?.frames as any[] | undefined;
       const first = frames && frames.length > 0 ? ((frames[0]?.frame as number) ?? Infinity) : Infinity;
       if (first < best) best = first;
     }
@@ -96,7 +96,7 @@
   let clickedGroupLastEnd = $derived.by((): number => {
     let best = -1;
     for (const ann of clickedGroupAnnotations) {
-      const frames = (ann.shape as any)?.frames as any[] | undefined;
+      const frames = (ann.shape_args as any)?.frames as any[] | undefined;
       const last = frames && frames.length > 0 ? ((frames[frames.length - 1]?.frame as number) ?? -1) : -1;
       if (last > best) best = last;
     }

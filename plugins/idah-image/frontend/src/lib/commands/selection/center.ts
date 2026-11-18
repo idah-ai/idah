@@ -11,7 +11,7 @@ import { DEFAULT_MODE, REVIEW_MODE, type IImageAnnotationShape } from "$lib/type
 function hasAnnotationAtCurrentFrame(): boolean {
   const sel = selection.value;
   if (!sel) return false;
-  const shape = (sel as any).shape as { points?: [number, number][] } | undefined;
+  const shape = (sel as any).shape_args as { points?: [number, number][] } | undefined;
   return !!shape?.points?.length;
 }
 
@@ -43,7 +43,7 @@ export function register(driver: IIdahDriverV2): void {
         do() {
           if (!sel) return;
           const record = sel as any;
-          const shape = record.shape as IImageAnnotationShape;
+          const shape = record.shape_args as IImageAnnotationShape;
           if (!shape.points || shape.points.length === 0) return;
 
           // For rotated shapes (bounding box with angle), rotate points around

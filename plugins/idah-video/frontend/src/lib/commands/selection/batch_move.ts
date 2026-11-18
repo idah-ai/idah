@@ -70,8 +70,8 @@ export function register(driver: IIdahDriverV2): void {
         .map((u): { annotationId: string; selection: IVideoFrameSelection; snapshot: AnnotationItem } | null => {
           let selection = { ...u.selection };
           if (!selection.points || selection.points.length === 0) {
-            const existingShape = u.snapshot.shape as IVideoAnnotationShape;
-            const result = getInterpolatedFrame(existingShape, selection.frame);
+            const existingShape = u.snapshot.shape_args as IVideoAnnotationShape;
+            const result = getInterpolatedFrame(existingShape, selection.frame, true, u.snapshot.shape_type);
             if (result) {
               selection = { ...selection, angle: result.angle, points: result.points ?? [] };
             }
@@ -87,7 +87,7 @@ export function register(driver: IIdahDriverV2): void {
         async do() {
           // Apply every update — one keyframe write per annotation.
           for (const u of resolvedUpdates) {
-            const frames = [...((u.snapshot.shape.frames as IVideoFrameSelection[]) ?? [])];
+            const frames = [...((u.snapshot.shape_args.frames as IVideoFrameSelection[]) ?? [])];
             const existing = frames.findIndex((f) => f.frame === u.selection.frame);
             if (existing >= 0) frames[existing] = u.selection;
             else frames.push(u.selection);
@@ -98,7 +98,7 @@ export function register(driver: IIdahDriverV2): void {
 
             await data.annotations!.update({
               ...u.snapshot,
-              shape: { ...u.snapshot.shape, start: min, end: max, frames },
+              shape_args: { ...u.snapshot.shape_args, start: min, end: max, frames },
             });
           }
           viewport.video.currentFrame.value =

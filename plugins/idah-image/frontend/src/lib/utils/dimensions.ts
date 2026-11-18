@@ -42,6 +42,7 @@ export function getShapeDimensions(
   shape: Record<string, unknown> | undefined | null,
   mediaWidth: number,
   mediaHeight: number,
+  shapeType: string,
 ): { label: string; value: string }[] | null {
   if (!shape) return null;
 
@@ -64,7 +65,7 @@ export function getShapeDimensions(
     return out.length > 0 ? out : null;
   }
 
-  const type = shape.type as string;
+  const type = shapeType;
 
   // ── Circle ──────────────────────────────────────────────────────
   if (type === IMAGE_CIRCLE) {

@@ -1,7 +1,9 @@
 // ---------------------------------------------------------------------------
 // utils/annotation.ts — Shared annotation / group helpers
 // ---------------------------------------------------------------------------
+import type { IConfig } from "$idah/v2/types";
 import { data } from "$lib/state/data.svelte";
+import type { IVideoAnnotationRecord } from "$lib/types";
 
 /**
  * Compare two groups for stable timeline track ordering.
@@ -20,10 +22,13 @@ import { data } from "$lib/state/data.svelte";
  * split + delete-left operation the remaining right-side piece has a later start
  * frame and the group dropped to a lower track position).
  */
-export function compareGroups(a: { groupId: string; annotations: { shape: { start: number } }[] }, b: { groupId: string; annotations: { shape: { start: number } }[] }): number {
+export function compareGroups(
+  a: { groupId: string; annotations: { shape_args: { start: number } }[] },
+  b: { groupId: string; annotations: { shape_args: { start: number } }[] },
+): number {
   const byGroupId = a.groupId.localeCompare(b.groupId);
   if (byGroupId !== 0) return byGroupId;
-  return (a.annotations[0]?.shape.start ?? Infinity) - (b.annotations[0]?.shape.start ?? Infinity);
+  return (a.annotations[0]?.shape_args.start ?? Infinity) - (b.annotations[0]?.shape_args.start ?? Infinity);
 }
 
 /** Format a category path like "vehicles/car" into a human-readable label like "Vehicles / Car". */
@@ -38,6 +43,14 @@ export function categoryValueToLabel(value?: string, replaceLabel?: string): str
   return label.join(" / ");
 }
 
+export function categoryForShape(
+  config: IConfig,
+  shapeType: string,
+  id: string | undefined,
+) {
+  return config[shapeType]?.values.find((value) => value.id === id);
+}
+
 /**
  * Return all unique group IDs in the timeline display order.
  *
@@ -47,7 +60,7 @@ export function categoryValueToLabel(value?: string, replaceLabel?: string): str
 export function getSortedGroupIds(): string[] {
   if (!data.annotations) return [];
   const seen = new Set<string>();
-  const groups: { groupId: string; annotations: { shape: { start: number } }[] }[] = [];
+  const groups: { groupId: string; annotations: { shape_args: { start: number } }[] }[] = [];
 
   for (const ann of data.annotations.items) {
     const gid = (ann as any).metadata?.group_id ?? ann.id;
@@ -59,10 +72,15 @@ export function getSortedGroupIds(): string[] {
       group = { groupId: gid, annotations: [] };
       groups.push(group);
     }
-    group.annotations.push({ shape: { start: (ann.shape as any)?.start ?? Infinity } });
+    group.annotations.push({ shape_args: { start: (ann.shape_args as any)?.start ?? Infinity } });
   }
 
   groups.sort(compareGroups);
 
   return groups.map((g) => g.groupId);
+}
+
+/** Return total of orphan annotations */
+export function countOrphanAnnotations(annotations: IVideoAnnotationRecord[], config: IConfig): number {
+  return annotations.filter((ann) => !ann.deleted_at && !categoryForShape(config, ann.shape_type, ann.category)).length;
 }

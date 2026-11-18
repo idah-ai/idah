@@ -1,0 +1,72 @@
+# Pull request title check
+#
+# Every pull request is squash merged, so its title becomes the commit on main
+# and a line in the release notes. This check holds the title to the
+# Conventional Commits format in CONTRIBUTING.md:
+#
+#   <type>(<scope>)<!>: <summary>
+#
+# It re-runs when the title is edited, so fixing the title clears it.
+
+name: PR Title
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+
+permissions:
+  pull-requests: read
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  title:
+    name: PR title
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # The types and scopes CONTRIBUTING.md lists. Keep the three in step.
+          # deps and deps-dev are the scopes Dependabot gives its PRs.
+          types: |
+            feat
+            fix
+            perf
+            revert
+            refactor
+            docs
+            test
+            build
+            ci
+            chore
+          scopes: |
+            iam
+            dataset
+            media
+            sync
+            audit
+            notification
+            setting
+            frontend
+            common
+            idah-image
+            idah-video
+            plugin-cli
+            deploy
+            installer
+            deps
+            deps-dev
+          requireScope: false
+          # Lower case first letter, no trailing period.
+          subjectPattern: ^(?![A-Z]).+[^.]$
+          subjectPatternError: |
+            The summary "{subject}" should start in lower case and not end with a
+            period, e.g. "feat(sync): add multi-label support to COCO export".

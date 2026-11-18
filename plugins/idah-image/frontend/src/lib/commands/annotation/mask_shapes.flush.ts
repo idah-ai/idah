@@ -14,6 +14,7 @@
 import type { IIdahDriverV2 } from "$idah/v2/types";
 import { data } from "$lib/state/data.svelte";
 import { maskSession } from "$lib/state/mask-session.svelte";
+import { recentCategory } from "$lib/state/recent-category";
 import { IMAGE_MASK } from "$lib/types";
 import { flushDirtyTiles } from "$lib/mask/flush-tiles";
 import { encode, decode } from "$lib/mask/rle";
@@ -54,7 +55,7 @@ export function register(driver: IIdahDriverV2): void {
       const sessAnnId = maskSession.annotationId;
       const selAnnId = !sessAnnId ? (() => {
         const sel = selection.value;
-        return sel && (sel.shape as any)?.type === IMAGE_MASK ? sel.id : undefined;
+        return sel && sel.shape_type === IMAGE_MASK ? sel.id : undefined;
       })() : undefined;
 
       const annotationId = sessAnnId ?? selAnnId;
@@ -72,7 +73,7 @@ export function register(driver: IIdahDriverV2): void {
         for (const tileKey of dirtyTiles) {
           const [colStr, rowStr] = tileKey.split(":");
           const shapeKey = `tile-${colStr}x${rowStr}`;
-          const existingValue = (existingRecord.shape as Record<string, unknown>)[shapeKey];
+          const existingValue = (existingRecord.shape_args as Record<string, unknown>)[shapeKey];
           snapshot.set(tileKey, existingValue !== undefined ? (existingValue as object) : null);
         }
       }
@@ -124,6 +125,10 @@ export function register(driver: IIdahDriverV2): void {
             (annId, key, value) => data.annotations!.setShape(annId, key, value),
             (annId, entries) => data.annotations!.setShapes(annId, entries),
           );
+
+          // Painting into an existing mask creates no annotation, so record its
+          // category here for category.reuse-last.
+          recentCategory.record(existingRecord?.category, IMAGE_MASK);
 
           // Don't reset the session here — let beginSession() handle cleanup
           // when the next gesture starts. This ensures the pending rAF redraw

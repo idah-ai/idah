@@ -45,21 +45,39 @@
   // -----------------------------------------------------------------------
   let sel = $derived(selection.value);
 
+  let selectedGroupAnnotation = $derived.by<IVideoAnnotationRecord | undefined>(() => {
+    if (sel?.type !== "group" || !data.annotations) return undefined;
+    const items = data.annotations.items as unknown as IVideoAnnotationRecord[];
+    return items.find((item) => (item.metadata?.group_id ?? item.id) === sel.groupId);
+  });
+
+  let selectedGroupCategory = $derived(
+    selectedGroupAnnotation
+      ? getDriver().config[selectedGroupAnnotation.shape_type]?.values?.find(
+          (value) => value.id === selectedGroupAnnotation.category,
+        )
+      : undefined,
+  );
+
+  let isSingleGroupSelection = $derived(
+    sel?.type === "group" && selection.selectedGroupIds.size === 1 && selection.selectedAnnotationIds.size === 0,
+  );
+
   // A selected tagging annotation (entry:root / idah-video:frame) is never shown
   // in the Annotations tab — it's edited through the Tagging tab instead. Treat it
   // as no selection here so the annotations list renders rather than the tagging form.
   let isTaggingAnnotation = $derived(
-    sel?.type === "annotation" && NON_DRAWABLE_SHAPE_TYPES.has((sel.annotation.shape as { type?: string })?.type ?? ""),
+    sel?.type === "annotation" && NON_DRAWABLE_SHAPE_TYPES.has((sel.annotation as any)?.shape_type ?? ""),
   );
 
   // The active shape type: from annotation, from group (via first annotation), from
   // the shapeTypeOverride prop, or from drawing mode.
   let shapeType = $derived.by<string | undefined>(() => {
-    if (sel?.type === "annotation") return sel.annotation.shape.type as string;
+    if (sel?.type === "annotation") return sel.annotation.shape_type as string;
     if (sel?.type === "group" && data.annotations) {
       const items = data.annotations.items as unknown as IVideoAnnotationRecord[];
       const groupAnn = items.find((a) => (a.metadata?.group_id ?? a.id) === sel.groupId);
-      if (groupAnn) return groupAnn.shape.type as string;
+      if (groupAnn) return groupAnn.shape_type as string;
     }
     return shapeTypeOverride ?? viewport.mode;
   });
@@ -71,33 +89,9 @@
   );
   let configValues = $derived(config?.values ?? []);
 
-  // Flatten all annotations from selected groups (for displaying multi-group selection)
-  let groupAnnotations = $derived(selection.selectedGroupAnnotations);
-
-  // Annotation from the selected group (for group edit mode display)
-  let groupAnnotation = $derived.by<IVideoAnnotationRecord | undefined>(() => {
-    if (sel?.type !== "group" || !data.annotations) return undefined;
-    const items = data.annotations.items as unknown as IVideoAnnotationRecord[];
-    return items.find((a) => (a.metadata?.group_id ?? a.id) === sel.groupId);
-  });
-
-  let groupAnnDisplayName = $derived.by<string>(() => {
-    if (!groupAnnotation || !sel || sel.type !== "group") return "";
-    const gAnn = groupAnnotation;
-    const gShapeType = gAnn.shape.type as string;
-    const gConfig = getDriver().config[gShapeType];
-    const gCategory = gConfig?.values?.find((v) => v.id === gAnn.value?.category);
-    const lastPart = sel.groupId.split("-").pop() ?? "";
-    return gCategory ? `${gCategory.label}-${lastPart}` : (gAnn.value?.category ?? "Uncategorized");
-  });
-
-  // When a group is selected, always use the annotation's current category from the data store,
-  // so it stays in sync even when the parent doesn't update the selectedCategory prop.
-  let effectiveSelectedCategory = $derived(
-    sel?.type === "group" ? groupAnnotation?.value?.category || "" : selectedCategory,
+  let category = $derived(
+    isSingleGroupSelection ? selectedGroupCategory : configValues.find((c) => c.id == selectedCategory),
   );
-
-  let category = $derived(configValues.find((c) => c.id == effectiveSelectedCategory));
   let properties = $derived(config?.properties ?? []);
 
   // Human-readable mode title from shape type
@@ -111,8 +105,11 @@
       .replace(/\b\w/g, (c) => c.toUpperCase());
   });
 
-  // Display name for the selected single annotation (edit mode)
+  // Display name for the selected single annotation or group (edit mode)
   let annotationDisplayName = $derived.by<string | undefined>(() => {
+    if (sel?.type === "group") {
+      return selectedGroupCategory?.label ?? sel.groupId;
+    }
     if (sel?.type !== "annotation") return undefined;
     const groupId = sel.annotation.metadata?.group_id ?? sel.annotation.id;
     const lastPart = groupId.split("-").pop();
@@ -129,14 +126,11 @@
     const items = data.annotations.items as unknown as IVideoAnnotationRecord[];
     const frame = currentFrame;
 
-    // Filter to current frame. Non-drawable records (entry:root spanning the
-    // whole video, and per-frame idah-video:frame) are excluded — they are not
-    // drawable shapes and are only ever created/edited through the Tagging tab.
     const onFrame = items.filter(
       (ann) =>
-        ann.shape.start <= frame &&
-        ann.shape.end >= frame &&
-        !NON_DRAWABLE_SHAPE_TYPES.has((ann.shape as any)?.type),
+        ann.shape_args.start <= frame &&
+        ann.shape_args.end >= frame &&
+        !NON_DRAWABLE_SHAPE_TYPES.has((ann as any)?.shape_type),
     );
 
     // Group by groupId for sorting (same as timeline's groupAnnotations + compareGroups)
@@ -149,7 +143,7 @@
 
     const groups = Array.from(map.entries()).map(([groupId, anns]) => ({
       groupId,
-      annotations: anns.sort((a, b) => a.shape.start - b.shape.start || a.shape.end - b.shape.end),
+      annotations: anns.sort((a, b) => a.shape_args.start - b.shape_args.start || a.shape_args.end - b.shape_args.end),
     }));
     groups.sort(compareGroups);
 
@@ -163,11 +157,7 @@
     return sorted;
   });
 
-  let showAnnotationsList = $derived(
-    !shapeTypeOverride &&
-      (viewport.mode === "editor" || viewport.isReviewWorkspace) &&
-      currentFrameAnnotations.length > 0,
-  );
+  let showAnnotationsList = $derived(!shapeTypeOverride && (viewport.mode === "editor" || viewport.isReviewWorkspace));
 
   // -----------------------------------------------------------------------
   // Handlers
@@ -175,8 +165,8 @@
   function onValueChange(property: IConfigProperty, v: string | number | string[] | undefined | boolean) {
     const newValue = {
       ...annotationValue,
-      attributes: {
-        ...(annotationValue.attributes || {}),
+      properties: {
+        ...(annotationValue.properties || {}),
         [property.id]: v,
       },
     };
@@ -188,7 +178,7 @@
   }
 </script>
 
-{#if !sel || isTaggingAnnotation}
+{#if (!sel || isTaggingAnnotation) && selection.selectedGroupIds.size === 0}
   <!-- Default mode: list of annotations on the current frame -->
   {#if showAnnotationsList}
     <AnnotationsList annotations={currentFrameAnnotations} {currentFrame} />
@@ -209,25 +199,22 @@
       disabled={effectiveDisabled}
     />
   {/if}
-{:else if selection.selectedAnnotationIds.size > 1}
-  <!-- Multiple annotations selected: show a compact list of selected items -->
-  <SelectedAnnotationsList />
-{:else if selection.selectedGroupIds.size > 1}
-  <!-- Multiple groups selected: show the annotations belonging to those groups -->
-  <SelectedAnnotationsList items={groupAnnotations} />
-{:else if sel.type === "group"}
-  <!-- Group edit mode -->
+{:else if isSingleGroupSelection}
+  <!-- A single timeline group changes category for the group only; properties are per annotation. -->
   <GroupEditMode
     {modeTitle}
     {shapeType}
     {configValues}
     {category}
-    selectedCategory={effectiveSelectedCategory}
-    displayName={groupAnnDisplayName}
+    selectedCategory={selectedGroupAnnotation?.category ?? ""}
+    displayName={annotationDisplayName ?? ""}
     onReSelectCategory={reselectCategory}
     disabled={effectiveDisabled}
   />
-{:else if sel.type === "annotation"}
+{:else if selection.selectedAnnotationIds.size > 1 || selection.selectedGroupIds.size > 0}
+  <!-- Group selections use category-only bulk editing; direct annotation selections also support properties. -->
+  <SelectedAnnotationsList disabled={effectiveDisabled} />
+{:else if sel?.type === "annotation"}
   <!-- Edit mode: edit a single selected annotation -->
   <EditMode
     {modeTitle}

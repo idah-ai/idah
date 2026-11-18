@@ -1,0 +1,81 @@
+// ---------------------------------------------------------------------------
+// restore.test.ts — Tests for the annotation store's restore()
+//
+// restore() must insert the pre-delete snapshot into the local store
+// immediately (the backend restore is enqueued by the driver, like every other
+// write). A backend failure surfaces via onSyncError; the local record stays —
+// there is no rollback.
+// ---------------------------------------------------------------------------
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+import { createAnnotationStore, type AnnotationItem } from "./data.svelte";
+
+// ── Mocks ──────────────────────────────────────────────────────────────────
+vi.mock("$lib/state/selection.svelte", () => ({
+  selection: {
+    isAnnotationSelected: () => false,
+    deselectAnnotation: () => {},
+    addAnnotations: () => {},
+  },
+}));
+
+vi.mock("$lib/state/driver.svelte", () => ({
+  getDriver: () => ({}),
+}));
+
+vi.mock("$lib/state/viewport.svelte", () => ({
+  viewport: {},
+}));
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function makeAnn(id: string, category = "vehicle/car"): AnnotationItem {
+  return {
+    id,
+    shape_type: "idah-video:bounding-box",
+    shape_args: { start: 0, end: 10, frames: [] },
+    category,
+    properties: {},
+  };
+}
+
+function makeDriver(overrides: {
+  restore?: (id: string) => Promise<void>;
+} = {}) {
+  return {
+    fetch: vi.fn(async () => []),
+    create: vi.fn(async () => ({ id: "created" })),
+    update: vi.fn(async () => {}),
+    delete: vi.fn(async () => {}),
+    restore: vi.fn(async () => {}),
+    ...overrides,
+  };
+}
+
+describe("annotation store restore()", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("inserts the snapshot locally and resolves with it", async () => {
+    const driver = makeDriver();
+    const store = createAnnotationStore(driver);
+
+    const record = makeAnn("ann-001");
+    const result = await store.restore(record);
+
+    expect(store.items.some((i) => i.id === "ann-001")).toBe(true);
+    expect(driver.restore).toHaveBeenCalledWith("ann-001");
+    expect(result).toEqual(record);
+  });
+
+  it("keeps the local record restored when the backend rejects (onSyncError handles it)", async () => {
+    const driver = makeDriver({
+      restore: vi.fn(async () => { throw new Error("check_entry_not_completed!"); }),
+    });
+    const store = createAnnotationStore(driver);
+
+    await expect(store.restore(makeAnn("ann-001"))).rejects.toThrow("check_entry_not_completed!");
+    expect(store.items.some((i) => i.id === "ann-001")).toBe(true);
+  });
+});

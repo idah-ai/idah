@@ -32,8 +32,9 @@
   // missing. The draft still shows the user's edit, but the record is unchanged.
   let saveError = $state<string | null>(null);
   $effect(() => {
-    const v = entryRootAnnotation?.value;
-    draftValue = v ? { ...v } : {};
+    draftValue = entryRootAnnotation
+      ? { category: entryRootAnnotation.category, properties: entryRootAnnotation.properties }
+      : {};
   });
 
   const config = $derived(getDriver().getFilteredConfig(shapeType, draftValue as unknown as Record<string, unknown>));
@@ -97,7 +98,7 @@
         onValueChange={(property, v) =>
           onChange({
             ...draftValue,
-            attributes: { ...(draftValue.attributes ?? {}), [property.id]: v },
+            properties: { ...(draftValue.properties ?? {}), [property.id]: v },
           })}
         {disabled}
       />

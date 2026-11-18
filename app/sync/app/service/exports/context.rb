@@ -2,12 +2,13 @@
 
 module Exports
   class Context
-    attr_reader :dataset_ids, :options
+    attr_reader :dataset_ids, :options, :entry_ids
 
-    def initialize(job, dataset_ids, options = {})
+    def initialize(job, dataset_ids, options = {}, entry_ids = nil)
       @job = job
       @dataset_ids = dataset_ids
       @options = options
+      @entry_ids = entry_ids
     end
 
     def io
@@ -31,7 +32,7 @@ module Exports
         size = @dataset_ids.size
 
         @dataset_ids.each_with_index do |id, idx|
-          yielder << DatasetContext.new(id)
+          yielder << DatasetContext.new(id, @entry_ids)
 
           @job.update_progress((idx + 1.0) / size)
         end

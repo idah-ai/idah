@@ -36,7 +36,7 @@ function exitToDefaultMode(driver: IIdahDriverV2) {
 }
 
 function findEntryRoot(): IImageAnnotationRecord | undefined {
-  return (data.annotations?.items ?? []).find((a) => (a.shape as { type?: string })?.type === ENTRY_ROOT) as
+  return (data.annotations?.items ?? []).find((a) => a.shape_type === ENTRY_ROOT) as
     | IImageAnnotationRecord
     | undefined;
 }

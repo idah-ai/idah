@@ -2,6 +2,12 @@
 
 ENV["APP_ENVIRONMENT"] = "test"
 
+# Run the test process in UTC so timestamp round-trips through Postgres are
+# deterministic regardless of the developer's local timezone. The DB stores
+# `timestamp without time zone` values as wall-clock UTC; without this, specs
+# that compare a read-back Time against Time.now fail on non-UTC machines.
+ENV["TZ"] = "UTC"
+
 require "bootsnap"
 Bootsnap.setup(cache_dir: "tmp/cache")
 

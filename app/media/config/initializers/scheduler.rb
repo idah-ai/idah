@@ -17,7 +17,7 @@ if ENV["PUMA_WORKERS"] &&
 
   # If running in a single worker mode,
   # start the scheduler immediately.
-  # Otherwise, puma on_worker_boot will handle it.
+  # Otherwise, puma before_worker_boot will handle it.
   Verse.on_boot do
     SCHEDULER.start
     EXECUTOR.start

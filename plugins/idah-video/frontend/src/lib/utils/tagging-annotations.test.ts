@@ -17,24 +17,27 @@ import type { IConfigProperty } from "$idah/v2/types";
 function rootRecord(category?: string, id = "root-001"): IVideoAnnotationRecord {
   return {
     id,
-    shape: { type: "entry:root", start: 0, end: 100, frames: [] },
-    value: { category },
+    shape_type: "entry:root",
+    shape_args: { start: 0, end: 100, frames: [] },
+    category,
   } as IVideoAnnotationRecord;
 }
 
 function frameRecord(frame: number, category?: string, id = `frame-${frame}`): IVideoAnnotationRecord {
   return {
     id,
-    shape: { type: "idah-video:frame", start: frame, end: frame, frames: [{ frame, angle: 0, points: [] }] },
-    value: { category },
+    shape_type: "idah-video:frame",
+    shape_args: { start: frame, end: frame, frames: [{ frame, angle: 0, points: [] }] },
+    category,
   } as IVideoAnnotationRecord;
 }
 
 function boxRecord(id = "box-001"): IVideoAnnotationRecord {
   return {
     id,
-    shape: { type: "idah-video:bounding-box", start: 10, end: 20, frames: [] },
-    value: { category: "car" },
+    shape_type: "idah-video:bounding-box",
+    shape_args: { start: 10, end: 20, frames: [] },
+    category: "car",
   } as IVideoAnnotationRecord;
 }
 
@@ -137,11 +140,11 @@ describe("isTaggingValueComplete", () => {
   });
 
   it("is true when all required properties are filled", () => {
-    expect(isTaggingValueComplete({ category: "a", attributes: { label: "x" } }, required)).toBe(true);
+    expect(isTaggingValueComplete({ category: "a", properties: { label: "x" } }, required)).toBe(true);
   });
 
   it("is false when a required property is missing", () => {
-    expect(isTaggingValueComplete({ category: "a", attributes: {} }, required)).toBe(false);
+    expect(isTaggingValueComplete({ category: "a", properties: {} }, required)).toBe(false);
     expect(isTaggingValueComplete({ category: "a" }, required)).toBe(false);
   });
 

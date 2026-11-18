@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
 module Dataset
+  # A sweep that hasn't refreshed `syncing_stats_at` for this long is treated as
+  # dead (worker killed, or its event never delivered). Sweeps refresh it every
+  # EntryStats::Service::SYNCING_STATS_HEARTBEAT_EVERY seconds.
+  SYNCING_STATS_STALE_AFTER = 180 # seconds
+
   class Record < Verse::Model::Record::Base
     type Resource::Dataset::Datasets
 
@@ -8,11 +13,13 @@ module Dataset
     field :project_id, type: String, readonly: true
 
     field :name, type: String
+    field :delivery_date, type: [Date, NilClass]
     field :labels, type: Array
     field :modality, type: String, readonly: true
     field :workflow_name, type: String
 
     field :labeling_configuration, type: Hash
+    field :feedback_configuration, type: Hash, readonly: true
     field :workflow_configuration, type: Hash
 
     field :status, type: String, readonly: true
@@ -21,6 +28,15 @@ module Dataset
     field :entries_total_count, type: Integer, readonly: true
     field :entries_completed_count, type: Integer, readonly: true
     field :entries_in_progress_count, type: Integer, readonly: true
+
+    field :syncing_stats_at, type: [Time, NilClass], readonly: true, visible: false
+    # True only while the sweep's heartbeat is recent, so a dead sweep stops
+    # showing as syncing on its own.
+    field :syncing_stats, type: [TrueClass], readonly: true do
+      next false unless @fields[:syncing_stats] && syncing_stats_at
+
+      syncing_stats_at > Time.now - SYNCING_STATS_STALE_AFTER
+    end
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -31,6 +47,17 @@ module Dataset
     has_many :annotations, repository: "Annotation::Repository", foreign_key: :dataset_id
     has_many :note_feeds, repository: "NoteFeed::Repository", foreign_key: :dataset_id
 
+    # Returns the set of configured category IDs from this dataset's
+    # labeling_configuration. Flattens values[*][:id] across all tool-type keys.
+    def configured_category_ids
+      config = labeling_configuration || {}
+      config.each_value.flat_map do |tool_config|
+        next [] unless tool_config.is_a?(Hash)
+
+        Array(tool_config[:values]).filter_map { |v| v[:id] }
+      end
+    end
+
     def entry_workflow
       # Get workflow by workflow_name from the dataset
       # Falls back to default workflow if no workflow_name or workflow not found
@@ -39,10 +66,13 @@ module Dataset
   end
 
   class Repository < Verse::Sequel::Repository
+    include ActorEventMetadata
+
     self.table = "datasets"
     self.resource = Resource::Dataset::Datasets
 
     encoder :labeling_configuration, Verse::Sequel::JsonEncoder
+    encoder :feedback_configuration, Verse::Sequel::JsonEncoder
     encoder :workflow_configuration, Verse::Sequel::JsonEncoder
     encoder :labels, Verse::Sequel::PgArrayEncoder
 
@@ -51,24 +81,15 @@ module Dataset
         scope.all? { table }
 
         scope.as_org_owner? do
-          org_ids = auth_context.custom_scopes[:org]
-          project_ids = auth_context.custom_scopes[:project]
-
-          if org_ids
-            table.where(
-              table.db[:projects]
-                .where(organization_id: org_ids)
-                .where(id: Sequel[:datasets][:project_id])
-                .select(1).exists
-            )
-          elsif project_ids
-            table.where(project_id: project_ids)
+          if auth_context.custom_scopes[:project]
+            # API-key project scope: no membership union.
+            table.where(project_id: auth_context.custom_scopes[:project])
           else
-            table.where(Sequel.lit("false"))
+            table.where(org_projects_condition | user_project_scoped_condition(action))
           end
         end
 
-        scope.as_user? { user_project_scoped_query(action) }
+        scope.as_user? { table.where(user_project_scoped_condition(action)) }
       end
     end
 
@@ -79,10 +100,21 @@ module Dataset
     # Info:
     # 1. project_owner can create, update and delete datasets
     # 2. annotator and reviewer can only read datasets
+
+    def org_projects_condition
+      org_ids = auth_context.custom_scopes[:org]
+      return Sequel.lit("false") unless org_ids&.any?
+
+      table.db[:projects]
+           .where(organization_id: org_ids)
+           .where(id: Sequel[:datasets][:project_id])
+           .select(1).exists
+    end
+
     query
-    def user_project_scoped_query(action)
+    def user_project_scoped_condition(action)
       # Ignore create action as it will be handled in service layer
-      return table if action == :create
+      return Sequel.lit("true") if action == :create
 
       account_id = auth_context.metadata[:id]
 
@@ -125,14 +157,12 @@ module Dataset
           )
         SQL
 
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            with_roles: %w[project_owner],
-            annotator_roles: %w[annotator],
-            reviewer_roles: %w[reviewer]
-          )
+        Sequel.lit(
+          scoped_fragment,
+          account_id:,
+          with_roles: %w[project_owner],
+          annotator_roles: %w[annotator],
+          reviewer_roles: %w[reviewer]
         )
       when :update, :delete
         scoped_fragment = <<-SQL
@@ -146,12 +176,10 @@ module Dataset
           )
         SQL
 
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            roles: %w[project_owner]
-          )
+        Sequel.lit(
+          scoped_fragment,
+          account_id:,
+          roles: %w[project_owner]
         )
       else
         raise Verse::Error::Unauthorized,
@@ -167,15 +195,11 @@ module Dataset
 
       total_entries = dataset[:entries_total_count]
 
-      return if total_entries.zero?
+      return pending!(dataset_id, 0.0) if total_entries.zero?
 
       completed_entries = dataset[:entries_completed_count]
       in_progress_entries = dataset[:entries_in_progress_count]
 
-      # Entries that have been submitted at least once have already been worked
-      # on, even if they are back to "pending" status awaiting a next stage
-      # (e.g. submitted, waiting for a reviewer). The counter is maintained by
-      # the dataset entry-counters trigger.
       submitted_entries = dataset[:entries_submitted_count]
 
       progress = completed_entries.to_f / total_entries
@@ -191,7 +215,7 @@ module Dataset
 
     def create(attributes)
       with_metadata do
-        add_event_metadata(
+        add_metadata(
           project_id: attributes[:project_id]
         )
 
@@ -203,7 +227,7 @@ module Dataset
       with_metadata do
         dataset = find!(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: attributes[:project_id] || dataset.project_id,
           dataset_id: id
         )
@@ -212,11 +236,26 @@ module Dataset
       end
     end
 
+    # Locks the dataset row for update (SELECT ... FOR UPDATE) within the
+    # current transaction, then returns the hydrated record with decoded JSONB
+    # columns. Used to serialize read-modify-write updates of
+    # feedback_configuration so concurrent PATCHes cannot overwrite each
+    # other's committed items. Must be called inside a transaction.
+    def lock!(id, scope: scoped(:update))
+      with_db_mode :rw do
+        row = scope.where(self.class.primary_key => id).for_update.first
+
+        raise Verse::Error::NotFound, "Dataset not found" unless row
+
+        self.class.model_class.new(decode(row))
+      end
+    end
+
     def delete!(id)
       with_metadata do
         dataset = find!(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: dataset.project_id,
           dataset_id: id
         )
@@ -251,15 +290,14 @@ module Dataset
       # NOTE: just publish the event
     end
 
-    private
-
-    def add_event_metadata(**opts)
-      add_metadata(
-        actor_account_id: auth_context.metadata[:id],
-        actor_account_email: auth_context.metadata[:email],
-        actor_account_role_name: auth_context.metadata[:role],
-        **opts
-      )
+    event(name: "labeling_configuration_updated")
+    def labeling_configuration_updated(dataset_id, changed_category_ids: [])
+      no_event do
+        add_metadata(
+          dataset_id: dataset_id,
+          changed_category_ids: changed_category_ids
+        )
+      end
     end
   end
 end

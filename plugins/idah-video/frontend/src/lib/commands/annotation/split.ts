@@ -58,6 +58,7 @@ export function register(driver: IIdahDriverV2, getCurrentFrame?: () => number):
         frames: IVideoFrameSelection[];
         at: number;
         rightId: string;
+        rightRecord: AnnotationItem;
         leftFrames: IVideoFrameSelection[];
         rightFrames: IVideoFrameSelection[];
         leftMin: number; leftMax: number;
@@ -72,15 +73,17 @@ export function register(driver: IIdahDriverV2, getCurrentFrame?: () => number):
         const props = opts as unknown as AnnotationSplitProps;
         const record = all.find((r) => r.id === props.annotationId) as AnnotationItem | undefined;
         if (!record) return noopAction(command);
-        const shape = record.shape as IVideoAnnotationShape;
+        const shape = record.shape_args as IVideoAnnotationShape;
         const at = props.at;
         if (at <= 0) return noopAction(command);
         const splitAt = at - 1;
         const frames = (shape.frames ?? []) as IVideoFrameSelection[];
-        const splitFrame = ensureSplitFrame(shape, frames, splitAt);
+        const splitFrame = ensureSplitFrame(shape, frames, splitAt, record.shape_type);
         if (!splitFrame) return noopAction(command);
         const { leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax } = buildSplitFrames(frames, splitFrame, splitAt, at);
-        targets.push({ record, shape, frames, at, rightId: uuidv7(), leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax });
+        const rightId = uuidv7();
+        const rightRecord = buildRightRecord(record, shape, rightId, rightMin, rightMax, rightFrames);
+        targets.push({ record, shape, frames, at, rightId, rightRecord, leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax });
       } else {
 
         // Batch: use opts.at if provided, otherwise fall back to injected getter
@@ -110,18 +113,26 @@ export function register(driver: IIdahDriverV2, getCurrentFrame?: () => number):
 
         for (const record of targetRecords) {
           if (annotation.isLocked(record)) continue;
-          const shape = record.shape as IVideoAnnotationShape;
+          const shape = record.shape_args as IVideoAnnotationShape;
           if (shape.start > at || shape.end < at) continue;
           const splitAt = at - 1;
           const frames = (shape.frames ?? []) as IVideoFrameSelection[];
-          const splitFrame = ensureSplitFrame(shape, frames, splitAt);
+          const splitFrame = ensureSplitFrame(shape, frames, splitAt, record.shape_type);
           if (!splitFrame) continue;
           const { leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax } = buildSplitFrames(frames, splitFrame, splitAt, at);
-          targets.push({ record, shape, frames, at, rightId: uuidv7(), leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax });
+          const rightId = uuidv7();
+          const rightRecord = buildRightRecord(record, shape, rightId, rightMin, rightMax, rightFrames);
+          targets.push({ record, shape, frames, at, rightId, rightRecord, leftFrames, rightFrames, leftMin, leftMax, rightMin, rightMax });
         }
       }
 
       if (targets.length === 0) return noopAction(command);
+
+      // Tracks whether do() has run before. On the first run the right piece is
+      // created; on later runs (redo after undo soft-deleted it) it is restored
+      // instead, because the backend row still exists (deleted_at set) and a
+      // plain create would collide with it.
+      let hasRun = false;
 
       return {
         command: { ...command },
@@ -130,27 +141,21 @@ export function register(driver: IIdahDriverV2, getCurrentFrame?: () => number):
             // Update original annotation to left part
             await data.annotations!.update({
               ...t.record,
-              shape: {
+              shape_args: {
                 ...t.shape,
                 start: t.leftMin,
                 end: t.leftMax,
                 frames: t.leftFrames,
               },
             });
-            // Create right part
-            const groupId = (t.record.metadata?.group_id ?? t.record.id) as string;
-            await data.annotations!.create({
-              id: t.rightId,
-              shape: {
-                ...t.shape,
-                start: t.rightMin,
-                end: t.rightMax,
-                frames: t.rightFrames,
-              },
-              value: t.record.value ? { ...t.record.value } : undefined,
-              metadata: { group_id: groupId } as unknown as AnnotationItem["metadata"],
-            });
+            // Create (first run) or restore (redo) the right part
+            if (hasRun) {
+              await data.annotations!.restore(t.rightRecord);
+            } else {
+              await data.annotations!.create(t.rightRecord);
+            }
           }
+          hasRun = true;
         },
         async undo() {
           if (!data.annotations) return;
@@ -176,15 +181,40 @@ function ensureSplitFrame(
   shape: IVideoAnnotationShape,
   frames: IVideoFrameSelection[],
   splitAt: number,
+  shapeType: string,
 ): IVideoFrameSelection | undefined {
   let splitFrame = frames.find((f) => f.frame === splitAt);
   if (!splitFrame) {
-    const interpolated = getInterpolatedFrame(shape, splitAt);
+    const interpolated = getInterpolatedFrame(shape, splitAt, true, shapeType);
     if (interpolated) {
       splitFrame = { frame: splitAt, angle: interpolated.angle, points: interpolated.points ?? [] };
     }
   }
   return splitFrame;
+}
+
+function buildRightRecord(
+  record: AnnotationItem,
+  shape: IVideoAnnotationShape,
+  rightId: string,
+  rightMin: number,
+  rightMax: number,
+  rightFrames: IVideoFrameSelection[],
+): AnnotationItem {
+  const groupId = (record.metadata?.group_id ?? record.id) as string;
+  return {
+    id: rightId,
+    shape_args: {
+      ...shape,
+      start: rightMin,
+      end: rightMax,
+      frames: rightFrames,
+    },
+    category: record.category,
+    properties: record.properties,
+    shape_type: record.shape_type,
+    metadata: { group_id: groupId } as unknown as AnnotationItem["metadata"],
+  } as AnnotationItem;
 }
 
 function buildSplitFrames(

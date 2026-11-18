@@ -58,11 +58,11 @@ export function register(driver: IIdahDriverV2): void {
       if (allAnnotations.length === 0) return noopAction(command);
 
       // Resolve annotations that belong to the target category
-      let targetAnnotations = allAnnotations.filter((ann) => isCategoryMatch(ann.value?.category, props.category));
+      let targetAnnotations = allAnnotations.filter((ann) => isCategoryMatch(ann.category, props.category));
 
       // Further filter by shape type if provided
       if (props.shapeType) {
-        targetAnnotations = targetAnnotations.filter((ann) => ann.shape.type === props.shapeType);
+        targetAnnotations = targetAnnotations.filter((ann) => ann.shape_type === props.shapeType);
       }
 
       if (targetAnnotations.length === 0) {
@@ -74,10 +74,10 @@ export function register(driver: IIdahDriverV2): void {
         if (props.shapeType) {
           // If shapeType is provided, only consider annotations of that shape type as non-target;
           // other shape types are ignored and treated as non-target
-          return ann.shape.type !== props.shapeType || !isCategoryMatch(ann.value?.category, props.category);
+          return ann.shape_type !== props.shapeType || !isCategoryMatch(ann.category, props.category);
         } else {
           // All annotations that don't match the category are non-target
-          return !isCategoryMatch(ann.value?.category, props.category);
+          return !isCategoryMatch(ann.category, props.category);
         }
       });
 

@@ -9,9 +9,11 @@
 //   });
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
+import type { AnnotationItem } from "$lib/state/data.svelte";
 import { selection } from "$lib/state/selection.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import { VIDEO_POLYGON, type IVideoAnnotationShape } from "$lib/types";
+import { NON_DRAWABLE_SHAPE_TYPES, VIDEO_POLYGON, type IVideoAnnotationShape } from "$lib/types";
+import { recentCategory } from "$lib/state/recent-category";
 import { noopAction } from "..";
 import { isEditable } from "$lib/state/editor.svelte";
 import { draft as polygonDraft } from "./polygon.add_point.svelte";
@@ -29,7 +31,10 @@ export const command = {
 
 export interface AnnotationAddProps {
   shape: IVideoAnnotationShape;
-  value?: { category?: string; label?: string; [key: string]: unknown };
+  shape_type: string;
+  category?: string;
+  properties?: Record<string, unknown>;
+  id?: string;
 }
 
 export function register(driver: IIdahDriverV2): void {
@@ -45,15 +50,37 @@ export function register(driver: IIdahDriverV2): void {
       if (!props || !data.annotations) return noopAction(command);
 
       const createdId = uuidv7();
+      const shapeType = props.shape_type;
+
+      // Tracks whether do() has run before. On the first run the annotation is
+      // created; on later runs (redo after undo soft-deleted it) it is restored
+      // instead, because the backend row still exists (deleted_at set) and a
+      // plain create would collide with it.
+      let hasRun = false;
 
       return {
         command: { ...command },
         async do() {
-          const created = await data.annotations!.create({
-            id: createdId,
-            shape: props.shape,
-            value: props.value,
-          });
+          let created: AnnotationItem;
+          if (hasRun) {
+            created = await data.annotations!.restore({
+              id: createdId,
+              shape_type: shapeType,
+              shape_args: props.shape,
+              category: props.category ?? "",
+              properties: props.properties,
+            });
+          } else {
+            created = await data.annotations!.create({
+              id: createdId,
+              shape_type: shapeType,
+              shape_args: props.shape,
+              category: props.category ?? "",
+              properties: props.properties,
+            });
+          }
+          hasRun = true;
+          if (!NON_DRAWABLE_SHAPE_TYPES.has(shapeType)) recentCategory.record(props.category, shapeType);
           // Select the newly created annotation
           selection.selectAnnotation(created as any);
           // Seek to the frame the annotation was created on
@@ -68,7 +95,7 @@ export function register(driver: IIdahDriverV2): void {
             await data.annotations.delete(createdId);
           }
           // Restore draft and mode for multi-step shapes
-          if (props.shape.type === VIDEO_POLYGON) {
+          if (shapeType === VIDEO_POLYGON) {
             const firstFrame = (props.shape as any).frames?.[0];
             if (firstFrame?.points?.length) {
               viewport.video.currentFrame.value = firstFrame.frame;

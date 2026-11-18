@@ -6,7 +6,7 @@
   import { onMount } from "svelte";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
-  import ExportFormModal from "@/components/app/projects/exports/overlays/export-form-modal.svelte";
+  import ExportFormModal from "@/components/app/projects/exports/overlays/_ExportFormModal.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
   import { selectedDatasets } from "@/components/app/datasets/stores";
@@ -20,7 +20,6 @@
   import { pluralizeUnit } from "@/utils/unit";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type { ProjectMemberScope } from "@/security/types";
 
   // Variables
   let projectId = page.params.projectId as string;
@@ -57,17 +56,10 @@
 
   // Functions
   async function checkRights() {
-    const as_project_owner: { as_user: ProjectMemberScope } = {
-      as_user: {
-        projectId,
-        projectMemberRoles: ["project_owner"],
-      },
-    };
+    const account = $authStatus.authContext;
 
-    canDeleteDataset =
-      (await $authStatus.authContext?.can("delete", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
-    canExportDataset =
-      (await $authStatus.authContext?.can("create", "sync:exports", ["as_org_owner", as_project_owner])) || false;
+    canDeleteDataset = (await account?.canOnProject("delete", "dataset:datasets", projectId, "project_owner")) || false;
+    canExportDataset = (await account?.canOnProject("create", "sync:exports", projectId, "project_owner")) || false;
   }
 
   async function confirmDeleteDatasets(): Promise<void> {
@@ -117,7 +109,7 @@
   </DropdownMenus>
 
   <ExportFormModal
-    title="Export Dataset(s)"
+    title="Export Datasets"
     action="create"
     datasetRecords={$selectedDatasets}
     bind:open={openExportFormModal}

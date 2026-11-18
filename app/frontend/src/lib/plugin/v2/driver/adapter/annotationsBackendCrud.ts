@@ -2,20 +2,29 @@
 
 import { JsonRpcDatasource } from "@/data/jsonrpc";
 import { annotationsBackendDataSource, type AnnotationRecord } from "@/data/model/dataset/annotations/record";
-import type { IAnnotationRecord, IAnnotationsDriverV2, IFilter } from "../../types";
+import type { IAnnotationRecord, IAnnotationsDriverV2, IChangesQuery, IChangesResult, IFilter } from "../../types";
 import type { ICrudDriver } from "./idb-driver";
+import { createChangesAdapter, type ChangesAdapter } from "./changes";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
+
+/** Server-side limit for one `write_shapes` call (Annotation::Service). */
+const ENTRIES_PER_WRITE = 1000;
 
 function annotationRecordToV2(rec: AnnotationRecord): IAnnotationRecord {
   return {
     id: rec.id,
-    shape: rec.dimensions as Record<string, unknown>,
-    value: rec.annotation as Record<string, unknown>,
+    shape_type: rec.shape_type,
+    shape_args: rec.shape_args as Record<string, unknown>,
+    category: rec.category,
+    properties: rec.properties as Record<string, unknown>,
     metadata: rec.metadata,
+    deleted_at: rec.deleted_at,
+    deleted_by_id: rec.deleted_by_id,
     created_by_id: rec.created_by_id,
     created_at: rec.created_at,
     updated_at: rec.updated_at,
+    version: rec.version,
   };
 }
 
@@ -38,8 +47,10 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
         params: {
           id: record.id,
           entry_id: entryId,
-          dimensions: record.shape,
-          annotation: record.value,
+          shape_type: record.shape_type,
+          shape_args: record.shape_args,
+          category: record.category,
+          properties: record.properties,
           metadata: record.metadata,
         },
       });
@@ -48,8 +59,10 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
 
     async update(id: string, data: Partial<IAnnotationRecord>): Promise<void> {
       const payload: Record<string, unknown> = {};
-      if (data.shape) payload["dimensions"] = data.shape;
-      if (data.value) payload["annotation"] = data.value;
+      if (data.shape_type) payload["shape_type"] = data.shape_type;
+      if (data.shape_args) payload["shape_args"] = data.shape_args;
+      if (data.category) payload["category"] = data.category;
+      if (data.properties) payload["properties"] = data.properties;
       if (data.metadata) payload["metadata"] = data.metadata;
 
       await rpc.call({
@@ -65,11 +78,34 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
       });
     },
 
+    async restore(id: string): Promise<void> {
+      await rpc.call({
+        method: "restore",
+        params: { id, entry_id: entryId },
+      });
+    },
+
     async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
       await rpc.call({
         method: "write_shape",
         params: { annotation_id: annotationId, key, value: value ?? null },
       });
+    },
+
+    async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
+      // One write_shapes call per up-to-1000-entry chunk: a stroke becomes one
+      // change on the server (one version, one history row). Above the server
+      // limit, split into calls of 1000, one version each.
+      for (let i = 0; i < entries.length; i += ENTRIES_PER_WRITE) {
+        const chunk = entries.slice(i, i + ENTRIES_PER_WRITE);
+        await rpc.call({
+          method: "write_shapes",
+          params: {
+            annotation_id: annotationId,
+            entries: chunk.map(({ key, value }) => ({ key, value: value ?? null })),
+          },
+        });
+      }
     },
   };
 }
@@ -83,22 +119,36 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
  */
 export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
   private virtualFields = new Map<string, (ann: IAnnotationRecord) => unknown>();
+  private changesAdapter: ChangesAdapter;
 
   constructor(
     private entryId: string,
     private rpc: JsonRpcDatasource,
-  ) {}
+    changes?: ChangesAdapter,
+  ) {
+    this.changesAdapter = changes ?? createChangesAdapter(entryId);
+  }
 
   registerField(name: string, fn: (ann: IAnnotationRecord) => unknown): void {
     this.virtualFields.set(name, fn);
   }
 
   async fetch(filter?: IFilter): Promise<IAnnotationRecord[]> {
-    const filters: Record<string, unknown> = {};
+    const filters: Record<string, unknown> = { deleted: "false" };
     if (filter) {
       for (const [key, val] of Object.entries(filter)) {
         if (key === "entry_id") {
           filters["entry_id"] = val;
+        } else if (key === "deleted") {
+          // The backend treats any value other than "true" as live only, so
+          // "all" must send no `deleted` filter at all to include tombstones.
+          if (val === "true") {
+            filters["deleted"] = "true";
+          } else if (val !== "all") {
+            filters["deleted"] = "false";
+          } else {
+            delete filters["deleted"];
+          }
         } else if (typeof val === "object" && !Array.isArray(val)) {
           const op = val as Record<string, unknown>;
           if (op.eq !== undefined) filters[key] = op.eq;
@@ -113,14 +163,28 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
       }
     }
 
-    const res = await annotationsBackendDataSource.list({ filters, noCache: true });
-    return res.data.map(annotationRecordToV2);
+    filters["entry_id"] = this.entryId;
+    const itemsPerPage = 100;
+    const records: IAnnotationRecord[] = [];
+    for (let page = 1; ; page++) {
+      const res = await annotationsBackendDataSource.list({
+        filters,
+        pagination: { page, itemsPerPage },
+        sort: ["id"],
+        noCache: true,
+      });
+      records.push(...res.data.map(annotationRecordToV2));
+      if (res.data.length < itemsPerPage) break;
+    }
+    return records;
   }
 
   async update(id: string, data: Partial<IAnnotationRecord>): Promise<void> {
     const payload: Record<string, unknown> = {};
-    if (data.shape) payload["dimensions"] = data.shape;
-    if (data.value) payload["annotation"] = data.value;
+    if (data.shape_type) payload["shape_type"] = data.shape_type;
+    if (data.shape_args) payload["shape_args"] = data.shape_args;
+    if (data.category) payload["category"] = data.category;
+    if (data.properties) payload["properties"] = data.properties;
     if (data.metadata) payload["metadata"] = data.metadata;
 
     await this.rpc.call({ method: "update", params: { id, entry_id: this.entryId, ...payload } });
@@ -130,14 +194,20 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
     await this.rpc.call({ method: "delete", params: { id, entry_id: this.entryId } });
   }
 
+  async restore(id: string): Promise<void> {
+    await this.rpc.call({ method: "restore", params: { id, entry_id: this.entryId } });
+  }
+
   async create(data: IAnnotationRecord): Promise<IAnnotationRecord> {
     const result = await this.rpc.call({
       method: "create",
       params: {
         id: data.id,
         entry_id: this.entryId,
-        dimensions: data.shape,
-        annotation: data.value,
+        shape_type: data.shape_type,
+        shape_args: data.shape_args,
+        category: data.category,
+        properties: data.properties,
         metadata: data.metadata,
       },
     });
@@ -152,13 +222,25 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
   }
 
   async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
-    await Promise.all(
-      entries.map(({ key, value }) =>
-        this.rpc.call({
-          method: "write_shape",
-          params: { annotation_id: annotationId, key, value: value ?? null },
-        }),
-      ),
-    );
+    for (let i = 0; i < entries.length; i += ENTRIES_PER_WRITE) {
+      const chunk = entries.slice(i, i + ENTRIES_PER_WRITE);
+      await this.rpc.call({
+        method: "write_shapes",
+        params: {
+          annotation_id: annotationId,
+          entries: chunk.map(({ key, value }) => ({ key, value: value ?? null })),
+        },
+      });
+    }
+  }
+
+  // ── Annotation change history (delegated to the shared adapter) ──
+
+  changes(query?: IChangesQuery): Promise<IChangesResult> {
+    return this.changesAdapter.changes(query);
+  }
+
+  version(id: string, version: number): Promise<IAnnotationRecord> {
+    return this.changesAdapter.version(id, version) as Promise<IAnnotationRecord>;
   }
 }

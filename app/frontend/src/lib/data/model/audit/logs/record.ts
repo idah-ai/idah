@@ -28,6 +28,6 @@ export class LogRecord extends Record {
 
 RecordFactory.registerTypes(LogRecord);
 
-const logBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/audit/logs`;
+const logBasePath: string = `/api/v1/audit/logs`;
 
 export const logsBackendDataSource = createBackendDataSource(LogRecord, logBasePath);

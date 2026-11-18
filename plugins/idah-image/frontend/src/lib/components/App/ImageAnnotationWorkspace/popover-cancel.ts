@@ -15,11 +15,11 @@ import { draft as polygonDraft } from "$lib/commands/annotation/polygon.add_poin
 import { lineDraft } from "$lib/commands/annotation/line.add_point.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 
-export type AnnotationValue = Record<string, unknown> & { category?: string; attributes?: Record<string, unknown> };
+export type AnnotationAttributes = Record<string, unknown>;
 
 export interface PopoverCancelContext {
-  setAnnotationValue: (v: AnnotationValue) => void;
-  setPendingValue: (v: AnnotationValue) => void;
+  setPendingValue: (v: AnnotationAttributes) => void;
+  setPendingCategory: (v: string | undefined) => void;
   clearShapeSelectionArgs: () => void;
   setShowPopOver: (v: boolean) => void;
   selectAnnotation: () => void;
@@ -44,8 +44,8 @@ export function handlePopoverCancel(
   args: [type: string, points: Point[], extraProps?: Record<string, unknown>] | undefined,
   ctx: PopoverCancelContext,
 ): void {
-  ctx.setAnnotationValue({});
   ctx.setPendingValue({});
+  ctx.setPendingCategory(undefined);
   ctx.clearShapeSelectionArgs();
   if (args) {
     const [type, points] = args;

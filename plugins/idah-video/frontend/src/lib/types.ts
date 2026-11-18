@@ -61,10 +61,10 @@ export const NON_DRAWABLE_SHAPE_TYPES = new Set<string>([ENTRY_ROOT, VIDEO_FRAME
 // ─── Video annotation shape ──────────────────────────────────────────────
 
 /**
- * Video-specific annotation shape — always has a frame range and keyframes.
+ * Video-specific annotation shape args — always has a frame range and keyframes.
+ * The shape `type` is stored separately on the record as `shape_type`.
  */
 export interface IVideoAnnotationShape {
-  type: string;
   start: number;
   end: number;
   /** Keyframe selections. */
@@ -76,15 +76,13 @@ export interface IVideoAnnotationShape {
 // ─── Video annotation value ──────────────────────────────────────────────
 
 /**
- * Video annotation value payload (maps to DB `annotation` JSONB column).
+ * Video annotation value payload (maps to DB `category` + `properties` columns).
  */
 export interface IVideoAnnotationValue extends IAnnotationValue {
   /** Category path, e.g. "vehicles/car". */
   category?: string;
-  /** Human-readable label, e.g. "car", "bus". */
-  label?: string;
-  /** Arbitrary attributes for the annotation's properties. */
-  attributes?: Record<string, unknown>;
+  /** Arbitrary properties for the annotation. */
+  properties?: Record<string, unknown>;
 }
 
 // ─── Video annotation record ─────────────────────────────────────────────

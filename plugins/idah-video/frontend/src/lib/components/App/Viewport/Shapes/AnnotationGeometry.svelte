@@ -34,7 +34,7 @@
   let _toolSelection = $derived.by<
     { startSelection: (p: Point, altKey?: boolean) => boolean; endSelection: (p: Point) => void } | undefined
   >(() => {
-    const comp = annotation?.shape?.type === IDAH_VIDEO_BOUNDING_BOX ? _bboxComp : _polyComp;
+    const comp = annotation?.shape_type === IDAH_VIDEO_BOUNDING_BOX ? _bboxComp : _polyComp;
     if (comp?.startSelection && comp?.endSelection) {
       return {
         startSelection: (p: Point, altKey?: boolean) => comp.startSelection(p, altKey),
@@ -52,7 +52,7 @@
 
   /** Expose whether the user is actively editing (dragging/resizing) this annotation. */
   let _isEditing = $derived.by((): boolean => {
-    const comp = annotation?.shape?.type === IDAH_VIDEO_BOUNDING_BOX ? _bboxComp : _polyComp;
+    const comp = annotation?.shape_type === IDAH_VIDEO_BOUNDING_BOX ? _bboxComp : _polyComp;
     return comp?.getIsEditing?.() ?? false;
   });
 
@@ -61,7 +61,7 @@
   }
 </script>
 
-{#if annotation?.shape?.type === IDAH_VIDEO_BOUNDING_BOX}
+{#if annotation?.shape_type === IDAH_VIDEO_BOUNDING_BOX}
   <BBoxShape
     bind:this={_bboxComp}
     {annotation}
@@ -73,7 +73,7 @@
     {onClick}
     {onEditComplete}
   />
-{:else if annotation?.shape?.type === IDAH_VIDEO_POLYGON}
+{:else if annotation?.shape_type === IDAH_VIDEO_POLYGON}
   <PolygonShape
     bind:this={_polyComp}
     {annotation}

@@ -11,6 +11,7 @@
 // resolved through getInterpolatedFrame() rather than read off shape.points.
 // ---------------------------------------------------------------------------
 import { getDriver } from "$lib/state/driver.svelte";
+import type { LabelVisibility } from "$lib/state/ui.svelte";
 import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON, type IVideoAnnotationShape } from "$lib/types";
 import { categoryValueToLabel } from "$lib/utils/annotation";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";
@@ -20,14 +21,29 @@ import { polygonVisualCenter } from "$lib/utils/math/polylabel";
 /** Minimal structural view of an annotation — avoids coupling to the full record type. */
 type LabelAnnotation = {
   id?: string;
-  value?: { category?: string };
-  shape?: { type?: string };
+  category?: string;
+  shape_type?: string;
 };
 
 /** A resolved category label. `unresolved` means the id is not in the label config. */
 export interface AnnotationLabel {
   text: string;
   unresolved: boolean;
+}
+
+/**
+ * Decide whether an annotation label should be rendered.
+ *
+ * Unresolved labels are data errors and stay visible regardless of the user's
+ * category-label visibility setting. Resolved labels use the normal visibility
+ * decision supplied by the caller (always/hover/never plus interaction state).
+ */
+export function isAnnotationLabelVisible(
+  label: AnnotationLabel,
+  visibility: LabelVisibility,
+  normalVisibility: boolean,
+): boolean {
+  return label.unresolved || (visibility !== "never" && normalVisibility);
 }
 
 /** Uppercase the first character, matching categoryValueToLabel's own segment casing. */
@@ -54,7 +70,7 @@ export function annotationLabel(
   annotation: LabelAnnotation,
   getCategory: (categoryId: string) => { id: string; label?: string | null } | null | undefined,
 ): AnnotationLabel | null {
-  const raw = annotation?.value?.category;
+  const raw = annotation?.category;
   if (!raw) return null;
 
   const category = getCategory(raw);
@@ -76,7 +92,7 @@ export function annotationLabel(
 /** Convenience wrapper resolving the category against the driver's label config. */
 export function resolveAnnotationLabel(annotation: LabelAnnotation): AnnotationLabel | null {
   return annotationLabel(annotation, (categoryId: string) => {
-    const config = getDriver().config[annotation?.shape?.type ?? ""];
+    const config = getDriver().config[annotation?.shape_type ?? ""];
     return config?.values?.find((v) => v.id === categoryId) ?? null;
   });
 }
@@ -97,19 +113,19 @@ export function resolveAnnotationLabel(annotation: LabelAnnotation): AnnotationL
  * start/end range, or a keyframe with no points), and for unrecognised shapes.
  */
 export function labelCenterPx(
-  annotation: { shape?: unknown },
+  annotation: { shape_args?: unknown; shape_type?: string },
   w: number,
   h: number,
   frame: number,
 ): Point | null {
-  const shape = annotation?.shape as (IVideoAnnotationShape & { type?: string }) | undefined;
+  const shape = annotation?.shape_args as IVideoAnnotationShape | undefined;
   if (!shape) return null;
 
-  const frameData = getInterpolatedFrame(shape, frame);
+  const frameData = getInterpolatedFrame(shape, frame, true, annotation?.shape_type ?? "");
   const points = (frameData?.points ?? []) as Point[];
   if (points.length === 0) return null;
 
-  switch (shape.type) {
+  switch (annotation?.shape_type) {
     case VIDEO_BOUNDING_BOX: {
       // 4 unrotated AABB corners per keyframe, plus a per-frame angle. Rotation
       // is about the pixel centroid, which leaves the centroid fixed — so the

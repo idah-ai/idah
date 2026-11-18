@@ -4,22 +4,38 @@ class AnnotationsExpo < BaseExpo
   http_path "/annotations"
 
   use_service Annotation::Service
+  use_service annotation_changes: AnnotationChange::Service
 
   desc <<~MD
     Annotations capture labeled data or markups on entries,
     supporting both JSON:API and JSON-RPC interfaces for flexible batch operations.
+
+    NOTE: Deleted (soft-deleted) annotations are returned by default by `index`/`show`.
+    Use the `deleted` filter ("true"/"false") to narrow results explicitly.
   MD
 
   json_api Annotation::Record do
     show
     index do
-      allowed_filters :updated_at__gt
+      allowed_filters :updated_at__gt, :deleted
     end
     create do
       authorized_relationships entry: [:link]
     end
     update
     delete
+  end
+
+  expose on_http(:get, "/:id/versions/:version") do
+    desc "Rebuild an annotation as it was at a past version"
+    input do
+      field :id, String
+      field :version, Integer
+    end
+    output Verse::JsonApi::Util.jsonapi_record(Annotation::Record)
+  end
+  def show_version
+    annotation_changes.rebuild(params[:id], params[:version])
   end
 
   # Offer RPC interface for annotations, less verbose and more convenient for
@@ -38,14 +54,22 @@ class AnnotationsExpo < BaseExpo
   RpcCreateSchema = Verse::Schema.define do
     field(:id, String).default { UUIDv7.generate }
     field(:entry_id, String)
-    field(:dimensions, Hash) # Open Hash
-    field(:annotation, Hash) # Open Hash
+    field(:shape_type, String)
+    field(:shape_args, Hash) # Open Hash
+    field(:category, String) # required
+    field?(:properties, Hash) # Open Hash, optional
     field?(:metadata, Hash) # Open Hash
   end
 
-  # Add the id as a required field for the update method
+  # Add the id as a required field for the update method.
+  # All mutable fields are omittable on update — omitted means "leave
+  # unchanged", never "clear it".
   RpcUpdateSchema = Verse::Schema.define(RpcCreateSchema) do
     field(:id, String)
+    field?(:shape_type, String)
+    field?(:shape_args, Hash)
+    field?(:category, String)
+    field?(:properties, Hash)
   end
 
   expose json_rpc_method(:create) do
@@ -88,6 +112,15 @@ class AnnotationsExpo < BaseExpo
     service.delete(params[:id])
   end
 
+  expose json_rpc_method(:restore) do
+    input do
+      field(:id, String)
+    end
+  end
+  def rpc_restore
+    service.restore(params[:id])
+  end
+
   expose json_rpc_method(:write_shape) do
     input do
       field(:annotation_id, String)
@@ -101,5 +134,19 @@ class AnnotationsExpo < BaseExpo
       params[:key],
       params[:value]
     )
+  end
+
+  expose json_rpc_method(:write_shapes) do
+    desc "Write or delete several annotation_shape entries of one annotation as one change"
+    input do
+      field(:annotation_id, String)
+      field(:entries, Array) do
+        field(:key, String)
+        field?(:value, [Hash, NilClass]) # nil or omitted (delete) or Hash (upsert), as in write_shape
+      end
+    end
+  end
+  def rpc_write_shapes
+    service.write_shapes(params[:annotation_id], params[:entries])
   end
 end

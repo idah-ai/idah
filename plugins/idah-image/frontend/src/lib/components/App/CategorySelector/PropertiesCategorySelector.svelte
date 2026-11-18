@@ -31,7 +31,7 @@
     sidebarWidthRem?: number;
     annotationId?: string;
     annotationValue: IImageAnnotationValue;
-    onEditValue: (annotationValue: IImageAnnotationValue, mode: string) => void;
+    onEditValue: (category: string | undefined, mode: string, properties?: Record<string, unknown>) => void;
     onReSelectCategory?: (reselectedCategoryId: string) => void;
     entryRootAnnotation?: IImageAnnotationRecord;
     onEntryRootChange?: (value: IImageAnnotationValue) => boolean;
@@ -47,7 +47,7 @@
   // tool (viewport.mode). entry:root is edited only through the Tagging tab now,
   // so it is never a target here.
   let selectedShapeType = $derived.by<string | undefined>(() => {
-    if (selAnnotation) return (selAnnotation.shape as { type?: string })?.type;
+    if (selAnnotation) return (selAnnotation as any)?.shape_type;
     return mode;
   });
 
@@ -78,7 +78,7 @@
     const sel = selection.value;
     if (!sel) return;
     if (sel.type === "annotation") {
-      const shapeType = (sel.shape as { type?: string })?.type;
+      const shapeType = (sel as any)?.shape_type;
       if (shapeType === ENTRY_ROOT) {
         sidebarTabs.rightTab = "tagging";
       } else {
@@ -119,7 +119,7 @@
 
   // Functions
   function categorySelection(shape_type: string, categoryId?: string) {
-    if (categoryId) onEditValue({ category: categoryId }, shape_type);
+    if (categoryId) onEditValue(categoryId, shape_type);
   }
 
   /** Clicking a tab deselects synchronously and switches the tab directly, so
@@ -199,7 +199,11 @@
                   onSelectCategory={(selectedCategoryId) =>
                     categorySelection(selectedShapeType ?? "", selectedCategoryId)}
                   onReSelectCategory={(reselectedCategoryId) => onReSelectCategory?.(reselectedCategoryId)}
-                  onEditValue={(value) => value && onEditValue(value, selectedShapeType ?? "")}
+                  onEditValue={(value) => value && onEditValue(
+                    value.category as string | undefined,
+                    selectedShapeType ?? "",
+                    value.properties as Record<string, unknown> | undefined,
+                  )}
                   {disabled}
                 />
               {/key}
@@ -223,7 +227,11 @@
               onSelectCategory={(selectedCategoryId) =>
                 categorySelection(selectedShapeType ?? "", selectedCategoryId)}
               onReSelectCategory={(reselectedCategoryId) => onReSelectCategory?.(reselectedCategoryId)}
-              onEditValue={(value) => value && onEditValue(value, selectedShapeType ?? "")}
+              onEditValue={(value) => value && onEditValue(
+                value.category as string | undefined,
+                selectedShapeType ?? "",
+                value.properties as Record<string, unknown> | undefined,
+              )}
               {disabled}
             />
           {/key}

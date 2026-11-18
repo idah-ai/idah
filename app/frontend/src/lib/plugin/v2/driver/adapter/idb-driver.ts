@@ -14,12 +14,24 @@
 // ---------------------------------------------------------------------------
 
 import type { ListOptions } from "@/data/DataSource";
-import type { IAnnotationsDriverV2, IAnnotationRecord, IFilter, IFilterValue, IRangeOp } from "../../types";
+import type {
+  IAnnotationsDriverV2,
+  IAnnotationRecord,
+  IChangesQuery,
+  IChangesResult,
+  IFilter,
+  IFilterValue,
+  IRangeOp,
+} from "../../types";
 import { uuidv7 } from "uuidv7";
+import { createChangesAdapter, type ChangesAdapter } from "./changes";
 
 // ─── Schema version ───────────────────────────────────────────────────────────
 
-const VERSION = 1;
+export const VERSION = 3;
+
+/** Why the local cache needs a reload (or would, if it were safe). */
+export type ReloadReason = "upgraded" | "blocked";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -38,6 +50,7 @@ export interface ICrudDriver<T extends { id: string }> {
   create(record: T): Promise<T>;
   update(id: string, data: Partial<T>): Promise<void>;
   delete(id: string): Promise<void>;
+  restore(id: string): Promise<void>;
   setShape(annotationId: string, key: string, value: object | null): Promise<void>;
   setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void>;
 }
@@ -57,13 +70,23 @@ const IDB_STORES = [
   },
 ];
 
-const openIdb = (pluginId: string): Promise<IDBDatabase> => {
+const openIdb = (
+  pluginId: string,
+  onReloadRequired: (reason: ReloadReason) => void,
+  onUnblocked?: () => void,
+): Promise<IDBDatabase> => {
   const name = `idahPlugin::${pluginId}`;
   return new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(name, VERSION);
-    req.onsuccess = (e) => resolve((e.target as IDBOpenDBRequest).result);
     req.onerror = (e) => reject(e);
-    req.onblocked = () => console.warn(`[idb-driver] "${name}" upgrade blocked.`);
+    req.onblocked = () => {
+      // A tab still running an older version holds the database open and blocks
+      // this upgrade. Reloading would just block again (the old tab has no
+      // onversionchange, so it never closes), so the caller must NOT reload —
+      // it only warns the user to close the other tabs.
+      console.warn(`[idb-driver] "${name}" upgrade blocked by another tab.`);
+      onReloadRequired("blocked");
+    };
     req.onupgradeneeded = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
       for (const s of IDB_STORES) {
@@ -72,9 +95,56 @@ const openIdb = (pluginId: string): Promise<IDBDatabase> => {
           for (const idx of s.indexes) os.createIndex(idx.name, idx.keyPath);
         }
       }
+      // Version 2: the stored annotation record shape changed (shape_type/
+      // shape_args/category/properties + soft-delete fields). Clear the
+      // annotations store and reset lastUpdatedAt so the sync loop performs a
+      // full resync rather than trying to migrate per-record.
+      if (e.oldVersion < 2) {
+        if (db.objectStoreNames.contains("annotations")) {
+          db.deleteObjectStore("annotations");
+          const os = db.createObjectStore("annotations", { keyPath: ["entryId", "id"] } as IDBObjectStoreParameters);
+          os.createIndex("entryId", "entryId");
+        }
+        if (db.objectStoreNames.contains("entries")) {
+          db.deleteObjectStore("entries");
+          const os = db.createObjectStore("entries", { keyPath: "entryId" } as IDBObjectStoreParameters);
+          os.createIndex("lastVisitedAt", "lastVisitedAt");
+        }
+      }
+      // Version 3 keeps tombstones in the cache (soft-deleted annotations stay
+      // visible to the History panel and note markers), but older caches threw
+      // them away. Clear both stores through the upgrade transaction and reset
+      // lastUpdatedAt so the sync loop performs a full resync and re-downloads
+      // the deleted records.
+      if (e.oldVersion < 3) {
+        clearStoresThroughUpgrade(db);
+      }
+    };
+    // Close the database when another tab upgrades it, so this tab does not
+    // block the upgrade. The caller reloads to pick up the new schema, waiting
+    // for queued backend writes to drain first.
+    req.onsuccess = (e) => {
+      const db = (e.target as IDBOpenDBRequest).result;
+      db.onversionchange = () => {
+        db.close();
+        onReloadRequired("upgraded");
+      };
+      onUnblocked?.();
+      resolve(db);
     };
   });
 };
+
+/** Delete and recreate the two stores inside an upgrade transaction. */
+function clearStoresThroughUpgrade(db: IDBDatabase): void {
+  for (const name of ["annotations", "entries"]) {
+    if (db.objectStoreNames.contains(name)) db.deleteObjectStore(name);
+  }
+  for (const s of IDB_STORES) {
+    const os = db.createObjectStore(s.name, s.options);
+    for (const idx of s.indexes) os.createIndex(idx.name, idx.keyPath);
+  }
+}
 
 const idbFetch = <T extends { id: string }>(
   db: IDBDatabase,
@@ -97,9 +167,22 @@ const idbFetch = <T extends { id: string }>(
         return;
       }
       const rec = c.value;
+      const isTombstone = !!rec.deleted_at;
+
+      const deletedMode = filter?.deleted;
+      if (deletedMode === "true" && !isTombstone) {
+        c.continue();
+        return;
+      }
+      if (deletedMode !== "true" && deletedMode !== "all" && isTombstone) {
+        c.continue();
+        return;
+      }
+
       let matches = true;
       if (filter) {
         for (const [field, expected] of Object.entries(filter)) {
+          if (field === "deleted") continue;
           const val =
             virtualFields && virtualFields.has(field) ? virtualFields.get(field)!(rec) : resolvePath(rec, field);
           if (!matchesFilter(val, expected)) {
@@ -135,19 +218,22 @@ const idbUpsertBatch = <T extends { id: string }>(db: IDBDatabase, entryId: stri
 
 const idbCreate = <T extends { id: string }>(db: IDBDatabase, entryId: string, record: T): Promise<T> =>
   new Promise((resolve, reject) => {
-    const req = db
-      .transaction(["annotations"], "readwrite")
-      .objectStore("annotations")
-      .add({ ...record, entryId });
-    req.onsuccess = () => resolve(record);
-    req.onerror = reject;
-  });
-
-const idbDelete = (db: IDBDatabase, entryId: string, id: string): Promise<void> =>
-  new Promise((resolve, reject) => {
-    const req = db.transaction(["annotations"], "readwrite").objectStore("annotations").delete([entryId, id]);
-    req.onsuccess = () => resolve();
-    req.onerror = reject;
+    const tx = db.transaction(["annotations"], "readwrite");
+    const os = tx.objectStore("annotations");
+    const getReq = os.get([entryId, record.id]);
+    getReq.onsuccess = () => {
+      if (getReq.result) {
+        // A create over an existing id is a bug (callers only pass fresh ids,
+        // and add/split/paste call restore on redo). Name the tombstone so the
+        // error is actionable instead of a bare ConstraintError.
+        reject(new Error(`Cannot create annotation: id ${record.id} already exists (it may be a deleted annotation)`));
+        return;
+      }
+      const addReq = os.add({ ...record, entryId });
+      addReq.onsuccess = () => resolve(record);
+      addReq.onerror = () => reject(addReq.error);
+    };
+    getReq.onerror = () => reject(getReq.error);
   });
 
 const idbGetLastUpdated = (db: IDBDatabase, entryId: string): Promise<Date> =>
@@ -254,6 +340,25 @@ export interface IndexedDbAnnotationsDriverConfig<
   pluginId: string;
   backend: ICrudDriver<IAnnotationRecord<Shape, Annotation>>;
   enqueue: (p: Promise<unknown>) => void;
+  /**
+   * When true, the editor is read-only (a reload is pending and the DB is
+   * closed). Write methods reject before touching the DB or the backend.
+   */
+  isReadOnly?: () => boolean;
+  changes?: ChangesAdapter;
+  /**
+   * Invoked when the local cache must be reloaded because another tab upgraded
+   * the database (or blocked this tab's upgrade). The driver closes the DB and
+   * defers the reload to the caller, so queued backend writes are not lost.
+   *
+   * - `"upgraded"`: another tab upgraded the DB; the caller should reload once
+   *   queued backend writes drain.
+   * - `"blocked"`: an older tab holds the DB open and blocks this upgrade;
+   *   reloading would loop forever, so the caller must only warn the user.
+   */
+  onReloadRequired?: (reason: ReloadReason) => void;
+  /** Invoked when a previously-blocked open succeeds (e.g. to dismiss a notice). */
+  onUnblocked?: () => void;
 }
 
 // ─── Internal type ────────────────────────────────────────────────────────────
@@ -279,17 +384,76 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
   const { entryId, backend, enqueue } = config;
 
+  const assertWritable = () => {
+    if (config.isReadOnly?.()) {
+      throw new Error("Editor is read-only while a reload is pending. Reload to continue.");
+    }
+  };
+
   let dbPromise: Promise<IDBDatabase> | null = null;
   const getDb = () => {
-    if (!dbPromise) dbPromise = openIdb(config.pluginId);
+    if (!dbPromise) {
+      dbPromise = openIdb(
+        config.pluginId,
+        (reason) => config.onReloadRequired?.(reason),
+        () => config.onUnblocked?.(),
+      );
+    }
     return dbPromise;
   };
 
   const virtualFields = new Map<string, (ann: IAnnotationRecord<Shape, Annotation>) => unknown>();
 
-  let synced = false;
+  const changesAdapter = config.changes ?? createChangesAdapter(entryId);
+
+  let syncPromise: Promise<void> | null = null;
   let purgeScheduled = false;
   let visitMarked = false;
+
+  // Run the initial sync loop exactly once, sharing the same promise across
+  // concurrent fetch() calls so the backend is not listed twice when they
+  // overlap. On failure the promise is cleared so a later fetch() can retry.
+  const syncOnce = async (db: IDBDatabase) => {
+    if (!syncPromise) {
+      syncPromise = (async () => {
+        const lastUpdated = await idbGetLastUpdated(db, entryId);
+        let currentLastUpdatedAt = lastUpdated;
+        let page = 1,
+          hasMore = true;
+        while (hasMore) {
+          const response = await backend.list({
+            filters: { entry_id: entryId, updated_at__gt: lastUpdated.toISOString() },
+            // verse-sequel applies only the last sort key (see
+            // AnnotationChange::Service::DEFAULT_SORT), so this listing is
+            // ordered by `id` alone. That is still a stable order for offset
+            // paging.
+            sort: ["updated_at", "id"],
+            pagination: {
+              page,
+              itemsPerPage: SYNC_PAGE_SIZE,
+            },
+          });
+          response.data.forEach((a) => {
+            const updatedAt = new Date(a.updated_at || 0);
+            if (updatedAt > currentLastUpdatedAt) currentLastUpdatedAt = updatedAt;
+          });
+          // Upsert every record we receive, deleted or not, so tombstones stay
+          // in the cache (the History panel and note markers read them). The
+          // backend returns deleted records by default, so this adds no extra
+          // network traffic.
+          await idbUpsertBatch(db, entryId, response.data);
+          hasMore = response.data.length === SYNC_PAGE_SIZE;
+          page++;
+        }
+        await idbSetLastUpdated(db, entryId, currentLastUpdatedAt);
+      })().catch((err) => {
+        // A failed sync must be retryable by a later fetch().
+        syncPromise = null;
+        throw err;
+      });
+    }
+    await syncPromise;
+  };
 
   return {
     registerField(name, fn) {
@@ -305,8 +469,11 @@ export const IdbBackedAnnotationsDriverAdapter = <
         create: driver.create.bind(driver),
         update: driver.update.bind(driver),
         delete: driver.delete.bind(driver),
+        restore: driver.restore.bind(driver),
         setShape: driver.setShape.bind(driver),
         setShapes: driver.setShapes.bind(driver),
+        changes: driver.changes.bind(driver),
+        version: driver.version.bind(driver),
       };
     },
 
@@ -335,54 +502,50 @@ export const IdbBackedAnnotationsDriverAdapter = <
         }
       }
 
-      if (!synced) {
-        const lastUpdated = await idbGetLastUpdated(db, entryId);
-        let currentLastUpdatedAt = lastUpdated;
-        let page = 1,
-          hasMore = true;
-        while (hasMore) {
-          const response = await backend.list({
-            filters: { entry_id: entryId, updated_at__gt: lastUpdated.toISOString() },
-            // Sort by updated_at with `id` as a unique tiebreaker. Without the
-            // tiebreaker, records sharing an updated_at order inconsistently
-            // across the paginated requests, so ~1 record slips through each
-            // page boundary and never gets synced (missing annotations).
-            sort: ["updated_at", "id"],
-            pagination: {
-              page,
-              itemsPerPage: SYNC_PAGE_SIZE,
-            },
-          });
-          response.data.forEach((a) => {
-            const updatedAt = new Date(a.updated_at || 0);
-            if (updatedAt > currentLastUpdatedAt) currentLastUpdatedAt = updatedAt;
-          });
-          await idbUpsertBatch(db, entryId, response.data);
-          hasMore = response.data.length === SYNC_PAGE_SIZE;
-          page++;
-        }
-        await idbSetLastUpdated(db, entryId, currentLastUpdatedAt);
-        synced = true;
-      }
+      await syncOnce(db);
 
       return await idbFetch<IAnnotationRecord<Shape, Annotation>>(db, entryId, virtualFields, filter);
     },
 
     async update(id, data): Promise<void> {
+      assertWritable();
       const db = await getDb();
       const existing = await idbGet<IAnnotationRecord<Shape, Annotation>>(db, entryId, id);
       if (!existing) throw new Error(`Annotation not found: ${id}`);
+      if (existing.deleted_at) throw new Error(`Cannot write to a deleted annotation: ${id}`);
       await idbUpsertBatch(db, entryId, [{ ...existing, ...data }]);
       enqueue(backend.update(id, data));
     },
 
     async delete(id): Promise<void> {
+      assertWritable();
       const db = await getDb();
-      await idbDelete(db, entryId, id);
+      // Write a tombstone locally instead of removing the record, so the
+      // History panel and note markers can still read the deleted annotation.
+      const existing = await idbGet<IAnnotationRecord<Shape, Annotation>>(db, entryId, id);
+      if (existing) {
+        await idbUpsertBatch(db, entryId, [
+          { ...existing, deleted_at: new Date(), deleted_by_id: existing.deleted_by_id ?? null },
+        ]);
+      }
       enqueue(backend.delete(id));
     },
 
+    async restore(id: string): Promise<void> {
+      assertWritable();
+      const db = await getDb();
+      // Local-first: clear the tombstone immediately so undo does not hang
+      // offline. The backend restore is enqueued like every other write; see
+      // the IAnnotationsDriverV2.restore contract.
+      const existing = await idbGet<IAnnotationRecord<Shape, Annotation>>(db, entryId, id);
+      if (existing) {
+        await idbUpsertBatch(db, entryId, [{ ...existing, deleted_at: null, deleted_by_id: null }]);
+      }
+      enqueue(backend.restore(id));
+    },
+
     async create(data): Promise<IAnnotationRecord<Shape, Annotation>> {
+      assertWritable();
       const db = await getDb();
       const record = { ...data, id: data.id ?? uuidv7() } as IAnnotationRecord<Shape, Annotation>;
       await idbCreate(db, entryId, record);
@@ -391,12 +554,15 @@ export const IdbBackedAnnotationsDriverAdapter = <
     },
 
     async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
+      assertWritable();
       // Store tiles directly in the annotation's shape field in the main
       // annotations store (not in a separate annotation_shapes store).
       // This mirrors how the backend returns annotations with tiles merged
       // into `dimensions`, and how data.svelte.ts manages the in-memory
       // shape. No separate merge step needed.
       const db = await getDb();
+      const existing = await idbGet<IAnnotationRecord<Shape, Annotation>>(db, entryId, annotationId);
+      if (existing?.deleted_at) throw new Error(`Cannot write shape to a deleted annotation: ${annotationId}`);
       const tx = db.transaction(["annotations"], "readwrite");
       const store = tx.objectStore("annotations");
 
@@ -404,13 +570,13 @@ export const IdbBackedAnnotationsDriverAdapter = <
       getReq.onsuccess = () => {
         const record = getReq.result;
         if (record) {
-          const shape = { ...(record.shape as Record<string, unknown>) };
+          const shape = { ...(record.shape_args as Record<string, unknown>) };
           if (value === null) {
             delete shape[key];
           } else {
             shape[key] = value;
           }
-          store.put({ ...record, entryId, shape, updated_at: new Date().toISOString() });
+          store.put({ ...record, entryId, shape_args: shape, updated_at: new Date().toISOString() });
         }
       };
 
@@ -426,7 +592,10 @@ export const IdbBackedAnnotationsDriverAdapter = <
 
     async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
       if (entries.length === 0) return;
+      assertWritable();
       const db = await getDb();
+      const existing = await idbGet<IAnnotationRecord<Shape, Annotation>>(db, entryId, annotationId);
+      if (existing?.deleted_at) throw new Error(`Cannot write shape to a deleted annotation: ${annotationId}`);
       const tx = db.transaction(["annotations"], "readwrite");
       const store = tx.objectStore("annotations");
 
@@ -434,7 +603,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
       getReq.onsuccess = () => {
         const record = getReq.result;
         if (record) {
-          const shape = { ...(record.shape as Record<string, unknown>) };
+          const shape = { ...(record.shape_args as Record<string, unknown>) };
           for (const { key, value } of entries) {
             if (value === null) {
               delete shape[key];
@@ -442,7 +611,7 @@ export const IdbBackedAnnotationsDriverAdapter = <
               shape[key] = value;
             }
           }
-          store.put({ ...record, entryId, shape, updated_at: new Date().toISOString() });
+          store.put({ ...record, entryId, shape_args: shape, updated_at: new Date().toISOString() });
         }
       };
 
@@ -452,10 +621,19 @@ export const IdbBackedAnnotationsDriverAdapter = <
         tx.onabort = () => reject(tx.error ?? new DOMException("Transaction aborted", "AbortError"));
       });
 
-      // Enqueue individual backend syncs
-      for (const { key, value } of entries) {
-        enqueue(backend.setShape(annotationId, key, value));
-      }
+      // Enqueue one backend write_shapes call so a stroke is recorded on the
+      // server as one change (one version, one history row).
+      enqueue(backend.setShapes(annotationId, entries));
+    },
+
+    // ── Annotation change history (delegated to the shared adapter) ──
+
+    changes(query?: IChangesQuery): Promise<IChangesResult> {
+      return changesAdapter.changes(query);
+    },
+
+    version(id: string, version: number): Promise<IAnnotationRecord<Shape, Annotation>> {
+      return changesAdapter.version(id, version) as unknown as Promise<IAnnotationRecord<Shape, Annotation>>;
     },
   };
 };

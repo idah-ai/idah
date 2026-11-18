@@ -64,7 +64,7 @@
     return _toolSelection;
   }
 
-  let shapeType = $derived(annotation?.shape?.type);
+  let shapeType = $derived(annotation?.shape_type);
   let Comp = $derived(shapeType ? (SHAPE_COMPONENTS[shapeType] as any) : undefined);
 
   export function getIsEditing(): boolean {

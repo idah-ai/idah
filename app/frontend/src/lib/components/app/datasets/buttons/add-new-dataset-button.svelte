@@ -2,7 +2,7 @@
   import { page } from "$app/state";
   import { PlusIcon } from "@lucide/svelte";
 
-  import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
+  import DatasetFormModal from "@/components/app/datasets/overlays/DatasetFormModal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Can from "@/security/can.svelte";
 
@@ -16,19 +16,7 @@
   }
 </script>
 
-<Can
-  action="create"
-  resource="dataset:datasets"
-  scopes={[
-    "as_org_owner",
-    {
-      as_user: {
-        projectId,
-        projectMemberRoles: ["project_owner"],
-      },
-    },
-  ]}
->
+<Can action="create" resource="dataset:datasets" {projectId} minRole="project_owner">
   <Button onclick={openNewDatasetDialog}>
     <PlusIcon />
     New Dataset
