@@ -54,9 +54,6 @@ class EntriesExpo < BaseExpo
     show
     index do
       allowed_filters :id__in,
-                      :id__gt,
-                      :completed_at__gte,
-                      :completed_at__lte,
                       :resource__match,
                       :status__in,
                       :priority__in,
