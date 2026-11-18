@@ -60,10 +60,13 @@
                 <span class={`size-2 shrink-0 rounded-sm ${group.bgColor}`} aria-hidden="true"></span>
                 {group.label}
               </Text>
-              <Text size="h2" weight="semibold">{group.value.toLocaleString()}</Text>
-              <Text size="xs" class="text-muted-foreground">
-                {distribution.total ? ((group.value / distribution.total) * 100).toFixed(2) : "0.00"}% of entries
-              </Text>
+
+              <div class="flex items-baseline gap-1 whitespace-nowrap">
+                <Text size="h2" weight="semibold">{group.value.toLocaleString()}</Text>
+                <Text size="xs" class="text-muted-foreground">
+                  {distribution.total ? ((group.value / distribution.total) * 100).toFixed(2) : "0.00"}%
+                </Text>
+              </div>
             </div>
           {/each}
         </div>
