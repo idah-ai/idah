@@ -10,7 +10,11 @@ import { EntryRecord } from "@/data/model/dataset/entries/record";
 import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
 import type { DataSourceOptions } from "@/data/DataSource";
-import { type DatasetStatusBadgeProps, datasetsStatuses } from "@/data/model/dataset/datasets/constants";
+import {
+  type DatasetStatusBadgeProps,
+  type DatasetDeliveryBreakdown,
+  datasetsStatuses,
+} from "@/data/model/dataset/datasets/constants";
 import type { RecordResponse } from "@/data/model/types";
 
 import type { Hash } from "@/utils/types";
@@ -72,6 +76,7 @@ RecordFactory.registerTypes(DatasetRecord);
 export const datasetBasePath: string = `/api/v1/dataset/datasets`;
 
 interface DatasetsCustomMethods {
+  deliveryBreakdown(projectId: string, datasetIds: string[], day: string): Promise<DatasetDeliveryBreakdown>;
   duplicate(id: string, payload?: Hash, options?: DataSourceOptions): Promise<RecordResponse<DatasetRecord>>;
   updateFeedbackConfiguration(params: {
     id: string;
@@ -84,6 +89,23 @@ export const datasetsBackendDataSource = createBackendDataSource<DatasetRecord, 
   DatasetRecord,
   datasetBasePath,
   {
+    async deliveryBreakdown(projectId: string, datasetIds: string[], day: string): Promise<DatasetDeliveryBreakdown> {
+      const response = await fetch(
+        resourcePath(datasetBasePath, "delivery_breakdown", {
+          filter: { project_id: projectId, ...(datasetIds.length ? { dataset_id: datasetIds } : {}) },
+          day,
+        }),
+      );
+      const body = await response.json().catch((reason) => {
+        if (!response.ok) throw parseSingleElementError({ status: response.status, errors: [] });
+        throw reason;
+      });
+      if (!response.ok || body?.errors) {
+        throw parseSingleElementError({ status: response.status, errors: body?.errors ?? [] });
+      }
+      if (!body?.meta) throw new Error("Delivery breakdown unavailable.");
+      return body.meta;
+    },
     async duplicate(id: string, payload?: Hash, options?: DataSourceOptions): Promise<RecordResponse<DatasetRecord>> {
       // Cache Management
       const cacheIndexKey = resourcePath(datasetBasePath, null, undefined);
