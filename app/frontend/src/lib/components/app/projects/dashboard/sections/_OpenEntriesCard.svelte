@@ -41,7 +41,7 @@
   }
 </script>
 
-<Card.Root>
+<Card.Root class="gap-2">
   <Card.Header>
     <Card.Title>Open entries</Card.Title>
   </Card.Header>
