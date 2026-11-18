@@ -18,7 +18,7 @@
 <MultipleSelectDatasourceField
   name="dashboard-datasets"
   label="Datasets"
-  class="w-64 max-w-full min-w-0"
+  class="w-full max-w-full min-w-0 lg:w-64"
   dataSource={datasetsBackendDataSource}
   displayKey="name"
   values={ids}

@@ -174,3 +174,65 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
     end
   end
 end
+
+RSpec.describe DatasetsExpo, type: :exposition, database: true, as: :admin do
+  let(:system_context) { Verse::Auth::Context[:system] }
+  let(:datasets) { Dataset::Repository.new(system_context) }
+  let!(:project_id) do
+    Project::Repository.new(system_context).create(
+      name: "Dataset pagination", organization_id: 1, created_by_email: "admin@example.com"
+    )
+  end
+
+  describe "offset-aware Dataset pagination" do
+    [999, 1000, 1001, 2005].each do |total|
+      it "keeps metadata and rows correct for #{total} Datasets" do
+        ids = Array.new(total) { UUIDv7.generate }.sort
+        datasets.client do |db|
+          db[:datasets].multi_insert(
+            ids.map do |id|
+              { id: id, project_id: project_id, name: "Dataset", modality: "video",
+                workflow_configuration: Sequel.pg_jsonb({}), labeling_configuration: Sequel.pg_jsonb({}) }
+            end
+          )
+        end
+        final = (total / 10.0).ceil
+        [99, 100, 101, final, final + 1].uniq.each do |page|
+          get "/datasets?#{Rack::Utils.build_nested_query(
+            filter: { project_id: project_id },
+            sort: "id",
+            page: { number: page, size: 10 },
+            count: true,
+            fields: { Resource::Dataset::Datasets => ["id"] }
+          )}"
+          expect(last_response.status).to eq(200), last_response.body
+          body = JSON.parse(last_response.body)
+          offset = (page - 1) * 10
+          remaining = [total - offset, 0].max
+          expect(body.fetch("meta")).to include("count" => offset + [remaining, 1000].min, "more" => remaining >= 1000)
+          expect(body.fetch("data").map { |record| record["id"] }).to eq(ids.drop(offset).take(10))
+        end
+      end
+    end
+
+    it "returns recoverable metadata after records disappear from a later page" do
+      ids = Array.new(11) { UUIDv7.generate }.sort
+      datasets.client do |db|
+        db[:datasets].multi_insert(
+          ids.map { |id|
+            { id: id, project_id: project_id, name: "Dataset", modality: "video",
+              workflow_configuration: Sequel.pg_jsonb({}), labeling_configuration: Sequel.pg_jsonb({}) }
+          }
+        )
+        db[:datasets].where(id: ids.last).delete
+      end
+      get "/datasets?#{Rack::Utils.build_nested_query(
+        filter: { project_id: project_id }, page: { number: 2, size: 10 }, count: true
+      )}"
+      expect(last_response.status).to eq(200), last_response.body
+      body = JSON.parse(last_response.body)
+      expect(body.fetch("data")).to be_empty
+      expect(body.fetch("meta")).to include("count" => 10, "more" => false)
+    end
+  end
+end

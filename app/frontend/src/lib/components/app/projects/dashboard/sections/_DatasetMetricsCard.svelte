@@ -29,7 +29,7 @@
       {/snippet}
     </ResponseBlock>
   {:else}
-    <Card.Content class="grid p-0 md:grid-cols-4">
+    <Card.Content class="grid p-0 lg:grid-cols-4">
       <TotalEntriesMetric />
       <OverallProgressMetric />
       <OpenEntriesMetric />

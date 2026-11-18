@@ -9,7 +9,7 @@
   let { children }: WithElementRef<HTMLAttributes<HTMLElement>> = $props();
 </script>
 
-<SidebarInset>
+<SidebarInset class="min-w-0">
   <div class="@container/main relative flex flex-1 flex-col gap-4 p-4 pt-0">
     {@render children?.()}
 

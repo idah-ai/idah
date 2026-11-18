@@ -13,8 +13,8 @@
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
 </script>
 
-<section class="space-y-2" aria-label="Dashboard Dataset selection">
-  <div class="flex flex-wrap items-end gap-4">
+<section class="flex gap-2" aria-label="Dashboard Dataset selection">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-end">
     <DatasetSelector
       projectId={controller.projectId}
       ids={controller.selectedDatasetIds}
