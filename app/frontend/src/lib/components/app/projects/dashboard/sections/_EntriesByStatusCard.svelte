@@ -17,6 +17,16 @@
 <Card.Root>
   <Card.Header>
     <Card.Title>Entries by status</Card.Title>
+    <Text size="xs" class="text-muted-foreground min-w-0 break-words">
+      {#if controller.focused}
+        {controller.focused.name || "This dataset"}
+      {:else if controller.selectedDatasetIds.length}
+        {controller.selectedDatasetIds.length} selected dataset{controller.selectedDatasetIds.length === 1 ? "" : "s"}
+      {:else}
+        All datasets
+      {/if}
+      · {distribution ? distribution.total.toLocaleString() : "—"} entries
+    </Text>
   </Card.Header>
 
   <Card.Content>
