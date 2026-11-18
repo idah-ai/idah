@@ -21,10 +21,6 @@ export const ROLE_MASKS: Record<string, string> = {
   project_owner: "1.30.0",
 };
 
-export const PROJECT_ROLES = ["annotator", "reviewer", "project_owner"] as const;
-
-export const ACCOUNT_ROLES = ["user", "org_owner", "admin"] as const;
-
 /**
  * The numeric rank of an account or project role. Masks are compared part by
  * part (major, minor, patch) like the backend `SemanticVersion`; the packed

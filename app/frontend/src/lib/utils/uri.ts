@@ -1,13 +1,6 @@
 import type { Filters } from "../data/filtering";
 import type { Hash } from "./types";
 
-export const snakeCase = (text: string): string => {
-  return text
-    .split(/ |\B(?=[A-Z])/)
-    .map((word: string) => word.toLowerCase())
-    .join("_");
-};
-
 export const encodeUri = (obj: Hash, parentKey: string | null = null): string => {
   const queryArray = [];
 
