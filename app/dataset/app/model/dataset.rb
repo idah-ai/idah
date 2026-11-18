@@ -74,15 +74,24 @@ module Dataset
     query
     def delivery_breakdown(project_id:, day:, dataset_ids: nil)
       with_db_mode :r do
+        # Non-completed Datasets in scope that have a delivery date.
         eligible = scoped(:read).where(project_id: project_id).exclude(status: "completed").exclude(delivery_date: nil)
         eligible = eligible.where(id: dataset_ids) if dataset_ids
+
+        # delivery_counts CTE: one row per delivery date with its Dataset count.
         grouped = eligible.select(
           :delivery_date,
           Sequel.function(:count, Sequel.lit("*")).as(:count)
         ).group(:delivery_date)
         counts = table.db[:delivery_counts]
+
+        # Earliest delivery date after tomorrow, for the "due in N days" bucket.
         nearest = counts.where { delivery_date > day + 1 }.order(:delivery_date).limit(1)
+
+        # SUM(count) FILTER (WHERE condition), or zero when nothing matches.
         sum = ->(condition) { Sequel.function(:coalesce, Sequel.function(:sum, :count).filter(condition), 0) }
+
+        # Read all delivery categories and the nearest upcoming count from one snapshot.
         row = counts.with(:delivery_counts, grouped).select(
           sum.call(Sequel[:delivery_date] < day).as(:overdue),
           sum.call(delivery_date: day).as(:due_today),

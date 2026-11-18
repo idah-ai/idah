@@ -98,11 +98,16 @@ module Entry
     query
     def completion_history(project_id:, from:, to:, timezone:, dataset_ids: nil)
       with_db_mode :r do
+        # Currently completed Entries with known completion timestamps in the authorized scope.
         collection = scoped(:read).where(project_id: project_id, status: "completed").exclude(completed_at: nil)
         collection = collection.where(dataset_id: dataset_ids) if dataset_ids
-        # completed_at is UTC wall-clock timestamp without time zone. Keep predicates on the raw column.
+
+        # Convert inclusive local dates to half-open UTC bounds for the raw completed_at index.
+        # completed_at stores UTC wall-clock values as timestamp without time zone.
         lower = Sequel.lit("(?::date::timestamp AT TIME ZONE ?) AT TIME ZONE 'UTC'", from, timezone)
         upper = Sequel.lit("((?::date + 1)::timestamp AT TIME ZONE ?) AT TIME ZONE 'UTC'", to, timezone)
+
+        # Interpret stored timestamps as UTC, then group by the viewer's local calendar date.
         day = Sequel.lit("((entries.completed_at AT TIME ZONE 'UTC') AT TIME ZONE ?)::date", timezone)
         collection.where { completed_at >= lower }.where { completed_at < upper }
                   .select(day.as(:day), Sequel.function(:count, Sequel.lit("*")).as(:count))
