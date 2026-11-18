@@ -95,6 +95,21 @@ module Entry
       end
     end
 
+    query
+    def completion_history(project_id:, from:, to:, timezone:, dataset_ids: nil)
+      with_db_mode :r do
+        collection = scoped(:read).where(project_id: project_id, status: "completed").exclude(completed_at: nil)
+        collection = collection.where(dataset_id: dataset_ids) if dataset_ids
+        # completed_at is UTC wall-clock timestamp without time zone. Keep predicates on the raw column.
+        lower = Sequel.lit("(?::date::timestamp AT TIME ZONE ?) AT TIME ZONE 'UTC'", from, timezone)
+        upper = Sequel.lit("((?::date + 1)::timestamp AT TIME ZONE ?) AT TIME ZONE 'UTC'", to, timezone)
+        day = Sequel.lit("((entries.completed_at AT TIME ZONE 'UTC') AT TIME ZONE ?)::date", timezone)
+        collection.where { completed_at >= lower }.where { completed_at < upper }
+                  .select(day.as(:day), Sequel.function(:count, Sequel.lit("*")).as(:count))
+                  .group(day).order(day).all.to_h { |row| [row[:day].iso8601, row[:count]] }
+      end
+    end
+
     custom_filter :completed_at__gte do |collection, value|
       collection.where(Sequel[:entries][:completed_at] >= completion_filter_time(value))
     end

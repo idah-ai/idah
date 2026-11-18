@@ -236,3 +236,155 @@ RSpec.describe DatasetsExpo, type: :exposition, database: true, as: :admin do
     end
   end
 end
+
+RSpec.describe DatasetsExpo, type: :exposition, database: true, as: :admin do
+  let(:system_context) { Verse::Auth::Context[:system] }
+  let(:datasets) { Dataset::Repository.new(system_context) }
+  let!(:project_id) do
+    Project::Repository.new(system_context).create(
+      name: "Delivery breakdown",
+      organization_id: 1,
+      created_by_email: "admin@example.com"
+    )
+  end
+
+  def delivery_dataset(date, status: "pending", project: project_id)
+    datasets.create(
+      project_id: project,
+      modality: "video",
+      labels: [],
+      labeling_configuration: {},
+      workflow_configuration: {},
+      delivery_date: date,
+      status: status
+    )
+  end
+
+  def read_breakdown(day: "2026-11-17", ids: nil, project: project_id)
+    filter = { project_id: project }
+    filter[:dataset_id] = ids if ids
+    get "/datasets/delivery_breakdown?#{Rack::Utils.build_nested_query(filter: filter, day: day)}"
+    JSON.parse(last_response.body)
+  end
+
+  describe "GET /datasets/delivery_breakdown" do
+    it "counts disjoint categories and only the nearest upcoming date including ties" do
+      ["2026-11-16", "2026-11-17", "2026-11-18", "2026-11-20", "2026-11-20", "2026-11-25", nil].each do |date|
+        delivery_dataset(date)
+      end
+      delivery_dataset("2026-11-16", status: "completed")
+      expect(read_breakdown).to eq(
+        "meta" => { "overdue" => 1, "due_today" => 1, "due_tomorrow" => 1,
+                    "upcoming" => { "date" => "2026-11-20", "count" => 2 } }
+      )
+      expect(last_response.status).to eq(200), last_response.body
+    end
+
+    it "returns exact counts above 1000 without list pagination" do
+      datasets.client do |db|
+        db[:datasets].multi_insert(
+          Array.new(1001) do
+            { id: UUIDv7.generate, project_id: project_id, modality: "video", labeling_configuration: "{}",
+              workflow_configuration: "{}", delivery_date: Date.new(2026, 11, 16) }
+          end
+        )
+      end
+      expect(read_breakdown.dig("meta", "overdue")).to eq(1001)
+      expect(last_response.status).to eq(200)
+    end
+
+    it "supports selected and single-Dataset scopes and uses each request's local day" do
+      today = delivery_dataset("2026-11-17")
+      tomorrow = delivery_dataset("2026-11-18")
+      delivery_dataset("2026-11-16")
+      expect(read_breakdown(ids: [today]).fetch("meta")).to include(
+        "overdue" => 0,
+        "due_today" => 1,
+        "due_tomorrow" => 0
+      )
+      expect(read_breakdown(ids: [today, tomorrow]).fetch("meta")).to include("due_today" => 1, "due_tomorrow" => 1)
+      expect(read_breakdown(day: "2026-11-18", ids: [today, tomorrow]).fetch("meta"))
+        .to include("overdue" => 1, "due_today" => 1, "due_tomorrow" => 0)
+    end
+
+    it "handles leap/year boundaries and no-date/completed Datasets" do
+      delivery_dataset("2024-02-29")
+      delivery_dataset(nil)
+      delivery_dataset("2024-02-28", status: "completed")
+      expect(read_breakdown(day: "2024-02-28").dig("meta", "due_tomorrow")).to eq(1)
+      delivery_dataset("2027-01-01")
+      expect(read_breakdown(day: "2026-12-31").dig("meta", "due_tomorrow")).to eq(1)
+    end
+
+    it "returns zeros and no upcoming date for an empty scope" do
+      expect(read_breakdown.fetch("meta")).to eq(
+        "overdue" => 0,
+        "due_today" => 0,
+        "due_tomorrow" => 0,
+        "upcoming" => nil
+      )
+    end
+
+    ["invalid", "2026-2-1", "2026-02-30", "2026-11-17T00:00:00Z"].each do |day|
+      it "rejects invalid reporting date #{day}" do
+        read_breakdown(day: day)
+        expect(last_response.status).to eq(422)
+      end
+    end
+
+    it "rejects cross-project Dataset IDs" do
+      foreign = Project::Repository.new(system_context).create(
+        name: "Foreign",
+        organization_id: 2,
+        created_by_email: "other@example.com"
+      )
+      id = delivery_dataset("2026-11-17", project: foreign)
+      read_breakdown(ids: [id])
+      expect(last_response.status).to eq(422)
+    end
+
+    it "requires Project Owner membership", as: :project_owner do
+      read_breakdown
+      expect(last_response.status).to be_between(403, 404)
+      ProjectMember::Repository.new(system_context).create(
+        project_id: project_id,
+        account_id: 3,
+        role: "project_owner",
+        email: "owner@example.com",
+        invited_by_id: 1
+      )
+      read_breakdown
+      expect(last_response.status).to eq(200)
+    end
+
+    it "does not expose another organization's Datasets", as: :org_owner do
+      foreign = Project::Repository.new(system_context).create(
+        name: "Foreign",
+        organization_id: 2,
+        created_by_email: "other@example.com"
+      )
+      read_breakdown(project: foreign)
+      expect(last_response.status).to be_between(403, 404)
+    end
+
+    it "uses one aggregate snapshot rather than a nearest-date lookup followed by a count" do
+      id = delivery_dataset("2026-11-20")
+      queries = []
+      logger = Object.new
+      logger.define_singleton_method(:info) { |sql|
+        queries << sql if sql.include?("WITH delivery_counts") || sql.include?('WITH "delivery_counts"')
+      }
+      datasets.client do |db|
+        db.loggers << logger
+        begin
+          expect(read_breakdown.dig("meta", "upcoming")).to eq("date" => "2026-11-20", "count" => 1)
+        ensure
+          db.loggers.delete(logger)
+        end
+      end
+      expect(queries.length).to eq(1)
+      datasets.update!(id, { delivery_date: Date.new(2026, 11, 21) })
+      expect(read_breakdown.dig("meta", "upcoming")).to eq("date" => "2026-11-21", "count" => 1)
+    end
+  end
+end

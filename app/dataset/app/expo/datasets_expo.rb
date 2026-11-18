@@ -9,6 +9,22 @@ class DatasetsExpo < BaseExpo
     Datasets contain collections of entries (data items) for annotation within a project.
   MD
 
+  expose on_http(:get, "/delivery_breakdown") do
+    desc "Dataset delivery counts for the viewer's local reporting date"
+    input do
+      field :filter, PROJECT_DATASET_FILTER_SCHEMA
+      field :day, String
+    end
+    output do
+      field :meta, Hash
+    end
+  end
+  def delivery_breakdown
+    breakdown = service.delivery_breakdown(params[:filter], day: params[:day])
+    server.content_type "application/vnd.api+json"
+    server.halt 200, JSON.generate(meta: breakdown)
+  end
+
   json_api Dataset::Record do
     allowed_included "entries", "project"
 
