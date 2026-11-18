@@ -24,10 +24,11 @@
   listOptions={{ filters: { project_id: projectId }, sort: ["name", "id"], noCache: true }}
   searchKeyWithOperation="name__match"
   searchable
-  searchPlaceholder="Find a dataset…"
+  searchPlaceholder="Search dataset by name…"
   placeholder="All datasets"
   clearable
   maxSelections={100}
+  emptyChoicePlaceholder="No dataset found."
   onSelected={(choices) => select(choices.map((choice) => String(choice.value)))}
 >
   {#snippet slotTriggerValues({ selectedChoices })}

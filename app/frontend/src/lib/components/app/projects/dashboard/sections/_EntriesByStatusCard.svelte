@@ -57,7 +57,7 @@
           {#each distribution.groups as group (group.label)}
             <div>
               <Text size="xs" class="inline-flex items-center gap-2">
-                <span class={`size-2 shrink-0 rounded-sm ${group.bgColor}`} aria-hidden="true"></span>
+                <span class={`size-2.5 shrink-0 rounded-[3px] ${group.bgColor}`} aria-hidden="true"></span>
                 {group.label}
               </Text>
 
