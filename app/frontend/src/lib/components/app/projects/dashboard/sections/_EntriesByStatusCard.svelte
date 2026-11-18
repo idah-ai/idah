@@ -17,16 +17,18 @@
 <Card.Root>
   <Card.Header>
     <Card.Title>Entries by status</Card.Title>
-    <Text size="xs" class="text-muted-foreground min-w-0 break-words">
-      {#if controller.focused}
-        {controller.focused.name || "This dataset"}
-      {:else if controller.selectedDatasetIds.length}
-        {controller.selectedDatasetIds.length} selected dataset{controller.selectedDatasetIds.length === 1 ? "" : "s"}
-      {:else}
-        All datasets
-      {/if}
-      · {distribution ? distribution.total.toLocaleString() : "—"} entries
-    </Text>
+    <Card.Action class="min-w-0 text-right">
+      <Text size="xs" class="text-muted-foreground min-w-0 break-words">
+        {#if controller.focused}
+          {controller.focused.name || "This dataset"}
+        {:else if controller.selectedDatasetIds.length}
+          {controller.selectedDatasetIds.length} selected dataset{controller.selectedDatasetIds.length === 1 ? "" : "s"}
+        {:else}
+          All datasets
+        {/if}
+        · {distribution ? distribution.total.toLocaleString() : "—"} entries
+      </Text>
+    </Card.Action>
   </Card.Header>
 
   <Card.Content>
@@ -67,7 +69,7 @@
           {#each distribution.groups as group (group.label)}
             <div>
               <Text size="xs" class="inline-flex items-center gap-2">
-                <span class={`size-2.5 shrink-0 rounded-[3px] ${group.bgColor}`} aria-hidden="true"></span>
+                <span class={`size-2 shrink-0 rounded-sm ${group.bgColor}`} aria-hidden="true"></span>
                 {group.label}
               </Text>
 
