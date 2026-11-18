@@ -66,6 +66,13 @@ module Dataset
     self.table = "datasets"
     self.resource = Resource::Dataset::Datasets
 
+    # Intentionally unpaginated: dashboard totals must cover the entire scope.
+    def for_category_counts(project_id, dataset_ids = nil)
+      collection = scoped(:read).where(project_id:)
+      collection = collection.where(id: dataset_ids) if dataset_ids
+      collection.select(:id, :name, :labeling_configuration).order(:id).all.map { |row| Record.new(row) }
+    end
+
     custom_filter :category_counts do |collection, value|
       conditions = EntryCategoryCount::Filter.parse(
         value, allowed: %i[category min_annotations_per_entry entries_gte total_gte]

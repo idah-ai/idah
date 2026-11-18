@@ -2,7 +2,12 @@
 
 module Project
   class Service < Verse::Service::Base
-    use projects: Project::Repository
+    include CategoryCounts::Dashboard
+
+    use projects: Project::Repository,
+        datasets: Dataset::Repository,
+        project_members: ProjectMember::Repository,
+        category_count_rows: EntryCategoryCount::Repository
     use_system system_datasets: Dataset::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
@@ -18,6 +23,11 @@ module Project
 
     def show(id, included: [])
       projects.find!(id, included: included)
+    end
+
+    def category_counts(id, filters = {})
+      records, rows = dashboard_category_rows(id, filters)
+      CategoryCounts::Aggregation.project_rows(id, records, rows)
     end
 
     def create(record)

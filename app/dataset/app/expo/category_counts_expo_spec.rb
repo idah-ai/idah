@@ -6,6 +6,35 @@ RSpec.describe "category count endpoints", type: :exposition, as: :system do
   let(:entry_id) { UUIDv7.generate }
   let(:dataset_id) { UUIDv7.generate }
 
+  it "routes project totals with dataset filters to the service" do
+    project_id = UUIDv7.generate
+    row = ProjectCategoryTotal::Record.new(
+      { id: "total", project_id:, category: "car", label: "Car", annotation_count: 3,
+        configured: true, label_conflict: false, datasets: [{ id: dataset_id, name: "Dataset" }] }
+    )
+    expect_any_instance_of(Project::Service).to receive(:category_counts)
+      .with(project_id, { dataset_id: [dataset_id] }).and_return([row])
+
+    query = Rack::Utils.build_nested_query(filter: { dataset_id: [dataset_id] })
+    get "/projects/#{project_id}/category_counts?#{query}"
+
+    expect(last_response.status).to eq(200), last_response.body
+    body = JSON.parse(last_response.body)
+    expect(body.fetch("data").first.fetch("type")).to eq(Resource::Dataset::ProjectCategoryTotals)
+    expect(body.fetch("data").first.dig("attributes", "label")).to eq("Car")
+  end
+
+  it "routes batch totals before the dataset show route" do
+    project_id = UUIDv7.generate
+    expect_any_instance_of(Dataset::Service).to receive(:category_counts_batch)
+      .with({ project_id:, dataset_id: [dataset_id] }).and_return([])
+
+    get "/datasets/category_counts?#{Rack::Utils.build_nested_query(filter: { project_id:, dataset_id: [dataset_id] })}"
+
+    expect(last_response.status).to eq(200), last_response.body
+    expect(JSON.parse(last_response.body).fetch("data")).to eq([])
+  end
+
   it "returns JSON:API rows for one entry" do
     row = EntryCategoryCount::Record.new(
       {
@@ -17,7 +46,7 @@ RSpec.describe "category count endpoints", type: :exposition, as: :system do
 
     get "/entries/#{entry_id}/category_counts"
 
-    expect(last_response.status).to eq(200)
+    expect(last_response.status).to eq(200), last_response.body
     body = JSON.parse(last_response.body)
     expect(body.fetch("data").map { |record| [record.fetch("type"), record.dig("attributes", "count")] })
       .to eq([[Resource::Dataset::EntryCategoryCounts, 2]])
@@ -33,7 +62,7 @@ RSpec.describe "category count endpoints", type: :exposition, as: :system do
 
     get "/datasets/#{dataset_id}/category_counts"
 
-    expect(last_response.status).to eq(200)
+    expect(last_response.status).to eq(200), last_response.body
     body = JSON.parse(last_response.body)
     expect(body.fetch("data").map { |record| [record.fetch("type"), record.dig("attributes", "annotation_count")] })
       .to eq([[Resource::Dataset::CategoryTotals, 3]])

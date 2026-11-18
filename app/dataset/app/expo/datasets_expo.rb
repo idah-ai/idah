@@ -9,6 +9,17 @@ class DatasetsExpo < BaseExpo
     Datasets contain collections of entries (data items) for annotation within a project.
   MD
 
+  expose on_http(:get, "/category_counts") do
+    desc "Annotation totals by category for a batch of up to 100 Datasets in a Project"
+    input do
+      field :filter, Hash
+    end
+    output Verse::JsonApi::Util.jsonapi_collection(DatasetCategoryTotal::Record)
+  end
+  def category_counts_batch
+    service.category_counts_batch(params[:filter])
+  end
+
   json_api Dataset::Record do
     allowed_included "entries", "project"
 

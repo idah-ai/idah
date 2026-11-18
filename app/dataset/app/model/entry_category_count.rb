@@ -63,6 +63,11 @@ module EntryCategoryCount
                    .select(:category, Sequel.function(:sum, :count).as(:annotation_count)).all
     end
 
+    def totals_for_datasets(dataset_ids)
+      scoped(:read).where(dataset_id: dataset_ids).group(:dataset_id, :category)
+                   .select(:dataset_id, :category, Sequel.function(:sum, :count).as(:annotation_count)).all
+    end
+
     private
 
     def visible_entry_counts

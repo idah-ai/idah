@@ -8,5 +8,7 @@ module DatasetCategoryTotal
     field :dataset_id, type: String, readonly: true
     field :category, type: String, readonly: true
     field :annotation_count, type: Integer, readonly: true
+    field :label, type: String, readonly: true
+    field :configured, type: [TrueClass, FalseClass], readonly: true
   end
 end

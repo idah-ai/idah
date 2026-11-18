@@ -343,6 +343,26 @@ All HTTP endpoints use JSON:API format (`Content-Type: application/vnd.api+json`
 | `/note_comments`   | CRUD                                                                                                         |
 | `/entry_stats`     | Read-only `index` and `show`; recomputed on entry `submitted`/`errored` events                               |
 
+### Dashboard Category Totals
+
+| Endpoint | Scope and response |
+|----------|--------------------|
+| `GET /projects/:id/category_counts` | All datasets in the project, optionally restricted by `filter[dataset_id][]`; returns `dataset:project_category_totals`. |
+| `GET /datasets/category_counts` | Requires `filter[project_id]` and `filter[dataset_id][]`; returns a batch of `dataset:category_totals`. |
+| `GET /datasets/:id/category_counts` | Existing single-dataset totals, enriched with `label` and `configured`. |
+| `GET /entries/:id/category_counts` | Per-entry `dataset:entry_category_counts` records with `count`; distinct from aggregate `annotation_count`. |
+
+Explicit dataset selections accept 1–100 UUIDs. Invalid, inaccessible, or cross-project selections fail rather
+than silently returning partial totals. Dataset/project totals require project-owner access for user-scoped
+accounts; admin and organization scopes retain repository authorization.
+
+Counts sum the scoped `entry_category_counts` table across all entry statuses, independently of the dashboard's
+completion date range and entry tabs. Configured categories with zero annotations and observed unconfigured
+categories are included. Project aggregation combines only identical `(category ID, configured label)` pairs.
+Conflicting labels remain separate rows with `label_conflict: true`; each row includes its contributing dataset
+IDs and names. Unconfigured categories use their ID as the label. These collections are complete, unpaginated
+aggregates; the dataset batch endpoint is intended for the visible dashboard table page.
+
 ### Entry-Specific Endpoints
 
 #### Assign (`PATCH /entries/:id/assign`)
