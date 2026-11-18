@@ -16,7 +16,7 @@
 
 <div class="flex flex-col items-center gap-2">
   {#if delivery_date}
-    <DateText size="sm" showTooltip datetime={parseISO(delivery_date)} datetimeFormat="MMM dd, yyyy" />
+    <DateText size="sm" dateOnly showTooltip datetime={parseISO(delivery_date)} datetimeFormat="MMM dd, yyyy" />
   {:else}
     <span>-</span>
   {/if}

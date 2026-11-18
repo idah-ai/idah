@@ -408,6 +408,7 @@
                     <DateText
                       size="sm"
                       showTooltip
+                      dateOnly
                       datetime={parseISO(effectiveDeliveryDate)}
                       datetimeFormat="MMM dd, yyyy"
                       weight="light"
