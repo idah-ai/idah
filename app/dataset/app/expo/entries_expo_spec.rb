@@ -549,6 +549,198 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
     end
   end
 
+  describe "Dashboard filter schema" do
+    [
+      {}, { project_id: "invalid" }, { project_id: nil },
+      { dataset_id: "not-an-array" },
+      { dataset_id: ["invalid"] }, { dataset_id: Array.new(101) { UUIDv7.generate } },
+      { unexpected: "value" }
+    ].each_with_index do |invalid, index|
+      it "rejects invalid filter case #{index + 1} before invoking the Service" do
+        expect_any_instance_of(Entry::Service).not_to receive(:summary)
+        filter = { project_id: project_id }.merge(invalid)
+        filter = {} if invalid.empty?
+        get "/entries/summary?#{Rack::Utils.build_nested_query(filter: filter)}"
+        expect(last_response.status).to eq(422), last_response.body
+        expect(JSON.parse(last_response.body).fetch("errors")).not_to be_empty
+      end
+    end
+
+    it "rejects an explicit empty Dataset array in the input schema" do
+      result = BaseExpo::PROJECT_DATASET_FILTER_SCHEMA.validate({ project_id: project_id, dataset_id: [] })
+      expect(result.success?).to be(false)
+    end
+
+    it "accepts 100 Dataset IDs" do
+      ids = Array.new(100) { UUIDv7.generate }
+      entries.client do |db|
+        db[:datasets].multi_insert(
+          ids.map do |id|
+            { id: id, project_id: project_id, modality: "video", labeling_configuration: "{}",
+              workflow_configuration: "{}" }
+          end
+        )
+      end
+      get "/entries/summary?#{Rack::Utils.build_nested_query(filter: { project_id: project_id, dataset_id: ids })}"
+      expect(last_response.status).to eq(200), last_response.body
+    end
+  end
+
+  describe "GET /entries/completion_history" do
+    def completion_rows(timestamps, dataset: dataset_id, assigned_to: nil)
+      rows = timestamps.map do |timestamp|
+        { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset,
+          status: "completed", wf_step: "done", assigned_to_id: assigned_to,
+          completed_at: timestamp && Time.iso8601(timestamp).utc }
+      end
+      entries.client do |db|
+        # Rollback-isolated historical/legacy fixtures; restore the existing trigger immediately.
+        db.run("ALTER TABLE entries DISABLE TRIGGER trg_set_entry_completed_at")
+        begin
+          db[:entries].multi_insert(rows)
+        ensure
+          db.run("ALTER TABLE entries ENABLE TRIGGER trg_set_entry_completed_at")
+        end
+      end
+      rows.map { |row| row[:id] }
+    end
+
+    def read_completion(from: "2026-11-01", to: "2026-11-30", timezone: "UTC", filter: { project_id: project_id })
+      get "/entries/completion_history?#{Rack::Utils.build_nested_query(
+        filter: filter,
+        from: from,
+        to: to,
+        tz: timezone
+      )}"
+      JSON.parse(last_response.body)
+    end
+
+    it "aggregates more than 1000 completed Entries and excludes legacy nulls" do
+      completion_rows(Array.new(1001, "2026-11-02T12:00:00Z") + [nil])
+      body = read_completion
+      expect(last_response.status).to eq(200), last_response.body
+      expect(body).to eq("meta" => { "timezone" => "UTC", "daily" => { "2026-11-02" => 1001 } })
+    end
+
+    it "returns an empty map for a successful empty range" do
+      expect(read_completion.dig("meta", "daily")).to eq({})
+      expect(last_response.status).to eq(200)
+    end
+
+    it "uses inclusive local dates and excludes the next midnight without rounding microseconds" do
+      completion_rows(
+        ["2026-11-01T16:59:59.999999Z", "2026-11-01T17:00:00Z",
+         "2026-11-02T16:59:59.999999Z", "2026-11-02T17:00:00Z"]
+      )
+      body = read_completion(from: "2026-11-02", to: "2026-11-02", timezone: "Asia/Bangkok")
+      expect(last_response.status).to eq(200), last_response.body
+      expect(body.dig("meta", "daily")).to eq("2026-11-02" => 2)
+    end
+
+    it "interprets stored wall-clock UTC independently of the database session timezone" do
+      completion_rows(["2026-11-01T23:30:00Z"])
+      entries.client do |db|
+        db.run("SET LOCAL TIME ZONE 'Pacific/Honolulu'")
+        body = read_completion(from: "2026-11-02", to: "2026-11-02", timezone: "Asia/Bangkok")
+        expect(body.dig("meta", "daily")).to eq("2026-11-02" => 1)
+      end
+    end
+
+    it "handles the 23-hour local day at DST start" do
+      completion_rows(
+        ["2026-03-08T04:59:59.999999Z", "2026-03-08T05:00:00Z",
+         "2026-03-09T03:59:59.999999Z", "2026-03-09T04:00:00Z"]
+      )
+      body = read_completion(from: "2026-03-08", to: "2026-03-08", timezone: "America/New_York")
+      expect(body.dig("meta", "daily")).to eq("2026-03-08" => 2)
+    end
+
+    it "counts both repeated hours in the 25-hour DST end day" do
+      completion_rows(
+        ["2026-11-01T03:59:59.999999Z", "2026-11-01T05:30:00Z",
+         "2026-11-01T06:30:00Z", "2026-11-02T04:59:59.999999Z", "2026-11-02T05:00:00Z"]
+      )
+      body = read_completion(from: "2026-11-01", to: "2026-11-01", timezone: "America/New_York")
+      expect(body.dig("meta", "daily")).to eq("2026-11-01" => 3)
+    end
+
+    it "supports a 366-day leap year and half-hour timezone across year end" do
+      completion_rows(["2024-02-29T12:00:00Z", "2023-12-31T18:30:00Z"])
+      body = read_completion(from: "2024-01-01", to: "2024-12-31", timezone: "Asia/Kolkata")
+      expect(last_response.status).to eq(200), last_response.body
+      expect(body.dig("meta", "daily")).to eq("2024-01-01" => 1, "2024-02-29" => 1)
+    end
+
+    [{ from: "2024-01-01", to: "2025-01-01" }, { from: "2026-2-1" },
+     { from: "2026-02-30" }, { from: "2026-12-01", to: "2026-11-01" },
+     { timezone: "Invalid/Timezone" }, { from: "2026-11-01T00:00:00Z" }].each do |invalid|
+      it "rejects invalid completion range #{invalid}" do
+        read_completion(**invalid)
+        expect(last_response.status).to eq(422), last_response.body
+      end
+    end
+
+    it "preserves reopen/recomplete lifecycle and counts only currently completed Entries" do
+      id = completion_rows(["2026-11-02T12:00:00Z"]).first
+      entries.update!(id, { status: "pending" })
+      expect(read_completion.dig("meta", "daily")).to eq({})
+      expect(entries.find!(id).completed_at).to be_nil
+      entries.update!(id, { status: "completed" })
+      day = entries.find!(id).completed_at.utc.to_date.iso8601
+      expect(read_completion(from: day, to: day).dig("meta", "daily")).to eq(day => 1)
+    end
+
+    it "filters selected and focused Datasets and rejects cross-project IDs" do
+      other = Dataset::Repository.new(system_context).create(
+        project_id: project_id,
+        modality: "video",
+        labels: [],
+        labeling_configuration: {},
+        workflow_configuration: {}
+      )
+      completion_rows(["2026-11-02T12:00:00Z"])
+      completion_rows(["2026-11-03T12:00:00Z"], dataset: other)
+      expect(read_completion(filter: { project_id: project_id, dataset_id: [other] }).dig("meta", "daily"))
+        .to eq("2026-11-03" => 1)
+      expect(
+        read_completion(filter: { project_id: project_id, dataset_id: [dataset_id, other] }).dig(
+          "meta",
+          "daily"
+        ).values.sum
+      )
+        .to eq(2)
+      read_completion(filter: { project_id: UUIDv7.generate, dataset_id: [dataset_id] })
+      expect(last_response.status).to be_between(403, 404)
+    end
+
+    it "enforces Project Owner access", as: :project_owner do
+      read_completion
+      expect(last_response.status).to be_between(403, 404)
+      ProjectMember::Repository.new(system_context).create(
+        project_id: project_id,
+        account_id: 3,
+        role: "project_owner",
+        email: "owner@example.com",
+        invited_by_id: 1
+      )
+      read_completion
+      expect(last_response.status).to eq(200), last_response.body
+    end
+
+    it "uses the Entry read scope rather than a system repository", as: :annotator do
+      ProjectMember::Repository.new(system_context).create(
+        project_id: project_id,
+        account_id: 4,
+        role: "annotator",
+        email: "annotator@example.com",
+        invited_by_id: 1
+      )
+      completion_rows(["2026-11-02T12:00:00Z"], assigned_to: 4)
+      completion_rows(["2026-11-02T12:00:00Z"], assigned_to: 5)
+      expect(read_completion.dig("meta", "daily")).to eq("2026-11-02" => 1)
+    end
+  end
+
   describe "offset-aware Entry pagination" do
     [999, 1000, 1001, 2005].each do |total|
       it "keeps metadata and rows correct for #{total} Entries" do

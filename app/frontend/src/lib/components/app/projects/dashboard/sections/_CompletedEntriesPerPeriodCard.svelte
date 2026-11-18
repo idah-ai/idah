@@ -86,7 +86,7 @@
       <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-2">
           <Text size="h2" weight="semibold">
-            {["ready", "empty", "partial"].includes(history.status) ? controller.completionTotal.toLocaleString() : "—"}
+            {["ready", "empty"].includes(history.status) ? controller.completionTotal.toLocaleString() : "—"}
           </Text>
           <Text size="xs">
             currently completed entries with completion dates in
@@ -99,7 +99,6 @@
             {:else}
               {format(rangeStart, dateFormat)}–{format(rangeEnd, dateFormat)}
             {/if}
-            {history.status === "partial" ? " · incomplete" : ""}
           </Text>
         </div>
       </div>
@@ -108,16 +107,9 @@
           class="text-muted-foreground flex h-64 items-center justify-center rounded-md border border-dashed text-sm"
           role="status"
         >
-          Loading completed entries · {controller.completionTotal.toLocaleString()} rows loaded
+          Loading completed entries
         </div>
-      {:else if history.status === "ready" || history.status === "partial"}
-        {#if history.status === "partial"}
-          <div class="text-destructive mb-3 flex flex-wrap items-center gap-2 text-sm" role="status">
-            {controller.completionTotal.toLocaleString()} completed entries loaded — incomplete. {history.error}
-            <Button size="sm" variant="outline" onclick={() => void controller.retryCompletionHistory()}>Retry</Button>
-          </div>
-        {/if}
-
+      {:else if history.status === "ready"}
         <Chart.Container
           config={chartConfig}
           class="aspect-auto h-72 w-full min-w-0"
@@ -163,7 +155,7 @@
                   tabindex={0}
                   role="img"
                   aria-current={bucket.current ? "date" : undefined}
-                  aria-label={`${bucket.label}: ${bucket.count === null ? "not yet verified" : `${bucket.count} currently completed entries`}${history.status === "partial" ? "; incomplete" : ""}`}
+                  aria-label={`${bucket.label}: ${bucket.count === null ? "not yet verified" : `${bucket.count} currently completed entries`}`}
                   onfocus={() => context.tooltip.show({ data: bucket })}
                   onblur={() => context.tooltip.hide()}
                 />
@@ -179,7 +171,6 @@
                         ? "Not yet verified"
                         : `${Number(value).toLocaleString()} currently completed entries`}
                     </p>
-                    {#if history.status === "partial"}<p class="text-muted-foreground">Incomplete data</p>{/if}
                     {#if context.tooltip.data?.clipped}<p class="text-muted-foreground">
                         Clipped to selected range
                       </p>{/if}

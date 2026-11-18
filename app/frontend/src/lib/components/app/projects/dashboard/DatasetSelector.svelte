@@ -1,6 +1,5 @@
 <script lang="ts">
   import MultipleSelectDatasourceField from "@/components/app/forms/fields/select/multiple/multiple-select-datasource-field.svelte";
-  import Text from "@/components/ui/text/Text.svelte";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 
   // Props
@@ -32,8 +31,11 @@
   onSelected={(choices) => select(choices.map((choice) => String(choice.value)))}
 >
   {#snippet slotTriggerValues({ selectedChoices })}
-    <Text size="sm">
+    <span
+      class="block min-w-0 truncate text-sm font-normal"
+      title={ids.length === 1 ? String(selectedChoices[0]?.label ?? "") : undefined}
+    >
       {ids.length === 1 ? selectedChoices[0]?.label : `${ids.length} datasets selected`}
-    </Text>
+    </span>
   {/snippet}
 </MultipleSelectDatasourceField>

@@ -70,7 +70,7 @@ module Dataset
     def for_category_counts(project_id, dataset_ids = nil)
       collection = scoped(:read).where(project_id:)
       collection = collection.where(id: dataset_ids) if dataset_ids
-      collection.select(:id, :name, :labeling_configuration).order(:id).all.map { |row| Record.new(row) }
+      collection.select(:id, :name, :labeling_configuration).order(:id).all.map { |row| Record.new(decode(row)) }
     end
 
     custom_filter :category_counts do |collection, value|
@@ -127,6 +127,30 @@ module Dataset
     encoder :feedback_configuration, Verse::Sequel::JsonEncoder
     encoder :workflow_configuration, Verse::Sequel::JsonEncoder
     encoder :labels, Verse::Sequel::PgArrayEncoder
+
+    query
+    def delivery_breakdown(project_id:, day:, dataset_ids: nil)
+      with_db_mode :r do
+        eligible = scoped(:read).where(project_id: project_id).exclude(status: "completed").exclude(delivery_date: nil)
+        eligible = eligible.where(id: dataset_ids) if dataset_ids
+        grouped = eligible.select(
+          :delivery_date,
+          Sequel.function(:count, Sequel.lit("*")).as(:count)
+        ).group(:delivery_date)
+        counts = table.db[:delivery_counts]
+        nearest = counts.where { delivery_date > day + 1 }.order(:delivery_date).limit(1)
+        sum = ->(condition) { Sequel.function(:coalesce, Sequel.function(:sum, :count).filter(condition), 0) }
+        row = counts.with(:delivery_counts, grouped).select(
+          sum.call(Sequel[:delivery_date] < day).as(:overdue),
+          sum.call(delivery_date: day).as(:due_today),
+          sum.call(delivery_date: day + 1).as(:due_tomorrow),
+          nearest.select(:delivery_date).as(:upcoming_date),
+          nearest.select(:count).as(:upcoming_count)
+        ).first
+        { overdue: row[:overdue].to_i, due_today: row[:due_today].to_i, due_tomorrow: row[:due_tomorrow].to_i,
+          upcoming: row[:upcoming_date] && { date: row[:upcoming_date].iso8601, count: row[:upcoming_count].to_i } }
+      end
+    end
 
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|

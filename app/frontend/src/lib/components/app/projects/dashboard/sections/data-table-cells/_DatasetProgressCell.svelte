@@ -21,7 +21,7 @@
       completed > total
     )
       return null;
-    return total ? Math.floor((completed / total) * 100) : 0;
+    return total ? Math.round((completed / total) * 100) : 0;
   });
 </script>
 

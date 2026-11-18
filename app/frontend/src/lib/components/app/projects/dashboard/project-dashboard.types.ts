@@ -5,7 +5,7 @@ import type {
 
 export type CompletionGrouping = (typeof COMPLETION_GROUPINGS)[number];
 export type CompletionRange = { start: string; end: string };
-export type CompletionHistoryStatus = "idle" | "loading" | "ready" | "empty" | "partial" | "unavailable";
+export type CompletionHistoryStatus = "idle" | "loading" | "ready" | "empty" | "unavailable";
 
 export interface CompletionHistoryResult {
   status: CompletionHistoryStatus;

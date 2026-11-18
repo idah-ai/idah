@@ -19,8 +19,21 @@
   const rows = $derived(controller.entryProgressRows);
   const pagination = $derived(controller.entryProgressTablePagination);
 
+  let tableArea: HTMLDivElement;
+  let loadingHeight = $state(0);
+
   // Functions
+  function preserveHeight(): void {
+    loadingHeight = tableArea.getBoundingClientRect().height;
+  }
+
+  function changeTab(value: string): void {
+    preserveHeight();
+    controller.changeEntryTab(value);
+  }
+
   function changePage(page: number): Promise<void> {
+    preserveHeight();
     return controller.changeEntryProgressPage({
       page,
       itemsPerPage: controller.entryProgressPagination.itemsPerPage,
@@ -34,7 +47,7 @@
   </Card.Header>
 
   <Card.Content>
-    <Tabs value={controller.entryTab} onValueChange={(value) => controller.changeEntryTab(value)}>
+    <Tabs value={controller.entryTab} onValueChange={changeTab}>
       <div class="flex items-center justify-between gap-4">
         <TabsList>
           {#each PROJECT_DASHBOARD_OPEN_ENTRIES_TABS as { label, value } (value)}
@@ -51,40 +64,46 @@
         <Button variant="link" size="sm" class="text-right" disabled>Expand all</Button>
       </div>
 
-      {#if controller.entryProgressError}
-        <ResponseBlock size="sm" title="Entries unavailable" description={controller.entryProgressError}>
-          {#snippet actions()}
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={controller.denied || controller.loading || controller.entryProgressLoading}
-              onclick={() => void controller.retryEntryProgress()}>Retry</Button
-            >
-          {/snippet}
-        </ResponseBlock>
-      {:else if controller.loading || controller.entryProgressLoading || !controller.scopeReady}
-        <div class="flex min-h-32 items-center justify-center" role="status" aria-label="Loading entries">
-          <Spinner size="sm" />
-        </div>
-      {:else if !rows.length}
-        <ResponseBlock
-          size="sm"
-          title="No entries to display"
-          description="No entries were returned for this tab and scope."
-        />
-        {#if pagination && pagination.page > 1}
-          <DataTablePaginator {...pagination} onPageChange={changePage} class="mt-3" />
+      <div
+        bind:this={tableArea}
+        style:min-height={controller.entryProgressLoading ? `${loadingHeight}px` : undefined}
+        aria-busy={controller.entryProgressLoading}
+      >
+        {#if controller.entryProgressError}
+          <ResponseBlock size="sm" title="Entries unavailable" description={controller.entryProgressError}>
+            {#snippet actions()}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={controller.denied || controller.loading || controller.entryProgressLoading}
+                onclick={() => void controller.retryEntryProgress()}>Retry</Button
+              >
+            {/snippet}
+          </ResponseBlock>
+        {:else if controller.loading || controller.entryProgressLoading || !controller.scopeReady}
+          <div class="flex min-h-32 items-center justify-center" role="status" aria-label="Loading entries">
+            <Spinner size="sm" />
+          </div>
+        {:else if !rows.length}
+          <ResponseBlock
+            size="sm"
+            title="No entries to display"
+            description="No entries were returned for this tab and scope."
+          />
+          {#if pagination && pagination.page > 1}
+            <DataTablePaginator {...pagination} onPageChange={changePage} class="mt-3" />
+          {/if}
+        {:else}
+          <DataTable
+            {columns}
+            {rows}
+            {pagination}
+            showPaginator={pagination !== undefined}
+            onPageChange={changePage}
+            caption={controller.entryProgressCaption}
+          />
         {/if}
-      {:else}
-        <DataTable
-          {columns}
-          {rows}
-          {pagination}
-          showPaginator={pagination !== undefined}
-          onPageChange={changePage}
-          caption={controller.entryProgressCaption}
-        />
-      {/if}
+      </div>
     </Tabs>
   </Card.Content>
 </Card.Root>

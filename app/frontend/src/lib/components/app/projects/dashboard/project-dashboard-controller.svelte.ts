@@ -4,7 +4,6 @@ import {
   addDays,
   addMonths,
   differenceInCalendarDays,
-  endOfDay,
   format,
   isAfter,
   isBefore,
@@ -33,14 +32,13 @@ import { categoryTotal, sortCategories, type CategoryTotalsResult } from "./cate
 import { EntryRecord, entriesBackendDataSource } from "@/data/model/dataset/entries/record";
 import { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 import { entryStatuses } from "@/data/model/dataset/entries/constants";
-import { datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 import { getDeliveryStatusBadge, today } from "@/utils/date";
 import { PROJECT_DASHBOARD_WORKFLOW_GROUPS } from "@/components/app/projects/dashboard/project-dashboard.constants";
 
+import type { DatasetDeliveryBreakdown } from "@/data/model/dataset/datasets/constants";
 import type { IDataTablePagination } from "@/components/app/data-table/types";
-import type { Filters } from "@/data/filtering";
 import type { Pagination } from "@/data/DataSource";
-import type { CollectionResponse, JsonApiMeta } from "@/data/model/types";
+import type { CollectionResponse } from "@/data/model/types";
 import type {
   CompletionGrouping,
   CompletionRange,
@@ -62,13 +60,6 @@ export function getProjectDashboardController(key: symbol): ProjectDashboardCont
   if (!controller) throw new Error("Project Dashboard controller is not available.");
   return controller;
 }
-
-type DeliveryBreakdown = {
-  overdue: number;
-  dueToday: number;
-  dueTomorrow: number;
-  upcoming: { date: string; count: number } | null;
-};
 
 export class ProjectDashboardController {
   // ==================== Lifecycle ====================
@@ -318,13 +309,6 @@ export class ProjectDashboardController {
     }
   }
 
-  private exactCount(meta: JsonApiMeta | undefined): number {
-    const count = meta?.count;
-    if (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0) throw new Error("Count unavailable.");
-    if (meta?.more !== false) throw new Error("An exact count is unavailable for this scope.");
-    return count;
-  }
-
   // ==================== Entries by Status ====================
 
   public get workflowDistribution(): {
@@ -353,12 +337,12 @@ export class ProjectDashboardController {
 
   // ==================== Attention & Local Reporting Day ====================
 
-  public attentionBreakdown: DeliveryBreakdown | null = $state.raw(null);
+  public attentionBreakdown: DatasetDeliveryBreakdown | null = $state.raw(null);
 
   public get attention(): number | null {
     const breakdown = this.attentionBreakdown;
     return breakdown
-      ? breakdown.overdue + breakdown.dueToday + breakdown.dueTomorrow + (breakdown.upcoming?.count ?? 0)
+      ? breakdown.overdue + breakdown.due_today + breakdown.due_tomorrow + (breakdown.upcoming?.count ?? 0)
       : null;
   }
 
@@ -374,8 +358,8 @@ export class ProjectDashboardController {
 
     const parts: string[] = [];
     if (breakdown.overdue) parts.push(`${breakdown.overdue.toLocaleString()} overdue`);
-    if (breakdown.dueToday) parts.push(`${breakdown.dueToday.toLocaleString()} due today`);
-    if (breakdown.dueTomorrow) parts.push(`${breakdown.dueTomorrow.toLocaleString()} due tomorrow`);
+    if (breakdown.due_today) parts.push(`${breakdown.due_today.toLocaleString()} due today`);
+    if (breakdown.due_tomorrow) parts.push(`${breakdown.due_tomorrow.toLocaleString()} due tomorrow`);
     if (breakdown.upcoming) {
       const days = differenceInCalendarDays(parseISO(breakdown.upcoming.date), this.reportingDay);
       parts.push(`${breakdown.upcoming.count.toLocaleString()} due in ${days} days`);
@@ -404,111 +388,18 @@ export class ProjectDashboardController {
     this.attentionLoading = true;
     try {
       if (this.focused) return;
-      if (this.selectedDatasetIds.length) {
-        if (this.selectedDatasets.length !== this.selectedDatasetIds.length)
-          throw new Error("Selected Dataset metadata is incomplete. Please reload the selection.");
-        const breakdown: DeliveryBreakdown = { overdue: 0, dueToday: 0, dueTomorrow: 0, upcoming: null };
-
-        for (const record of this.selectedDatasets) {
-          if (record.status === "completed" || !record.delivery_date) continue;
-
-          const date = parseISO(record.delivery_date);
-          if (!isValid(date)) throw new Error("Dataset delivery date is invalid.");
-
-          const days = differenceInCalendarDays(date, day);
-          if (days < 0) breakdown.overdue++;
-          else if (days === 0) breakdown.dueToday++;
-          else if (days === 1) breakdown.dueTomorrow++;
-          else if (!breakdown.upcoming || record.delivery_date < breakdown.upcoming.date)
-            breakdown.upcoming = { date: record.delivery_date, count: 1 };
-          else if (record.delivery_date === breakdown.upcoming.date) breakdown.upcoming.count++;
-        }
-        this.attentionBreakdown = breakdown;
-        return;
-      }
-      const todayDate = format(day, "yyyy-MM-dd");
-      const tomorrowDate = format(addDays(day, 1), "yyyy-MM-dd");
-      const [overdue, dueToday, dueTomorrow, upcoming] = await Promise.all([
-        this.countDatasets({ delivery_date__lte: format(addDays(day, -1), "yyyy-MM-dd") }, current),
-        this.countDatasets({ delivery_date__gte: todayDate, delivery_date__lte: todayDate }, current),
-        this.countDatasets({ delivery_date__gte: tomorrowDate, delivery_date__lte: tomorrowDate }, current),
-        this.upcomingDelivery(day, current),
-      ]);
-
+      const result = await datasetsBackendDataSource.deliveryBreakdown(
+        this.projectId,
+        this.effectiveDatasetIds,
+        format(day, "yyyy-MM-dd"),
+      );
       if (!current()) return;
-      this.attentionBreakdown = { overdue, dueToday, dueTomorrow, upcoming };
+      this.attentionBreakdown = result;
     } catch (reason) {
-      if (current())
-        this.attentionError =
-          reason instanceof Error ? reason.message : "Delivery breakdown unavailable for this scope.";
+      if (!current() || this.handleAccessError(reason)) return;
+      this.attentionError = reason instanceof Error ? reason.message : "Delivery breakdown unavailable for this scope.";
     } finally {
       if (current()) this.attentionLoading = false;
-    }
-  }
-
-  private attentionFilters(filters: Filters): Filters {
-    return {
-      ...filters,
-      project_id: this.projectId,
-      status__in: datasetsStatuses.filter((status) => status.value !== "completed").map((status) => status.value),
-    };
-  }
-
-  private async countDatasets(filters: Filters, current: () => boolean): Promise<number> {
-    if (!current()) throw new Error("Dashboard request retired");
-    try {
-      const response = await datasetsBackendDataSource.list({
-        filters: this.attentionFilters(filters),
-        fields: { [DatasetRecord.type]: ["id"] },
-        sort: ["id"],
-        pagination: { page: 1, itemsPerPage: 1 },
-        count: true,
-        noCache: true,
-      });
-      if (!current()) throw new Error("Dashboard request retired");
-      return this.exactCount(response.meta);
-    } catch (reason) {
-      if (current()) this.handleAccessError(reason);
-      throw reason;
-    }
-  }
-
-  private async upcomingDelivery(day: Date, current: () => boolean): Promise<DeliveryBreakdown["upcoming"]> {
-    if (!current()) throw new Error("Dashboard request retired");
-    const from = format(addDays(day, 2), "yyyy-MM-dd");
-    try {
-      const nearest = await datasetsBackendDataSource.list({
-        filters: this.attentionFilters({ delivery_date__gte: from }),
-        fields: { [DatasetRecord.type]: ["id", "delivery_date"] },
-        sort: ["delivery_date"],
-        pagination: { page: 1, itemsPerPage: 1 },
-        count: false,
-        noCache: true,
-      });
-
-      if (!current()) throw new Error("Dashboard request retired");
-      if (!nearest.data.length) return null;
-      const date = nearest.data[0].delivery_date;
-      if (!date || !isValid(parseISO(date))) throw new Error("Upcoming delivery date is invalid. Please retry.");
-      const response = await datasetsBackendDataSource.list({
-        // Recheck the earliest date while counting: if a new earlier date appeared,
-        // reject the result instead of presenting this range count as a single-date count.
-        filters: this.attentionFilters({ delivery_date__gte: from, delivery_date__lte: date }),
-        fields: { [DatasetRecord.type]: ["id", "delivery_date"] },
-        sort: ["delivery_date"],
-        pagination: { page: 1, itemsPerPage: 1 },
-        count: true,
-        noCache: true,
-      });
-
-      if (!current()) throw new Error("Dashboard request retired");
-      const count = this.exactCount(response.meta);
-      if (!count || response.data[0]?.delivery_date !== date)
-        throw new Error("Upcoming delivery date changed. Please retry.");
-      return { date, count };
-    } catch (reason) {
-      if (current()) this.handleAccessError(reason);
-      throw reason;
     }
   }
 
@@ -552,6 +443,7 @@ export class ProjectDashboardController {
     return (
       isValidDate(range.start) &&
       isValidDate(range.end) &&
+      differenceInCalendarDays(parseISO(range.end), parseISO(range.start)) < 366 &&
       !isAfter(parseISO(range.start), parseISO(range.end)) &&
       !isAfter(parseISO(range.end), this.reportingDay)
     );
@@ -682,89 +574,24 @@ export class ProjectDashboardController {
 
     this.completionHistory = { status: "loading", daily: {}, zone, error: "" };
 
-    const daily: Record<string, number> = {};
-
     try {
-      const start = startOfDay(parseISO(range.start));
-      const end = addDays(startOfDay(parseISO(range.end)), 1);
-
-      // PostgreSQL keeps six fractional digits. Do not pass this string through Date again.
-      const endInclusive = endOfDay(parseISO(range.end))
-        .toISOString()
-        .replace(/\.999Z$/, ".999999Z");
-
-      let cursor = "";
-
-      while (current()) {
-        const response = await entriesBackendDataSource.list({
-          filters: {
-            project_id: this.projectId,
-            ...(ids.length ? { dataset_id: ids } : {}),
-            status__in: ["completed"],
-            completed_at__gte: start.toISOString(),
-            completed_at__lte: endInclusive,
-            ...(cursor ? { id__gt: cursor } : {}),
-          },
-          fields: { [EntryRecord.type]: ["id", "completed_at"] },
-          sort: ["id"],
-          pagination: { page: 1, itemsPerPage: 1000 },
-          count: false,
-          noCache: true,
-        });
-
-        if (!current()) return;
-
-        if (!Array.isArray(response.data) || response.data.length > 1000) {
-          throw new Error("Completion results could not be validated. Retry.");
-        }
-
-        const batch: Record<string, number> = {};
-        let next = cursor;
-
-        for (const record of response.data) {
-          const timestamp = record.completed_at;
-
-          if (
-            typeof record.id !== "string" ||
-            !record.id ||
-            record.id <= next ||
-            !(timestamp instanceof Date) ||
-            !isValid(timestamp) ||
-            isBefore(timestamp, start) ||
-            !isBefore(timestamp, end)
-          ) {
-            throw new Error("Completion results changed or did not advance. Retry.");
-          }
-
-          next = record.id;
-
-          const day = format(timestamp, "yyyy-MM-dd");
-          batch[day] = (batch[day] ?? 0) + 1;
-        }
-
-        for (const [day, count] of Object.entries(batch)) {
-          daily[day] = (daily[day] ?? 0) + count;
-        }
-
-        cursor = next;
-
-        const finished = response.data.length < 1000;
-
-        this.completionHistory = {
-          status: finished ? (cursor ? "ready" : "empty") : "loading",
-          daily: { ...daily },
-          zone,
-          error: "",
-        };
-
-        if (finished) return;
-      }
+      const result = await entriesBackendDataSource.completionHistory(this.projectId, ids, {
+        from: range.start,
+        to: range.end,
+        tz: zone,
+      });
+      if (!current()) return;
+      this.completionHistory = {
+        status: Object.keys(result.daily).length ? "ready" : "empty",
+        daily: result.daily,
+        zone,
+        error: "",
+      };
     } catch (reason) {
       if (!current() || this.handleAccessError(reason)) return;
-
       this.completionHistory = {
-        status: Object.keys(daily).length ? "partial" : "unavailable",
-        daily: { ...daily },
+        status: "unavailable",
+        daily: {},
         zone,
         error: reason instanceof Error ? reason.message : "Recorded completions are unavailable.",
       };

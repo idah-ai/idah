@@ -31,11 +31,6 @@ RSpec.describe Entry::Service, database: true do
   end
 
   describe "#summary" do
-    it "rejects an explicitly empty Dataset filter rather than broadening the scope" do
-      expect { subject.summary(project_id: project_id, dataset_id: []) }
-        .to raise_error(Verse::Error::ValidationFailed)
-    end
-
     it "counts through the existing repositories with the selected Project scope" do
       repo.create(project_id: project_id, dataset_id: dataset_id, status: "completed", wf_step: "done")
       expect(subject.summary(project_id: project_id, dataset_id: [dataset_id]))

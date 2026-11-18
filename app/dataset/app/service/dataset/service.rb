@@ -24,6 +24,23 @@ module Dataset
       )
     end
 
+    def delivery_breakdown(filters, day:)
+      date = Date.iso8601(day)
+      raise Verse::Error::ValidationFailed, "Invalid reporting date" unless date.iso8601 == day
+
+      filters = filters.transform_keys(&:to_sym)
+      project_id = filters.fetch(:project_id)
+      projects.find!(project_id)
+      ids = filters[:dataset_id]&.uniq
+      if ids && datasets.index({ project_id: project_id, id: ids }, items_per_page: 100).length != ids.length
+        raise Verse::Error::ValidationFailed, "Datasets are not available in this Project"
+      end
+
+      datasets.delivery_breakdown(project_id: project_id, dataset_ids: ids, day: date)
+    rescue Date::Error
+      raise Verse::Error::ValidationFailed, "Invalid reporting date"
+    end
+
     def show(id, included: [])
       datasets.find!(id, included: included)
     end
