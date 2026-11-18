@@ -14,5 +14,5 @@
 {#if dataset.delivery_date}
   <DateText size="sm" showTooltip datetime={parseISO(dataset.delivery_date)} datetimeFormat="MMM dd, yyyy" />
 {:else}
-  <span>—</span>
+  <span>-</span>
 {/if}

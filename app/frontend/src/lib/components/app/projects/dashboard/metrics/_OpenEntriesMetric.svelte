@@ -12,6 +12,6 @@
 <DatasetMetric
   order={3}
   title="Open entries"
-  value={controller.openEntriesCount?.toLocaleString() ?? "—"}
+  value={controller.openEntriesCount?.toLocaleString() ?? "-"}
   description={controller.openEntriesDescription}
 />

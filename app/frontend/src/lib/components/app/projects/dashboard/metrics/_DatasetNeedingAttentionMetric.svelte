@@ -13,7 +13,7 @@
   order={4}
   title={controller.focused ? "Delivery" : "Datasets needing attention"}
   value={controller.focused
-    ? (controller.focusedDeliveryLabel ?? "—")
-    : (controller.attention?.toLocaleString() ?? "—")}
+    ? (controller.focusedDeliveryLabel ?? "-")
+    : (controller.attention?.toLocaleString() ?? "-")}
   description={controller.deliveryDescription}
 />

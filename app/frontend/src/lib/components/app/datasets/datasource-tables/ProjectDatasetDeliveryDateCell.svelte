@@ -18,7 +18,7 @@
   {#if delivery_date}
     <DateText size="sm" showTooltip datetime={parseISO(delivery_date)} datetimeFormat="MMM dd, yyyy" />
   {:else}
-    <span>—</span>
+    <span>-</span>
   {/if}
   {#if dataset.isOverdueOn($today)}
     <Badge variant="destructive">Overdue</Badge>

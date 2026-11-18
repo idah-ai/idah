@@ -413,7 +413,7 @@
                       weight="light"
                     />
                   {:else}
-                    <span>—</span>
+                    <span>-</span>
                   {/if}
 
                   {#if deliveryDateWarning}

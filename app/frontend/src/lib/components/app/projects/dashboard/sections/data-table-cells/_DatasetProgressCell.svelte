@@ -26,7 +26,7 @@
 </script>
 
 {#if percentage === null}
-  <span>—</span>
+  <span>-</span>
 {:else}
   <div class="min-w-32 space-y-1">
     <Progress value={percentage} class="bg-muted [&>[data-slot=progress-indicator]]:bg-emerald-500" />

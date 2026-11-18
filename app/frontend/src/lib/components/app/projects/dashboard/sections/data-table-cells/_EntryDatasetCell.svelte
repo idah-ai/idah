@@ -34,5 +34,5 @@
     </Tooltip>
   </TooltipProvider>
 {:else}
-  <Text size="sm">—</Text>
+  <Text size="sm">-</Text>
 {/if}
