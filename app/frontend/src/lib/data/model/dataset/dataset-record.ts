@@ -23,6 +23,7 @@ export class DatasetRecord extends Record {
   @field() public labeling_configuration!: IConfig;
   @field() public feedback_configuration!: IFeedbackConfig;
   @field() public workflow_configuration!: Hash;
+  @field() public workflow_name!: string | null;
   @field() public status!: string;
   @field() public progress!: number;
   @field() public entries_total_count!: number;

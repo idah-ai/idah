@@ -16,6 +16,7 @@ module Dataset
     field :delivery_date, type: [Date, NilClass]
     field :labels, type: Array
     field :modality, type: String, readonly: true
+    field :workflow_name, type: String
 
     field :labeling_configuration, type: Hash
     field :feedback_configuration, type: Hash, readonly: true
@@ -58,7 +59,9 @@ module Dataset
     end
 
     def entry_workflow
-      Workflow::SimpleReviewAnnotationWorkflow
+      # Get workflow by workflow_name from the dataset
+      # Falls back to default workflow if no workflow_name or workflow not found
+      Workflow::Registry.get(workflow_name)
     end
   end
 

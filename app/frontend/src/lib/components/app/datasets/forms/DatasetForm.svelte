@@ -14,6 +14,7 @@
   import { DEFAULT_LOOSE_NAME } from "@/components/app/datasets/upload/dataset-groups";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
+  import { workflowsBackendDataSource } from "@/data/model/dataset/workflows/record";
 
   import type { PickedFile } from "@/components/app/forms/fields/upload/file-upload.utils";
   import type { FormBaseProps } from "@/components/app/forms/form.types";
@@ -32,7 +33,7 @@
   // Variables
   const resource: Resource = "dataset:datasets";
   let projectId = $derived(page.params.projectId as string);
-  let { name, modality, delivery_date } = $derived(dataset);
+  let { name, modality, delivery_date, workflow_name } = $derived(dataset);
   let selectedDatasetId = $state<string | null>(null);
   let picked = $state<PickedFile[]>([]);
   let split = $state<string[]>([]);
@@ -45,6 +46,7 @@
       modality,
       delivery_date,
       selectedDatasetId,
+      workflow_name,
       picked,
       split,
       looseName,
@@ -54,6 +56,10 @@
   async function loadModalities() {
     const modalitiesRes = await pluginsBackendDataSource.modalities();
     return modalitiesRes.modalities;
+  }
+
+  async function loadWorkflows() {
+    return await workflowsBackendDataSource.getWorkflows();
   }
 </script>
 
@@ -92,6 +98,23 @@
       />
     {/await}
 
+    <!-- DATASET::WORKFLOW -->
+    {#await loadWorkflows() then workflows}
+      <SingleSelectField
+        name="{resource}/workflow"
+        label="Workflow"
+        placeholder="Select workflow"
+        choices={workflows.map((workflow) => ({
+          label: workflow.label,
+          value: workflow.name,
+        }))}
+        errors={fieldErrors["workflow_name"]}
+        value={workflow_name}
+        onSelected={(selectedValue) => {
+          workflow_name = selectedValue as string;
+        }}
+      />
+    {/await}
     {#key delivery_date}
       <DatePickerField
         name="{resource}/delivery_date"

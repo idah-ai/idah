@@ -112,7 +112,6 @@ module Plugins
           return nil unless entry_plugin
 
           is_style = filename.end_with?(".css")
-
           if is_style
             entry_plugin.style
           else

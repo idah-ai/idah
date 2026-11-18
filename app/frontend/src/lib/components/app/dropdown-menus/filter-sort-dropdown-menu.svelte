@@ -89,7 +89,12 @@
   // Variables
   let openDropdown: boolean = $state(false);
 
-  let { label, filterable, hidable, sortable, filterComponent, filterOptions } = columnSetting;
+  let filterOptions = $derived(columnSetting.filterOptions);
+  let label = $derived(columnSetting.label);
+  let filterable = $derived(columnSetting.filterable);
+  let hidable = $derived(columnSetting.hidable);
+  let sortable = $derived(columnSetting.sortable);
+  let filterComponent = $derived(columnSetting.filterComponent);
   let filterKey: string = $derived(`${filterOptions?.filterKey || columnKey}`);
   let filterKeyWithOperation: string = $derived(
     filterOptions?.filterOperation ? `${filterKey}__${filterOptions.filterOperation}` : filterKey,

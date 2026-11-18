@@ -11,6 +11,7 @@ Verse.on_boot do
     AnnotationChangesExpo,
     NoteFeedsExpo,
     NoteCommentsExpo,
+    WorkflowsExpo,
     EntryStatsExpo,
     LabelConfigTemplatesExpo,
     FeedbackConfigTemplatesExpo

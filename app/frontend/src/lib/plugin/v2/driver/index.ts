@@ -88,6 +88,8 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private _config: IConfig;
   private _feedbackConfig: IFeedbackConfig;
   private _workflowStep: string;
+  private _workflowName: string;
+  private _allowedNoteFeed: string[] = [];
   private _entryStatus: string;
   private _mode = "editor";
   private _ready = false;
@@ -113,6 +115,8 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     config: IConfig;
     feedbackConfig: IFeedbackConfig;
     workflowStep: string;
+    workflowName: string;
+    allowedNoteFeed?: string[];
     entryStatus: string;
   }) {
     this._id = opts.id;
@@ -123,6 +127,8 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this._config = sortConfigByOrder(opts.config);
     this._feedbackConfig = opts.feedbackConfig;
     this._workflowStep = opts.workflowStep;
+    this._workflowName = opts.workflowName;
+    this._allowedNoteFeed = opts.allowedNoteFeed ?? [];
     this._entryStatus = opts.entryStatus;
     this.accountSettingsMgr = new AccountSettingsManager(this._dataset.modality);
     this.rpc.setErrorObserver((err) => {
@@ -312,6 +318,12 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   get workflowStep(): string {
     return this._workflowStep;
   }
+  get workflowName(): string {
+    return this._workflowName;
+  }
+  get allowedNoteFeed(): string[] {
+    return this._allowedNoteFeed;
+  }
   get entryStatus(): string {
     return this._entryStatus;
   }
@@ -427,6 +439,12 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       get workflowStep() {
         return driver.workflowStep;
       },
+      get workflowName() {
+        return driver.workflowName;
+      },
+      get allowedNoteFeed() {
+        return driver.allowedNoteFeed;
+      },
       get entryStatus() {
         return driver.entryStatus;
       },
@@ -481,6 +499,8 @@ import { ToolbarDriverAdapter } from "./adapter/toolbar";
 import { StatsDriverAdapter } from "./adapter/stats";
 import { SettingsDriverAdapter } from "./adapter/settings.svelte";
 
+import { workflowsBasePath } from "@/data/model/dataset/workflows/record";
+
 export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2> {
   const latestEntryRes = await entriesBackendDataSource.get(entryId, {
     included: ["dataset", "dataset.project"],
@@ -522,6 +542,25 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
         : `/api/v1/media/medias/files/${entry.resource}/processed.webp`,
   };
 
+  // Fetch workflow configuration to get workflowName and allowedNoteFeed
+  const workflowName = dataset.workflow_name ?? "default";
+  let allowedNoteFeed: string[] = [];
+
+  try {
+    const workflowsRes = await fetch(workflowsBasePath);
+    const jsonData = await workflowsRes.json();
+    const workflows: Array<{ name: string; allowed_note_feed?: string[] }> = jsonData.data?.workflows ?? [];
+
+    if (workflowName) {
+      const workflow = workflows.find((w) => w.name === workflowName);
+      if (workflow) {
+        allowedNoteFeed = workflow.allowed_note_feed ?? [];
+      }
+    }
+  } catch (error) {
+    console.error("Failed to fetch workflow configuration:", error);
+  }
+
   const driver = new IdahDriverV2({
     id: entry.id,
     entryName: entry.name || mediaInfo.filename, // `entries.name` is optional (API, imports)
@@ -531,6 +570,8 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
     config: dataset.labeling_configuration as IConfig,
     feedbackConfig: dataset.feedback_configuration as IFeedbackConfig,
     workflowStep: entry.wf_step,
+    workflowName,
+    allowedNoteFeed,
     entryStatus: entry.status,
   });
 
