@@ -132,7 +132,16 @@ describe("JsonRpcDatasource", () => {
 
       expect(fetchMock).not.toHaveBeenCalled();
 
-      // Resume — the queued call should now flush
+      // Resume against a recovered server — the queued calls (ann-1 re-queued
+      // after the failure, plus ann-2) should now flush and succeed.
+      fetchMock.mockResolvedValue({
+        status: 200,
+        json: () =>
+          Promise.resolve([
+            { jsonrpc: "2.0", id: "0", result: { id: "ann-1" } },
+            { jsonrpc: "2.0", id: "1", result: { id: "ann-2" } },
+          ]),
+      });
       rpc.resume();
       await vi.advanceTimersByTimeAsync(0);
 

@@ -12,8 +12,9 @@
 
   // Variables
   let progressInterval = writable<number | undefined>(undefined); // Note: Need to use writable because it's not reactive
-  let jobProgress: number = $state(exportRecord.progress);
-  let status = $state(exportRecord.status);
+  // Follow the record, and let polling overwrite them until the record changes.
+  let jobProgress: number = $derived(exportRecord.progress);
+  let status = $derived(exportRecord.status);
 
   const processingStatuses = ["running", "pending"];
 

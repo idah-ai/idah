@@ -1,6 +1,6 @@
 <script lang="ts" generics="T extends Record">
   import { Combobox } from "bits-ui";
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
 
   import UnassignedAvartar from "@/components/app/datasets/entries/data-tables/filters/unassigned-avartar.svelte";
   import ComboboxField from "@/components/app/forms/fields/combobox/combobox-field.svelte";
@@ -23,19 +23,23 @@
   let { columnSetting, contexts, filters, onFilter }: DataTableFilterBaseProps<T> = $props();
 
   // Contexts
-  if (!contexts || !("projectId" in contexts)) {
-    throw new Error("`projectId` is required in contexts for FilterByProjectMember");
-  }
-  let { projectId } = contexts as { projectId: string };
+  untrack(() => {
+    if (!contexts || !("projectId" in contexts)) {
+      throw new Error("`projectId` is required in contexts for FilterByProjectMember");
+    }
+  });
+  let { projectId } = $derived(contexts as { projectId: string });
 
   // Filter key → assigned_to_email__match
-  const filterKey: string = columnSetting.filterOptions?.filterKey || "assigned_to_email";
-  const filterOperation: DataTableColumnFilterOperation = columnSetting.filterOptions?.filterOperation || "match";
-  const emailKey: string = `${filterKey}__${filterOperation}`;
+  const filterKey: string = $derived(columnSetting.filterOptions?.filterKey || "assigned_to_email");
+  const filterOperation: DataTableColumnFilterOperation = $derived(
+    columnSetting.filterOptions?.filterOperation || "match",
+  );
+  const emailKey: string = $derived(`${filterKey}__${filterOperation}`);
 
   // Tracks the combobox input text (seeded from the active filter; re-seeds when the column popover
   // reopens). Used only to decide Unassigned visibility.
-  let inputText: string = $state((filters[emailKey] as string | undefined) ?? "");
+  let inputText: string = $state(untrack(() => (filters[emailKey] as string | undefined) ?? ""));
 
   // The currently loaded member choices (from ComboboxField), to tell whether the input is a real member.
   let members: LabelValue<string | number>[] = $state([]);

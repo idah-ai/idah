@@ -90,7 +90,7 @@ describe("createChangesAdapter", () => {
       2,
     );
 
-    const { items } = await adapter.changes({ limit: 100 });
+    const { items } = await adapter.changes({ size: 100 });
     expect(items[0]).toMatchObject({ id: "c-1", account_id: null, account_email: null });
     expect(items[0].changed_at).toBe(Date.UTC(2026, 9, 30, 5, 14, 55));
     expect(items[1].changed_at).toBe(Date.UTC(2026, 9, 30, 5, 14, 55));

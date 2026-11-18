@@ -40,10 +40,10 @@
   }: Props = $props();
 
   // Variables
-  let sizeClasses: Record<string, string> = {
+  let sizeClasses: Record<string, string> = $derived({
     sm: showName && showEmail ? "size-8 text-sm rounded-full" : "size-6 text-sm rounded-full",
     md: "size-8 text-base",
-  };
+  });
 </script>
 
 <div class="flex items-{align} group gap-2">
