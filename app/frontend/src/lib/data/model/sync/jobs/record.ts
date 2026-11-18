@@ -41,6 +41,6 @@ export class SyncJobRecord extends Record {
 }
 
 RecordFactory.registerTypes(SyncJobRecord);
-const syncJobsBasePath = `${import.meta.env.VITE_IDAH_HOST}/api/v1/sync/jobs`;
+const syncJobsBasePath = `/api/v1/sync/jobs`;
 
 export const SyncJobsBackendDataSource = createBackendDataSource(SyncJobRecord, syncJobsBasePath);

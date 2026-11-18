@@ -6,6 +6,7 @@ plugins:
   - name: sentry
     config:
       dsn: <%= ENV["SENTRY_DSN"] %>
+      environment: <%= ENV["SENTRY_ENVIRONMENT"] %> # empty: APP_ENVIRONMENT
       tracing: otel
       traces_sample_rate: <%= ENV.fetch("SENTRY_TRACES_SAMPLE_RATE", 0.0) %>
       profiles_sample_rate: <%= ENV.fetch("SENTRY_PROFILES_SAMPLE_RATE", 0.0) %>
@@ -35,17 +36,30 @@ plugins:
   - name: shrine
     config:
       storages:
+        # SYNC_FILES_ADAPTER picks the storage: file_system (the default) keeps
+        # files on disk under SYNC_FILES_PATH; s3 uses the SYNC_FILES_* S3
+        # settings, which are only required in that case.
         - name: default
+<% if ENV.fetch("SYNC_FILES_ADAPTER", "file_system") == "s3" %>
+<%   # Empty counts as missing: compose passes unset settings as empty strings.
+      s3 = ->(key) { ENV[key].to_s.empty? ? raise(KeyError, "#{key} is required when SYNC_FILES_ADAPTER=s3") : ENV[key] } %>
           adapter: s3
           config:
-            bucket: <%= ENV.fetch("SYNC_FILES_BUCKET") %>
-            access_key_id: <%= ENV.fetch("SYNC_FILES_ACCESS_KEY_ID") %>
-            secret_access_key: <%= ENV.fetch("SYNC_FILES_SECRET_ACCESS_KEY") %>
+            bucket: <%= s3.("SYNC_FILES_BUCKET") %>
+            access_key_id: <%= s3.("SYNC_FILES_ACCESS_KEY_ID") %>
+            secret_access_key: <%= s3.("SYNC_FILES_SECRET_ACCESS_KEY") %>
             public: false
-            region: <%= ENV.fetch("SYNC_FILES_REGION") %>
-            prefix: files
-            endpoint: <%= ENV.fetch("SYNC_FILES_ENDPOINT") %> # https://storage.googleapis.com
-  - name: periodic
+            region: <%= s3.("SYNC_FILES_REGION") %>
+            # Where in the bucket: its own folder, the same as on a volume, so media
+            # and sync can share one without mixing. Slashes at either end would
+            # double up in every key.
+            prefix: <%= ENV["SYNC_FILES_PREFIX"].to_s.gsub(%r{\A/+|/+\z}, "").then { |p| p.empty? ? "sync/files" : p } %>
+            endpoint: <%= s3.("SYNC_FILES_ENDPOINT") %> # https://storage.googleapis.com
+<% else %>
+          adapter: file_system
+          config:
+            path: <%= ENV.fetch("SYNC_FILES_PATH", "tmp/storage/production") %>
+<% end %>
 
 kv_store:
   adapter: Verse::Redis::KVStore
@@ -72,13 +86,23 @@ idah:
   # Jobs used for processing sync
   jobs:
     concurrency: <%= ENV.fetch("IDAH_JOBS_CONCURRENCY", 1) %>
+  # In-memory cache for ProjectMembership::Lookup (org_owner membership union).
+  # Per-process LRU. Entries expire after a TTL (default 300s) so a missed
+  # invalidation broadcast cannot leave stale authorization data indefinitely.
+  project_membership_cache:
+    enabled: <%= ENV.fetch("IDAH_PROJECT_MEMBERSHIP_CACHE_ENABLED", "true") == "true" %>
+    # Seconds before an entry expires. Empty/unset gives the 300s default; a
+    # value <= 0 is rejected at boot.
+    ttl: <%= (ttl = ENV["IDAH_PROJECT_MEMBERSHIP_CACHE_TTL"]).to_s.empty? ? 300 : Integer(ttl).tap { |v| raise "IDAH_PROJECT_MEMBERSHIP_CACHE_TTL must be > 0 (got #{ttl})" if v <= 0 } %>
+    capacity: <%= ENV.fetch("IDAH_PROJECT_MEMBERSHIP_CACHE_CAPACITY", 10000) %>
   # Define where mounted plugins are stored.
   # Plugin system is managed directly by the application,
   # except for manual mounting and dev mode.
   plugins:
     # Path to load plugins from, supports glob patterns.
     # Will autoload plugins from this path
-    path: <%= ENV.fetch("IDAH_PLUGIN_PATH", "plugins/**") %>
+    # Defaults to plugins/ at the repository root (see PluginSystem.default_path).
+    path: <%= ENV.fetch("IDAH_PLUGIN_PATH"){ PluginSystem.default_path } %>
 
     # Auto reload modules when files change (only manual plugins)
     # True if the IDAH_DEV_PLUGIN env var is set to any value

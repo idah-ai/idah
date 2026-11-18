@@ -5,7 +5,8 @@
   import * as Dialog from "@/components/ui/dialog";
   import KbdTooltipButton from "@/components/app/tooltips/KbdTooltipButton.svelte";
 
-  import type { IIdahDriverV2, IStatEntry } from "@/plugin/v2/types";
+  import type { IIdahDriverV2, IStatEntry, IStatTag } from "@/plugin/v2/types";
+  import Badge from "@/components/ui/badge/badge.svelte";
 
   // Props
   interface Props {
@@ -31,17 +32,26 @@
   const grouped = $derived.by(() => {
     const map = new SvelteMap<
       string,
-      { header: string; unitHeader?: string; rows: { label: string; sortKey: string; value: string }[] }
+      {
+        header: string;
+        unitHeader?: string;
+        rows: {
+          label: string;
+          sortKey: string;
+          value: string;
+          tags?: IStatTag[];
+        }[];
+      }
     >();
 
-    for (const { key, value, section, sectionHeader, unitHeader, label } of stats) {
+    for (const { key, value, section, sectionHeader, unitHeader, label, tags } of stats) {
       const rest = key.split(".").slice(1);
       const rowLabel = label ?? humanizeKey(rest, unitHeader ?? "");
 
       if (!map.has(section)) {
         map.set(section, { header: sectionHeader ?? humanizeKey([section]), unitHeader, rows: [] });
       }
-      map.get(section)!.rows.push({ label: rowLabel, sortKey: rest.join("."), value });
+      map.get(section)!.rows.push({ label: rowLabel, sortKey: rest.join("."), value, tags });
     }
 
     return [...map.entries()]
@@ -117,9 +127,15 @@
               {/if}
               <table class="w-full text-sm">
                 <tbody>
-                  {#each rows as { label, value } (label)}
+                  {#each rows as { label, value, tags } (label)}
                     <tr class="border-b last:border-0">
-                      <td class="py-1.5">{label}</td>
+                      <td class="inline-flex items-center gap-2 py-1.5">
+                        {label}
+
+                        {#each tags ?? [] as tag (tag.label)}
+                          <Badge variant={tag.variant} class="px-1.5 text-[10px]">{tag.label}</Badge>
+                        {/each}
+                      </td>
                       <td class="py-1.5 text-right tabular-nums">{value}</td>
                     </tr>
                   {/each}

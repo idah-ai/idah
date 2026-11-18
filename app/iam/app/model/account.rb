@@ -36,6 +36,8 @@ module Account
 
   # TODO: scope for account creation might neede to be created and checked for different creator's account role
   class Repository < Verse::Sequel::Repository
+    include ActorEventMetadata
+
     self.table = "accounts"
     self.resource = Resource::Iam::Accounts
 
@@ -53,9 +55,21 @@ module Account
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
 
-        scope.as_org_owner? { accounts_from_project_member_scoped }
+        scope.as_org_owner? do
+          if action == :read
+            # Read union: self ∪ enabled members of the actor's org projects ∪
+            # co-members of projects where the actor is an enabled member.
+            accounts_from_org_and_membership_scoped
+          else
+            # Updates stay limited to accounts reachable through the actor's own
+            # orgs (foreign memberships never widen update scope).
+            accounts_from_project_member_scoped
+          end
+        end
 
-        scope.own { table.where(id: auth_context.metadata[:id]) }
+        scope.as_user? { accounts_from_own_memberships_scoped }
+
+        scope.own? { table.where(id: auth_context.metadata[:id]) }
       end
     end
 
@@ -69,7 +83,7 @@ module Account
         account = self.class.model_class.new(account)
         valid = account.password_match?(password)
 
-        add_event_metadata(
+        add_metadata(
           actor_account_id: account.id,
           actor_account_email: account.email,
           actor_account_role_name: account.role_name,
@@ -83,27 +97,9 @@ module Account
       valid ? account : nil
     end
 
-    def create(attributes)
-      with_metadata do
-        add_event_metadata
-
-        super(attributes)
-      end
-    end
-
-    def update!(id, attributes, scope: scoped(:update))
-      with_metadata do
-        add_event_metadata
-
-        super(id, attributes, scope:)
-      end
-    end
-
     def delete!(id)
       with_metadata do
         find!(id)
-
-        add_event_metadata
 
         super(id)
       end
@@ -111,29 +107,61 @@ module Account
 
     private
 
-    def add_event_metadata(**opts)
-      add_metadata(
-        actor_account_id: auth_context.metadata[:id],
-        actor_account_email: auth_context.metadata[:email],
-        actor_account_role_name: auth_context.metadata[:role],
-        **opts
-      )
-    end
-
     def accounts_from_project_member_scoped
       account_id = auth_context.metadata[:id]
       org_ids = auth_context[:org] || []
 
       membership_account_ids =
         if org_ids.any?
-          Api[:idah].dataset.project_members.index(
-            filter: { organization_id__in: org_ids, enabled: true }
-          ).data.map(&:account_id).uniq
+          ProjectMembership::Lookup.new.member_account_ids(organization_ids: org_ids)
         else
           []
         end
 
       account_ids = [account_id] + membership_account_ids
+
+      table.where(id: account_ids)
+    end
+
+    # as_org_owner read union: self ∪ enabled members of the actor's org projects
+    # ∪ co-members of projects where the actor is an enabled member.
+    def accounts_from_org_and_membership_scoped
+      account_id = auth_context.metadata[:id]
+      org_ids = auth_context[:org] || []
+
+      lookup = ProjectMembership::Lookup.new
+
+      account_ids = [account_id]
+
+      if org_ids.any?
+        account_ids += lookup.member_account_ids(organization_ids: org_ids)
+      end
+
+      # Co-members of the actor's own memberships (foreign projects included).
+      project_ids = lookup.memberships_for(account_id).map(&:project_id)
+      if project_ids.any?
+        account_ids += lookup.member_account_ids(project_ids:)
+      end
+
+      table.where(id: account_ids.uniq)
+    end
+
+    # as_user read scope: self ∪ co-members of projects where the actor is an
+    # enabled member. Resolved through ProjectMembership::Lookup.
+    def accounts_from_own_memberships_scoped
+      account_id = auth_context.metadata[:id]
+
+      # The actor's enabled memberships → the projects they belong to.
+      project_ids = ProjectMembership::Lookup.new.memberships_for(account_id).map(&:project_id)
+
+      membership_account_ids =
+        if project_ids.any?
+          ProjectMembership::Lookup.new.member_account_ids(project_ids:)
+        else
+          []
+        end
+
+      account_ids = ([account_id] + membership_account_ids).uniq
 
       table.where(id: account_ids)
     end

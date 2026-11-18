@@ -1,6 +1,9 @@
 <script lang="ts">
+  import { ChevronLeftIcon, ChevronRightIcon } from "@lucide/svelte";
+
+  import AnnotationsErrorAlertIcon from "$lib/components/App/SelectionPanel/_AnnotationsErrorAlertIcon.svelte";
+  import AnnotationsListItem from "$lib/components/App/SelectionPanel/_AnnotationsListItem.svelte";
   import Badge from "$lib/components/ui/Badge/Badge.svelte";
-  import Icon from "$lib/components/ui/Icon";
   import {
     Pagination,
     PaginationContent,
@@ -12,20 +15,8 @@
   } from "$lib/components/ui/Pagination";
   import { Separator } from "$lib/components/ui/Separator";
   import Text from "$lib/components/ui/Text/Text.svelte";
+  import { categorySearch } from "$lib/state/category-search.svelte";
 
-  import { ChevronLeftIcon, ChevronRightIcon } from "@lucide/svelte";
-
-  import CategoryAction from "$lib/components/App/CategorySelector/Category/_CategoryAction.svelte";
-
-  import polygonIconSvg from "$lib/assets/icons/polygon.svg?raw";
-  import vectorSquareIconSvg from "$lib/assets/icons/vector-square.svg?raw";
-
-  import { getAnnotationActions } from "$lib/components/App/SelectionPanel/menus";
-  import { getDriver } from "$lib/state/driver.svelte";
-  import { selection } from "$lib/state/selection.svelte";
-  import { categoryValueToLabel } from "$lib/utils/annotation";
-
-  import { VIDEO_POLYGON } from "$lib/types";
   import type { IVideoAnnotationRecord } from "$lib/types";
 
   type Props = {
@@ -53,12 +44,25 @@
       .map((entry) => entry.ann),
   );
 
+  // Filter by category search query (case-insensitive).
+  // Normalizes hyphens↔spaces so searching by id or label both work.
+  const filteredSortedAnnotations = $derived(
+    !categorySearch.value
+      ? sortedAnnotations
+      : sortedAnnotations.filter((ann) =>
+          (ann.category ?? "")
+            .toLowerCase()
+            .replace(/-/g, " ")
+            .includes(categorySearch.value.toLowerCase().replace(/-/g, " ")),
+        ),
+  );
+
   // -----------------------------------------------------------------------
   // Pagination
   // -----------------------------------------------------------------------
-  const totalPages = $derived(Math.max(1, Math.ceil(sortedAnnotations.length / PAGE_SIZE)));
-  const pagedAnnotations = $derived(sortedAnnotations.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
-  const showPagination = $derived(sortedAnnotations.length > PAGE_SIZE);
+  const totalPages = $derived(Math.max(1, Math.ceil(filteredSortedAnnotations.length / PAGE_SIZE)));
+  const pagedAnnotations = $derived(filteredSortedAnnotations.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
+  const showPagination = $derived(filteredSortedAnnotations.length > PAGE_SIZE);
 
   // When paginating, pad the last (shorter) page with empty rows so every page
   // keeps the same height and the pagination controls stay anchored at the bottom.
@@ -73,56 +77,26 @@
 <section class="flex flex-col gap-2">
   <div class="flex items-center gap-2">
     <Text weight="semibold">Annotations</Text>
+
     <Badge variant="secondary">{annotations.length}</Badge>
+
+    <AnnotationsErrorAlertIcon {annotations} />
+
     <Text size="sm" class="text-muted-foreground ml-auto">on Frame : {currentFrame + 1}</Text>
   </div>
 
   <div class="flex flex-col gap-1">
     <Separator class="my-2" />
-    {#each pagedAnnotations as ann (ann.id)}
-      {@const annShapeType = ann.shape_type as string}
-      {@const annConfig = getDriver().config[annShapeType]}
-      {@const annCategory = annConfig?.values?.find((v) => v.id === ann.category)}
-      {@const annColor = annCategory?.color ?? null}
-      {@const annGroupId = ann.metadata?.group_id ?? ann.id}
-      {@const annGroupIdLastPart = annGroupId.split("-").pop()}
-      {@const annDisplayName = annCategory
-        ? `${annCategory.label}-${annGroupIdLastPart}`
-        : (ann.category ?? "Uncategorized")}
-      {@const annParentLabel = annCategory ? categoryValueToLabel(annCategory.id) : ""}
-      <div class="group hover:bg-accent flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs">
-        <button
-          class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
-          onclick={() => {
-            selection.selectAnnotation(ann);
-            getDriver().command.call("idah-video:timeline.scroll-to-annotation");
-          }}
-        >
-          {#if annShapeType === VIDEO_POLYGON}
-            <Icon src={polygonIconSvg} color={annColor} />
-          {:else}
-            <Icon src={vectorSquareIconSvg} color={annColor} />
-          {/if}
-          <div class="flex min-w-0 flex-col">
-            {#if annParentLabel.length > 0}
-              <span class="text-muted-foreground truncate text-xs">{annParentLabel}</span>
-            {/if}
-            <span class="truncate">{annDisplayName}</span>
-          </div>
-        </button>
-
-        <div class="ml-auto flex shrink-0 items-center gap-0">
-          {#each getAnnotationActions(ann) as { label, icon: Icon, disabled, onclick }}
-            <div class="opacity-0 transition-opacity group-hover:opacity-100">
-              <CategoryAction {label} icon={Icon} {disabled} {onclick} />
-            </div>
-          {/each}
-        </div>
-      </div>
+    {#each pagedAnnotations as annotation (annotation.id)}
+      <AnnotationsListItem {annotation} />
     {/each}
 
-    {#if annotations.length === 0}
-      <div class="text-muted-foreground px-2 py-4 text-center text-xs">No annotations</div>
+    {#if filteredSortedAnnotations.length === 0}
+      {#if annotations.length === 0}
+        <div class="text-muted-foreground px-2 py-4 text-center text-xs">No annotations on this frame</div>
+      {:else}
+        <div class="text-muted-foreground px-2 py-4 text-center text-xs">No matching annotations</div>
+      {/if}
     {/if}
 
     <!-- Reserve space on the last page so pagination doesn't shift upward.
@@ -133,7 +107,7 @@
   </div>
 
   {#if showPagination}
-    <Pagination count={annotations.length} perPage={PAGE_SIZE} bind:page>
+    <Pagination count={filteredSortedAnnotations.length} perPage={PAGE_SIZE} bind:page>
       {#snippet children({ pages, currentPage })}
         <PaginationContent class="flex-wrap gap-0.5">
           <PaginationItem>

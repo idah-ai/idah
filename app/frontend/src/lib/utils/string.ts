@@ -83,7 +83,34 @@ export function slugify(str: string): string {
     .replace(/[^\w-]+/g, ""); // Remove all non-word chars except hyphen
 }
 
+/**
+ * FNV-1a, 32 bits. Used only where Web Crypto is unavailable: it is not a
+ * cryptographic hash, and nothing here relies on it being one.
+ */
+function fallbackHash(message: string): string {
+  let hash = 0x811c9dc5;
+
+  for (let i = 0; i < message.length; i++) {
+    hash ^= message.charCodeAt(i);
+    // hash * 16777619, in 32-bit arithmetic that stays exact.
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+
+  return hash.toString(16).padStart(8, "0");
+}
+
+/**
+ * A stable hash of a string, used to key cached responses.
+ *
+ * SHA-256 where Web Crypto is available. It is not on a plain-HTTP origin
+ * other than localhost, which browsers treat as an insecure context, so an
+ * install served without TLS falls back rather than throwing.
+ */
 export async function generateHash(message: string): Promise<string> {
+  if (!globalThis.crypto?.subtle) {
+    return fallbackHash(message);
+  }
+
   const encoder = new TextEncoder();
   const data = encoder.encode(message);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);

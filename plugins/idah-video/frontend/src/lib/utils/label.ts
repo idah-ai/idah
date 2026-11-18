@@ -11,6 +11,7 @@
 // resolved through getInterpolatedFrame() rather than read off shape.points.
 // ---------------------------------------------------------------------------
 import { getDriver } from "$lib/state/driver.svelte";
+import type { LabelVisibility } from "$lib/state/ui.svelte";
 import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON, type IVideoAnnotationShape } from "$lib/types";
 import { categoryValueToLabel } from "$lib/utils/annotation";
 import { getInterpolatedFrame } from "$lib/utils/interpolation";
@@ -28,6 +29,21 @@ type LabelAnnotation = {
 export interface AnnotationLabel {
   text: string;
   unresolved: boolean;
+}
+
+/**
+ * Decide whether an annotation label should be rendered.
+ *
+ * Unresolved labels are data errors and stay visible regardless of the user's
+ * category-label visibility setting. Resolved labels use the normal visibility
+ * decision supplied by the caller (always/hover/never plus interaction state).
+ */
+export function isAnnotationLabelVisible(
+  label: AnnotationLabel,
+  visibility: LabelVisibility,
+  normalVisibility: boolean,
+): boolean {
+  return label.unresolved || (visibility !== "never" && normalVisibility);
 }
 
 /** Uppercase the first character, matching categoryValueToLabel's own segment casing. */

@@ -237,6 +237,39 @@ RSpec.describe ApiKey::Service, database: true do
         )
       end
 
+      it "raises error if update expired api key" do
+        # First set the key to be expired
+        expired_api_key_id = api_keys_repo.create(
+          account_id: service_account_id,
+          name: "Expired Key",
+          key_label: "IDAH_1234...abcd",
+          key_sha: Digest::SHA256.hexdigest("test_key_1"),
+          permissions: %w[org_rw_all],
+          scope_type: "org",
+          scope_value: ["1"],
+          expires_at: Time.now - 3600,
+          revoked_at: nil,
+          status: "active"
+        )
+
+        record = deserialize(
+          {
+            data: {
+              type: Resource::Iam::ApiKeys,
+              id: expired_api_key_id,
+              attributes: {
+                name: "Should Fail"
+              }
+            }
+          }
+        )
+
+        expect { subject.update(record) }.to raise_error(
+          Verse::Error::ValidationFailed,
+          "Cannot update an expired API key"
+        )
+      end
+
       it "raises error if expires_at is in the past" do
         record = deserialize(
           {
@@ -323,6 +356,24 @@ RSpec.describe ApiKey::Service, database: true do
           expect(permission.title).to be_a(String)
         end
       end
+
+      it "returns organization-level permissions" do
+        permissions = subject.show_permissions("org")
+        expect(permissions).to be_an(Array)
+
+        expect(permissions.map(&:name)).to all(end_with("_org"))
+      end
+
+      it "returns project-level permissions" do
+        permissions = subject.show_permissions("project")
+        expect(permissions).to be_an(Array)
+
+        expect(permissions.map(&:name)).to all(start_with("project_").and(end_with("_org")))
+      end
+
+      it "raises an error for an invalid scope type" do
+        expect { subject.show_permissions("invalid_scope") }.to raise_error(Verse::Error::ValidationFailed)
+      end
     end
 
     describe "#expire_api_keys" do
@@ -388,8 +439,8 @@ RSpec.describe ApiKey::Service, database: true do
       end
 
       it "returns a list of API keys scoped to the current organization" do
-        allow(Api[:idah].dataset.projects).to receive(:index).and_return(
-          double(data: [double(id: "1", name: "Test Organization")])
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(
+          double(project_ids_for_organizations: ["1"])
         )
         # Create a key owned by the current org owner (id: 2)
         api_keys_repo.create(

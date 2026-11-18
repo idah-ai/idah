@@ -55,7 +55,7 @@ export class ApiKeyRecord extends Record {
 
 RecordFactory.registerTypes(ApiKeyRecord);
 
-const apiKeyBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/iam/api_keys`;
+const apiKeyBasePath: string = `/api/v1/iam/api_keys`;
 
 export const apiKeysBackendDataSource = createBackendDataSource(ApiKeyRecord, apiKeyBasePath, {
   permission_list: async (params: { scope_type: string }) => {

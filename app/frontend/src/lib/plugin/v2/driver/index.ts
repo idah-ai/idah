@@ -19,11 +19,14 @@ import type {
   ISyncEvent,
   IAccountSettingsDriverV2,
   Unsubscribe,
+  IFeedbackConfig,
 } from "../types";
 
 import { AstProcessor } from "../utils/ast-evaluator";
 import { modKey } from "../utils/browser";
-import { IdbBackedAnnotationsDriverAdapter } from "./adapter/idb-driver";
+import { IdbBackedAnnotationsDriverAdapter, type ReloadReason } from "./adapter/idb-driver";
+import { createReloadScheduler } from "./reload-scheduler";
+import { dismissToast, showToast } from "@/components/ui/toast/index.svelte";
 import registerCommands from "./command";
 import { CommandManagerV2 } from "./manager/command-manager";
 import { ToolbarManagerV2 } from "./manager/toolbar-manager.svelte";
@@ -34,6 +37,9 @@ import type { RecordResponse } from "@/data/model/types";
 // ── Constants ────────────────────────────────────────────────────────────
 
 const PLUGIN_ID = "idah-video"; // TODO: make this dynamic from the route param
+
+/** Fixed id for the "close other tabs" toast so it can be dismissed on unblock. */
+const BLOCKED_TOAST_ID = "idb-blocked";
 
 /**
  * Return a config whose shape keys are ordered by their persisted `order` field.
@@ -57,9 +63,11 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   private readonly commandMgr = new CommandManagerV2();
   private readonly toolbarMgr = new ToolbarManagerV2();
   private readonly accountSettingsMgr: AccountSettingsManager;
-  private readonly rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);
+  private readonly rpc = new JsonRpcDatasource(`/api/v1/dataset/annotations/_rpc`);
 
   private pendingCount = 0;
+  #readOnly = false;
+  #scheduleReload: () => void;
 
   // ── Adapters exposed to the user ──────────────────────────────────────
 
@@ -73,10 +81,12 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   // ── Activity context ──────────────────────────────────────────────────
 
   private _id: string;
+  private _entryName: string;
   private _dataset: IDatasetInfo;
   private _project: IProjectInfo;
   private _media: IMediaInfo;
   private _config: IConfig;
+  private _feedbackConfig: IFeedbackConfig;
   private _workflowStep: string;
   private _workflowName: string;
   private _allowedNoteFeed: string[] = [];
@@ -98,20 +108,24 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
   constructor(opts: {
     id: string;
+    entryName: string;
     dataset: IDatasetInfo;
     project: IProjectInfo;
     media: IMediaInfo;
     config: IConfig;
+    feedbackConfig: IFeedbackConfig;
     workflowStep: string;
     workflowName: string;
     allowedNoteFeed?: string[];
     entryStatus: string;
   }) {
     this._id = opts.id;
+    this._entryName = opts.entryName;
     this._dataset = opts.dataset;
     this._project = opts.project;
     this._media = opts.media;
     this._config = sortConfigByOrder(opts.config);
+    this._feedbackConfig = opts.feedbackConfig;
     this._workflowStep = opts.workflowStep;
     this._workflowName = opts.workflowName;
     this._allowedNoteFeed = opts.allowedNoteFeed ?? [];
@@ -119,6 +133,17 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     this.accountSettingsMgr = new AccountSettingsManager(this._dataset.modality);
     this.rpc.setErrorObserver((err) => {
       this.syncErrorListeners.forEach((cb) => cb(err));
+    });
+
+    this.#scheduleReload = createReloadScheduler({
+      pendingCount: () => this.pendingCount,
+      onSyncChange: (cb) => this.onSyncChange((event) => cb(event.queued)),
+      reload: () => this.#reload(),
+      onSchedule: () => {
+        // Block local writes so the queue can drain and the closed DB is not
+        // written to; the reload happens once the queue empties.
+        this.#readOnly = true;
+      },
     });
 
     // Build command & toolbar adapters
@@ -136,6 +161,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       pluginId: PLUGIN_ID,
       backend: backendDriver,
       enqueue: (op: Promise<unknown>) => this.#enqueue(op),
+      isReadOnly: () => this.#readOnly,
+      onReloadRequired: (reason) => this.#handleReloadRequired(reason),
+      onUnblocked: () => this.#dismissBlockedToast(),
     });
     this.idbAnnotationsDriver = idbDriver;
     this.annotations = idbDriver?.sealed() ?? new AnnotationsDriverAdapter(this._id, this.rpc);
@@ -223,6 +251,44 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     });
   }
 
+  /**
+   * Another tab upgraded (or blocked) the local cache database. The driver has
+   * already closed it.
+   *
+   * - `"upgraded"`: reload once queued backend writes drain, so none are lost.
+   * - `"blocked"`: an older tab holds the DB open; reloading would just block
+   *   again, so only warn the user to close the other tabs.
+   */
+  #handleReloadRequired(reason: ReloadReason): void {
+    if (reason === "blocked") {
+      showToast.warning({
+        id: BLOCKED_TOAST_ID,
+        title: "Close other tabs of this editor",
+        description: "Close other tabs of this editor to continue.",
+        dismissable: true,
+        duration: Infinity,
+      });
+      return;
+    }
+
+    showToast.info({
+      title: "Reload to continue",
+      description: "This editor was updated in another tab. Reload to continue.",
+      dismissable: true,
+      duration: Infinity,
+    });
+
+    this.#scheduleReload();
+  }
+
+  #dismissBlockedToast(): void {
+    dismissToast(BLOCKED_TOAST_ID);
+  }
+
+  #reload(): void {
+    if (typeof location !== "undefined") location.reload();
+  }
+
   #emitSyncChange(): void {
     const event: ISyncEvent = { queued: this.pendingCount };
     this.syncChangeListeners.forEach((cb) => cb(event));
@@ -232,6 +298,10 @@ export class IdahDriverV2 implements IIdahDriverV2 {
 
   get id(): string {
     return this._id;
+  }
+
+  get entryName(): string {
+    return this._entryName;
   }
 
   get dataset(): IDatasetInfo {
@@ -262,6 +332,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
   }
   get config(): IConfig {
     return this._config;
+  }
+  get feedbackConfig(): IFeedbackConfig {
+    return this._feedbackConfig;
   }
 
   get accountSettings(): IAccountSettingsDriverV2 {
@@ -350,6 +423,9 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     return {
       get id() {
         return driver.id;
+      },
+      get entryName() {
+        return driver.entryName;
       },
       get dataset() {
         return driver.dataset;
@@ -462,8 +538,8 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
       // TODO: this is a hack to get the correct media URL for video vs image.
       // We should have a better way to determine the media type and URL.
       entry.dataset.modality === "idah-video"
-        ? `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/master.m3u8`
-        : `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/${entry.resource}/processed.webp`,
+        ? `/api/v1/media/medias/files/${entry.resource}/master.m3u8`
+        : `/api/v1/media/medias/files/${entry.resource}/processed.webp`,
   };
 
   // Fetch workflow configuration to get workflowName and allowedNoteFeed
@@ -487,10 +563,12 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
 
   const driver = new IdahDriverV2({
     id: entry.id,
+    entryName: entry.name || mediaInfo.filename, // `entries.name` is optional (API, imports)
     dataset: datasetInfo,
     project: projectInfo,
     media: mediaInfo,
     config: dataset.labeling_configuration as IConfig,
+    feedbackConfig: dataset.feedback_configuration as IFeedbackConfig,
     workflowStep: entry.wf_step,
     workflowName,
     allowedNoteFeed,

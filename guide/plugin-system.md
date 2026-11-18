@@ -17,6 +17,7 @@ Every plugin **must** have a `manifest.json` at its root. This JSON file declare
   "type": "idah-plugin",
   "name": "idah-video",
   "version": "0.1.0",
+  "idahVersion": "0.1.0",
   "title": "IDAH Video Annotation",
   "description": "Video annotation support",
   "modalities": [{
@@ -50,7 +51,8 @@ Every plugin **must** have a `manifest.json` at its root. This JSON file declare
 |---|---|---|
 | `type` | `string` | Always `"idah-plugin"` |
 | `name` | `string` | Unique plugin identifier (used as directory name convention) |
-| `version` | `string` | Semantic version |
+| `version` | `string` | Semantic version of the plugin itself |
+| `idahVersion` | `string` | Optional. Oldest platform version the plugin works with, e.g. `"0.1.0"`. A service older than this logs a warning and loads the plugin anyway |
 | `title` | `string` | Human-readable display name |
 | `description` | `string` | Short description of plugin functionality |
 | `modalities` | `array<object>` | Annotation modalities this plugin provides |
@@ -65,6 +67,20 @@ Each modality object describes an annotation mode:
 | `id` | `string` | Unique modality identifier (namespaced with plugin name) |
 | `label` | `string` | Human-readable modality name |
 | `shapes` | `object` | Map of shape types this modality supports |
+
+Each shape (and tagging entry) may declare an optional `args` object describing its `shape_args` keys. The syntax follows JSON Schema (`type`, with an `x-` extension for the identity key):
+
+```json
+"bounding-box": {
+  "label": "Bounding Box",
+  "icon": "api/v1/plugins/idah-video/assets/bounding-box-icon.svg",
+  "args": {
+    "frames": { "type": "array", "x-identity-key": "frame" }
+  }
+}
+```
+
+Only `type: "array"` entries with a non-empty String `x-identity-key` are read today: they tell the dataset service which arrays inside `shape_args` are keyed by that identity key, so annotation change history diffs keyed arrays by item rather than by position (the video plugin's `frames` is keyed by `frame`). A non-Hash `args` fails the manifest schema and stops the service from booting; any other malformed entry is ignored with a warning. The image plugin declares no `args`. The setting service returns `args` to the frontend (see "Modality Shapes" below).
 
 ### Entry Points
 
@@ -258,7 +274,7 @@ Returns all modalities across all plugins, mapped to their owning plugin names. 
 GET /plugins/modalities/:name
 ```
 
-Returns the available shape types for a specific modality (identified by its `name` parameter). Each shape includes a label and any shape-specific configuration.
+Returns the available shape types for a specific modality (identified by its `name` parameter). Each shape includes a label, an icon, and — when the manifest declares it — its `args` (see "Modality Objects" above). The frontend types this as `ModalityShape` with an optional `args` field.
 
 ### Plugin Assets
 
@@ -441,21 +457,17 @@ Not all backend subdirectories need to be present — only those relevant to the
 
 ---
 
-## Service Plugin Symlinks
+## Where Services Find Plugins
 
-Three of the four Ruby services expose the `plugins/` directory inside their own `app/<service>/` tree via a **symlink**, created by each service's `dev-entrypoint.sh` at container startup:
+Plugins live only in the repository's `plugins/` directory. Services have no `plugins` link or copy inside `app/<service>/`: when `IDAH_PLUGIN_PATH` is not set, they search `PluginSystem.default_path`, which resolves `plugins/` against the repository root (the parent of `common/`) and adds `plugins_dev/plugins` in development.
 
-```
-$ ls -la app/*/plugins
-lrwxrwxrwx  app/media/plugins   -> ../../plugins
-lrwxrwxrwx  app/setting/plugins -> ../../plugins
-lrwxrwxrwx  app/sync/plugins    -> ../../plugins
+| Where the service runs | Plugins are found in |
+|---|---|
+| Local checkout, CI | `<repository>/plugins/**` |
+| Container image | `/plugins/**`, copied in by `docker/Dockerfile.service` |
+| Development containers | `/plugins/**`, mounted from `./plugins` by `compose.yml` |
 
-### What this means in practice
-
-- **`plugins/<name>/` is the single canonical source tree** for every plugin. The symlinks exist only so that each service's filesystem-scanning logic (see [Discovery & Loading](#discovery--loading)) can find plugin code at `app/<service>/plugins/<name>/...` without needing special path configuration per service.
-- **Symlinks are created at startup**, not checked into git. They are set up by each service's `dev-entrypoint.sh` and always point at `../../plugins` — they cannot go stale or drift from the real tree.
-- **Always navigate to and edit files under `plugins/<name>/` directly.** If you encounter a path under `app/<service>/plugins/` during exploration (e.g., in a stack trace, a build log, or a directory listing), recognize it as the same file and go to the canonical path instead of treating it as a separate location.
+`IDAH_PLUGIN_PATH` overrides the default with a `;`-separated list of glob patterns; relative patterns are resolved from the service's directory.
 
 ---
 
@@ -463,7 +475,7 @@ lrwxrwxrwx  app/sync/plugins    -> ../../plugins
 
 | Aspect | Detail |
 |---|---|
-| **Discovery** | Filesystem glob via `IDAH_PLUGIN_PATH` env var (default `plugins/**`) |
+| **Discovery** | Filesystem glob via `IDAH_PLUGIN_PATH` env var (default `plugins/**` at the repository root, see `PluginSystem.default_path`) |
 | **Configuration** | `manifest.json` at plugin root |
 | **Backend lifecycle** | `Plugin.start` → resolve path → Zeitwerk → context → `init` |
 | **Service contexts** | Media (processors), Sync (exports), Dataset (stats), Setting (no-op) |

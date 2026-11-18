@@ -10,6 +10,8 @@ import { NoteCommentRecord } from "@/data/model/dataset/notes/comments/record";
 
 import type { Hash } from "@/utils/types";
 
+export type NoteFeedType = "entry" | "pin" | "annotation";
+
 @type("dataset:note_feeds")
 export class NoteFeedRecord extends Record {
   @field() public entry_id!: string;
@@ -21,7 +23,8 @@ export class NoteFeedRecord extends Record {
 
   @field() public readonly status!: "pending" | "resolved";
 
-  @field() public content_md!: string;
+  @field() public content_md!: string | null;
+  @field() public feedback_keys!: string[] | null;
 
   @field({ transformer: Transformers.Time }) public readonly created_at!: Date;
   @field({ transformer: Transformers.Time }) public readonly updated_at!: Date;
@@ -31,18 +34,34 @@ export class NoteFeedRecord extends Record {
   @relationship() public annotation!: AnnotationRecord;
   @relationship() public note_comments!: NoteCommentRecord[];
 
-  public get noteType(): "general" | "video_frame" | "annotation" {
+  public get noteType(): NoteFeedType {
     if (this.annotation_id) return "annotation";
 
-    if (this.anchor_type === "entry" && Object.keys(this.position || {}).length > 0) return "video_frame";
+    if (this.anchor_type === "entry" && Object.keys(this.position || {}).length > 0) return "pin";
 
-    return "general";
+    return "entry";
+  }
+
+  /**
+   * True when this note is anchored to an annotation that has been soft-deleted
+   * (annotations.deleted_at set). Derived from the included annotation each time
+   * notes are loaded, so undo/restore clears it automatically.
+   */
+  public get isAnchorDeleted(): boolean {
+    if (this.anchor_type !== "annotation") return false;
+    try {
+      return !!this.annotation?.deleted_at;
+    } catch {
+      // Annotation relationship not loaded (e.g. detail view without include) —
+      // we can't tell, so treat it as not deleted.
+      return false;
+    }
   }
 }
 
 RecordFactory.registerTypes(NoteFeedRecord);
 
-const noteFeedBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/note_feeds`;
+const noteFeedBasePath: string = `/api/v1/dataset/note_feeds`;
 
 export const noteFeedsBackendDataSource = createBackendDataSource(NoteFeedRecord, noteFeedBasePath, {
   markAsResolved: async (noteFeedId: string) => {

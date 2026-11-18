@@ -25,7 +25,7 @@ export class JobRecord extends Record {
   @field({ transformer: Transformers.Time }) public readonly updated_at!: Date;
 }
 
-const jobBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/jobs`;
+const jobBasePath: string = `/api/v1/media/jobs`;
 
 RecordFactory.registerTypes(JobRecord);
 

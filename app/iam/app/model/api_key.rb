@@ -61,6 +61,8 @@ module ApiKey
   end
 
   class Repository < Verse::Sequel::Repository
+    include ActorEventMetadata
+
     self.table = "api_keys"
     self.resource = Resource::Iam::ApiKeys
 
@@ -80,27 +82,9 @@ module ApiKey
       end
     end
 
-    def create(attributes)
-      with_metadata do
-        add_event_metadata
-
-        super(attributes)
-      end
-    end
-
-    def update!(id, attributes, scope: scoped(:update))
-      with_metadata do
-        add_event_metadata
-
-        super(id, attributes, scope:)
-      end
-    end
-
     def delete!(id)
       with_metadata do
         find!(id)
-
-        add_event_metadata
 
         super(id)
       end
@@ -108,29 +92,21 @@ module ApiKey
 
     private
 
-    def add_event_metadata(**opts)
-      add_metadata(
-        actor_account_id: auth_context.metadata[:id],
-        actor_account_email: auth_context.metadata[:email],
-        actor_account_role_name: auth_context.metadata[:role],
-        **opts
-      )
-    end
-
     def projects_from_organization_scoped
-      organization_id = auth_context.custom_scopes[:org]&.first
-      return table.where(Sequel.lit("false")) unless organization_id
+      organization_ids = auth_context.custom_scopes[:org]
 
-      projects = Api[:idah].dataset.projects.index(filter: { organization_id: }).data
+      return table.where(Sequel.lit("false")) if organization_ids.empty?
+
+      project_ids = ProjectMembership::Lookup.new.project_ids_for_organizations(organization_ids)
 
       # Use <@ (contained by) operator to ensure ALL scope_values are within the
       # user's own org projects/orgs — excludes API keys referencing projects or orgs
       # outside the user's organization, preventing cross-org visibility.
       table.where(
         Sequel.lit(
-          "(scope_type = 'project' AND scope_value <@ ?) OR (scope_type = 'org' AND scope_value <@ ?)",
-          Sequel.pg_array(projects.map(&:id)),
-          Sequel.pg_array([organization_id])
+          "(scope_type = 'project' AND scope_value <@ ?::text[]) OR (scope_type = 'org' AND scope_value <@ ?::text[])",
+          Sequel.pg_array(project_ids),
+          Sequel.pg_array(organization_ids)
         )
       )
     end

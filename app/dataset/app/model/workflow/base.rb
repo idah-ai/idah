@@ -19,5 +19,11 @@ module Workflow
     def new_state
       aasm.current_state
     end
+
+    # Steps a completed entry can be reopened to — excludes non-work states
+    # (start pseudo-stage, done, error).
+    def reopenable_steps
+      aasm.states.map(&:name) - [:start, :done, :error]
+    end
   end
 end

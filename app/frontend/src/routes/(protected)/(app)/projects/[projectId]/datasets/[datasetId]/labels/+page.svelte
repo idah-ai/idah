@@ -18,20 +18,27 @@
     showConfirmModal,
   } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+  import { clearCache } from "@/data/Cache";
+  import { entriesBasePath } from "@/data/model/dataset/entries/record";
+  import { entryStatsBasePath } from "@/data/model/dataset/entry-stats/record";
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
+  import { resourcePath } from "@/data/BackendDataSource";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { datasetStatsSyncContext, type DatasetStatsSyncContext } from "@/utils/dataset-stats-sync.svelte";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
+  import { refetches } from "@/utils/refetch";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   import type { ModalityShapes, ModalityTagging } from "@/data/model/setting/plugin/types";
-  import type { ProjectMemberScope, Resource, Scope } from "@/security/types";
+  import type { Resource } from "@/security/types";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
   const dataset: DatasetRecord = getContext("dataset");
+  const datasetStatsSync: DatasetStatsSyncContext = getContext(datasetStatsSyncContext);
 
   // Variables
   const projectId: string = page.params.projectId as string;
@@ -53,15 +60,10 @@
     Discard: "discard",
   } as const;
 
-  const as_project_owner: { as_user: ProjectMemberScope } = {
-    as_user: {
-      projectId,
-      projectMemberRoles: ["project_owner"],
-    },
-  };
-  const permission: { resource: Resource; scopes: Scope[] } = {
+  const permission: { resource: Resource; projectId: string; minRole: string } = {
     resource: "dataset:datasets",
-    scopes: ["as_org_owner", as_project_owner],
+    projectId,
+    minRole: "project_owner",
   };
 
   pageBreadcrumbsStore.set([
@@ -91,6 +93,14 @@
   }
 
   async function saveLabelConfigChanges(): Promise<void> {
+    if (controller.hasVisibilityErrors) {
+      showToast.error({
+        title: "Fix visibility conditions",
+        description: "Resolve all invalid property visibility conditions before saving.",
+      });
+      return;
+    }
+
     saving = true;
     try {
       const updatedDatasetRes = await datasetsBackendDataSource.update(
@@ -106,6 +116,13 @@
       );
 
       controller.markSaved(updatedDatasetRes.data.labeling_configuration);
+      // The backend sets syncing_stats in this request only when a recompute was queued.
+      if (updatedDatasetRes.data.syncing_stats) datasetStatsSync.start();
+
+      $refetches.entries.list = new Date();
+      clearCache(resourcePath(entryStatsBasePath, null, undefined));
+      clearCache(resourcePath(entriesBasePath, null, undefined));
+
       showToast.success({
         title: "Label configurations updated",
         description: "The changes has been saved.",
@@ -189,12 +206,12 @@
     {/snippet}
 
     {#snippet actions()}
-      <Can action="update" resource="dataset:datasets" scopes={["as_org_owner", as_project_owner]}>
+      <Can action="update" resource="dataset:datasets" {projectId} minRole="project_owner">
         <Button
           class="ml-auto"
           loading={saving}
           loadingLabel="Saving"
-          disabled={!controller.hasUnsavedChanges}
+          disabled={!controller.hasUnsavedChanges || controller.hasVisibilityErrors}
           onclick={saveLabelConfigChanges}
         >
           <SaveIcon />

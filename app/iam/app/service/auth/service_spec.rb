@@ -44,6 +44,14 @@ RSpec.describe Auth::Service, database: true do
         expect(result.refresh_token).to be_truthy
       end
 
+      it "carries the account's role_scope on the record (used by the frontend)" do
+        account_repo.update!(account_id, { role_scope: { "org" => ["2"] }.to_json })
+
+        result = subject.login(test_email, test_password, ip:, user_agent:)
+
+        expect(result.role_scope).to eq("org" => ["2"])
+      end
+
       it "creates an account session" do
         expect {
           subject.login(test_email, test_password, ip:, user_agent:)

@@ -18,13 +18,17 @@ module Entry
     field :resource, type: String
 
     field :name, type: String
+    field :delivery_date, type: [Date, NilClass]
 
-    field :assigned_to_id, type: [Integer, NilClass] # Add through assign method
-    field :assigned_to_email, type: [String, NilClass] # Set alongside assigned_to_id
-    field :submitted_by_id, type: [Integer, NilClass] # Add through submit method
-    field :submitted_by_email, type: [String, NilClass] # Set alongside submitted_by_id
-    field :reviewed_by_id, type: [Integer, NilClass] # Add through review method
-    field :reviewed_by_email, type: [String, NilClass] # Set alongside reviewed_by_id
+    field :assigned_to_id, type: [Integer, NilClass]
+    field :assigned_to_email, type: [String, NilClass]
+    field :submitted_by_id, type: [Integer, NilClass]
+    field :submitted_by_email, type: [String, NilClass]
+    field :reviewed_by_id, type: [Integer, NilClass]
+    field :reviewed_by_email, type: [String, NilClass]
+
+    field :reopened_by_id, type: [Integer, NilClass]
+    field :reopened_by_email, type: [String, NilClass]
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -57,12 +61,15 @@ module Entry
     belongs_to_project_member :assigned_to, :assigned_to_id
     belongs_to_project_member :submitted_by, :submitted_by_id
     belongs_to_project_member :reviewed_by, :reviewed_by_id
+    belongs_to_project_member :reopened_by, :reopened_by_id
 
     has_many :annotations, repository: "Annotation::Repository", foreign_key: :entry_id
     has_many :entry_stats, repository: "EntryStat::Repository", foreign_key: :entry_id
   end
 
   class Repository < Verse::Sequel::Repository
+    include ActorEventMetadata
+
     self.table = "entries"
     self.resource = Resource::Dataset::Entries
 
@@ -86,28 +93,83 @@ module Entry
       end
     end
 
+    { delivery_date__gte: :>=, delivery_date__lte: :<= }.each do |name, operator|
+      custom_filter name do |collection, value|
+        dataset_date = collection.db[:datasets].where(id: Sequel[:entries][:dataset_id]).select(:delivery_date)
+        date = Sequel.function(:coalesce, Sequel[:entries][:delivery_date], dataset_date)
+        collection.where(date.public_send(operator, value))
+      end
+    end
+
+    def index_by_delivery_date(filters = {}, sort:, **options)
+      with_db_mode :r do
+        dataset_date = table.db[:datasets].where(id: Sequel[:entries][:dataset_id]).select(:delivery_date)
+        date = Sequel.function(:coalesce, Sequel[:entries][:delivery_date], dataset_date)
+        direction = Array(sort).first.start_with?("-") ? :desc : :asc
+        scope = scoped(:read).order(
+          Sequel.public_send(direction, date, nulls: :last),
+          Sequel.public_send(direction, Sequel[:entries][:id])
+        )
+        # Keep the prepared ordering while reusing framework filtering and pagination.
+        index(filters, scope: scope, sort: [], **options)
+      end
+    end
+
+    def lock_next_id(dataset_id:, wf_step:, fallback_date: nil)
+      account_id = auth_context.metadata[:id]
+      raise Verse::Error::Unauthorized, "An account is required to claim an entry" unless account_id
+
+      with_db_mode :rw do
+        date = Sequel.function(:coalesce, :delivery_date, fallback_date)
+        scoped(:read)
+          .where(dataset_id: dataset_id, wf_step: wf_step, status: %w[pending in_progress])
+          .where(Sequel.|({ assigned_to_id: account_id }, { assigned_to_id: nil, status: "pending" }))
+          .order(
+            Sequel.asc(Sequel.case({ { assigned_to_id: account_id } => 0 }, 1)),
+            Sequel.asc(date, nulls: :last),
+            Sequel.asc(:priority),
+            Sequel.asc(:created_at),
+            Sequel.asc(:id)
+          )
+          .for_update
+          .skip_locked
+          .get(:id)
+      end
+    end
+
+    custom_filter :orphan_categories do |collection, value|
+      present = value.to_s.downcase == "true"
+
+      orphan_exists = <<-SQL
+        EXISTS (
+          SELECT 1 FROM entry_stats
+          WHERE entry_stats.entry_id = entries.id
+            AND entry_stats.key = 'orphan_category.count'
+            AND entry_stats.value != '0'
+        )
+      SQL
+
+      if present
+        collection.where(Sequel.lit(orphan_exists))
+      else
+        collection.where(Sequel.lit("NOT (#{orphan_exists})"))
+      end
+    end
+
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
 
         scope.as_org_owner? do
-          org_ids = auth_context.custom_scopes[:org]
-          project_ids = auth_context.custom_scopes[:project]
-          if org_ids
-            table.where(
-              table.db[:projects]
-                .where(organization_id: org_ids)
-                .where(id: Sequel[:entries][:project_id])
-                .select(1).exists
-            )
-          elsif project_ids
-            table.where(project_id: project_ids)
+          if auth_context.custom_scopes[:project]
+            # API-key project scope: no membership union.
+            table.where(project_id: auth_context.custom_scopes[:project])
           else
-            table.where(Sequel.lit("false"))
+            table.where(org_projects_condition | user_project_scoped_condition(action))
           end
         end
 
-        scope.as_user? { user_project_scoped_query(action) }
+        scope.as_user? { table.where(user_project_scoped_condition(action)) }
       end
     end
 
@@ -118,10 +180,21 @@ module Entry
     # Info:
     # 1. project_owner can create, update and delete entries
     # 2. annotator and reviewer can only read entries assigned to them
+
+    def org_projects_condition
+      org_ids = auth_context.custom_scopes[:org]
+      return Sequel.lit("false") unless org_ids&.any?
+
+      table.db[:projects]
+           .where(organization_id: org_ids)
+           .where(id: Sequel[:entries][:project_id])
+           .select(1).exists
+    end
+
     query
-    def user_project_scoped_query(action)
+    def user_project_scoped_condition(action)
       # Ignore create action as it will be handled in service layer
-      return table if action == :create
+      return Sequel.lit("true") if action == :create
 
       account_id = auth_context.metadata[:id]
 
@@ -158,14 +231,12 @@ module Entry
           )
         SQL
 
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            with_roles: %w[project_owner],
-            annotator_roles: %w[annotator],
-            reviewer_roles: %w[reviewer]
-          )
+        Sequel.lit(
+          scoped_fragment,
+          account_id:,
+          with_roles: %w[project_owner],
+          annotator_roles: %w[annotator],
+          reviewer_roles: %w[reviewer]
         )
       when :update, :delete
         scoped_fragment = <<-SQL
@@ -179,12 +250,10 @@ module Entry
           )
         SQL
 
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            roles: %w[project_owner]
-          )
+        Sequel.lit(
+          scoped_fragment,
+          account_id:,
+          roles: %w[project_owner]
         )
       else
         raise Verse::Error::Unauthorized,
@@ -194,7 +263,7 @@ module Entry
 
     def create(attributes)
       with_metadata do
-        add_event_metadata(
+        add_metadata(
           project_id: attributes[:project_id],
           dataset_id: attributes[:dataset_id]
         )
@@ -207,7 +276,7 @@ module Entry
       with_metadata do
         entry = find!(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: attributes[:project_id] || entry.project_id,
           dataset_id: attributes[:dataset_id] || entry.dataset_id,
           entry_id: id
@@ -221,7 +290,7 @@ module Entry
       with_metadata do
         entry = find!(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: entry.project_id,
           dataset_id: entry.dataset_id,
           entry_id: id
@@ -256,7 +325,7 @@ module Entry
     def assign(id, assigned_to_id, assigned_to_email)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: entry.project_id,
         dataset_id: entry.dataset_id,
         entry_id: id
@@ -273,7 +342,7 @@ module Entry
     def unassign(id)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: entry.project_id,
         dataset_id: entry.dataset_id,
         entry_id: id
@@ -286,11 +355,28 @@ module Entry
       end
     end
 
+    event(name: "reopened")
+    def reopen(id, attributes)
+      entry = find!(id)
+
+      add_metadata(
+        project_id: entry.project_id,
+        dataset_id: entry.dataset_id,
+        entry_id: id
+      )
+
+      no_event do
+        transaction do
+          update!(id, attributes, scope: scoped(:update))
+        end
+      end
+    end
+
     event(name: "submitted")
     def submit(id, attributes)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: attributes[:project_id] || entry.project_id,
         dataset_id: attributes[:dataset_id] || entry.dataset_id,
         entry_id: id,
@@ -309,7 +395,7 @@ module Entry
     def error(id, attributes)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: attributes[:project_id] || entry.project_id,
         dataset_id: attributes[:dataset_id] || entry.dataset_id,
         entry_id: id
@@ -328,17 +414,6 @@ module Entry
       transaction do
         update!(entry.id, { status: })
       end
-    end
-
-    private
-
-    def add_event_metadata(**opts)
-      add_metadata(
-        actor_account_id: auth_context.metadata[:id],
-        actor_account_email: auth_context.metadata[:email],
-        actor_account_role_name: auth_context.metadata[:role],
-        **opts
-      )
     end
   end
 end

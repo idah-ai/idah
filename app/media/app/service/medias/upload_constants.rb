@@ -9,6 +9,15 @@ module Medias
     MAX_TOTAL_UNCOMPRESSED_SIZE = 10 * 1024 ** 3  # 10 GB — per-archive uncompressed cap
     MAX_COMPRESSION_RATIO       = 100             # max uncompressed:compressed per entry
 
+    # Extension-to-MIME mappings that Rack::Mime lacks or gets wrong; checked
+    # before Rack. Rack maps .mts to model/vnd.mts (a 3D model format).
+    MIME_TYPE_OVERRIDES = {
+      ".mkv" => "video/x-matroska",
+      ".mts" => "video/mp2t",  # AVCHD camcorder footage
+      ".m2ts" => "video/mp2t", # Blu-ray / AVCHD
+      ".vob" => "video/mpeg"   # DVD video
+    }.freeze
+
     # OS-generated metadata entries that should be silently ignored when extracting
     # a zip archive. No zip library handles this automatically — it is the
     # application's responsibility.

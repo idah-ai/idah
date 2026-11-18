@@ -7,6 +7,7 @@ plugins:
   - name: sentry
     config:
       dsn: <%= ENV["SENTRY_DSN"] %>
+      environment: <%= ENV["SENTRY_ENVIRONMENT"] %> # empty: APP_ENVIRONMENT
       tracing: otel
       traces_sample_rate: <%= ENV.fetch("SENTRY_TRACES_SAMPLE_RATE", 0.0) %>
       profiles_sample_rate: <%= ENV.fetch("SENTRY_PROFILES_SAMPLE_RATE", 0.0) %>
