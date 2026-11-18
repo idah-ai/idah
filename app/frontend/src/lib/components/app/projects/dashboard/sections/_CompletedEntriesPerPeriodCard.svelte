@@ -107,7 +107,7 @@
           class="text-muted-foreground flex h-64 items-center justify-center rounded-md border border-dashed text-sm"
           role="status"
         >
-          Loading completed entries · {controller.completionTotal.toLocaleString()} rows loaded
+          Loading completed entries
         </div>
       {:else if history.status === "ready"}
         <Chart.Container
