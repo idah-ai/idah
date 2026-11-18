@@ -288,9 +288,12 @@ RSpec.describe Entry, database: true do
         entry_repo.client do |db|
           migration.apply(db, :down)
           expect(db.schema(:entries, reload: true).map(&:first)).not_to include(:completed_at)
+          expect(db[:pg_indexes].where(indexname: "entries_project_id_completed_at_index").count).to eq(0)
           db[:entries].where(id: entry_id).update(status: "completed", wf_step: "done")
           previous_updated_at = db[:entries].where(id: entry_id).get(:updated_at)
           migration.apply(db, :up)
+          definition = db[:pg_indexes].where(indexname: "entries_project_id_completed_at_index").get(:indexdef)
+          expect(definition).to include("(project_id, completed_at)", "WHERE (completed_at IS NOT NULL)")
           legacy = db[:entries].where(id: entry_id).first
           expect(legacy[:completed_at]).to be_nil
           expect(legacy[:updated_at]).to eq(previous_updated_at)

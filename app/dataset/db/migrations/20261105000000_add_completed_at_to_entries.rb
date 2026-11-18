@@ -2,7 +2,12 @@
 
 Sequel.migration do
   up do
-    alter_table(:entries) { add_column :completed_at, DateTime, null: true }
+    alter_table(:entries) do
+      add_column :completed_at, DateTime, null: true
+      add_index [:project_id, :completed_at],
+                name: :entries_project_id_completed_at_index,
+                where: Sequel.~(completed_at: nil)
+    end
 
     # Existing completed rows stay unknown. Only a new completion assigns a time.
     run <<~SQL
@@ -33,6 +38,9 @@ Sequel.migration do
   down do
     run "DROP TRIGGER trg_set_entry_completed_at ON entries"
     run "DROP FUNCTION set_entry_completed_at()"
-    alter_table(:entries) { drop_column :completed_at }
+    alter_table(:entries) do
+      drop_index nil, name: :entries_project_id_completed_at_index
+      drop_column :completed_at
+    end
   end
 end
