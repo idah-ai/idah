@@ -110,26 +110,6 @@ module Entry
       end
     end
 
-    custom_filter :completed_at__gte do |collection, value|
-      collection.where(Sequel[:entries][:completed_at] >= completion_filter_time(value))
-    end
-
-    custom_filter :completed_at__lte do |collection, value|
-      collection.where(Sequel[:entries][:completed_at] <= completion_filter_time(value))
-    end
-
-    private def completion_filter_time(value)
-      unless value.is_a?(String) && value.match?(/T.*(?:Z|[+-]\d{2}:?\d{2})\z/)
-        raise Verse::Error::ValidationFailed, "Completion bounds require an ISO timestamp with timezone"
-      end
-
-      # iso8601 can normalize invalid calendar dates; reject those explicitly.
-      Date.iso8601(value.split("T", 2).first)
-      Time.iso8601(value).utc
-    rescue ArgumentError
-      raise Verse::Error::ValidationFailed, "Invalid completion timestamp"
-    end
-
     custom_filter :category_count do |collection, value|
       conditions = EntryCategoryCount::Filter.parse(value, allowed: %i[category count_gte count_lte])
       raise Verse::Error::ValidationFailed, "Expected one category condition" unless conditions.one?

@@ -10,7 +10,7 @@
   const label = $derived(
     entry.status === "completed"
       ? "Done"
-      : (entryWorkflowSteps.find((step) => step.value === entry.wf_step)?.label ?? "—"),
+      : (entryWorkflowSteps.find((step) => step.value === entry.wf_step)?.label ?? "-"),
   );
 </script>
 

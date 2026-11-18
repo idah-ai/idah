@@ -53,10 +53,10 @@
           {#each PROJECT_DASHBOARD_OPEN_ENTRIES_TABS as { label, value } (value)}
             <TabsTrigger {value}>
               {label} ({value === "all"
-                ? (controller.summary?.total.toLocaleString() ?? "—")
+                ? (controller.summary?.total.toLocaleString() ?? "-")
                 : value === "open"
-                  ? (controller.openEntriesCount?.toLocaleString() ?? "—")
-                  : (controller.summary?.completed.toLocaleString() ?? "—")})
+                  ? (controller.openEntriesCount?.toLocaleString() ?? "-")
+                  : (controller.summary?.completed.toLocaleString() ?? "-")})
             </TabsTrigger>
           {/each}
         </TabsList>

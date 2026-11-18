@@ -86,7 +86,7 @@
       <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-2">
           <Text size="h2" weight="semibold">
-            {["ready", "empty"].includes(history.status) ? controller.completionTotal.toLocaleString() : "—"}
+            {["ready", "empty"].includes(history.status) ? controller.completionTotal.toLocaleString() : "-"}
           </Text>
           <Text size="xs">
             currently completed entries with completion dates in

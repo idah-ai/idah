@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { format, formatDistanceToNow, isAfter } from "date-fns";
+  import { differenceInCalendarDays, format, formatDistanceToNow, isAfter } from "date-fns";
+
+  import { today as reportingDay } from "@/utils/date";
 
   import Text from "@/components/ui/text/Text.svelte";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -11,6 +13,7 @@
     // Props::DateText
     datetime: Date | null;
     datetimeFormat: string;
+    dateOnly?: boolean;
     showDistance?: boolean;
     showTooltip?: boolean;
     class?: string | null;
@@ -21,6 +24,7 @@
   let {
     datetime,
     datetimeFormat,
+    dateOnly = false,
     showDistance = false,
     showTooltip = false,
     class: className,
@@ -38,6 +42,21 @@
   // Functions
   function formatDistance(date: Date | null): string {
     if (!date) return "-";
+
+    if (dateOnly) {
+      const days = differenceInCalendarDays(date, $reportingDay);
+
+      switch (days) {
+        case 0:
+          return "Today";
+        case 1:
+          return "Tomorrow";
+        case -1:
+          return "Yesterday";
+        default:
+          return days > 0 ? `In ${days} days` : `${-days} days ago`;
+      }
+    }
 
     const formattedDistance = formatDistanceToNow(date, { includeSeconds: false, addSuffix: true });
 
