@@ -1,7 +1,6 @@
 import { createBackendDataSource } from "@/data/BackendDataSource";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 
-
 @type("dataset:workflows")
 export class WorkflowRecord extends Record {
   @field() public name!: string;
@@ -24,7 +23,7 @@ export class WorkflowRecord extends Record {
 
 export const workflowsBasePath: string = `/api/v1/dataset/workflows`;
 
-RecordFactory.registerTypes(WorkflowRecord)
+RecordFactory.registerTypes(WorkflowRecord);
 
 export const workflowsBackendDataSource = createBackendDataSource(WorkflowRecord, workflowsBasePath, {
   getWorkflows: async (): Promise<WorkflowRecord[]> => {
