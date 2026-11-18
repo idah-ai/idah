@@ -107,4 +107,4 @@ export function createEntryColumns(workflowSteps: LabelValue<string>[]): Columns
       hidable: true,
     },
   } as ColumnsSettings<EntryRecord>;
-};
+}

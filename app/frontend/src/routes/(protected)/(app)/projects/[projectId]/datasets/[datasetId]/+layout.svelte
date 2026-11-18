@@ -75,7 +75,14 @@
   async function fetchData() {
     const datasetRes = await datasetsBackendDataSource.get(datasetId, {
       fields: {
-        [DatasetRecord.type]: ["name", "workflow_name", "modality", "syncing_stats", "delivery_date", "feedback_configuration"],
+        [DatasetRecord.type]: [
+          "name",
+          "workflow_name",
+          "modality",
+          "syncing_stats",
+          "delivery_date",
+          "feedback_configuration",
+        ],
       },
       noCache: true,
     });

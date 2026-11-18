@@ -212,6 +212,7 @@
           name,
           modality: draft.modality,
           ...(canEditDeliveryDate && draft.delivery_date ? { delivery_date: draft.delivery_date } : {}),
+          workflow_name: draft.workflow_name,
           labeling_configuration: labelConfig,
           workflow_configuration: {},
         },
@@ -299,6 +300,7 @@
           name: draft.name,
           modality: draft.modality,
           ...(deliveryDateChanged ? { delivery_date: draft.delivery_date ?? null } : {}),
+          workflow_name: draft.workflow_name,
           labeling_configuration: labelConfig,
         },
       },
@@ -344,6 +346,7 @@
       const validated = validateData(schema, {
         name: draft.name,
         modality: draft.modality,
+        workflow_name: draft.workflow_name,
         delivery_date: draft.delivery_date,
       });
 

@@ -123,7 +123,15 @@
 <PageHeader title="Datasets">
   {#snippet slotTitle()}
     {#if !showOrphanCategories}
-      <EntriesFilterToolbar {controller} {sel} {canUpdateEntry} {canDeleteEntry} {canExportEntry} {projectId} {workflowName}/>
+      <EntriesFilterToolbar
+        {controller}
+        {sel}
+        {canUpdateEntry}
+        {canDeleteEntry}
+        {canExportEntry}
+        {projectId}
+        {workflowName}
+      />
     {/if}
   {/snippet}
 </PageHeader>
