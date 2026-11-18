@@ -214,7 +214,7 @@
           ...(canEditDeliveryDate && draft.delivery_date ? { delivery_date: draft.delivery_date } : {}),
           workflow_name: draft.workflow_name,
           labeling_configuration: labelConfig,
-          workflow_configuration: {},
+          workflow_configuration: draft.workflow_configuration ?? {},
         },
         relationships: {
           project: {
@@ -302,6 +302,7 @@
           ...(deliveryDateChanged ? { delivery_date: draft.delivery_date ?? null } : {}),
           workflow_name: draft.workflow_name,
           labeling_configuration: labelConfig,
+          workflow_configuration: draft.workflow_configuration ?? {},
         },
       },
       {
