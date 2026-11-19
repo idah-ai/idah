@@ -3,16 +3,16 @@
 // ---------------------------------------------------------------------------
 import { data } from "$lib/state/data.svelte";
 import type { IIdahDriverV2 } from "$idah/v2/types";
-import { DEFAULT_MODE, REVIEW_MODE, COVERAGE_DONE_AREA } from "$lib/types";
+import { COVERAGE_DONE_AREA } from "$lib/types";
 import { session } from "$lib/mask/coverage-mask-session";
 import { flushDirtyTiles } from "$lib/mask/flush-tiles";
-import { doOff, invalidate } from "./_shared";
+import { DONE_AREA_MODES, doOff, invalidate, showMask } from "./_shared";
 import { isEditable } from "$lib/state/editor.svelte";
 
 export const command = {
   name: "coverage-mask-clear",
   group: "Coverage Mask",
-  modes: [DEFAULT_MODE, REVIEW_MODE, ] as string[],
+  modes: DONE_AREA_MODES,
   shortcut: "Control+Shift+K" as string | null,
   shortDescription: "Done Area — Clear all",
   longDescription: "Remove all coverage mask shapes",
@@ -40,6 +40,7 @@ export function register(driver: IIdahDriverV2): void {
         command: { ...command },
         async do() {
           doOff();
+          showMask();
           invalidate(driver);
           if (!existingId) return;
           const ann = data.annotations?.items.find(a => a.id === existingId);
@@ -57,6 +58,7 @@ export function register(driver: IIdahDriverV2): void {
         },
         async undo() {
           if (!existingId) return;
+          showMask();
           // Restore the soft-deleted annotation
           const restored = await data.annotations!.restore({
             id: existingId,

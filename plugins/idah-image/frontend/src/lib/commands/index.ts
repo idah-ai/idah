@@ -75,6 +75,8 @@ import { register as registerCoverageMaskAdd } from "./coverage-mask/add";
 import { register as registerCoverageMaskRemove } from "./coverage-mask/remove";
 import { register as registerCoverageMaskDraw } from "./coverage-mask/draw";
 import { register as registerCoverageMaskSetMode } from "./coverage-mask/set-mode";
+import { register as registerCoverageMaskExit } from "./coverage-mask/exit";
+import { register as registerCoverageMaskToggleVisibility } from "./coverage-mask/toggle-visibility";
 import { register as registerSnapMagneticToggle } from "./snap/magnetic_toggle";
 import { register as registerHistoryToggle } from "./history/toggle";
 import { IMAGE_BOUNDING_BOX, IMAGE_CIRCLE, IMAGE_ELLIPSE, IMAGE_LINE, IMAGE_POLYGON, IMAGE_MASK } from "$lib/types";
@@ -143,6 +145,8 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerCoverageMaskAdd(driver);
   registerCoverageMaskRemove(driver);
   registerCoverageMaskSetMode(driver);
+  registerCoverageMaskExit(driver);
+  registerCoverageMaskToggleVisibility(driver);
 
   // ── UI / Display ─────────────────────────────────────────────────────
   registerToggleColorMode(driver);

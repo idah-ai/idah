@@ -49,6 +49,7 @@
   import { nearFirstPolygonPoint } from "./Polygon/utils";
     import { session } from "$lib/mask/coverage-mask-session";
     import { clampRect, subtractRectFromShapes } from "$lib/mask/coverage-mask";
+    import { hasDoneArea } from "$lib/mask/done-area";
 
   import {
     onPointerDown as maskBrushPointerDown,
@@ -231,6 +232,16 @@
     }
   });
 
+  // Re-render the toolbar when the entry gains or loses its Done Area, so the Done Area
+  // button's light-green accent follows (core can't observe plugin state on its own).
+  let _hadDoneArea: boolean | undefined;
+  $effect(() => {
+    const present = hasDoneArea(data.annotations?.items);
+    if (present === _hadDoneArea) return;
+    _hadDoneArea = present;
+    getDriver().toolbar.invalidate();
+  });
+
   // Load coverage mask session when annotations become available
   $effect(() => {
     const items = data.annotations?.items;
@@ -292,6 +303,11 @@
 
   // ── Mask drawing state ──────────────────────────────────────────────
   let coverageMaskDrawing = $state(false);
+  // Leaving Done Area mode (Escape, another tool) drops a rectangle still being dragged,
+  // so its mouse-up does not commit it.
+  $effect(() => {
+    if (!ui.coverageMaskActive) coverageMaskDrawing = false;
+  });
   let coverageMaskCanvas: CoverageMaskCanvas | undefined = $state();
   let coverageMaskStart: Point = $state([0, 0]);
   let coverageMaskCurrent: Point = $state([0, 0]);
@@ -754,8 +770,9 @@
     if (e.button !== 1) beginGestureTracking();
 
     // ── Mask mode — start drawing in capture phase so annotation shapes
-    // cannot stop the event before we begin.
-    if (ui.coverageMaskActive) {
+    // cannot stop the event before we begin. The middle button is left to the
+    // pan below, as in the other tools.
+    if (ui.coverageMaskActive && e.button !== 1) {
       if (svgEl) {
         const rect = svgEl.getBoundingClientRect();
         mousePosition = [e.clientX - rect.left, e.clientY - rect.top];
