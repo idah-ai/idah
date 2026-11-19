@@ -314,6 +314,93 @@ RSpec.describe Entry, database: true do
       end
     end
 
+    describe "#lock_next_id" do
+      subject { entry_repo }
+
+      let!(:self_assigned) do
+        id = entry_repo.create(
+          priority: 0,
+          wf_step: "annotate",
+          status: "in_progress",
+          assigned_to_id: 10,
+          project_id: project_id,
+          dataset_id: dataset_id,
+          created_at: Time.now - 10
+        )
+        entry_repo.table.where(id:).update(delivery_date: Date.today + 10)
+        id
+      end
+
+      let!(:unassigned_early) do
+        id = entry_repo.create(
+          priority: 0,
+          wf_step: "annotate",
+          status: "pending",
+          project_id: project_id,
+          dataset_id: dataset_id,
+          created_at: Time.now - 5
+        )
+        entry_repo.table.where(id:).update(delivery_date: Date.today)
+        id
+      end
+
+      let!(:unassigned_late) do
+        entry_repo.create(
+          priority: 0,
+          wf_step: "annotate",
+          status: "pending",
+          project_id: project_id,
+          dataset_id: dataset_id,
+          created_at: Time.now
+        )
+      end
+
+      it "prefers self-assigned entries over unassigned ones" do
+        result = subject.lock_next_id(dataset_id: dataset_id, wf_step: "annotate")
+        expect(result).to eq(self_assigned)
+      end
+
+      it "orders unassigned entries by delivery_date, priority, created_at" do
+        # Remove the self-assigned entry so only unassigned remain
+        entry_repo.table.where(id: self_assigned).update(assigned_to_id: nil)
+
+        result = subject.lock_next_id(dataset_id: dataset_id, wf_step: "annotate")
+        expect(result).to eq(unassigned_early)
+      end
+
+      it "excludes entries with wrong wf_step" do
+        entry_repo.create(
+          wf_step: "review",
+          status: "pending",
+          project_id: project_id,
+          dataset_id: dataset_id
+        )
+        result = subject.lock_next_id(dataset_id: dataset_id, wf_step: "annotate")
+        expect(result).not_to be_nil
+        entry = entry_repo.find!(result)
+        expect(entry.wf_step).to eq("annotate")
+      end
+
+      it "excludes entries with processing status" do
+        entry_repo.create(
+          wf_step: "annotate",
+          status: "processing",
+          project_id: project_id,
+          dataset_id: dataset_id
+        )
+        result = subject.lock_next_id(dataset_id: dataset_id, wf_step: "annotate")
+        expect(result).not_to be_nil
+        entry = entry_repo.find!(result)
+        expect(entry.status).not_to eq("processing")
+      end
+
+      it "returns nil when no eligible entries exist" do
+        entry_repo.table.where(dataset_id: dataset_id).delete
+        result = subject.lock_next_id(dataset_id: dataset_id, wf_step: "annotate")
+        expect(result).to be_nil
+      end
+    end
+
     describe "completion timestamps" do
       let!(:entry_id) {
         entry_repo.create(project_id:, dataset_id:, resource: UUIDv7.generate, status: "pending", wf_step: "annotate")
