@@ -48,7 +48,7 @@
   import { snapDebug, ui } from "$lib/state/ui.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
     import { session } from "$lib/mask/coverage-mask-session";
-    import { clampRect, subtractRectFromShapes } from "$lib/mask/coverage-mask";
+    import { clampRect } from "$lib/mask/coverage-mask";
     import { hasDoneArea } from "$lib/mask/done-area";
 
   import {
@@ -308,7 +308,6 @@
   $effect(() => {
     if (!ui.coverageMaskActive) coverageMaskDrawing = false;
   });
-  let coverageMaskCanvas: CoverageMaskCanvas | undefined = $state();
   let coverageMaskStart: Point = $state([0, 0]);
   let coverageMaskCurrent: Point = $state([0, 0]);
 
@@ -878,19 +877,6 @@
       return;
     }
 
-    // ── Coverage mask mode — prevent panning, let mask shapes render ──
-    if (ui.coverageMaskActive) {
-      // Start drawing in both add and remove mode
-      coverageMaskDrawing = true;
-      const p0 = sceneNormalizedCursor[0] * media.width;
-      const p1 = sceneNormalizedCursor[1] * media.height;
-      coverageMaskStart = [p0, p1];
-      coverageMaskCurrent = [p0, p1];
-      e.stopPropagation();
-      e.preventDefault();
-      return;
-    }
-
     // ── Default mode: hit-test mask canvas layer FIRST ────────────
     // Check if the click landed on a mask pixel BEFORE the SVG shape
     // tool selection check, so mask annotations are selectable even
@@ -980,19 +966,10 @@
         h = Math.abs(by - ay);
       if (w < 3 || h < 3) return;
       const [cx, cy, cw, ch] = clampRect(x, y, w, h, media.width, media.height);
+      const tileSnapshots = session.snapshotTiles(cx, cy, cw, ch);
+      const mode = ui.coverageMaskIsRemove ? "remove" : "add";
 
-      if (ui.coverageMaskIsRemove) {
-        const newList = subtractRectFromShapes(ui.coverageMaskShapes, cx, cy, cw, ch);
-        const tileSnapshots = session.snapshotTiles(cx, cy, cw, ch);
-        session.fillRect(cx, cy, cw, ch, "remove");
-        getDriver().command.call("coverage-mask-draw", { before: [...ui.coverageMaskShapes], after: newList, tileSnapshots, rect: [cx, cy, cw, ch], mode: "remove" });
-      } else {
-        // Add mode
-        const before = [...ui.coverageMaskShapes];
-        const after = [...before, { type: "bbox", points: [cx, cy, cw, ch] }];
-        const tileSnapshots = session.snapshotTiles(cx, cy, cw, ch);
-        getDriver().command.call("coverage-mask-draw", { tileSnapshots, rect: [cx, cy, cw, ch], mode: "add" });
-      }
+      getDriver().command.call("coverage-mask-draw", { tileSnapshots, rect: [cx, cy, cw, ch], mode });
       return;
     }
 
@@ -1320,7 +1297,7 @@
   <MaskCanvasLayer {previewColor} />
 
   <!-- Layer 1.5: Coverage mask canvas overlay -->
-  <CoverageMaskCanvas bind:this={coverageMaskCanvas} />
+  <CoverageMaskCanvas />
 
   <!-- Layer 2: SVG overlay for shapes -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->

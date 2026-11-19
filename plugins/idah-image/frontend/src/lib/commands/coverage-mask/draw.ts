@@ -81,12 +81,10 @@ export function register(driver: IIdahDriverV2): void {
       return {
       command: { ...command },
       async do() {
-        const t0 = performance.now();
         const { rect, mode } = (opts ?? {}) as any;
         if (rect && mode) session.fillRect(rect[0], rect[1], rect[2], rect[3], mode);
-        const t1 = performance.now();
+
         await flushIfDirty();
-        const t2 = performance.now();
       },
       async undo() {
         const { tileSnapshots } = (opts ?? {}) as any;

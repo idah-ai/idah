@@ -32,7 +32,7 @@ import { toolPanel } from "$lib/state/tool-panel.svelte";
 import { history } from "$lib/state/history.svelte";
 import MaskToolConfigurations from "$lib/components/App/MaskToolPanel/MaskToolConfigurations.svelte";
 import { ui } from "$lib/state/ui.svelte";
-import { DONE_AREA_MODES, registerCoverageModeWatcher } from "$lib/commands/coverage-mask/_shared";
+import { DONE_AREA_MODES, registerCoverageModeWatcher, resetCoverageState } from "$lib/commands/coverage-mask/_shared";
 import { hasDoneArea } from "$lib/mask/done-area";
 import { data } from "$lib/state/data.svelte";
 
@@ -44,6 +44,9 @@ const magnetIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="1
 
 export function initToolbar(driver: IIdahDriverV2): void {
   const t = driver.toolbar;
+
+  // Reset coverage state on every init (entry switch)
+  resetCoverageState();
 
   // Layout (registration order = toolbar order; a divider separates sections):
   //   annotate: selection, box, polygon, mask ▾, line, circle, ellipse (review: note)

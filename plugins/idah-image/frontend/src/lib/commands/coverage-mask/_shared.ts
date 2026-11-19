@@ -91,3 +91,9 @@ export function registerCoverageModeWatcher(driver: IIdahDriverV2): void {
     }
   });
 }
+
+/** Reset coverage state when the plugin initialises (entry switches). */
+export function resetCoverageState(): void {
+  ui.coverageMaskActive = false;
+  ui.coverageMaskIsRemove = false;
+}

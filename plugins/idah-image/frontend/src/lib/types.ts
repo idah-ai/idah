@@ -20,10 +20,6 @@ export const IMAGE_CIRCLE = "idah-image:circle";
 export const IMAGE_ELLIPSE = "idah-image:ellipse";
 export const IMAGE_MASK = "idah-image:mask";
 
-/** Coverage mask viewport modes (add and remove). */
-export const COVERAGE_MASK_BBOX = "idah-image:coverage-mask-bbox";
-export const COVERAGE_MASK_BBOX_REMOVE = "idah-image:coverage-mask-bbox-remove";
-
 /** Coverage mask annotation shape type. */
 export const COVERAGE_DONE_AREA = "idah-image:done-area";
 

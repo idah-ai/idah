@@ -90,7 +90,8 @@
       const x = col * MASK_TILE_SIZE;
       const y = row * MASK_TILE_SIZE;
       if (x > maxX || y > maxY || x + MASK_TILE_SIZE < minX || y + MASK_TILE_SIZE < minY) continue;
-      ctx.drawImage(bitmap, x, y, MASK_TILE_SIZE, MASK_TILE_SIZE);
+      // +1px overlap hides faint seams between adjacent tiles at sub-pixel zoom levels
+      ctx.drawImage(bitmap, x, y, MASK_TILE_SIZE + 1, MASK_TILE_SIZE + 1);
     }
   }
 

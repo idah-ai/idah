@@ -1,5 +1,6 @@
 // coverage-mask/set-mode — Toggle coverage mask mode on/off (called from header toolbar)
 import type { IIdahDriverV2 } from "$idah/v2/types";
+import { isEditable } from "$lib/state/editor.svelte";
 import { DONE_AREA_MODES, doAdd, doRemove, doOff, invalidate } from "./_shared";
 
 export const command = {
@@ -19,6 +20,14 @@ export function register(driver: IIdahDriverV2): void {
     shortDescription: command.shortDescription,
     longDescription: command.longDescription,
     callback: (opts) => {
+      if (!isEditable()) {
+        return {
+          command: { ...command },
+          do() {},
+          isCombinable() { return false; },
+          combine(p) { return p; },
+        };
+      }
       const mode = (opts as any)?.mode;
       return {
         command: { ...command },
