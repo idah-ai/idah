@@ -26,7 +26,6 @@
   // Props
   let {
     view,
-    sidebarWidthRem,
     annotationValue,
     onEditValue,
     onSelectAnnotation,
@@ -36,7 +35,6 @@
     class: className,
   }: {
     view: "sidebar" | "popover";
-    sidebarWidthRem: number;
     annotationValue: IImageAnnotationValue;
     onEditValue: (category: string | undefined, mode: string) => void;
     onSelectAnnotation: (annotation?: IImageAnnotationRecord) => void;
@@ -114,9 +112,9 @@
 </script>
 
 {#if view === "sidebar" && history.open}
-  <HistoryPanel {sidebarWidthRem} />
+  <HistoryPanel />
 {:else}
-<Sidebar variant="inset" collapsible="none" class={cn(className)} style="width: ${sidebarWidthRem}rem">
+<Sidebar variant="inset" collapsible="none" class={cn(view === "sidebar" && "w-full", className)}>
   {#if !tools.has(mode) || selAnnotation}
     <SidebarHeader>
       <InputField

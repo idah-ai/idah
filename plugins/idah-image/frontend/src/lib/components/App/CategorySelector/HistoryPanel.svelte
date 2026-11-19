@@ -14,7 +14,8 @@
   import Button from "$lib/components/ui/Button/Button.svelte";
   import HistoryChangeCard from "$lib/components/App/CategorySelector/HistoryChangeCard.svelte";
   import { history } from "$lib/state/history.svelte";
-  import { getDriver } from "$lib/state/driver.svelte";
+  import { getDriver, syncStatus } from "$lib/state/driver.svelte";
+  import { hover } from "$lib/state/hover.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { data, getDeletedAnnotation } from "$lib/state/data.svelte";
@@ -25,8 +26,6 @@
   import type { IAnnotationChange } from "$idah/v2/types";
   import type { IImageAnnotationShape } from "$lib/types";
   import { NON_DRAWABLE_SHAPE_TYPES } from "$lib/types";
-
-  let { sidebarWidthRem }: { sidebarWidthRem: number } = $props();
 
   // Scope follows the selection reactively: the store derives the scope from
   // the selection, and this effect reloads (back to page 1) whenever the
@@ -47,12 +46,33 @@
     void history.load();
   });
 
+  // Show this tab's own writes without a manual refresh: reload when the write
+  // queue drains while the panel shows the newest page (an older page stays
+  // put so the reviewer is not moved while reading).
+  let lastQueued = syncStatus.queued;
+  $effect(() => {
+    const queued = syncStatus.queued;
+    const drained = lastQueued > 0 && queued === 0;
+    lastQueued = queued;
+    if (drained && history.open && history.page === 1) void history.refresh();
+  });
+
+  /** 24-hour, like the times on the cards. */
+  const UPDATED_TIME_FORMAT: Intl.DateTimeFormatOptions = {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  };
+
   /** The live annotation for a change, if any. */
   function liveAnnotation(change: IAnnotationChange) {
     return data.annotations?.items?.find((a) => a.id === change.annotation_id);
   }
 
-  /** Category label for a change's annotation (live, tombstone, or fallback). */
+  /** Category label for a change's annotation (live, tombstone, or fallback),
+   *  with the id's last part so same-category cards can be told apart — the
+   *  same `{categoryLabel}-{idLastPart}` naming the video plugin uses. */
   function categoryLabel(change: IAnnotationChange): string {
     const ann = liveAnnotation(change);
     const tomb = getDeletedAnnotation(change.annotation_id);
@@ -61,7 +81,29 @@
     if (!category) return `Annotation ${change.annotation_id.slice(0, 8)}`;
     const config = shapeType ? getDriver().config[shapeType] : undefined;
     const cat = config?.values?.find((v) => v.id === category);
-    return cat?.label ?? category;
+    const label = cat?.label ?? category;
+    return `${label}-${change.annotation_id.split("-").pop()}`;
+  }
+
+  /**
+   * True when this row's recorded state is soft-deleted: the annotation is
+   * deleted now and this row is its latest version (other than its own
+   * `deleted` row). That is the `baseline` of an annotation already deleted
+   * when change tracking started, or the `created` row of a copied deleted
+   * annotation. Older rows from while it was live are not tagged.
+   *
+   * The latest version is the highest of the cached record's `version` and the
+   * loaded rows, so a deletion made in this tab (whose cached record still
+   * holds the pre-delete version) is covered once its `deleted` row loads.
+   */
+  function recordsDeletedState(change: IAnnotationChange): boolean {
+    if (change.op === "deleted") return false;
+    const ann = liveAnnotation(change);
+    const record = ann ? (ann.deleted_at ? ann : undefined) : getDeletedAnnotation(change.annotation_id);
+    if (!record) return false;
+    const known = (record as { version?: number }).version ?? 0;
+    const loaded = history.items.filter((c) => c.annotation_id === change.annotation_id).map((c) => c.version);
+    return change.version === Math.max(known, ...loaded);
   }
 
   /** Category colour for a change's annotation, resolved like the shapes. */
@@ -125,13 +167,15 @@
   }
 </script>
 
-<Sidebar variant="inset" collapsible="none" class="h-full" style="width: {sidebarWidthRem}rem">
+<Sidebar variant="inset" collapsible="none" class="h-full w-full">
   <SidebarHeader>
     <div class="flex items-center justify-between gap-2 p-1">
       <span class="text-sm font-semibold">History</span>
       <div class="flex items-center gap-1">
         {#if history.lastLoadedAt}
-          <span class="text-muted-foreground text-[10px]">Updated {history.lastLoadedAt.toLocaleTimeString()}</span>
+          <span class="text-muted-foreground text-[10px]"
+            >Updated {history.lastLoadedAt.toLocaleTimeString([], UPDATED_TIME_FORMAT)}</span
+          >
         {/if}
         <Button variant="ghost" size="icon" title="Refresh" onclick={() => history.refresh()}>
           <RefreshCwIcon class="size-4" />
@@ -167,10 +211,13 @@
                 categoryLabel={categoryLabel(change)}
                 categoryColor={categoryColor(change)}
                 highlighted={false}
+                deleted={recordsDeletedState(change)}
                 diff={history.getDiff(change.id)}
                 diffLoading={history.isDiffLoading(change.id)}
                 open={history.isCardOpen(change.id)}
                 onToggle={() => onCardClick(change)}
+                onHoverStart={() => hover.setHovered(change.annotation_id)}
+                onHoverEnd={() => hover.clearHovered(change.annotation_id)}
               />
             {/if}
           {/each}
