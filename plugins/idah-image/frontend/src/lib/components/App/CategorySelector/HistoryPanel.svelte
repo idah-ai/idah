@@ -24,6 +24,7 @@
   import { shapeBounds } from "$lib/utils/shape-bounds";
   import type { IAnnotationChange } from "$idah/v2/types";
   import type { IImageAnnotationShape } from "$lib/types";
+  import { NON_DRAWABLE_SHAPE_TYPES } from "$lib/types";
 
   let { sidebarWidthRem }: { sidebarWidthRem: number } = $props();
 
@@ -71,6 +72,14 @@
     const shapeType = ann?.shape_type ?? tomb?.shape_type;
     if (!category || !shapeType) return "#71717a";
     return resolveAnnotationColor({ id: change.annotation_id, category, shape_type: shapeType });
+  }
+
+  /** Skip changes for non-drawable annotations (done_area, entry_root). */
+  function isNonDrawableChange(change: IAnnotationChange): boolean {
+    const ann = liveAnnotation(change);
+    const tomb = getDeletedAnnotation(change.annotation_id);
+    const shapeType = ann?.shape_type ?? tomb?.shape_type;
+    return shapeType ? NON_DRAWABLE_SHAPE_TYPES.has(shapeType) : false;
   }
 
   /** Center the viewport on an annotation's shape (live or tombstone). */
@@ -152,16 +161,18 @@
         {#each groupChangesByDay(history.items, new Date()) as group (group.label)}
           <div class="text-muted-foreground px-3 pt-2 pb-1 text-[11px] font-medium">{group.label}</div>
           {#each group.items as change (change.id)}
-            <HistoryChangeCard
-              {change}
-              categoryLabel={categoryLabel(change)}
-              categoryColor={categoryColor(change)}
-              highlighted={false}
-              diff={history.getDiff(change.id)}
-              diffLoading={history.isDiffLoading(change.id)}
-              open={history.isCardOpen(change.id)}
-              onToggle={() => onCardClick(change)}
-            />
+            {#if !isNonDrawableChange(change)}
+              <HistoryChangeCard
+                {change}
+                categoryLabel={categoryLabel(change)}
+                categoryColor={categoryColor(change)}
+                highlighted={false}
+                diff={history.getDiff(change.id)}
+                diffLoading={history.isDiffLoading(change.id)}
+                open={history.isCardOpen(change.id)}
+                onToggle={() => onCardClick(change)}
+              />
+            {/if}
           {/each}
         {/each}
         {#if history.atStartOfHistory}
