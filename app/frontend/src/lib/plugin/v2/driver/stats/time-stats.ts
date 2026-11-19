@@ -31,7 +31,10 @@ export class TimeStatsProvider implements IStatProvider {
 
     // Per-author rows, grouped by (wfStep, accountId) and summed — after a
     // reject cycle the same person can have multiple rows on the same step.
-    const grouped = new Map<string, { wfStep: string; accountId: number; email: string | null; seconds: number; unsubmitted: boolean }>();
+    const grouped = new Map<
+      string,
+      { wfStep: string; accountId: number; email: string | null; seconds: number; unsubmitted: boolean }
+    >();
 
     for (const wt of workTimes) {
       const key = `${wt.wfStep}.${wt.accountId}`;

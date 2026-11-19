@@ -29,16 +29,12 @@ describe("enrichWithTimeData", () => {
   });
 
   it("computes totalSeconds from time_tracking cache", () => {
-    const result = enrichWithTimeData(
-      mockEntry({ time_tracking: { annotate: 1800, review: 600 } }),
-    );
+    const result = enrichWithTimeData(mockEntry({ time_tracking: { annotate: 1800, review: 600 } }));
     expect(result.totalSeconds).toBe(2400);
   });
 
   it("creates a step per entry in time_tracking", () => {
-    const result = enrichWithTimeData(
-      mockEntry({ time_tracking: { annotate: 1800, review: 600 } }),
-    );
+    const result = enrichWithTimeData(mockEntry({ time_tracking: { annotate: 1800, review: 600 } }));
     expect(result.steps).toHaveLength(2);
     expect(result.steps[0].stage).toBe("Annotate");
     expect(result.steps[0].seconds).toBe(1800);
@@ -47,9 +43,7 @@ describe("enrichWithTimeData", () => {
   });
 
   it("sorts steps by workflow order", () => {
-    const result = enrichWithTimeData(
-      mockEntry({ time_tracking: { review: 600, annotate: 1800, start: 300 } }),
-    );
+    const result = enrichWithTimeData(mockEntry({ time_tracking: { review: 600, annotate: 1800, start: 300 } }));
     expect(result.steps.map((s) => s.stage)).toEqual(["Start", "Annotate", "Review"]);
   });
 

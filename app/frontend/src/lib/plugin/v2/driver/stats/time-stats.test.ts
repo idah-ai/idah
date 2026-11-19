@@ -17,9 +17,7 @@ describe("TimeStatsProvider", () => {
   });
 
   it("returns a single entry for one step with seconds", () => {
-    const provider = new TimeStatsProvider(
-      createMockDriver({ timeTracking: { annotate: 3600 } }),
-    );
+    const provider = new TimeStatsProvider(createMockDriver({ timeTracking: { annotate: 3600 } }));
     const stats = provider.collect();
     expect(stats).toHaveLength(1);
     expect(stats[0]).toMatchObject({
@@ -30,9 +28,7 @@ describe("TimeStatsProvider", () => {
   });
 
   it("returns multiple entries for multiple steps", () => {
-    const provider = new TimeStatsProvider(
-      createMockDriver({ timeTracking: { annotate: 1800, review: 900 } }),
-    );
+    const provider = new TimeStatsProvider(createMockDriver({ timeTracking: { annotate: 1800, review: 900 } }));
     const stats = provider.collect();
     expect(stats).toHaveLength(2);
     expect(stats[0].key).toBe("time.annotate.total");

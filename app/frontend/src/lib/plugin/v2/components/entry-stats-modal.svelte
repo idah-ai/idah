@@ -248,7 +248,7 @@
                           <span class="inline-flex items-baseline gap-1">
                             {author.label}
                             {#each author.tags ?? [] as tag (tag.label)}
-                              <Badge variant={tag.variant} class="px-1.5 text-[10px] pb-0">{tag.label}</Badge>
+                              <Badge variant={tag.variant} class="px-1.5 pb-0 text-[10px]">{tag.label}</Badge>
                             {/each}
                           </span>
                         </td>
