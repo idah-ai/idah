@@ -336,4 +336,8 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
       return null;
     }
   },
+  /** Fire-and-forget activity ping for time tracking. */
+  activity: async (entryId: string): Promise<void> => {
+    await fetch(`${entriesBasePath}/${entryId}/activity`, { method: "POST" });
+  },
 });

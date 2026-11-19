@@ -7,7 +7,7 @@
 
   import type { IIdahDriverV2, IStatEntry, IStatTag } from "@/plugin/v2/types";
   import Badge from "@/components/ui/badge/badge.svelte";
-  import { formatDuration } from "@/utils/duration";
+  import { formatSeconds } from "@/utils/duration";
 
   // Props
   interface Props {
@@ -227,7 +227,7 @@
               Total time ({timeGroups.length}
               {timeGroups.length === 1 ? "step" : "steps"})
             </span>
-            <span class="text-xl font-bold tabular-nums">{formatDuration(timeTotal)}</span>
+            <span class="text-xl font-bold tabular-nums">{formatSeconds(timeTotal)}</span>
           </div>
 
           {#if timeGroups.length > 0}

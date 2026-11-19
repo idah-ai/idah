@@ -356,11 +356,7 @@ export class IdahDriverV2 implements IIdahDriverV2 {
     if (currentSlot === this.#lastNotifySlot) return;
     this.#lastNotifySlot = currentSlot;
 
-    fetch(`/api/v1/dataset/entries/${this._id}/activity`, {
-      method: "POST",
-      headers: { "Content-Type": "application/vnd.api+json" },
-      body: JSON.stringify({}),
-    }).catch(() => {
+    entriesBackendDataSource.activity(this._id).catch(() => {
       // Swallow — fire-and-forget; server-side mutation hooks cover real work.
     });
   }

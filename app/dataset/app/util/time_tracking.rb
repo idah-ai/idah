@@ -40,7 +40,6 @@ module TimeTracking
     slot_repo.insert_slot(entry_id, account_id, step, slot_start)
     work_repo.upsert_open_row(entry_id, account_id, step, at, email)
   end
-  # rubocop:enable Metrics/ParameterLists
 
   # Touch wrapped in a nested transaction (Sequel turns a nested transaction into
   # a savepoint) so a tracking failure can never abort the surrounding save
@@ -90,6 +89,12 @@ module TimeTracking
               end
 
       work_repo.finalize_session(row[:id], delta)
+
+      # Purge the slots that were rolled up into this finalized session
+      slot_repo.table
+               .where(entry_id:, account_id: row[:account_id], wf_step:)
+               .where { slot_start >= min_slot_start }
+               .delete
     end
 
     # Refresh the combined per-step cache

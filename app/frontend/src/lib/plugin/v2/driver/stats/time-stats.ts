@@ -5,7 +5,7 @@
 // row per author underneath.
 // ---------------------------------------------------------------------------
 import type { IIdahDriverV2, IStatEntry, IStatProvider } from "../../types";
-import { formatDuration } from "@/utils/duration";
+import { formatSeconds } from "@/utils/duration";
 
 export class TimeStatsProvider implements IStatProvider {
   constructor(private driver: IIdahDriverV2) {}
@@ -20,7 +20,7 @@ export class TimeStatsProvider implements IStatProvider {
       for (const [step, seconds] of Object.entries(timeTracking)) {
         stats.push({
           key: `time.${step}.total`,
-          value: formatDuration(seconds),
+          value: formatSeconds(seconds),
           section: "time",
           sectionHeader: "Time",
           unitHeader: "Duration",
@@ -35,7 +35,7 @@ export class TimeStatsProvider implements IStatProvider {
       const unsubmitted = wt.seconds === 0;
       stats.push({
         key: `time.${wt.wfStep}.${wt.accountId}`,
-        value: unsubmitted ? "—" : formatDuration(wt.seconds),
+        value: unsubmitted ? "—" : formatSeconds(wt.seconds),
         section: "time",
         sectionHeader: "Time",
         unitHeader: "Duration",
