@@ -294,6 +294,25 @@ RSpec.describe TimeTracking do
       expect(rows.first[:seconds]).to eq(360)
     end
 
+    it "purges slots after rollup" do
+      times = [
+        Time.utc(2026, 11, 3, 10, 30, 30),
+        Time.utc(2026, 11, 3, 10, 32, 10),
+        Time.utc(2026, 11, 3, 10, 36, 50)
+      ]
+      times.each { |t| touch_at(account_id: 10, at: t) }
+
+      # Slots exist before rollup
+      before = slot_repo.table.where(entry_id:, account_id: 10, wf_step: "annotate").all
+      expect(before.size).to be > 0
+
+      do_rollup(submitted_at: Time.utc(2026, 11, 3, 10, 38, 30))
+
+      # Slots are purged after rollup
+      after = slot_repo.table.where(entry_id:, account_id: 10, wf_step: "annotate").all
+      expect(after).to be_empty
+    end
+
     it "opens a second row for the same author after a rollup" do
       touch_at(account_id: 10, at: base_time)
       do_rollup(submitted_at: base_time + 10)
