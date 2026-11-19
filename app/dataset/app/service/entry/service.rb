@@ -146,10 +146,18 @@ module Entry
 
     def update(record)
       attributes = record.attributes
-      if attributes.key?(:delivery_date)
+      if attributes.key?(:delivery_date) || attributes.key?(:wf_step)
         current = entries.find!(record.id)
-        DeliveryDate.validate!(attributes, current.delivery_date)
+
+        if attributes.key?(:delivery_date)
+          DeliveryDate.validate!(attributes, current.delivery_date)
+        end
+
+        if attributes.key?(:wf_step) && attributes[:wf_step] != current.wf_step
+          rollup_entry_step!(current)
+        end
       end
+
       entries.update!(record.id, attributes)
       entries.find!(record.id)
     end
@@ -196,9 +204,8 @@ module Entry
                 "You are not assigned to this entry"
         end
 
-        # Use read scope when updating as anyone with read access can select
-        # Record activity before assignment so both EntryCard clicks and
-        # select_next (auto-claim after submit) create the first slot.
+        entries.select(entry.id)
+
         TimeTracking.safe_touch(
           entry_repo: entries,
           slot_repo: entry_time_slots,
@@ -207,8 +214,6 @@ module Entry
           account_id: account_id,
           email: auth_context.metadata[:email]
         )
-
-        entries.select(entry.id)
 
         system_datasets_repo.update_progress!(entry.dataset_id)
         entries.find!(entry.id)
@@ -235,19 +240,11 @@ module Entry
       # check self reviewing here, reject
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
-        from_step = entry.wf_step
 
         entry_workflow = entry.dataset.entry_workflow.new(entries, entry, **opts)
         entry_workflow.submit!
 
-        TimeTracking.rollup(
-          slot_repo: system_entry_time_slots_repo,
-          work_repo: system_entry_work_times_repo,
-          system_entries_repo: system_entries_repo,
-          entry_id: entry.id,
-          wf_step: from_step,
-          submitted_at: Time.now
-        )
+        rollup_entry_step!(entry)
 
         # Update dataset progress after entry status change
         # Use system dataset repo to avoid permission issues with update
@@ -261,7 +258,6 @@ module Entry
     def error(entry_id, **opts)
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
-        from_step = entry.wf_step
 
         entry_workflow = entry.dataset.entry_workflow.new(entries, entry, **opts)
 
@@ -274,14 +270,7 @@ module Entry
           }
         )
 
-        TimeTracking.rollup(
-          slot_repo: system_entry_time_slots_repo,
-          work_repo: system_entry_work_times_repo,
-          system_entries_repo: system_entries_repo,
-          entry_id: entry.id,
-          wf_step: from_step,
-          submitted_at: Time.now
-        )
+        rollup_entry_step!(entry)
 
         # Update dataset progress after entry status change
         # Use system dataset repo to avoid permission issues with update
@@ -425,6 +414,22 @@ module Entry
           next
         end
       end
+    end
+
+    private
+
+    # Central rollup for any operation that leaves a workflow step: submit,
+    # error, and bare wf_step patches via update.  Finalizes open sessions on
+    # the leaving step, purges their slots, and refreshes the entry cache.
+    def rollup_entry_step!(entry, submitted_at: Time.now)
+      TimeTracking.rollup(
+        slot_repo: system_entry_time_slots_repo,
+        work_repo: system_entry_work_times_repo,
+        system_entries_repo: system_entries_repo,
+        entry_id: entry.id,
+        wf_step: entry.wf_step,
+        submitted_at: submitted_at
+      )
     end
   end
 end

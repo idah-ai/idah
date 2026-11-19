@@ -29,24 +29,30 @@ module TimeTracking
     # Skip when there is no account (system/service contexts)
     return if account_id.nil?
 
-    # Verify the caller is the assignee; use the entry's own current step.
-    entry = entry_repo.find!(entry_id)
-    return unless entry.assigned_to_id == account_id
-    return unless step_allowed?(entry.wf_step)
+    # FOR SHARE
+    # blocks concurrent writes, closing the race that would otherwise re-open
+    # a session on the rolled-up step.
+    locked = entry_repo.table.where(id: entry_id).for_share.first
+    return unless locked
 
-    step = entry.wf_step
+    return unless locked[:assigned_to_id] == account_id
+    return unless step_allowed?(locked[:wf_step])
+
+    step = locked[:wf_step]
     slot_start = slot_for(at)
 
-    slot_repo.insert_slot(entry_id, account_id, step, slot_start)
+    return unless slot_repo.insert_slot(entry_id, account_id, step, slot_start)
+
     work_repo.upsert_open_row(entry_id, account_id, step, at, email)
   end
 
-  # Touch wrapped in a nested transaction (Sequel turns a nested transaction into
-  # a savepoint) so a tracking failure can never abort the surrounding save
-  # (annotation, note, etc.). Errors are swallowed.
+  # Touch wrapped in a forced savepoint so a tracking failure can never abort
+  # the surrounding transaction (annotation, note, etc.).
   def self.safe_touch(entry_repo:, **kwargs)
-    entry_repo.transaction do
-      touch(entry_repo: entry_repo, **kwargs)
+    entry_repo.client do |db|
+      db.transaction(savepoint: true, auto_savepoint: true) do
+        touch(entry_repo: entry_repo, **kwargs)
+      end
     end
   rescue StandardError => e
     Verse.logger&.error { "TimeTracking.touch failed: #{e.class}: #{e.message}" }

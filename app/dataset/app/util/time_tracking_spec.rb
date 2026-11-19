@@ -381,5 +381,28 @@ RSpec.describe TimeTracking do
         expect(rows.first[:seconds]).to eq(350)
       end
     end
+
+    it "rescues a real SQL error without aborting the outer transaction" do
+      entry_repo.transaction do
+        # Force a failure inside the touch so the savepoint is exercised.
+        allow(slot_repo).to receive(:insert_slot).and_raise(
+          ::Sequel::DatabaseError.new("forced tracking failure")
+        )
+
+        described_class.safe_touch(
+          entry_repo:,
+          slot_repo:,
+          work_repo:,
+          entry_id:,
+          account_id: 10,
+          email: "user_test@idah.com"
+        )
+
+        # After safe_touch swallows the error, the outer transaction must
+        # still be usable — no PG::InFailedSqlTransaction abort.
+        entry = entry_repo.find!(entry_id)
+        expect(entry).not_to be_nil
+      end
+    end
   end
 end

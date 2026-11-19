@@ -69,7 +69,7 @@ module EntryWorkTime
               AND pm.disabled_at IS NULL
               AND (
                 pm.role IN :owner_roles OR
-                (pm.role IN :member_roles AND e.assigned_to_id = :account_id)
+                (pm.role IN :member_roles AND e.assigned_to_id = :account_id AND entry_work_times.account_id = :account_id)
               )
           )
         SQL

@@ -83,13 +83,15 @@ module EntryTimeSlot
     end
 
     def insert_slot(entry_id, account_id, wf_step, slot_start)
+      # Returns true when a new row was inserted, false when the slot already
+      # existed (INSERT … ON CONFLICT DO NOTHING — no rows inserted).
       table.insert_conflict.insert(
         id: UUIDv7.generate,
         entry_id: entry_id,
         account_id: account_id,
         wf_step: wf_step,
         slot_start: slot_start
-      )
+      ) != 0
     end
   end
 end

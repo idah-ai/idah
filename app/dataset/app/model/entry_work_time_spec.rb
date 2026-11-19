@@ -109,7 +109,8 @@ RSpec.describe EntryWorkTime, database: true do
     end
 
     it "returns rows for entries assigned to the annotator on :read" do
-      repo.upsert_open_row(entry_id, 10, "annotate", t1, "alpha@idah.com")
+      # Create a row for the annotator themselves (account id 4)
+      repo.upsert_open_row(entry_id, 4, "annotate", t1, "annotator@example.com")
 
       # Assign the entry to the annotator (account id 4)
       entry_repo.assign(entry_id, 4, "annotator@example.com")
@@ -122,6 +123,15 @@ RSpec.describe EntryWorkTime, database: true do
       repo.upsert_open_row(entry_id, 10, "annotate", t1, "alpha@idah.com")
 
       expect(subject.scoped(:read).all).to be_empty
+    end
+
+    it "does not expose another user's work-time rows" do
+      # Create a row for account 10 on an entry assigned to the annotator
+      repo.upsert_open_row(entry_id, 10, "annotate", t1, "alpha@idah.com")
+      entry_repo.assign(entry_id, 4, "annotator@example.com")
+
+      result = subject.scoped(:read).all
+      expect(result).to be_empty
     end
   end
 
