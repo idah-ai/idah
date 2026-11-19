@@ -907,7 +907,7 @@ export class ProjectDashboardController {
         },
         included: ["assigned_to", "entry_work_times", ...(overview ? ["dataset"] : [])],
         sort: this.entryProgressSortKey
-          ? [`${this.entryProgressSortDir === "desc" ? "-" : ""}${this.entryProgressSortKey}`]
+          ? [`${this.entryProgressSortDir === "desc" ? "-" : ""}${this.entryProgressSortKey}`, "-id"]
           : ["-created_at", "-id"],
         pagination: { ...this.entryProgressPagination },
         count: true,

@@ -53,7 +53,6 @@ module TimeTracking
   end
 
   # Called on submit / error. Finalizes every open session on the leaving step.
-  # rubocop:disable Metrics/ParameterLists
   def self.rollup(
     slot_repo:,
     work_repo:,

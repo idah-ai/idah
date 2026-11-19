@@ -9,10 +9,6 @@ module EntryTimeSlot
     field :account_id, type: Integer
     field :wf_step, type: String
     field :slot_start, type: Time
-
-    field :created_at, type: Time, readonly: true
-    field :updated_at, type: Time, readonly: true
-
     belongs_to :entry, repository: "Entry::Repository", foreign_key: :entry_id
   end
 

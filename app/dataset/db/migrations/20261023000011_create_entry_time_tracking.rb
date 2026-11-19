@@ -24,6 +24,7 @@ Sequel.migration do
       Migration::Timestamps.timestamps(self)
 
       index %i[account_id wf_step]
+      index %i[entry_id wf_step]
     end
     Migration::Timestamps.trg_updated_at(self, :entry_work_times)
 

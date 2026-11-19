@@ -30,7 +30,7 @@ module Entry
     field :reopened_by_id, type: [Integer, NilClass]
     field :reopened_by_email, type: [String, NilClass]
 
-    field :time_tracking, type: [Hash, NilClass]
+    field :time_tracking, type: [Hash, NilClass], readonly: true
 
     field :completed_at, type: [Time, NilClass], readonly: true
     field :created_at, type: Time, readonly: true
@@ -479,23 +479,31 @@ module Entry
     # `time_tracking` JSONB column.  Falls back to the default behaviour for
     # every other sort key.
     def prepare_ordering(query, sort)
-      sort = Array(sort).dup
+      sort = (sort.is_a?(String) ? sort.split(",") : Array(sort)).dup
       rest = []
+      has_id = false
+
+      order_exprs = []
 
       sort.each do |x|
-        if x.end_with?("total_time_spent")
-          direction = x.start_with?("-") ? :desc : :asc
-          expr = Sequel.lit(
+        if x.delete_prefix("-") == "total_time_spent"
+          ascending = !x.start_with?("-")
+          order_exprs <<
             "CASE WHEN entries.time_tracking IS NOT NULL " \
-            "THEN (SELECT SUM(value::integer) " \
-            "FROM jsonb_each_text(entries.time_tracking)) END"
-          )
-          query = query.order(Sequel.public_send(direction, expr, nulls: :last))
+            "THEN (SELECT SUM((value)::integer) " \
+            "FROM jsonb_each_text(entries.time_tracking)) END " \
+            "#{ascending ? "ASC" : "DESC"} NULLS LAST"
         else
           rest << x
+          has_id = true if x.delete_prefix("-") == "id"
         end
       end
 
+      if !has_id && sort.any? { |x| x.delete_prefix("-") == "total_time_spent" }
+        order_exprs << "entries.id DESC"
+      end
+
+      query = query.order(::Sequel.lit(order_exprs.join(", "))) if order_exprs.any?
       super(query, rest)
     end
 
