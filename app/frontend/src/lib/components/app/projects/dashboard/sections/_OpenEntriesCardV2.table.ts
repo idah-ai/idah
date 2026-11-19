@@ -79,8 +79,8 @@ export function enrichWithTimeData(entry: EntryRecord): EntryWithTimeData {
     }
   }
 
-  // 2. Unsubmitted (open) sessions from entry_work_times with 0 seconds
-  const unsubmitted = allWorkTimes.filter((wt) => wt.seconds === 0);
+  // 2. Unsubmitted (open) sessions from entry_work_times with non-null session_started_at
+  const unsubmitted = allWorkTimes.filter((wt) => wt.session_started_at != null);
   if (unsubmitted.length > 0) {
     // Group by wf_step
     const byStep: Record<string, { emails: string[] }> = {};

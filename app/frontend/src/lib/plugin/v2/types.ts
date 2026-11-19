@@ -939,6 +939,7 @@ export interface IEntryWorkTime {
   email: string | null;
   wfStep: string;
   seconds: number;
+  sessionStartedAt: Date | null;
 }
 
 // ─── V2 Driver — Complete interface ──────────────────────────────────────

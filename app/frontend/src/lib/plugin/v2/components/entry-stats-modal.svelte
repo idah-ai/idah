@@ -245,10 +245,12 @@
                     {#each authors as author (author.label)}
                       <tr class="border-b last:border-0">
                         <td class="text-muted-foreground py-1.5 pl-5">
-                          {author.label}
-                          {#each author.tags ?? [] as tag (tag.label)}
-                            <Badge variant={tag.variant} class="px-1.5 text-[10px]">{tag.label}</Badge>
-                          {/each}
+                          <span class="inline-flex items-baseline gap-1">
+                            {author.label}
+                            {#each author.tags ?? [] as tag (tag.label)}
+                              <Badge variant={tag.variant} class="px-1.5 text-[10px] pb-0">{tag.label}</Badge>
+                            {/each}
+                          </span>
                         </td>
                         <td class="text-muted-foreground py-1.5 text-right tabular-nums">{author.value}</td>
                       </tr>

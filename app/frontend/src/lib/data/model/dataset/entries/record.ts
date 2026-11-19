@@ -104,6 +104,8 @@ export class EntryWorkTimeRecord extends Record {
   @field() public readonly wf_step!: string;
   @field() public readonly seconds!: number;
   @field() public readonly email!: string | null;
+  @field({ transformer: Transformers.Time })
+  public readonly session_started_at!: Date | null;
 }
 
 RecordFactory.registerTypes(EntryRecord, EntryWorkTimeRecord);

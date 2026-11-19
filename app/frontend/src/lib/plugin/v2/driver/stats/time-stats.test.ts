@@ -44,7 +44,7 @@ describe("TimeStatsProvider", () => {
       createMockDriver({
         timeTracking: { annotate: 600 },
         workTimes: [
-          { wfStep: "annotate", accountId: 1, email: "alice@test.com", seconds: 600 },
+          { wfStep: "annotate", accountId: 1, email: "alice@test.com", seconds: 600, sessionStartedAt: null },
         ],
       }),
     );
@@ -58,17 +58,35 @@ describe("TimeStatsProvider", () => {
     });
   });
 
-  it("marks unsubmitted work times with — and a tag", () => {
+  it("marks unsubmitted work times with — and a danger tag", () => {
     const provider = new TimeStatsProvider(
       createMockDriver({
         workTimes: [
-          { wfStep: "annotate", accountId: 1, email: "bob@test.com", seconds: 0 },
+          { wfStep: "annotate", accountId: 1, email: "bob@test.com", seconds: 0, sessionStartedAt: new Date() },
         ],
       }),
     );
     const stats = provider.collect();
     expect(stats).toHaveLength(1);
     expect(stats[0].value).toBe("—");
-    expect(stats[0].tags).toEqual([{ label: "unsubmitted", variant: "secondary" }]);
+    expect(stats[0].tags).toEqual([{ label: "Unsubmitted", variant: "destructive" }]);
+  });
+
+  it("groups duplicate work times for the same (wfStep, accountId) and sums seconds", () => {
+    const provider = new TimeStatsProvider(
+      createMockDriver({
+        workTimes: [
+          { wfStep: "annotate", accountId: 1, email: "admin@idah.ai", seconds: 300, sessionStartedAt: null },
+          { wfStep: "annotate", accountId: 1, email: "admin@idah.ai", seconds: 200, sessionStartedAt: null },
+        ],
+      }),
+    );
+    const stats = provider.collect();
+    expect(stats).toHaveLength(1);
+    expect(stats[0]).toMatchObject({
+      key: "time.annotate.1",
+      value: "00:08:20", // 500 seconds
+      label: "admin@idah.ai",
+    });
   });
 });

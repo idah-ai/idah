@@ -70,9 +70,9 @@ describe("enrichWithTimeData", () => {
     expect(result.steps[0].people).toHaveLength(2);
   });
 
-  it("shows unsubmitted sessions from entry_work_times with 0 seconds", () => {
+  it("shows unsubmitted sessions from entry_work_times with non-null session_started_at", () => {
     const workTimes = [
-      { account_id: 1, wf_step: "annotate", seconds: 0, email: "bob@test.com" },
+      { account_id: 1, wf_step: "annotate", seconds: 0, email: "bob@test.com", session_started_at: new Date() },
     ] as unknown as EntryWorkTimeRecord[];
 
     const result = enrichWithTimeData(

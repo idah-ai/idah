@@ -29,18 +29,37 @@ export class TimeStatsProvider implements IStatProvider {
       }
     }
 
-    // Per-author rows, one per (step, author) stint
+    // Per-author rows, grouped by (wfStep, accountId) and summed — after a
+    // reject cycle the same person can have multiple rows on the same step.
+    const grouped = new Map<string, { wfStep: string; accountId: number; email: string | null; seconds: number; unsubmitted: boolean }>();
+
     for (const wt of workTimes) {
-      const showEmail = wt.email && wt.email !== "null" ? wt.email : `User ${wt.accountId}`;
-      const unsubmitted = wt.seconds === 0;
+      const key = `${wt.wfStep}.${wt.accountId}`;
+      const existing = grouped.get(key);
+      if (existing) {
+        existing.seconds += wt.seconds;
+        if (wt.sessionStartedAt != null) existing.unsubmitted = true;
+      } else {
+        grouped.set(key, {
+          wfStep: wt.wfStep,
+          accountId: wt.accountId,
+          email: wt.email,
+          seconds: wt.seconds,
+          unsubmitted: wt.sessionStartedAt != null,
+        });
+      }
+    }
+
+    for (const [, entry] of grouped) {
+      const showEmail = entry.email && entry.email !== "null" ? entry.email : `User ${entry.accountId}`;
       stats.push({
-        key: `time.${wt.wfStep}.${wt.accountId}`,
-        value: unsubmitted ? "—" : formatSeconds(wt.seconds),
+        key: `time.${entry.wfStep}.${entry.accountId}`,
+        value: entry.seconds > 0 ? formatSeconds(entry.seconds) : "—",
         section: "time",
         sectionHeader: "Time",
         unitHeader: "Duration",
         label: showEmail,
-        ...(unsubmitted ? { tags: [{ label: "unsubmitted", variant: "secondary" as const }] } : {}),
+        ...(entry.unsubmitted ? { tags: [{ label: "Unsubmitted", variant: "destructive" as const }] } : {}),
       });
     }
 

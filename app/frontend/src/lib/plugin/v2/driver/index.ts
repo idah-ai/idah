@@ -513,6 +513,7 @@ export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2
       email: wt.email,
       wfStep: wt.wf_step,
       seconds: wt.seconds,
+      sessionStartedAt: wt.session_started_at,
     })),
   });
 
