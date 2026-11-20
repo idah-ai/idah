@@ -28,7 +28,6 @@
   placeholder="All datasets"
   clearable
   maxSelections={100}
-  emptyChoicePlaceholder="No dataset found."
   onSelected={(choices) => select(choices.map((choice) => String(choice.value)))}
 >
   {#snippet slotTriggerValues({ selectedChoices })}

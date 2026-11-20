@@ -588,7 +588,7 @@ export class ProjectDashboardController {
     }
   }
 
-  // ==================== Open Entries ====================
+  // ==================== Progress by entry ====================
 
   public entryTab: OpenEntryTab = $state("all");
 

@@ -43,7 +43,7 @@
 
 <Card.Root>
   <Card.Header>
-    <Card.Title>Open entries</Card.Title>
+    <Card.Title>Progress by entry</Card.Title>
   </Card.Header>
 
   <Card.Content>
