@@ -13,21 +13,24 @@ describe("clampRect", () => {
     expect(clampRect(10, 20, 100, 50, 800, 600)).toEqual([10, 20, 100, 50]);
   });
 
-  it("clamps to 0 when the rect extends beyond the left/top edge", () => {
-    // x/y moves to 0, width/height preserved
-    expect(clampRect(-10, -5, 100, 50, 800, 600)).toEqual([0, 0, 100, 50]);
+  it("drops the outside part when the rect starts beyond the left/top edge", () => {
+    // [-10, 90) x [-5, 45) clipped to the image is [0, 90) x [0, 45)
+    expect(clampRect(-10, -5, 100, 50, 800, 600)).toEqual([0, 0, 90, 45]);
   });
 
   it("clamps to media width/height when the rect extends beyond the right/bottom edge", () => {
     expect(clampRect(700, 500, 200, 200, 800, 600)).toEqual([700, 500, 100, 100]);
   });
 
+  it("clips a rect spanning the whole image to the image", () => {
+    expect(clampRect(-50, -50, 1000, 800, 800, 600)).toEqual([0, 0, 800, 600]);
+  });
+
   it("returns 0 width/height when the rect is completely outside", () => {
-    // Completely to the right/bottom: clamp position to edge, width/height become 0
+    // Completely to the right/bottom
     expect(clampRect(900, 700, 100, 50, 800, 600)).toEqual([800, 600, 0, 0]);
-    // Completely to the left/top: clamp position to 0, but width/height stay positive
-    // (the function does not reduce width for the negative offset)
-    expect(clampRect(-100, -100, 50, 50, 800, 600)).toEqual([0, 0, 50, 50]);
+    // Completely to the left/top: nothing of it lies inside the image
+    expect(clampRect(-100, -100, 50, 50, 800, 600)).toEqual([0, 0, 0, 0]);
   });
 
   it("handles zero-width/height rects", () => {

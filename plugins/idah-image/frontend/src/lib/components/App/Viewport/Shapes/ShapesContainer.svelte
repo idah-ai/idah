@@ -966,6 +966,8 @@
         h = Math.abs(by - ay);
       if (w < 3 || h < 3) return;
       const [cx, cy, cw, ch] = clampRect(x, y, w, h, media.width, media.height);
+      // A drag entirely outside the image clips to nothing
+      if (cw <= 0 || ch <= 0) return;
       const tileSnapshots = session.snapshotTiles(cx, cy, cw, ch);
       const mode = ui.coverageMaskIsRemove ? "remove" : "add";
 

@@ -15,18 +15,22 @@ export interface CoverageMaskShape {
 }
 
 /**
- * Clamp a rectangle to media bounds.
- * Returns [clampedX, clampedY, clampedW, clampedH].
+ * Clip a rectangle to media bounds: the part of [x, y, w, h] that lies inside
+ * [0, 0, mediaWidth, mediaHeight]. Both corners are clamped, so a rect that
+ * starts outside the image loses the outside part rather than shifting inward.
+ * Returns [clampedX, clampedY, clampedW, clampedH]; a rect fully outside the
+ * image comes back with zero width or height.
  */
 export function clampRect(
   x: number, y: number, w: number, h: number,
   mediaWidth: number, mediaHeight: number,
 ): [number, number, number, number] {
-  const clampedX = Math.max(0, Math.min(x, mediaWidth));
-  const clampedY = Math.max(0, Math.min(y, mediaHeight));
-  const clampedW = Math.min(w, mediaWidth - clampedX);
-  const clampedH = Math.min(h, mediaHeight - clampedY);
-  return [clampedX, clampedY, Math.max(0, clampedW), Math.max(0, clampedH)];
+  const clamp = (v: number, max: number) => Math.max(0, Math.min(v, max));
+  const x1 = clamp(x, mediaWidth);
+  const y1 = clamp(y, mediaHeight);
+  const x2 = clamp(x + w, mediaWidth);
+  const y2 = clamp(y + h, mediaHeight);
+  return [x1, y1, Math.max(0, x2 - x1), Math.max(0, y2 - y1)];
 }
 
 /**
