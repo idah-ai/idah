@@ -61,7 +61,7 @@
           {/each}
         </TabsList>
 
-        <Button variant="link" size="sm" class="text-right" disabled>Expand all</Button>
+        <!-- <Button variant="link" size="sm" class="text-right" disabled>Expand all</Button> -->
       </div>
 
       <div

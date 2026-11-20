@@ -89,7 +89,7 @@
             {["ready", "empty"].includes(history.status) ? controller.completionTotal.toLocaleString() : "-"}
           </Text>
           <Text size="xs">
-            currently completed entries with completion dates in
+            completed entries with completion dates in
             {#if range.start === range.end}
               {format(rangeStart, dateFormat)}
             {:else if isSameMonth(rangeStart, rangeEnd)}
@@ -184,7 +184,7 @@
         <ResponseBlock
           size="sm"
           title="No completed entries"
-          description="No currently completed entries have a recorded completion date in this range."
+          description="No completed entries with completion date in this range."
         />
       {:else}
         <ResponseBlock
