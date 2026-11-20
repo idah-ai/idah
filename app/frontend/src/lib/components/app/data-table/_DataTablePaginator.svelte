@@ -6,12 +6,11 @@
 
   interface Props extends IDataTablePagination {
     class?: string | null;
+    onPageChange?: (page: number) => void | Promise<void>;
   }
-  let { count, page = 1, itemsPerPage = 10, hasMore, class: className }: Props = $props();
+  let { count, page = 1, itemsPerPage = 10, hasMore, onPageChange, class: className }: Props = $props();
 
-  const lastPage = $derived(count / itemsPerPage);
-
-  function onPageChange() {}
+  const lastPage = $derived(Math.max(1, Math.ceil(count / itemsPerPage)));
 </script>
 
 <div class={cn("", className)}>
@@ -32,7 +31,7 @@
           {:else}
             <Pagination.Item>
               <Pagination.Link {page} isActive={currentPage === page.value}>
-                {#if Math.floor(lastPage) === page.value && hasMore}
+                {#if lastPage === page.value && hasMore}
                   {page.value}+
                 {:else}
                   {page.value}
@@ -42,7 +41,7 @@
           {/if}
         {/each}
 
-        {#if currentPage < Math.ceil(lastPage)}
+        {#if currentPage < lastPage}
           <Pagination.Item>
             <Pagination.NextButton />
           </Pagination.Item>

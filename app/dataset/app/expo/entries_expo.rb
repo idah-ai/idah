@@ -10,6 +10,41 @@ class EntriesExpo < BaseExpo
     that can be assigned, annotated, and tracked through workflow stages.
   MD
 
+  expose on_http(:get, "/summary") do
+    desc "Exact Dashboard Entry counts for a Project and optional Datasets"
+    input do
+      field :filter, Schemas::ProjectDatasetFilter
+    end
+    output do
+      field :meta, Hash
+    end
+  end
+  def summary
+    counts = service.summary(params[:filter])
+    server.content_type "application/vnd.api+json"
+    server.halt 200, JSON.generate(meta: counts)
+  end
+
+  expose on_http(:get, "/completion_history") do
+    desc "Daily currently completed Entry counts in the viewer's timezone"
+    input do
+      field :filter, Schemas::ProjectDatasetFilter
+      field? :from, String
+      field? :to, String
+      field :tz, String
+    end
+    output do
+      field :meta, Hash
+    end
+  end
+  def completion_history
+    history = service.completion_history(
+      params[:filter], from: params[:from], to: params[:to], timezone: params[:tz]
+    )
+    server.content_type "application/vnd.api+json"
+    server.halt 200, JSON.generate(meta: history.merge(timezone: params[:tz]))
+  end
+
   json_api Entry::Record do
     allowed_included "dataset",
                      "dataset.project",

@@ -71,6 +71,24 @@ module Dataset
     encoder :workflow_configuration, Verse::Sequel::JsonEncoder
     encoder :labels, Verse::Sequel::PgArrayEncoder
 
+    query
+    def delivery_breakdown(project_id:, day:, dataset_ids: nil)
+      with_db_mode :r do
+        # Non-completed Datasets in scope that have a delivery date.
+        eligible = scoped(:read).where(project_id: project_id).exclude(status: "completed").exclude(delivery_date: nil)
+        eligible = eligible.where(id: dataset_ids) if dataset_ids
+
+        # Count each delivery category directly from the authorized Dataset scope.
+        count = Sequel.function(:count, Sequel.lit("*"))
+        row = eligible.select(
+          count.filter(Sequel[:delivery_date] < day).as(:overdue),
+          count.filter(delivery_date: day).as(:due_today),
+          count.filter(delivery_date: day + 1).as(:due_tomorrow)
+        ).first
+        { overdue: row[:overdue].to_i, due_today: row[:due_today].to_i, due_tomorrow: row[:due_tomorrow].to_i }
+      end
+    end
+
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }

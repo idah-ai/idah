@@ -34,6 +34,30 @@ RSpec.describe Entry, database: true do
       )
     end
 
+    describe "#summary" do
+      it "applies the Entry read scope to every count", as: :annotator do
+        ProjectMember::Repository.new(system_auth_context).create(
+          project_id: project_id, account_id: 4, role: "annotator", email: "annotator@example.com", invited_by_id: 1
+        )
+        entry_repo.create(
+          project_id: project_id,
+          dataset_id: dataset_id,
+          status: "pending",
+          wf_step: "annotate",
+          assigned_to_id: 4
+        )
+        entry_repo.create(
+          project_id: project_id,
+          dataset_id: dataset_id,
+          status: "completed",
+          wf_step: "done",
+          assigned_to_id: 5
+        )
+        counts = described_class.new(current_auth_context).summary(project_id: project_id)
+        expect(counts).to eq(total: 1, completed: 0, review: 0, annotation: 1, reviewing: 0, annotating: 1)
+      end
+    end
+
     describe "#custom_filter :assigned" do
       context "As Admin", as: :admin do
         subject { described_class.new(current_auth_context) }
@@ -208,6 +232,73 @@ RSpec.describe Entry, database: true do
 
           result_false = subject.index({ orphan_categories: false })
           expect(result_false.size).to eq(1)
+        end
+      end
+    end
+
+    describe "completion timestamps" do
+      let!(:entry_id) {
+        entry_repo.create(project_id:, dataset_id:, resource: UUIDv7.generate, status: "pending", wf_step: "annotate")
+      }
+      let(:forged) { Time.utc(2000, 1, 1) }
+
+      def raw_entry(id)
+        entry_repo.client { |db| db[:entries].where(id:).first }
+      end
+
+      it "overrides supplied timestamps on completed and non-completed inserts" do
+        expect(Entry::Record.fields[:completed_at][:readonly]).to be(true)
+        id = entry_repo.create(project_id:, dataset_id:, status: "completed", wf_step: "done", completed_at: forged)
+        expect(raw_entry(id)[:completed_at]).to be_a(Time)
+        expect(raw_entry(id)[:completed_at]).not_to eq(forged)
+        other = entry_repo.create(project_id:, dataset_id:, status: "pending", completed_at: forged)
+        expect(raw_entry(other)[:completed_at]).to be_nil
+      end
+
+      it "preserves completion against direct null and forged timestamp writes" do
+        entry_repo.update!(entry_id, { status: "completed", wf_step: "done" })
+        completed_at = raw_entry(entry_id)[:completed_at]
+        [nil, forged].each do |value|
+          entry_repo.client { |db| db[:entries].where(id: entry_id).update(completed_at: value) }
+          expect(raw_entry(entry_id)[:completed_at]).to eq(completed_at)
+        end
+      end
+
+      it "preserves completion through low-level annotation timestamp cascades" do
+        annotation_id = Annotation::Repository.new(system_auth_context).create(
+          project_id:,
+          dataset_id:,
+          entry_id:,
+          category: "cat",
+          shape_type: "bounding-box",
+          shape_args: {},
+          properties: {},
+          created_by_email: "test@example.com"
+        )
+        entry_repo.update!(entry_id, { status: "completed", wf_step: "done" })
+        completed_at = raw_entry(entry_id)[:completed_at]
+        Annotation::Repository.new(system_auth_context).update!(annotation_id, { category: "dog" })
+        expect(raw_entry(entry_id)[:completed_at]).to eq(completed_at)
+      end
+
+      it "rolls back cleanly and leaves legacy completed rows unknown when applied" do
+        Sequel.extension :migration
+        path = File.expand_path("../../db/migrations/20261105000000_add_completed_at_to_entries.rb", __dir__)
+        migration = Sequel::Migrator.allocate.send(:load_migration_file, path)
+        entry_repo.client do |db|
+          migration.apply(db, :down)
+          expect(db.schema(:entries, reload: true).map(&:first)).not_to include(:completed_at)
+          expect(db[:pg_indexes].where(indexname: "entries_project_id_completed_at_index").count).to eq(0)
+          db[:entries].where(id: entry_id).update(status: "completed", wf_step: "done")
+          previous_updated_at = db[:entries].where(id: entry_id).get(:updated_at)
+          migration.apply(db, :up)
+          definition = db[:pg_indexes].where(indexname: "entries_project_id_completed_at_index").get(:indexdef)
+          expect(definition).to include("(project_id, completed_at)", "WHERE (completed_at IS NOT NULL)")
+          legacy = db[:entries].where(id: entry_id).first
+          expect(legacy[:completed_at]).to be_nil
+          expect(legacy[:updated_at]).to eq(previous_updated_at)
+          db[:entries].where(id: entry_id).update(name: "Legacy edit", completed_at: forged)
+          expect(db[:entries].where(id: entry_id).get(:completed_at)).to be_nil
         end
       end
     end

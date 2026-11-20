@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "tzinfo"
+
 module Entry
   class Service < Verse::Service::Base
     use entries: Entry::Repository,
@@ -26,6 +28,55 @@ module Entry
         sort:,
         query_count:
       )
+    end
+
+    def summary(filters)
+      filters = filters.transform_keys(&:to_sym)
+      project_id = filters[:project_id]
+      dataset_ids = filters[:dataset_id]
+      dataset_ids = validate_dashboard_scope(project_id, dataset_ids)
+      entries.summary(project_id: project_id, dataset_ids: dataset_ids)
+    end
+
+    def completion_history(filters, timezone:, from: nil, to: nil)
+      if from.nil? != to.nil?
+        raise Verse::Error::ValidationFailed, "Provide both from and to, or neither"
+      end
+
+      if from
+        start_date = Date.iso8601(from)
+        end_date = Date.iso8601(to)
+        unless start_date.iso8601 == from && end_date.iso8601 == to && (end_date - start_date).to_i.between?(0, 365)
+          raise Verse::Error::ValidationFailed, "Select a valid date range of up to 366 days"
+        end
+      end
+
+      TZInfo::Timezone.get(timezone)
+      filters = filters.transform_keys(&:to_sym)
+      project_id = filters.fetch(:project_id)
+      dataset_ids = validate_dashboard_scope(project_id, filters[:dataset_id])
+      entries.completion_history(
+        project_id: project_id,
+        dataset_ids: dataset_ids,
+        from: from,
+        to: to,
+        timezone: timezone
+      )
+    rescue Date::Error, TZInfo::InvalidTimezoneIdentifier
+      raise Verse::Error::ValidationFailed, "Invalid completion date range or timezone"
+    end
+
+    private def validate_dashboard_scope(project_id, dataset_ids)
+      projects.find!(project_id)
+      return unless dataset_ids
+
+      ids = dataset_ids.uniq
+      records = datasets.index({ project_id: project_id, id: ids }, items_per_page: 100)
+      unless records.length == ids.length
+        raise Verse::Error::ValidationFailed, "Datasets are not available in this Project"
+      end
+
+      ids
     end
 
     def select_next(dataset_id:, wf_step:)
