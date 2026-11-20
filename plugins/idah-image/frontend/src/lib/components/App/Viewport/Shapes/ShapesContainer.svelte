@@ -47,9 +47,9 @@
   import { selection } from "$lib/state/selection.svelte";
   import { snapDebug, ui } from "$lib/state/ui.svelte";
   import { nearFirstPolygonPoint } from "./Polygon/utils";
-    import { session } from "$lib/mask/coverage-mask-session";
-    import { clampRect } from "$lib/mask/coverage-mask";
-    import { hasDoneArea } from "$lib/mask/done-area";
+  import { session } from "$lib/mask/coverage-mask-session";
+  import { clampRect } from "$lib/mask/coverage-mask";
+  import { hasDoneArea } from "$lib/mask/done-area";
 
   import {
     onPointerDown as maskBrushPointerDown,
