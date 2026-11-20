@@ -268,14 +268,13 @@ RSpec.describe DatasetsExpo, type: :exposition, database: true, as: :admin do
   end
 
   describe "GET /datasets/delivery_breakdown" do
-    it "counts disjoint categories and only the nearest upcoming date including ties" do
-      ["2026-11-16", "2026-11-17", "2026-11-18", "2026-11-20", "2026-11-20", "2026-11-25", nil].each do |date|
+    it "counts overdue, today, and tomorrow while excluding later dates" do
+      ["2026-11-16", "2026-11-17", "2026-11-18", "2026-11-20", "2026-11-25", nil].each do |date|
         delivery_dataset(date)
       end
       delivery_dataset("2026-11-16", status: "completed")
       expect(read_breakdown).to eq(
-        "meta" => { "overdue" => 1, "due_today" => 1, "due_tomorrow" => 1,
-                    "upcoming" => { "date" => "2026-11-20", "count" => 2 } }
+        "meta" => { "overdue" => 1, "due_today" => 1, "due_tomorrow" => 1 }
       )
       expect(last_response.status).to eq(200), last_response.body
     end
@@ -316,12 +315,11 @@ RSpec.describe DatasetsExpo, type: :exposition, database: true, as: :admin do
       expect(read_breakdown(day: "2026-12-31").dig("meta", "due_tomorrow")).to eq(1)
     end
 
-    it "returns zeros and no upcoming date for an empty scope" do
+    it "returns zeros for an empty scope" do
       expect(read_breakdown.fetch("meta")).to eq(
         "overdue" => 0,
         "due_today" => 0,
-        "due_tomorrow" => 0,
-        "upcoming" => nil
+        "due_tomorrow" => 0
       )
     end
 
@@ -365,26 +363,6 @@ RSpec.describe DatasetsExpo, type: :exposition, database: true, as: :admin do
       )
       read_breakdown(project: foreign)
       expect(last_response.status).to be_between(403, 404)
-    end
-
-    it "uses one aggregate snapshot rather than a nearest-date lookup followed by a count" do
-      id = delivery_dataset("2026-11-20")
-      queries = []
-      logger = Object.new
-      logger.define_singleton_method(:info) { |sql|
-        queries << sql if sql.include?("WITH delivery_counts") || sql.include?('WITH "delivery_counts"')
-      }
-      datasets.client do |db|
-        db.loggers << logger
-        begin
-          expect(read_breakdown.dig("meta", "upcoming")).to eq("date" => "2026-11-20", "count" => 1)
-        ensure
-          db.loggers.delete(logger)
-        end
-      end
-      expect(queries.length).to eq(1)
-      datasets.update!(id, { delivery_date: Date.new(2026, 11, 21) })
-      expect(read_breakdown.dig("meta", "upcoming")).to eq("date" => "2026-11-21", "count" => 1)
     end
   end
 end

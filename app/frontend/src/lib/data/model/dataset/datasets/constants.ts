@@ -34,5 +34,4 @@ export interface DatasetDeliveryBreakdown {
   overdue: number;
   due_today: number;
   due_tomorrow: number;
-  upcoming: { date: string; count: number } | null;
 }
