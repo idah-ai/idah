@@ -70,5 +70,7 @@ export interface EntrySummary {
 
 export interface EntryCompletionHistory {
   timezone: string;
+  from: string;
+  to: string;
   daily: Record<string, number>;
 }

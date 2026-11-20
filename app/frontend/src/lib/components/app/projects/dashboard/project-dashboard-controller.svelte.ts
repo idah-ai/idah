@@ -73,7 +73,10 @@ export class ProjectDashboardController {
 
       if (this.scopeReady && !this.denied) {
         if (changed) void this.loadAttention();
-        if (this.completionHistory.zone !== Intl.DateTimeFormat().resolvedOptions().timeZone)
+        if (
+          (changed && this.automaticCompletionRange) ||
+          this.completionHistory.zone !== Intl.DateTimeFormat().resolvedOptions().timeZone
+        )
           void this.loadCompletionHistory();
       }
     });
@@ -402,6 +405,7 @@ export class ProjectDashboardController {
     error: "",
   });
   private completionGeneration = 0;
+  private automaticCompletionRange = true;
 
   public get completionToday(): string {
     return format(this.reportingDay, "yyyy-MM-dd");
@@ -445,6 +449,7 @@ export class ProjectDashboardController {
 
   public async applyCompletionRange(range: CompletionRange): Promise<void> {
     if (this.disposed || this.denied || !this.isCompletionRangeValid(range)) return;
+    this.automaticCompletionRange = false;
     this.completionRange = { ...range };
     const days = differenceInCalendarDays(parseISO(range.end), parseISO(range.start)) + 1;
     this.completionGrouping = days <= 14 ? "Day" : days <= 92 ? "Week" : "Month";
@@ -550,6 +555,7 @@ export class ProjectDashboardController {
     const request = ++this.completionGeneration;
     const ids = this.effectiveDatasetIds;
     const range = { ...this.completionRange };
+    const automatic = this.automaticCompletionRange;
     const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const current = (): boolean =>
@@ -560,12 +566,13 @@ export class ProjectDashboardController {
     this.completionHistory = { status: "loading", daily: {}, zone, error: "" };
 
     try {
-      const result = await entriesBackendDataSource.completionHistory(this.projectId, ids, {
-        from: range.start,
-        to: range.end,
-        tz: zone,
-      });
+      const result = await entriesBackendDataSource.completionHistory(
+        this.projectId,
+        ids,
+        automatic ? { tz: zone } : { from: range.start, to: range.end, tz: zone },
+      );
       if (!current()) return;
+      if (automatic) this.completionRange = { start: result.from, end: result.to };
       this.completionHistory = {
         status: Object.keys(result.daily).length ? "ready" : "empty",
         daily: result.daily,

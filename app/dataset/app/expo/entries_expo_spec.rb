@@ -605,12 +605,15 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
       rows.map { |row| row[:id] }
     end
 
-    def read_completion(from: "2026-11-01", to: "2026-11-30", timezone: "UTC", filter: { project_id: project_id })
+    def read_completion(from: "2026-11-01", to: "2026-11-30", timezone: "UTC",
+                        filter: { project_id: project_id })
       get "/entries/completion_history?#{Rack::Utils.build_nested_query(
-        filter: filter,
-        from: from,
-        to: to,
-        tz: timezone
+        {
+          filter: filter,
+          from: from,
+          to: to,
+          tz: timezone
+        }.compact
       )}"
       JSON.parse(last_response.body)
     end
@@ -619,7 +622,82 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
       completion_rows(Array.new(1001, "2026-11-02T12:00:00Z") + [nil])
       body = read_completion
       expect(last_response.status).to eq(200), last_response.body
-      expect(body).to eq("meta" => { "timezone" => "UTC", "daily" => { "2026-11-02" => 1001 } })
+      expect(body).to eq(
+        "meta" => { "timezone" => "UTC", "from" => "2026-11-01", "to" => "2026-11-30",
+                    "daily" => { "2026-11-02" => 1001 } }
+      )
+      automatic = read_completion(from: nil, to: nil)
+      expect(automatic.fetch("meta")).to include(
+        "from" => "2026-10-27",
+        "to" => "2026-11-02",
+        "daily" => { "2026-11-02" => 1001 }
+      )
+    end
+
+    it "resolves the latest seven days independently of today's date" do
+      completion_rows(["2026-11-07T12:00:00Z", "2026-11-08T12:00:00Z", "2026-11-14T12:00:00Z"])
+      body = read_completion(from: nil, to: nil)
+      expect(last_response.status).to eq(200), last_response.body
+      expect(body.fetch("meta")).to include(
+        "from" => "2026-11-08",
+        "to" => "2026-11-14",
+        "daily" => { "2026-11-08" => 1, "2026-11-14" => 1 }
+      )
+    end
+
+    it "uses the viewer's local completion date and calendar days across DST" do
+      completion_rows(["2026-03-09T03:59:59.999999Z"])
+      body = read_completion(from: nil, to: nil, timezone: "America/New_York")
+      expect(body.fetch("meta")).to include(
+        "from" => "2026-03-02",
+        "to" => "2026-03-08",
+        "daily" => { "2026-03-08" => 1 }
+      )
+    end
+
+    it "falls back to the viewer's current day for empty or legacy-only scopes" do
+      timezone = "Pacific/Kiritimati"
+      day = entries.client { |db| db.get(Sequel.lit("(CURRENT_TIMESTAMP AT TIME ZONE ?)::date", timezone)) }
+      [false, true].each do |legacy|
+        completion_rows([nil]) if legacy
+        body = read_completion(from: nil, to: nil, timezone: timezone)
+        expect(body.fetch("meta")).to include("from" => (day - 6).iso8601, "to" => day.iso8601, "daily" => {})
+      end
+    end
+
+    it "ends the range today when the latest completion is today" do
+      day = entries.client { |db| db.get(Sequel.lit("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date")) }
+      completion_rows(["#{day.iso8601}T00:00:00Z"])
+      body = read_completion(from: nil, to: nil)
+      expect(body.fetch("meta")).to include("from" => (day - 6).iso8601, "to" => day.iso8601)
+    end
+
+    it "resolves each Dataset scope independently and excludes reopened Entries" do
+      other = Dataset::Repository.new(system_context).create(
+        project_id: project_id, modality: "video", labels: [], labeling_configuration: {}, workflow_configuration: {}
+      )
+      completion_rows(["2026-11-14T12:00:00Z"])
+      newer = completion_rows(["2026-11-18T12:00:00Z"], dataset: other).first
+      selected = read_completion(
+        from: nil,
+        to: nil,
+        filter: { project_id: project_id, dataset_id: [dataset_id] }
+      )
+      expect(selected.dig("meta", "to")).to eq("2026-11-14")
+      expect(read_completion(from: nil, to: nil).dig("meta", "to")).to eq("2026-11-18")
+      entries.update!(newer, { status: "pending" })
+      expect(read_completion(from: nil, to: nil).dig("meta", "to")).to eq("2026-11-14")
+    end
+
+    [{ from: "2026-11-01" }, { to: "2026-11-07" },
+     { from: "", to: "2026-11-07" }, { from: "2026-11-01", to: "" }, { from: "", to: "" },
+     { from: "2026-11-01", to: "invalid" }].each do |range|
+      it "rejects a partial, empty, or malformed completion range #{range}" do
+        get "/entries/completion_history?#{Rack::Utils.build_nested_query(
+          { filter: { project_id: project_id }, tz: "UTC" }.merge(range)
+        )}"
+        expect(last_response.status).to eq(422), last_response.body
+      end
     end
 
     it "returns an empty map for a successful empty range" do
@@ -716,6 +794,8 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
     it "enforces Project Owner access", as: :project_owner do
       read_completion
       expect(last_response.status).to be_between(403, 404)
+      read_completion(from: nil, to: nil)
+      expect(last_response.status).to be_between(403, 404)
       ProjectMember::Repository.new(system_context).create(
         project_id: project_id,
         account_id: 3,
@@ -724,6 +804,8 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
         invited_by_id: 1
       )
       read_completion
+      expect(last_response.status).to eq(200), last_response.body
+      read_completion(from: nil, to: nil)
       expect(last_response.status).to eq(200), last_response.body
     end
 
@@ -736,8 +818,10 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
         invited_by_id: 1
       )
       completion_rows(["2026-11-02T12:00:00Z"], assigned_to: 4)
-      completion_rows(["2026-11-02T12:00:00Z"], assigned_to: 5)
+      completion_rows(["2026-11-14T12:00:00Z"], assigned_to: 5)
       expect(read_completion.dig("meta", "daily")).to eq("2026-11-02" => 1)
+      automatic = read_completion(from: nil, to: nil)
+      expect(automatic.fetch("meta")).to include("to" => "2026-11-02", "daily" => { "2026-11-02" => 1 })
     end
   end
 

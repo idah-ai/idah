@@ -96,11 +96,24 @@ module Entry
     end
 
     query
-    def completion_history(project_id:, from:, to:, timezone:, dataset_ids: nil)
+    def completion_history(project_id:, timezone:, from: nil, to: nil, dataset_ids: nil)
       with_db_mode :r do
         # Currently completed Entries with known completion timestamps in the authorized scope.
         collection = scoped(:read).where(project_id: project_id, status: "completed").exclude(completed_at: nil)
         collection = collection.where(dataset_id: dataset_ids) if dataset_ids
+
+        if from.nil? && to.nil?
+          # Find the latest authorized completion's local date, or today's local date when unknown.
+          latest_day = Sequel.lit(
+            "COALESCE(((MAX(completed_at) AT TIME ZONE 'UTC') AT TIME ZONE ?)::date, " \
+            "(CURRENT_TIMESTAMP AT TIME ZONE ?)::date)",
+            timezone,
+            timezone
+          )
+          end_date = collection.select(latest_day.as(:day)).first[:day]
+          from = (end_date - 6).iso8601
+          to = end_date.iso8601
+        end
 
         # Convert inclusive local dates to half-open UTC bounds for the raw completed_at index.
         # completed_at stores UTC wall-clock values as timestamp without time zone.
@@ -109,9 +122,10 @@ module Entry
 
         # Interpret stored timestamps as UTC, then group by the viewer's local calendar date.
         day = Sequel.lit("((entries.completed_at AT TIME ZONE 'UTC') AT TIME ZONE ?)::date", timezone)
-        collection.where { completed_at >= lower }.where { completed_at < upper }
-                  .select(day.as(:day), Sequel.function(:count, Sequel.lit("*")).as(:count))
-                  .group(day).order(day).all.to_h { |row| [row[:day].iso8601, row[:count]] }
+        daily = collection.where { completed_at >= lower }.where { completed_at < upper }
+                          .select(day.as(:day), Sequel.function(:count, Sequel.lit("*")).as(:count))
+                          .group(day).order(day).all.to_h { |row| [row[:day].iso8601, row[:count]] }
+        { from: from, to: to, daily: daily }
       end
     end
 

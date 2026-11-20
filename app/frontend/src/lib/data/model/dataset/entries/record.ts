@@ -117,7 +117,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
   completionHistory: async (
     projectId: string,
     datasetIds: string[],
-    options: { from: string; to: string; tz: string },
+    options: { tz: string; from?: string; to?: string },
   ): Promise<EntryCompletionHistory> => {
     const response = await fetch(
       resourcePath(entriesBasePath, "completion_history", {

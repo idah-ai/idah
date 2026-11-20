@@ -29,8 +29,8 @@ class EntriesExpo < BaseExpo
     desc "Daily currently completed Entry counts in the viewer's timezone"
     input do
       field :filter, Schemas::ProjectDatasetFilter
-      field :from, String
-      field :to, String
+      field? :from, String
+      field? :to, String
       field :tz, String
     end
     output do
@@ -38,9 +38,11 @@ class EntriesExpo < BaseExpo
     end
   end
   def completion_history
-    daily = service.completion_history(params[:filter], from: params[:from], to: params[:to], timezone: params[:tz])
+    history = service.completion_history(
+      params[:filter], from: params[:from], to: params[:to], timezone: params[:tz]
+    )
     server.content_type "application/vnd.api+json"
-    server.halt 200, JSON.generate(meta: { timezone: params[:tz], daily: daily })
+    server.halt 200, JSON.generate(meta: history.merge(timezone: params[:tz]))
   end
 
   json_api Entry::Record do
