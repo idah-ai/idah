@@ -25,6 +25,7 @@
   import { shapeBounds } from "$lib/utils/shape-bounds";
   import type { IAnnotationChange } from "$idah/v2/types";
   import type { IImageAnnotationShape } from "$lib/types";
+  import { NON_DRAWABLE_SHAPE_TYPES } from "$lib/types";
 
   // Scope follows the selection reactively: the store derives the scope from
   // the selection, and this effect reloads (back to page 1) whenever the
@@ -115,6 +116,17 @@
     return resolveAnnotationColor({ id: change.annotation_id, category, shape_type: shapeType });
   }
 
+  /** Skip changes for non-drawable annotations (done_area, entry_root). */
+  function isNonDrawableChange(change: IAnnotationChange): boolean {
+    const ann = liveAnnotation(change);
+    const tomb = getDeletedAnnotation(change.annotation_id);
+    const shapeType = ann?.shape_type ?? tomb?.shape_type;
+    return shapeType ? NON_DRAWABLE_SHAPE_TYPES.has(shapeType) : false;
+  }
+
+  /** Changes to show. Filtered before grouping, so a day with only done-area changes gets no header. */
+  const visibleChanges = $derived(history.items.filter((c) => !isNonDrawableChange(c)));
+
   /** Center the viewport on an annotation's shape (live or tombstone). */
   function centerOnShape(shape: IImageAnnotationShape | undefined, shapeType: string | undefined) {
     const mw = media.width,
@@ -193,7 +205,7 @@
       </div>
     {:else}
       <div class="pt-1">
-        {#each groupChangesByDay(history.items, new Date()) as group (group.label)}
+        {#each groupChangesByDay(visibleChanges, new Date()) as group (group.label)}
           <div class="text-muted-foreground px-3 pt-2 pb-1 text-[11px] font-medium">{group.label}</div>
           {#each group.items as change (change.id)}
             <HistoryChangeCard

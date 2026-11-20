@@ -2,7 +2,7 @@
   // -----------------------------------------------------------------------
   // IdahToolbar.svelte — Renders V2 toolbar items + built-in undo/redo
   // -----------------------------------------------------------------------
-  import type { IToolbarItem } from "$idah/v2/types";
+  import type { IToolbarItem, ToolbarText } from "$idah/v2/types";
 
   import undoIcon from "$lib/assets/icons/undo.svg?raw";
   import redoIcon from "$lib/assets/icons/redo.svg?raw";
@@ -15,6 +15,8 @@
     canRedo?: boolean;
   }
   let { items, onUndo, onRedo, canUndo = false, canRedo = false }: Props = $props();
+
+  const text = (value: ToolbarText) => (typeof value === "function" ? value() : value);
 </script>
 
 <div class="mock-toolbar">
@@ -35,9 +37,9 @@
         class="toolbar-btn"
         class:toggled={item.whenToggled?.() ?? false}
         onclick={item.onClick}
-        title={item.label}
+        title={text(item.label)}
       >
-        {@html item.icon}
+        {@html text(item.icon)}
       </button>
     {/each}
   </div>
