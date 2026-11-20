@@ -25,6 +25,7 @@
   searchKeyWithOperation="name__match"
   searchable
   searchPlaceholder="Search dataset by name…"
+  emptyChoicePlaceholder="No dataset found."
   placeholder="All datasets"
   clearable
   maxSelections={100}
