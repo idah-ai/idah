@@ -331,9 +331,7 @@ export class ProjectDashboardController {
 
   public get attention(): number | null {
     const breakdown = this.attentionBreakdown;
-    return breakdown
-      ? breakdown.overdue + breakdown.due_today + breakdown.due_tomorrow + (breakdown.upcoming?.count ?? 0)
-      : null;
+    return breakdown ? breakdown.overdue + breakdown.due_today + breakdown.due_tomorrow : null;
   }
 
   public get deliveryDescription(): string {
@@ -350,10 +348,7 @@ export class ProjectDashboardController {
     if (breakdown.overdue) parts.push(`${breakdown.overdue.toLocaleString()} overdue`);
     if (breakdown.due_today) parts.push(`${breakdown.due_today.toLocaleString()} due today`);
     if (breakdown.due_tomorrow) parts.push(`${breakdown.due_tomorrow.toLocaleString()} due tomorrow`);
-    if (breakdown.upcoming) {
-      const days = differenceInCalendarDays(parseISO(breakdown.upcoming.date), this.reportingDay);
-      parts.push(`${breakdown.upcoming.count.toLocaleString()} due in ${days} days`);
-    }
+
     return parts.join(" · ") || "No overdue or upcoming delivery dates";
   }
   public attentionLoading = $state(false);
