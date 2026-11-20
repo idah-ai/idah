@@ -22,6 +22,7 @@
   let { projectId }: Props = $props();
 
   // Variables
+  let entryCard: ReturnType<typeof OpenEntriesCard> | undefined;
   const controller = new ProjectDashboardController(projectId);
   setProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY, controller);
 
@@ -35,7 +36,7 @@
 <div class="grid grid-cols-1 gap-4">
   <ProjectDatasetSelection />
 
-  <DatasetMetricsCard />
+  <DatasetMetricsCard onOpenEntries={() => void entryCard?.showOpenEntries()} />
 
   <EntriesByStatusCard />
 
@@ -43,7 +44,7 @@
 
   <ProgressByDatasetCard />
 
-  <OpenEntriesCard />
+  <OpenEntriesCard bind:this={entryCard} />
 
   <!-- <AnnotationsByCategoryCard /> -->
 </div>

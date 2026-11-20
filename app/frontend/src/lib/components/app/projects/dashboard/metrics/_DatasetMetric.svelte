@@ -9,10 +9,11 @@
     title: string;
     value: string;
     description?: string;
+    SlotTitle?: Snippet;
     SlotDescription?: Snippet;
     order: number;
   }
-  let { title, value, description, SlotDescription, order }: Props = $props();
+  let { title, value, description, SlotTitle, SlotDescription, order }: Props = $props();
 
   const isLastMetric = $derived(order === 4);
 </script>
@@ -22,7 +23,11 @@
     "border-b lg:border-r lg:border-b-0": !isLastMetric,
   })}
 >
-  <Text size="sm" class="text-muted-foreground">{title}</Text>
+  {#if SlotTitle}
+    {@render SlotTitle()}
+  {:else}
+    <Text size="sm" class="text-muted-foreground">{title}</Text>
+  {/if}
   <Text size="h2" weight="semibold" class="tabular-nums">{value}</Text>
 
   {#if SlotDescription}

@@ -11,6 +11,11 @@
   import TotalEntriesMetric from "@/components/app/projects/dashboard/metrics/_TotalEntriesMetric.svelte";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
 
+  interface Props {
+    onOpenEntries: () => void;
+  }
+  let { onOpenEntries }: Props = $props();
+
   // Variables
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
 </script>
@@ -32,7 +37,7 @@
     <Card.Content class="grid p-0 lg:grid-cols-4">
       <TotalEntriesMetric />
       <OverallProgressMetric />
-      <OpenEntriesMetric />
+      <OpenEntriesMetric {onOpenEntries} />
       <DatasetNeedingAttentionMetric />
     </Card.Content>
   {/if}

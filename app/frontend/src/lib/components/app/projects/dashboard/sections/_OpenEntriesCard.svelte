@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import * as Card from "$lib/components/ui/card/index";
   import Button from "@/components/ui/button/button.svelte";
   import {
@@ -19,10 +20,20 @@
   const rows = $derived(controller.entryProgressRows);
   const pagination = $derived(controller.entryProgressTablePagination);
 
+  let section: HTMLDivElement | null = $state(null);
   let tableArea: HTMLDivElement;
   let loadingHeight = $state(0);
 
   // Functions
+  export async function showOpenEntries(): Promise<void> {
+    if (controller.entryTab !== "open") changeTab("open");
+    await tick();
+    section?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+      block: "start",
+    });
+  }
+
   function preserveHeight(): void {
     loadingHeight = tableArea.getBoundingClientRect().height;
   }
@@ -41,7 +52,7 @@
   }
 </script>
 
-<Card.Root>
+<Card.Root bind:ref={section} class="scroll-mt-4">
   <Card.Header>
     <Card.Title>Progress by entry</Card.Title>
   </Card.Header>
