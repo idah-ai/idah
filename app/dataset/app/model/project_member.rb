@@ -75,6 +75,14 @@ module ProjectMember
       end
     end
 
+    def owned_project_ids(account_id)
+      scoped(:read).where(account_id:, role: "project_owner", disabled_at: nil).select(:project_id)
+    end
+
+    def owner?(project_id, account_id)
+      owned_project_ids(account_id).where(project_id:).any?
+    end
+
     # Actions                      | Roles
     # read                         | project_owner, reviewer, annotator
     # create, update, delete       | project_owner

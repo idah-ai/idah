@@ -2,10 +2,13 @@
 
 module Dataset
   class Service < Verse::Service::Base
+    include CategoryCounts::Dashboard
+
     use datasets: Dataset::Repository,
         projects: Project::Repository,
         entries: Entry::Repository,
-        annotations: Annotation::Repository
+        annotations: Annotation::Repository,
+        category_count_rows: EntryCategoryCount::Repository
     use_system project_members: ProjectMember::Repository,
                note_feeds: NoteFeed::Repository,
                annotations_system: Annotation::Repository
@@ -40,6 +43,24 @@ module Dataset
 
     def show(id, included: [])
       datasets.find!(id, included: included)
+    end
+
+    def category_counts(id)
+      dataset = datasets.find!(id)
+      if auth_context.can?(:read, Resource::Dataset::Datasets) == :as_user &&
+         !project_members.owner?(dataset.project_id, auth_context.metadata[:id])
+        raise Verse::Error::Unauthorized, "Project owner access required"
+      end
+
+      observed = category_count_rows.totals_for_dataset(id).map { |row| row.merge(dataset_id: id) }
+      CategoryCounts::Aggregation.dataset_rows([dataset], observed)
+    end
+
+    def category_counts_batch(filters)
+      filters = filters.transform_keys(&:to_sym)
+      project_id = filters.delete(:project_id)
+      _, rows = dashboard_category_rows(project_id, filters, require_datasets: true)
+      rows
     end
 
     def create(record)

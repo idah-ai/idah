@@ -9,6 +9,17 @@ class DatasetsExpo < BaseExpo
     Datasets contain collections of entries (data items) for annotation within a project.
   MD
 
+  expose on_http(:get, "/category_counts") do
+    desc "Annotation totals by category for a batch of up to 100 Datasets in a Project"
+    input do
+      field :filter, Hash
+    end
+    output Verse::JsonApi::Util.jsonapi_collection(DatasetCategoryTotal::Record)
+  end
+  def category_counts_batch
+    service.category_counts_batch(params[:filter])
+  end
+
   expose on_http(:get, "/delivery_breakdown") do
     desc "Dataset delivery counts for the viewer's local reporting date"
     input do
@@ -40,7 +51,8 @@ class DatasetsExpo < BaseExpo
                       :updated_at__gte,
                       :updated_at__lte,
                       :delivery_date__gte,
-                      :delivery_date__lte
+                      :delivery_date__lte,
+                      :category_counts
     end
 
     show
@@ -70,6 +82,17 @@ class DatasetsExpo < BaseExpo
       with_labels: params[:with_labels],
       with_annotations: params[:with_annotations]
     )
+  end
+
+  expose on_http(:get, "/:id/category_counts") do
+    desc "Visible annotation totals by category for one dataset"
+    input do
+      field :id, String
+    end
+    output Verse::JsonApi::Util.jsonapi_collection(DatasetCategoryTotal::Record)
+  end
+  def category_counts
+    service.category_counts(params[:id])
   end
 
   # Feedback Configuration Management

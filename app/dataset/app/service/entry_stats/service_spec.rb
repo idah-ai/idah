@@ -100,13 +100,14 @@ RSpec.describe EntryStats::Service, database: true do
     end
 
     it "replaces stale stats on recompute" do
-      stat_repo.bulk_insert(entry_id, { "annotation.count" => "99", "stale.key" => "old" })
+      stat_repo.bulk_insert(entry_id, { "annotation.count" => "99", "stale.key" => "old", "category.cat.count" => "3" })
 
       subject.recompute(entry_id)
 
       stats = stat_repo.index({ entry_id__eq: entry_id })
       keys = stats.map(&:key)
       expect(keys).not_to include("stale.key")
+      expect(keys).not_to include("category.cat.count")
       expect(stats.find { |s| s.key == "annotation.count" }.value).to eq("0")
     end
   end

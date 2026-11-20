@@ -13,6 +13,7 @@ api/project_rw_org:
     - "dataset:project_members.*.as_org_owner"
     - "dataset:datasets.*.as_org_owner"
     - "dataset:entries.*.as_org_owner"
+    - "dataset:entry_category_counts.read.as_org_owner"
     - "dataset:annotations.*.as_org_owner"
     - "dataset:note_feeds.read.as_org_owner"
     - "dataset:note_comments.read.as_org_owner"
