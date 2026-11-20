@@ -25,7 +25,7 @@
     <div class="mt-3 flex justify-end">
       <Button
         variant="link"
-        class="h-auto p-0 font-normal underline-offset-4 hover:underline"
+        class="h-auto p-0 text-xs font-normal underline-offset-4 hover:underline"
         disabled={controller.denied || controller.loading || !controller.scopeReady}
         onclick={onOpenEntries}
       >

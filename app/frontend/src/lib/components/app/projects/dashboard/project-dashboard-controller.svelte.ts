@@ -221,10 +221,7 @@ export class ProjectDashboardController {
     if (this.summaryLoading) return "";
     const summary = this.summary;
     if (!summary) return "Workflow breakdown unavailable";
-    const parts = [
-      `${summary.review.toLocaleString()} in review`,
-      `${summary.annotation.toLocaleString()} in annotation`,
-    ];
+    const parts = [`${summary.review.toLocaleString()} Reviewing`, `${summary.annotation.toLocaleString()} Annotating`];
     const outsideWorkflow = summary.total - summary.completed - summary.review - summary.annotation;
     if (outsideWorkflow) parts.push(`${outsideWorkflow.toLocaleString()} outside active workflow`);
     return parts.join(" · ");
@@ -348,9 +345,9 @@ export class ProjectDashboardController {
     if (!breakdown) return "Delivery breakdown unavailable for this scope";
 
     const parts: string[] = [];
-    if (breakdown.overdue) parts.push(`${breakdown.overdue.toLocaleString()} overdue`);
-    if (breakdown.due_today) parts.push(`${breakdown.due_today.toLocaleString()} due today`);
-    if (breakdown.due_tomorrow) parts.push(`${breakdown.due_tomorrow.toLocaleString()} due tomorrow`);
+    if (breakdown.overdue) parts.push(`${breakdown.overdue.toLocaleString()} Overdue`);
+    if (breakdown.due_today) parts.push(`${breakdown.due_today.toLocaleString()} Due today`);
+    if (breakdown.due_tomorrow) parts.push(`${breakdown.due_tomorrow.toLocaleString()} Due tomorrow`);
 
     return parts.join(" · ") || "No overdue or upcoming delivery dates";
   }
