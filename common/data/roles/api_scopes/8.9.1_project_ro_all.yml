@@ -16,6 +16,8 @@ api/project_ro_all:
     - "dataset:label_config_templates.read.*"
     - "dataset:feedback_config_templates.read.*"
     - "dataset:entry_stats.read.*"
+    - "dataset:entry_work_times.read.*"
+    - "dataset:entry_time_slots.read.*"
 
     # Media Service - Read Only (Project level)
     - "media:medias.read.*"

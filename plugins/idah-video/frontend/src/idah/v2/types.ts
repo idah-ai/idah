@@ -745,6 +745,13 @@ export interface IAccountSettingsDriverV2 {
   resetAll(): Promise<void>;
 }
 
+export interface IEntryWorkTime {
+  accountId: number;
+  email: string | null;
+  wfStep: string;
+  seconds: number;
+}
+
 // ─── V2 Driver — Complete interface ──────────────────────────────────────
 
 export interface IIdahDriverV2<ShapeArgs = Record<string, unknown>, Properties = Record<string, unknown>> {
@@ -753,10 +760,15 @@ export interface IIdahDriverV2<ShapeArgs = Record<string, unknown>, Properties =
   readonly media: IMediaInfo;
   readonly workflowStep: string;
   readonly entryStatus: string;
+  readonly timeTracking: Record<string, number> | null;
+  readonly workTimes: IEntryWorkTime[];
   readonly mode: string;
 
   setMode(mode: string): void;
   onModeChange(cb: (event: IModeEvent) => void): Unsubscribe;
+
+  /** Fire-and-forget activity ping for time tracking. */
+  notifyActivity(): void;
 
   // ── Lifecycle callbacks ───────────────────────────────────────────────
   onReady(cb: () => void): void;

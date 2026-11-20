@@ -236,6 +236,211 @@ RSpec.describe Entry, database: true do
       end
     end
 
+    describe "sorting by total_time_spent" do
+      context "As Admin", as: :admin do
+        subject { described_class.new(current_auth_context) }
+
+        let!(:entry_fast) do
+          id = entry_repo.create(
+            priority: 1,
+            wf_step: "annotate",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
+          )
+          entry_repo.table.where(id:).update(
+            time_tracking: Sequel.pg_jsonb({ "annotate" => 60 }),
+            updated_at: Time.now
+          )
+          id
+        end
+
+        let!(:entry_medium) do
+          id = entry_repo.create(
+            priority: 1,
+            wf_step: "annotate",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
+          )
+          entry_repo.table.where(id:).update(
+            time_tracking: Sequel.pg_jsonb({ "annotate" => 1800, "review" => 600 }),
+            updated_at: Time.now
+          )
+          id
+        end
+
+        let!(:entry_slow) do
+          id = entry_repo.create(
+            priority: 1,
+            wf_step: "review",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
+          )
+          entry_repo.table.where(id:).update(
+            time_tracking: Sequel.pg_jsonb({ "annotate" => 3600, "review" => 1800 }),
+            updated_at: Time.now
+          )
+          id
+        end
+
+        it "sorts ascending by total_time_spent" do
+          result = subject.index({}, sort: ["total_time_spent"])
+          ids = result.map(&:id)
+          # Fast (60) → Medium (2400) → Slow (5400)
+          expect(ids).to eq([entry_fast, entry_medium, entry_slow])
+        end
+
+        it "sorts descending by total_time_spent" do
+          result = subject.index({}, sort: ["-total_time_spent"])
+          ids = result.map(&:id)
+          # Slow (5400) → Medium (2400) → Fast (60)
+          expect(ids).to eq([entry_slow, entry_medium, entry_fast])
+        end
+
+        it "sorts entries without time_tracking last (nulls last)" do
+          id_no_tracking = entry_repo.create(
+            priority: 1,
+            wf_step: "annotate",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
+          )
+          result = subject.index({}, sort: ["total_time_spent"])
+          ids = result.map(&:id)
+          expect(ids.last).to eq(id_no_tracking)
+        end
+
+        it "appends -id tiebreaker when none is provided" do
+          # Create two entries with the same time_tracking to make the tiebreaker observable
+          id_a = entry_repo.create(
+            priority: 1,
+            wf_step: "annotate",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
+          )
+          id_b = entry_repo.create(
+            priority: 1,
+            wf_step: "annotate",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
+          )
+          entry_repo.table.where(id: id_a).update(
+            time_tracking: Sequel.pg_jsonb({ "annotate" => 100 }), updated_at: Time.now
+          )
+          entry_repo.table.where(id: id_b).update(
+            time_tracking: Sequel.pg_jsonb({ "annotate" => 100 }), updated_at: Time.now
+          )
+          # Sorting by total_time_spent DESC with id DESC tiebreaker
+          result = subject.index({}, sort: ["-total_time_spent"])
+          ids = result.map(&:id)
+          a_idx = ids.index(id_a)
+          b_idx = ids.index(id_b)
+          # Both have the same total_time, so the tiebreaker (-id) puts the larger id first
+          expect([id_a, id_b].max).to eq([ids[a_idx], ids[b_idx]].max)
+        end
+
+        it "respects an explicit id sort alongside total_time_spent" do
+          # Explicit ascending id alongside total_time_spent
+          result = subject.index({}, sort: ["total_time_spent", "id"])
+          ids = result.map(&:id)
+          expect(ids).to eq(ids.sort)
+        end
+      end
+    end
+
+    describe "#lock_next_id" do
+      context "As Admin", as: :admin do
+        subject { described_class.new(current_auth_context) }
+
+        let!(:self_assigned) do
+          id = entry_repo.create(
+            priority: 0,
+            wf_step: "annotate",
+            status: "in_progress",
+            assigned_to_id: 1,
+            project_id: project_id,
+            dataset_id: dataset_id,
+            created_at: Time.now - 10
+          )
+          entry_repo.table.where(id:).update(delivery_date: Date.today + 10)
+          id
+        end
+
+        let!(:unassigned_early) do
+          id = entry_repo.create(
+            priority: 0,
+            wf_step: "annotate",
+            status: "pending",
+            project_id: project_id,
+            dataset_id: dataset_id,
+            created_at: Time.now - 5
+          )
+          entry_repo.table.where(id:).update(delivery_date: Date.today)
+          id
+        end
+
+        let!(:unassigned_late) do
+          entry_repo.create(
+            priority: 0,
+            wf_step: "annotate",
+            status: "pending",
+            project_id: project_id,
+            dataset_id: dataset_id,
+            created_at: Time.now
+          )
+        end
+
+        it "prefers self-assigned entries over unassigned ones" do
+          result = subject.lock_next_id(dataset_id: dataset_id, wf_step: "annotate")
+          expect(result).to eq(self_assigned)
+        end
+
+        it "orders unassigned entries by delivery_date, priority, created_at" do
+          # Remove the self-assigned entry so only unassigned remain
+          entry_repo.table.where(id: self_assigned).update(assigned_to_id: nil)
+
+          result = subject.lock_next_id(dataset_id: dataset_id, wf_step: "annotate")
+          expect(result).to eq(unassigned_early)
+        end
+
+        it "excludes entries with wrong wf_step" do
+          entry_repo.create(
+            wf_step: "review",
+            status: "pending",
+            project_id: project_id,
+            dataset_id: dataset_id
+          )
+          result = subject.lock_next_id(dataset_id: dataset_id, wf_step: "annotate")
+          expect(result).not_to be_nil
+          entry = entry_repo.find!(result)
+          expect(entry.wf_step).to eq("annotate")
+        end
+
+        it "excludes entries with processing status" do
+          entry_repo.create(
+            wf_step: "annotate",
+            status: "processing",
+            project_id: project_id,
+            dataset_id: dataset_id
+          )
+          result = subject.lock_next_id(dataset_id: dataset_id, wf_step: "annotate")
+          expect(result).not_to be_nil
+          entry = entry_repo.find!(result)
+          expect(entry.status).not_to eq("processing")
+        end
+
+        it "returns nil when no eligible entries exist" do
+          entry_repo.table.where(dataset_id: dataset_id).delete
+          result = subject.lock_next_id(dataset_id: dataset_id, wf_step: "annotate")
+          expect(result).to be_nil
+        end
+      end
+    end
+
     describe "completion timestamps" do
       let!(:entry_id) {
         entry_repo.create(project_id:, dataset_id:, resource: UUIDv7.generate, status: "pending", wf_step: "annotate")

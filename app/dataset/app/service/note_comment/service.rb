@@ -3,6 +3,9 @@
 module NoteComment
   class Service < Verse::Service::Base
     use note_comments: NoteComment::Repository, note_feeds: NoteFeed::Repository
+    use_system entries: Entry::Repository,
+               entry_time_slots: EntryTimeSlot::Repository,
+               entry_work_times: EntryWorkTime::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       note_comments.index(
@@ -55,7 +58,9 @@ module NoteComment
 
       note_comments.transaction do
         id = note_comments.create(attributes)
-        note_comments.find!(id)
+        comment = note_comments.find!(id)
+        touch_entry(note_feed.entry_id)
+        comment
       end
     end
 
@@ -64,15 +69,35 @@ module NoteComment
       validate_content!(attributes[:content_md]) if attributes.key?(:content_md)
       attributes[:edited_at] = Time.now
 
+      comment = note_comments.find!(record.id)
       note_comments.update!(record.id, attributes)
+      touch_entry(entry_id_for(comment.note_feed_id))
       note_comments.find!(record.id)
     end
 
     def delete(id)
+      comment = note_comments.find!(id)
+      entry_id = entry_id_for(comment.note_feed_id)
       note_comments.delete!(id)
+      touch_entry(entry_id)
     end
 
     private
+
+    def touch_entry(entry_id)
+      TimeTracking.safe_touch(
+        entry_repo: entries,
+        slot_repo: entry_time_slots,
+        work_repo: entry_work_times,
+        entry_id: entry_id,
+        account_id: auth_context.metadata[:id],
+        email: auth_context.metadata[:email]
+      )
+    end
+
+    def entry_id_for(note_feed_id)
+      note_feeds.find!(note_feed_id).entry_id
+    end
 
     def validate_content!(content)
       return if content.is_a?(String) && !content.strip.empty?

@@ -26,6 +26,8 @@ admin:
     - "dataset:note_feeds.*.*"
     - "dataset:note_comments.*.*"
     - "dataset:entry_stats.read.*"
+    - "dataset:entry_work_times.read.*"
+    - "dataset:entry_time_slots.read.*"
     - "dataset:label_config_templates.*.*"
     - "dataset:feedback_config_templates.*.*"
 

@@ -8,8 +8,13 @@ module Entry
         datasets: Dataset::Repository,
         projects: Project::Repository,
         project_members: ProjectMember::Repository,
-        annotations: Annotation::Repository
-    use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
+        annotations: Annotation::Repository,
+        entry_time_slots: EntryTimeSlot::Repository,
+        entry_work_times: EntryWorkTime::Repository
+    use_system system_datasets_repo: Dataset::Repository,
+               system_entries_repo: Entry::Repository,
+               system_entry_time_slots_repo: EntryTimeSlot::Repository,
+               system_entry_work_times_repo: EntryWorkTime::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       keys = sort.is_a?(String) ? sort.split(",") : sort
@@ -162,10 +167,18 @@ module Entry
 
     def update(record)
       attributes = record.attributes
-      if attributes.key?(:delivery_date)
+      if attributes.key?(:delivery_date) || attributes.key?(:wf_step)
         current = entries.find!(record.id)
-        DeliveryDate.validate!(attributes, current.delivery_date)
+
+        if attributes.key?(:delivery_date)
+          DeliveryDate.validate!(attributes, current.delivery_date)
+        end
+
+        if attributes.key?(:wf_step) && attributes[:wf_step] != current.wf_step
+          rollup_entry_step!(current)
+        end
       end
+
       entries.update!(record.id, attributes)
       entries.find!(record.id)
     end
@@ -212,19 +225,47 @@ module Entry
                 "You are not assigned to this entry"
         end
 
-        # Use read scope when updating as anyone with read access can select
         entries.select(entry.id)
+
+        TimeTracking.safe_touch(
+          entry_repo: entries,
+          slot_repo: entry_time_slots,
+          work_repo: entry_work_times,
+          entry_id: entry.id,
+          account_id: account_id,
+          email: auth_context.metadata[:email]
+        )
+
         system_datasets_repo.update_progress!(entry.dataset_id)
         entries.find!(entry.id)
       end
+    end
+
+    # Fire-and-forget activity ping. Updates time-tracking slots for the
+    # current user if they are the assignee and the step is trackable.
+    # Never raises (savepoint + rescue inside safe_touch).
+    def notify_activity(entry_id)
+      TimeTracking.safe_touch(
+        entry_repo: entries,
+        slot_repo: entry_time_slots,
+        work_repo: entry_work_times,
+        entry_id: entry_id,
+        account_id: auth_context.metadata[:id],
+        email: auth_context.metadata[:email]
+      )
+
+      { data: { attributes: { accepted: true } } }
     end
 
     def submit(entry_id, **opts)
       # check self reviewing here, reject
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
+
         entry_workflow = entry.dataset.entry_workflow.new(entries, entry, **opts)
         entry_workflow.submit!
+
+        rollup_entry_step!(entry)
 
         # Update dataset progress after entry status change
         # Use system dataset repo to avoid permission issues with update
@@ -238,6 +279,7 @@ module Entry
     def error(entry_id, **opts)
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
+
         entry_workflow = entry.dataset.entry_workflow.new(entries, entry, **opts)
 
         entry_workflow.error!
@@ -248,6 +290,8 @@ module Entry
             status: "errored"
           }
         )
+
+        rollup_entry_step!(entry)
 
         # Update dataset progress after entry status change
         # Use system dataset repo to avoid permission issues with update
@@ -391,6 +435,22 @@ module Entry
           next
         end
       end
+    end
+
+    private
+
+    # Central rollup for any operation that leaves a workflow step: submit,
+    # error, and bare wf_step patches via update.  Finalizes open sessions on
+    # the leaving step, purges their slots, and refreshes the entry cache.
+    def rollup_entry_step!(entry, submitted_at: Time.now)
+      TimeTracking.rollup(
+        slot_repo: system_entry_time_slots_repo,
+        work_repo: system_entry_work_times_repo,
+        system_entries_repo: system_entries_repo,
+        entry_id: entry.id,
+        wf_step: entry.wf_step,
+        submitted_at: submitted_at
+      )
     end
   end
 end

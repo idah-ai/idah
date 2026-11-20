@@ -100,6 +100,10 @@ export class ProjectDashboardController {
   public error = $state("");
   public denied = $state(false);
 
+  public get singleDatasetView(): boolean {
+    return this.focused !== null || this.selectedDatasetIds.length === 1;
+  }
+
   public get effectiveDatasetIds(): string[] {
     return this.focused ? [this.focused.id] : [...this.selectedDatasetIds];
   }
@@ -600,8 +604,21 @@ export class ProjectDashboardController {
     void this.loadEntryProgress(true);
   }
 
+  sortTotalTimeSpent(): void {
+    if (this.entryProgressSortKey === "total_time_spent") {
+      this.entryProgressSortDir = this.entryProgressSortDir === "asc" ? "desc" : "asc";
+    } else {
+      this.entryProgressSortKey = "total_time_spent";
+      this.entryProgressSortDir = "desc";
+    }
+    this.entryProgressPagination = { ...this.entryProgressPagination, page: 1 };
+    void this.loadEntryProgress(true);
+  }
+
   public entryProgressResponse: CollectionResponse<EntryRecord> | null = $state.raw(null);
   public entryProgressPagination: Pagination = $state.raw({ page: 1, itemsPerPage: 10 });
+  public entryProgressSortKey: string | null = $state(null);
+  public entryProgressSortDir: "asc" | "desc" = $state("desc");
   public entryProgressLoading = $state(false);
   public entryProgressError = $state("");
   private entryProgressGeneration = 0;
@@ -681,7 +698,7 @@ export class ProjectDashboardController {
     const request = ++this.entryProgressGeneration;
     const current = (): boolean => this.isCurrent(scope) && request === this.entryProgressGeneration;
     const ids = this.effectiveDatasetIds;
-    const overview = !this.focused;
+    const overview = !this.singleDatasetView;
     this.entryProgressResponse = null;
     this.entryProgressError = "";
     this.entryProgressLoading = true;
@@ -710,12 +727,15 @@ export class ProjectDashboardController {
             "wf_step",
             "assigned_to_id",
             "assigned_to_email",
+            "time_tracking",
           ],
           [ProjectMemberRecord.type]: ["name", "email", "picture_url"],
           ...(overview ? { [DatasetRecord.type]: ["name"] } : {}),
         },
-        included: ["assigned_to", ...(overview ? ["dataset"] : [])],
-        sort: ["-created_at", "-id"],
+        included: ["assigned_to", "entry_work_times", ...(overview ? ["dataset"] : [])],
+        sort: this.entryProgressSortKey
+          ? [`${this.entryProgressSortDir === "desc" ? "-" : ""}${this.entryProgressSortKey}`, "-id"]
+          : ["-created_at", "-id"],
         pagination: { ...this.entryProgressPagination },
         count: true,
         noCache: true,

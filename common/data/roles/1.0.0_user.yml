@@ -28,6 +28,8 @@ user:
     - "dataset:note_feeds.*.as_user"
     - "dataset:note_comments.*.as_user"
     - "dataset:entry_stats.read.as_user"
+    - "dataset:entry_work_times.read.as_user"
+    - "dataset:entry_time_slots.read.as_user"
     - "dataset:label_config_templates.*.as_user"
     - "dataset:feedback_config_templates.*.as_user"
 

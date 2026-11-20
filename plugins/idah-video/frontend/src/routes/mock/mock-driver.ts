@@ -25,6 +25,7 @@ import type {
   ISyncEvent,
   ISyncErrorEvent,
   IShortcut,
+  IEntryWorkTime,
   ICommandStackEntry,
   ToolbarItemOptions,
   Unsubscribe,
@@ -850,6 +851,19 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     return this._entryStatus;
   }
 
+  get timeTracking(): Record<string, number> | null {
+    // Mock: pretend the annotate step holds ~3 minutes of tracked time
+    return { annotate: 190, review: 98 };
+  }
+
+  get workTimes(): IEntryWorkTime[] {
+    return [
+      { accountId: 5, email: "annotator-two@example.com", wfStep: "annotate", seconds: 107 },
+      { accountId: 8, email: "annotator-five@example.com", wfStep: "annotate", seconds: 58 },
+      { accountId: 12, email: "reviewer-three@example.com", wfStep: "review", seconds: 98 },
+    ];
+  }
+
   get mode(): string {
     return this._mode;
   }
@@ -889,6 +903,10 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
 
     const event: IModeEvent = { oldValue, newValue: mode };
     for (const cb of this.modeChangeListeners) cb(event);
+  }
+
+  notifyActivity(): void {
+    // Mock: fire-and-forget, no-op in the mock driver
   }
 
   onModeChange(cb: (event: IModeEvent) => void): Unsubscribe {

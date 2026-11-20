@@ -30,6 +30,8 @@ module Entry
     field :reopened_by_id, type: [Integer, NilClass]
     field :reopened_by_email, type: [String, NilClass]
 
+    field :time_tracking, type: [Hash, NilClass], readonly: true
+
     field :completed_at, type: [Time, NilClass], readonly: true
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -66,11 +68,14 @@ module Entry
 
     has_many :annotations, repository: "Annotation::Repository", foreign_key: :entry_id
     has_many :entry_stats, repository: "EntryStat::Repository", foreign_key: :entry_id
+    has_many :entry_work_times, repository: "EntryWorkTime::Repository", foreign_key: :entry_id
   end
 
   class Repository < Verse::Sequel::Repository
     self.table = "entries"
     self.resource = Resource::Dataset::Entries
+
+    encoder :time_tracking, Verse::Sequel::JsonEncoder
 
     query
     def summary(project_id:, dataset_ids: nil)
@@ -457,6 +462,49 @@ module Entry
       transaction do
         update!(entry.id, { status: })
       end
+    end
+
+    # Persist the combined per-step time cache without emitting an event.
+    # Called from TimeTracking.recompute_entry_cache via a system repository.
+    def update_time_tracking(entry_id, time_tracking)
+      no_event do
+        table.where(id: entry_id).update(
+          time_tracking: time_tracking.nil? ? nil : Sequel.pg_jsonb(time_tracking),
+          updated_at: Time.now
+        )
+      end
+    end
+
+    # Custom sort handler for `total_time_spent` — sums all values in the
+    # `time_tracking` JSONB column.  Falls back to the default behaviour for
+    # every other sort key.
+    def prepare_ordering(query, sort)
+      sort = (sort.is_a?(String) ? sort.split(",") : Array(sort)).dup
+      rest = []
+      has_id = false
+
+      order_exprs = []
+
+      sort.each do |x|
+        if x.delete_prefix("-") == "total_time_spent"
+          ascending = !x.start_with?("-")
+          order_exprs <<
+            "CASE WHEN entries.time_tracking IS NOT NULL " \
+            "THEN (SELECT SUM((value)::integer) " \
+            "FROM jsonb_each_text(entries.time_tracking)) END " \
+            "#{ascending ? "ASC" : "DESC"} NULLS LAST"
+        else
+          rest << x
+          has_id = true if x.delete_prefix("-") == "id"
+        end
+      end
+
+      if !has_id && sort.any? { |x| x.delete_prefix("-") == "total_time_spent" }
+        order_exprs << "entries.id DESC"
+      end
+
+      query = query.order(::Sequel.lit(order_exprs.join(", "))) if order_exprs.any?
+      super(query, rest)
     end
 
     private
