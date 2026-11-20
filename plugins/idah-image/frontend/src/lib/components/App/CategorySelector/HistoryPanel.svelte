@@ -124,6 +124,9 @@
     return shapeType ? NON_DRAWABLE_SHAPE_TYPES.has(shapeType) : false;
   }
 
+  /** Changes to show. Filtered before grouping, so a day with only done-area changes gets no header. */
+  const visibleChanges = $derived(history.items.filter((c) => !isNonDrawableChange(c)));
+
   /** Center the viewport on an annotation's shape (live or tombstone). */
   function centerOnShape(shape: IImageAnnotationShape | undefined, shapeType: string | undefined) {
     const mw = media.width,
@@ -202,24 +205,22 @@
       </div>
     {:else}
       <div class="pt-1">
-        {#each groupChangesByDay(history.items, new Date()) as group (group.label)}
+        {#each groupChangesByDay(visibleChanges, new Date()) as group (group.label)}
           <div class="text-muted-foreground px-3 pt-2 pb-1 text-[11px] font-medium">{group.label}</div>
           {#each group.items as change (change.id)}
-            {#if !isNonDrawableChange(change)}
-              <HistoryChangeCard
-                {change}
-                categoryLabel={categoryLabel(change)}
-                categoryColor={categoryColor(change)}
-                highlighted={false}
-                deleted={recordsDeletedState(change)}
-                diff={history.getDiff(change.id)}
-                diffLoading={history.isDiffLoading(change.id)}
-                open={history.isCardOpen(change.id)}
-                onToggle={() => onCardClick(change)}
-                onHoverStart={() => hover.setHovered(change.annotation_id)}
-                onHoverEnd={() => hover.clearHovered(change.annotation_id)}
-              />
-            {/if}
+            <HistoryChangeCard
+              {change}
+              categoryLabel={categoryLabel(change)}
+              categoryColor={categoryColor(change)}
+              highlighted={false}
+              deleted={recordsDeletedState(change)}
+              diff={history.getDiff(change.id)}
+              diffLoading={history.isDiffLoading(change.id)}
+              open={history.isCardOpen(change.id)}
+              onToggle={() => onCardClick(change)}
+              onHoverStart={() => hover.setHovered(change.annotation_id)}
+              onHoverEnd={() => hover.clearHovered(change.annotation_id)}
+            />
           {/each}
         {/each}
         {#if history.atStartOfHistory}
