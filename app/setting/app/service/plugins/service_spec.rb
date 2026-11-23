@@ -141,38 +141,6 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
         }
       )
     end
-
-    it "does not expose systemShapes as configurable shapes" do
-      registry = double("PluginSystem.registry")
-
-      foo_plugin = PluginSystem::Plugin.new(
-        "path_to_foo",
-        PluginSystem::Manifest.new(
-          type: "idah-plugin",
-          name: "foo",
-          version: "1.0.0",
-          title: "Foo plugin",
-          description: "Foo ipsum",
-          modalities: [{
-            id: "modA",
-            label: "modality A",
-            shapes: {
-              "shapeA" => { label: "Shape A", icon: "iconA.svg" }
-            },
-            systemShapes: { "done-area": { label: "Done Area" } }
-          }],
-          entryPoints: {}
-        )
-      )
-
-      allow(registry).to receive(:plugins).and_return({ "foo" => foo_plugin })
-      allow(PluginSystem).to receive(:registry).and_return(registry)
-
-      output = service.show_modality("modA")
-
-      expect(output[:shapes].keys).to eq([:shapeA])
-      expect(output[:shapes]).not_to have_key(:"done-area")
-    end
   end
 
   describe "#show_modality" do
@@ -243,6 +211,38 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
           label: "modality A"
         }
       )
+    end
+
+    it "does not expose systemShapes as configurable shapes" do
+      registry = double("PluginSystem.registry")
+
+      foo_plugin = PluginSystem::Plugin.new(
+        "path_to_foo",
+        PluginSystem::Manifest.new(
+          type: "idah-plugin",
+          name: "foo",
+          version: "1.0.0",
+          title: "Foo plugin",
+          description: "Foo ipsum",
+          modalities: [{
+            id: "modA",
+            label: "modality A",
+            shapes: {
+              "shapeA" => { label: "Shape A", icon: "iconA.svg" }
+            },
+            systemShapes: { "done-area": { label: "Done Area" } }
+          }],
+          entryPoints: {}
+        )
+      )
+
+      allow(registry).to receive(:plugins).and_return({ "foo" => foo_plugin })
+      allow(PluginSystem).to receive(:registry).and_return(registry)
+
+      output = service.show_modality("modA")
+
+      expect(output[:shapes].keys).to eq([:shapeA])
+      expect(output[:shapes]).not_to have_key(:"done-area")
     end
   end
 end
