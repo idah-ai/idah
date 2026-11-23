@@ -450,8 +450,7 @@ export class ProjectDashboardController {
 
   public async applyCompletionRange(range: CompletionRange): Promise<void> {
     if (this.disposed || this.denied || !this.isCompletionRangeValid(range)) return;
-    const days = differenceInCalendarDays(parseISO(range.end), parseISO(range.start)) + 1;
-    this.completionGrouping = days <= 14 ? "Day" : days <= 92 ? "Week" : "Month";
+
     this.automaticCompletionRange = false;
     this.completionRange = { ...range };
     this.clearCompletionHistory();
