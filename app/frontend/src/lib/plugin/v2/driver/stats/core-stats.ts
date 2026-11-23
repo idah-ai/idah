@@ -6,6 +6,9 @@
 // specific stats (e.g. video info) are contributed separately via
 // driver.stats.register().
 // ---------------------------------------------------------------------------
+import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
+import type { Modalities } from "@/data/model/setting/plugin/types";
+
 import type { IIdahDriverV2, IStatEntry } from "../../types";
 
 // Section presentation metadata for the core stat groups.
@@ -13,9 +16,34 @@ const ANNOTATION_SECTION = { section: "annotation", sectionHeader: "Object", uni
 const CATEGORY_SECTION = { section: "category", unitHeader: "Count" } as const;
 const SHAPE_SECTION = { section: "shape", unitHeader: "Count" } as const;
 
+// System shapes declared in plugin manifests (e.g. idah-image's "done-area")
+// are produced by the plugin itself, not drawn by annotators. Returns the
+// fully-qualified shape types ("<modality id>:<shape name>") to exclude from
+// every core count — mirrors the backend EntryStats::SystemShapes.
+export function systemShapeKeys(modalities: Modalities): Set<string> {
+  const keys = new Set<string>();
+  for (const [modalityId, mod] of Object.entries(modalities)) {
+    for (const shapeName of Object.keys(mod.system_shapes ?? {})) {
+      keys.add(`${modalityId}:${shapeName}`);
+    }
+  }
+  return keys;
+}
+
 export async function computeCoreStats(driver: IIdahDriverV2): Promise<IStatEntry[]> {
   const annotations = await driver.annotations.fetch();
   const rawConfig = driver.config as Record<string, unknown>;
+
+  // Mirrors the backend EntryStats::SystemShapes: without the modalities data
+  // (no plugin system / fetch failure) nothing is excluded and stats are
+  // computed as before.
+  let systemShapes = new Set<string>();
+  try {
+    const { modalities } = await pluginsBackendDataSource.modalities();
+    systemShapes = systemShapeKeys(modalities);
+  } catch (e) {
+    console.error("[stats] failed to load system shapes", e);
+  }
 
   // Zero-fill all configured category ids
   const categoryCounts = new Map<string, number>();
@@ -50,6 +78,8 @@ export async function computeCoreStats(driver: IIdahDriverV2): Promise<IStatEntr
   for (const ann of representativeByGroup.values()) {
     // Skip soft-deleted annotations (mirrors backend CoreStats)
     if (ann.deleted_at) continue;
+    // Skip system shapes (mirrors backend CoreStats)
+    if (typeof ann.shape_type === "string" && systemShapes.has(ann.shape_type)) continue;
 
     // Category — read from ann.category
     const category = ann.category;
@@ -66,8 +96,10 @@ export async function computeCoreStats(driver: IIdahDriverV2): Promise<IStatEntr
     }
   }
 
-  // Total count of live (non-deleted) representative annotations
-  const liveCount = [...representativeByGroup.values()].filter((a) => !a.deleted_at).length;
+  // Total count of live (non-deleted) representative annotations, excluding system shapes
+  const liveCount = [...representativeByGroup.values()].filter(
+    (a) => !a.deleted_at && !(typeof a.shape_type === "string" && systemShapes.has(a.shape_type)),
+  ).length;
 
   // Count annotations whose category is not present in the labeling config
   // (mirrors backend EntryStats::CoreStats "orphan_category.count"). Computed
@@ -75,6 +107,7 @@ export async function computeCoreStats(driver: IIdahDriverV2): Promise<IStatEntr
   let orphanCategoryCount = 0;
   for (const ann of representativeByGroup.values()) {
     if (ann.deleted_at) continue;
+    if (typeof ann.shape_type === "string" && systemShapes.has(ann.shape_type)) continue;
     const category = ann.category;
     if (typeof category === "string" && category && !configuredIds.has(category)) {
       orphanCategoryCount += 1;

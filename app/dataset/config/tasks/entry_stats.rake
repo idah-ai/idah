@@ -43,13 +43,23 @@ namespace :entry_stats do
       if dry_run
         puts "DRY_RUN=1 - no changes written."
       else
-        puts "Recomputing orphan_category.count for each entry..."
+        puts "Recomputing stats for each entry..."
         count = 0
         affected.each_value do |info|
           info[:entry_ids].each do |entry_id|
             begin
               entry = entry_repo.find!(entry_id, included: [:dataset, :annotations])
-              EntryStats::Recompute.orphan_only(entry)
+              # Entries that store full stats (completed/errored) get a full
+              # recompute so their annotation/category/shape totals drop
+              # system-shape annotations (e.g. the done area) too. Every other
+              # affected entry keeps the task's historical orphan-only
+              # recompute — unlike the service, we don't skip unknown statuses,
+              # so a stale orphan count is fixed rather than left behind.
+              if %w[completed errored].include?(entry.status)
+                EntryStats::Recompute.call(entry)
+              else
+                EntryStats::Recompute.orphan_only(entry)
+              end
             rescue StandardError => e
               Verse.logger.error(
                 "[backfill_orphans] Failed for entry #{entry_id} " \
