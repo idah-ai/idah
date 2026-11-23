@@ -14,60 +14,63 @@
     caption?: string;
 
     showPaginator?: boolean;
-    pagination: IDataTablePagination;
+    pagination?: IDataTablePagination;
+    onPageChange?: (page: number) => void | Promise<void>;
   }
-  let { columns, rows, RowComponent, caption, showPaginator = false, pagination }: Props = $props();
+  let { columns, rows, RowComponent, caption, showPaginator = false, pagination, onPageChange }: Props = $props();
 </script>
 
-<Table.Root>
-  <Table.Header>
-    <Table.Row>
-      {#each Object.entries(columns) as [columnKey, column] (columnKey)}
-        <Table.Head
-          class={cn("text-muted-foreground text-left font-medium", {
-            "text-center": column.align === "center",
-            "text-right": column.align === "right",
-          })}
-        >
-          {column.title}
-        </Table.Head>
+<div class="w-full overflow-x-auto">
+  <Table.Root>
+    <Table.Header>
+      <Table.Row>
+        {#each Object.entries(columns) as [columnKey, column] (columnKey)}
+          <Table.Head
+            class={cn("text-muted-foreground text-left font-medium", {
+              "text-center": column.align === "center",
+              "text-right": column.align === "right",
+            })}
+          >
+            {column.title}
+          </Table.Head>
+        {/each}
+      </Table.Row>
+    </Table.Header>
+
+    <Table.Body>
+      {#each rows as row, rowIndex (rowIndex)}
+        {#if RowComponent}
+          {@render RowComponent()}
+        {:else}
+          <Table.Row>
+            {#each Object.entries(columns) as [columnKey, column] (columnKey)}
+              <Table.Cell
+                class={cn("text-left", {
+                  "text-center": column.align === "center",
+                  "text-right": column.align === "right",
+                })}
+              >
+                {#if column.cellComponent}
+                  {@const CellComponent = column.cellComponent}
+                  <CellComponent {row} />
+                {:else}
+                  {row[column.key]}
+                {/if}
+              </Table.Cell>
+            {/each}
+          </Table.Row>
+        {/if}
       {/each}
-    </Table.Row>
-  </Table.Header>
+    </Table.Body>
+  </Table.Root>
+</div>
 
-  <Table.Body>
-    {#each rows as row, rowIndex (rowIndex)}
-      {#if RowComponent}
-        {@render RowComponent()}
-      {:else}
-        <Table.Row>
-          {#each Object.entries(columns) as [columnKey, column] (columnKey)}
-            <Table.Cell
-              class={cn("text-left", {
-                "text-center": column.align === "center",
-                "text-right": column.align === "right",
-              })}
-            >
-              {#if column.cellComponent}
-                {@const CellComponent = column.cellComponent}
-                <CellComponent {row} />
-              {:else}
-                {row[column.key]}
-              {/if}
-            </Table.Cell>
-          {/each}
-        </Table.Row>
-      {/if}
-    {/each}
-  </Table.Body>
-</Table.Root>
-
-<div class="flex items-center gap-2">
+<div class="mt-4 flex flex-wrap items-center gap-2">
   {#if caption}
-    <Table.Caption class="px-2 text-left">{caption}</Table.Caption>
+    <small class="text-muted-foreground px-2 text-left">{caption}</small>
   {/if}
 
-  {#if showPaginator}
-    <DataTablePaginator {...pagination} class="ml-auto" />
+  {#if showPaginator && pagination}
+    <DataTablePaginator {...pagination} {onPageChange} class="ml-auto" />
   {/if}
 </div>

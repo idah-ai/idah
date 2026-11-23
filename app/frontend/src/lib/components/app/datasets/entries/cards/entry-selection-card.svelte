@@ -104,7 +104,7 @@
       </Label>
       <div class="text-muted-foreground flex items-center gap-1 text-xs">
         {#if isProcessing}
-          <span>Still processing — can't be duplicated yet</span>
+          <span>Still processing - can't be duplicated yet</span>
         {:else}
           <DataDisplay label="Created at">
             {#snippet slotValue()}

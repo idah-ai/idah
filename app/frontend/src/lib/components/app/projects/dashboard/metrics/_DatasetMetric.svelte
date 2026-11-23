@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+
   import Text from "@/components/ui/text/Text.svelte";
+
   import { cn } from "@/utils";
 
   interface Props {
@@ -17,7 +19,7 @@
 
 <div
   class={cn("p-4", {
-    "border-r": !isLastMetric,
+    "border-b lg:border-r lg:border-b-0": !isLastMetric,
   })}
 >
   <Text size="sm" class="text-muted-foreground">{title}</Text>
