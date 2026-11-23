@@ -20,6 +20,7 @@
   // Variables
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
   const columns = $derived(getColumns(!controller.singleDatasetView));
+  // const columns = $derived(getColumns(!controller.focused));
   const rows: EntryWithTimeData[] = $derived(controller.entryProgressRows.map((entry) => enrichWithTimeData(entry)));
   const pagination = $derived(controller.entryProgressTablePagination);
 
@@ -98,6 +99,7 @@
                       ? (controller.summary?.errored.toLocaleString() ?? "-")
                       : (controller.summary?.completed.toLocaleString() ?? "-")})
             </TabsTrigger>
+
           {/each}
         </TabsList>
 

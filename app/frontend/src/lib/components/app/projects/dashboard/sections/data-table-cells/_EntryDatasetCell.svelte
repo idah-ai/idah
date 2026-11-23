@@ -12,7 +12,7 @@
   let { row: entry }: { row: EntryRecord } = $props();
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
   const truncateLength = 30;
-  const datasetName = $derived(entry.dataset?.name);
+  const datasetName = $derived(entry.dataset?.name ?? "");
 </script>
 
 {#if datasetName}

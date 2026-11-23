@@ -9,6 +9,7 @@ export interface DataTableColumnSetting<T extends Record> {
   cellComponent?: Component<{ row: T }>;
   headerComponent?: Component;
   sortable?: boolean;
+  // Extend more attributes for DataTable column
 }
 
 export interface DataTableColumnSettings<T extends Record> {

@@ -5,6 +5,7 @@
   import Badge, { type BadgeVariant } from "@/components/ui/badge/badge.svelte";
   import Text from "@/components/ui/text/Text.svelte";
   import { formatSeconds } from "@/utils/duration";
+  import EntryDatasetCell from "@/components/app/projects/dashboard/sections/data-table-cells/_EntryDatasetCell.svelte";
   import { type EntryWithTimeData } from "./_OpenEntriesCardV2.table";
 
   interface Props {
@@ -39,7 +40,7 @@
 
   {#if showDataset}
     <Table.Cell>
-      <Text size="sm">{entry.name || "—"}</Text>
+      <EntryDatasetCell row={entry} />
     </Table.Cell>
   {/if}
 

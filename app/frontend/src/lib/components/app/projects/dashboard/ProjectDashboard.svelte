@@ -12,7 +12,6 @@
   import EntriesByStatusCard from "@/components/app/projects/dashboard/sections/_EntriesByStatusCard.svelte";
   import CompletedEntriesPerPeriodCard from "@/components/app/projects/dashboard/sections/_CompletedEntriesPerPeriodCard.svelte";
   import ProgressByDatasetCard from "@/components/app/projects/dashboard/sections/_ProgressByDatasetCard.svelte";
-  // import OpenEntriesCard from "@/components/app/projects/dashboard/sections/_OpenEntriesCard.svelte";
   import OpenEntriesCardV2 from "@/components/app/projects/dashboard/sections/_OpenEntriesCardV2.svelte";
   import AnnotationsByCategoryCard from "@/components/app/projects/dashboard/sections/_AnnotationsByCategoryCard.svelte";
 
@@ -44,8 +43,6 @@
   <CompletedEntriesPerPeriodCard />
 
   <ProgressByDatasetCard />
-
-  <!-- <OpenEntriesCard bind:this={entryCard} /> -->
 
   <OpenEntriesCardV2 bind:this={entryCard} />
 

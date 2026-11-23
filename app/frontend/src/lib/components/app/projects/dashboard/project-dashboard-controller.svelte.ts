@@ -225,8 +225,8 @@ export class ProjectDashboardController {
     const summary = this.summary;
     if (!summary) return "Workflow breakdown unavailable";
     const parts = [
-      `${summary.review.toLocaleString()} In reviewing`,
-      `${summary.annotation.toLocaleString()} In annotating`,
+      `${summary.review.toLocaleString()} In review`,
+      `${summary.annotation.toLocaleString()} In annotation`,
     ];
 
     return parts.join(" · ");
@@ -699,6 +699,7 @@ export class ProjectDashboardController {
     const current = (): boolean => this.isCurrent(scope) && request === this.entryProgressGeneration;
     const ids = this.effectiveDatasetIds;
     const overview = !this.singleDatasetView;
+    // const overview = !this.focused;
     this.entryProgressResponse = null;
     this.entryProgressError = "";
     this.entryProgressLoading = true;

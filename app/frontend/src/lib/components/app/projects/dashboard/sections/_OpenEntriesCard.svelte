@@ -17,6 +17,7 @@
   // Variables
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
   const columns = $derived(getColumns(!controller.singleDatasetView));
+  // const columns = $derived(getColumns(!controller.focused));
   const rows = $derived(controller.entryProgressRows);
   const pagination = $derived(controller.entryProgressTablePagination);
 
