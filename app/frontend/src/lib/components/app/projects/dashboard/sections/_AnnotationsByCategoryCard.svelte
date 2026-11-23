@@ -25,6 +25,7 @@
   } from "@/components/app/projects/dashboard/category-totals";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import { cn } from "@/utils";
 
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
   const result = $derived(controller.annotationsByCategory);
@@ -101,8 +102,12 @@
         disabled={loading || controller.denied || controller.loading}
         onclick={() => void controller.refreshCategoryCounts()}
       >
-        <RefreshCwIcon />
-        Refresh
+        <RefreshCwIcon
+          class={cn("", {
+            "animate-spin": loading,
+          })}
+        />
+        {loading ? "Refreshing..." : "Refresh"}
       </Button>
     </Card.Action>
   </Card.Header>
