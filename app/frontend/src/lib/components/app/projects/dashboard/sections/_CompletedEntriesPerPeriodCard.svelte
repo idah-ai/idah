@@ -32,7 +32,7 @@
 </script>
 
 <TooltipProvider>
-  <Card>
+  <Card class="gap-2">
     <CardHeader class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <CardTitle>Completed entries per {interval.toLowerCase()}</CardTitle>
 
