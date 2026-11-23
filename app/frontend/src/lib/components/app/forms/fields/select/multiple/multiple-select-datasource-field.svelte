@@ -26,6 +26,7 @@
   interface Props extends MultipleSelectDataSourceFieldBaseProps<T> {
     values: Array<string | number>;
     maxSelections?: number;
+    emptyChoicePlaceholder?: string;
   }
   let {
     displayKey,
@@ -46,6 +47,7 @@
     searchValue = $bindable(""),
     hiddenChoices = [],
     disabledChoices = [],
+    emptyChoicePlaceholder = "No option found.",
     closeOnSelect = false,
     info,
     errors,
@@ -304,7 +306,7 @@
 
         <CommandList bind:ref={commandListElement} onwheel={scrollToPaginate}>
           <CommandGroup>
-            <CommandEmpty>No option found.</CommandEmpty>
+            <CommandEmpty>{emptyChoicePlaceholder}</CommandEmpty>
 
             {#if slotSelectAll}
               {@render slotSelectAll({ selectAll, allChoicesSelected })}
@@ -333,6 +335,10 @@
       </Command>
     </PopoverContent>
   </Popover>
+
+  {#if allChoicesSelected && values.length >= maxSelections}
+    <FieldDescription role="status">Selection limit reached: {maxSelections} options.</FieldDescription>
+  {/if}
 
   {#if slotInfo}
     {@render slotInfo()}

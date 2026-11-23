@@ -21,8 +21,6 @@
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
-  import type { ProjectMemberScope } from "@/security/types";
-
   // Props
   interface Props {
     children: Snippet;
@@ -42,16 +40,21 @@
   setContext("project", project);
 
   // Functions
-  async function fetchProject(): Promise<{ project: ProjectRecord; tabs: typeof projectTabs }> {
+  async function fetchProject(): Promise<{ project: ProjectRecord }> {
     const requestedProjectId = projectId;
-    const currentAccount = $authStatus.authContext;
     const projectRes = await projectsBackendDataSource.get(requestedProjectId, {
       fields: {
         [ProjectRecord.type]: ["name", "description", "organization_id"],
       },
     });
+    if (requestedProjectId === projectId) Object.assign(project, projectRes.data);
+    return { project };
+  }
+
+  async function getProjectTabs(projectId: string): Promise<typeof projectTabs> {
+    const currentAccount = $authStatus.authContext;
     const as_project_owner: { as_user: ProjectMemberScope } = {
-      as_user: { projectId: requestedProjectId, projectMemberRoles: ["project_owner"] },
+      as_user: { projectId, projectMemberRoles: ["project_owner"] },
     };
 
     let tabs = projectTabs.filter((tab) => tab.value !== "dashboard" && tab.value !== "exports");
@@ -67,8 +70,7 @@
     } catch {
       /* Keep restricted tabs hidden if access cannot be checked. */
     }
-    if (requestedProjectId === projectId) Object.assign(project, projectRes.data);
-    return { project, tabs };
+    return tabs;
   }
 
   function handleTabChange(value: ProjectTab): void {
@@ -79,59 +81,63 @@
 {#key $refetches.projects.get}
   {#await fetchProject()}
     <PageLoading />
-  {:then { project, tabs }}
-    <PageProvider
-      name="project-detail"
-      roles={["admin", "org_owner", "user"]}
-      action="read"
-      resource="dataset:projects"
-    >
-      {#if !isDatasetPage}
-        <PageHeader>
-          {#snippet slotTitle()}
-            <div class="flex items-center gap-2">
-              <Text size="h2" weight="semibold">{project.name}</Text>
-              <ProjectDropdownMenu {projectId} align="center" />
+  {:then { project }}
+    {#await getProjectTabs(project.id)}
+      <PageLoading />
+    {:then tabs}
+      <PageProvider
+        name="project-detail"
+        roles={["admin", "org_owner", "user"]}
+        action="read"
+        resource="dataset:projects"
+      >
+        {#if !isDatasetPage}
+          <PageHeader>
+            {#snippet slotTitle()}
+              <div class="flex items-center gap-2">
+                <Text size="h2" weight="semibold">{project.name}</Text>
+                <ProjectDropdownMenu {projectId} align="center" />
+              </div>
+
+              {#if project.description}
+                <Text class="text-muted-foreground" size="sm">{project.description}</Text>
+              {/if}
+            {/snippet}
+          </PageHeader>
+
+          <Tabs bind:value={activeTab}>
+            <div class="flex items-center gap-4">
+              <TabsList>
+                {#each tabs as { label, value } (value)}
+                  <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
+                {/each}
+              </TabsList>
+
+              <div class="ml-auto">
+                <TabsContent value="datasets">
+                  <div class="flex items-center gap-2">
+                    {#if $selectedDatasets.length}
+                      <SelectedDatasetsDropdownMenu />
+                    {/if}
+
+                    <AddNewDatasetButton />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="members">
+                  <InviteMemberButton />
+                </TabsContent>
+              </div>
             </div>
+          </Tabs>
+        {/if}
 
-            {#if project.description}
-              <Text class="text-muted-foreground" size="sm">{project.description}</Text>
-            {/if}
-          {/snippet}
-        </PageHeader>
-
-        <Tabs bind:value={activeTab}>
-          <div class="flex items-center gap-4">
-            <TabsList>
-              {#each tabs as { label, value } (value)}
-                <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
-              {/each}
-            </TabsList>
-
-            <div class="ml-auto">
-              <TabsContent value="datasets">
-                <div class="flex items-center gap-2">
-                  {#if $selectedDatasets.length}
-                    <SelectedDatasetsDropdownMenu />
-                  {/if}
-
-                  <AddNewDatasetButton />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="members">
-                <InviteMemberButton />
-              </TabsContent>
-            </div>
-          </div>
-        </Tabs>
-      {/if}
-
-      {#if activeTab !== "dashboard" || tabs.some((tab) => tab.value === "dashboard")}
-        {@render children()}
-      {:else}
-        <Redirect to={resolve(`/projects/${projectId}/datasets`)} />
-      {/if}
-    </PageProvider>
+        {#if activeTab !== "dashboard" || tabs.some((tab) => tab.value === "dashboard")}
+          {@render children()}
+        {:else}
+          <Redirect to={resolve(`/projects/${projectId}/datasets`)} />
+        {/if}
+      </PageProvider>
+    {/await}
   {/await}
 {/key}

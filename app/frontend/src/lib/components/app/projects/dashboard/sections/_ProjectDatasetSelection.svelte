@@ -9,7 +9,9 @@
 
   import Button from "@/components/ui/button/button.svelte";
   import Separator from "@/components/ui/separator/separator.svelte";
+  import Spinner from "@/components/ui/spinner/spinner.svelte";
 
+  // Variables
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
 </script>
 
@@ -21,7 +23,11 @@
       select={(ids) => void controller.select(ids)}
     />
 
-    {#if controller.showDatasetNavigation}
+    {#if controller.loading}
+      <Spinner size="sm" />
+    {:else if controller.error}
+      <p class="items-center py-1.5 text-sm">{controller.error}</p>
+    {:else if controller.showDatasetNavigation}
       <div
         role="toolbar"
         tabindex="0"
@@ -44,7 +50,7 @@
           disabled={controller.loading || controller.denied}
           onclick={() => controller.showAllDatasets()}
         >
-          All datasets ({controller.selectedDatasetIds.length})
+          All selected datasets ({controller.selectedDatasetIds.length})
         </Button>
 
         <Separator orientation="vertical" class="mx-1 h-4" />
@@ -87,17 +93,4 @@
       </div>
     {/if}
   </div>
-
-  {#if controller.loading}
-    <p class="text-muted-foreground text-sm" role="status">Loading Dataset scope…</p>
-  {/if}
-
-  {#if controller.error}
-    <div class="flex flex-wrap items-center gap-2" role="alert">
-      <p class="text-destructive text-sm">{controller.error}</p>
-      <Button variant="outline" size="sm" disabled={controller.loading} onclick={() => void controller.retry()}>
-        Try again
-      </Button>
-    </div>
-  {/if}
 </section>

@@ -13,11 +13,6 @@ export const columns: DataTableColumnSettings<DatasetRecord> = {
     title: "Dataset",
     cellComponent: DatasetNameCell,
   },
-  entries: {
-    key: "entries_total_count",
-    title: "Entries",
-    align: "right",
-  },
   progress: {
     key: "progress",
     title: "Progress",

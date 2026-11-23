@@ -67,3 +67,10 @@ export interface EntrySummary {
   reviewing: number;
   annotating: number;
 }
+
+export interface EntryCompletionHistory {
+  timezone: string;
+  from: string;
+  to: string;
+  daily: Record<string, number>;
+}

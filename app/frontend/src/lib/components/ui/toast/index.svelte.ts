@@ -12,17 +12,25 @@ export interface CustomToastOptions {
   description?: string;
 
   dismissable?: boolean; // default: false
+  /** How long (ms) to keep the toast visible; Infinity keeps it until dismissed. */
+  duration?: number;
 }
 
 function getRandomUUID(): string {
   return crypto.randomUUID();
 }
 
+/** Dismiss a toast by its id (e.g. one shown with a fixed id). */
+export function dismissToast(id: string | number): void {
+  toast.dismiss(id);
+}
+
 export const showToast = {
   default: (toastOptions: CustomToastOptions) => {
-    const id = getRandomUUID();
+    const id = toastOptions.id ?? getRandomUUID();
     toast(CustomToast, {
       id,
+      ...(toastOptions.duration !== undefined && { duration: toastOptions.duration }),
       componentProps: {
         toastOptions: {
           ...toastOptions,
@@ -33,9 +41,10 @@ export const showToast = {
     });
   },
   success: (toastOptions: CustomToastOptions) => {
-    const id = getRandomUUID();
+    const id = toastOptions.id ?? getRandomUUID();
     toast.success(CustomToast, {
       id,
+      ...(toastOptions.duration !== undefined && { duration: toastOptions.duration }),
       componentProps: {
         toastOptions: {
           ...toastOptions,
@@ -46,9 +55,10 @@ export const showToast = {
     });
   },
   info: (toastOptions: CustomToastOptions) => {
-    const id = getRandomUUID();
+    const id = toastOptions.id ?? getRandomUUID();
     toast.info(CustomToast, {
       id,
+      ...(toastOptions.duration !== undefined && { duration: toastOptions.duration }),
       componentProps: {
         toastOptions: {
           ...toastOptions,
@@ -59,9 +69,10 @@ export const showToast = {
     });
   },
   warning: (toastOptions: CustomToastOptions) => {
-    const id = getRandomUUID();
+    const id = toastOptions.id ?? getRandomUUID();
     toast.warning(CustomToast, {
       id,
+      ...(toastOptions.duration !== undefined && { duration: toastOptions.duration }),
       componentProps: {
         toastOptions: {
           ...toastOptions,
@@ -72,9 +83,10 @@ export const showToast = {
     });
   },
   error: (toastOptions: CustomToastOptions) => {
-    const id = getRandomUUID();
+    const id = toastOptions.id ?? getRandomUUID();
     toast.error(CustomToast, {
       id,
+      ...(toastOptions.duration !== undefined && { duration: toastOptions.duration }),
       componentProps: {
         toastOptions: {
           ...toastOptions,

@@ -23,6 +23,7 @@ export const createAccountSchema = accountSchema.pick({
   name: true,
   email: true,
   enabled: true,
+  role_name: true,
 });
 
 export const updateAccountSchema = accountSchema.pick({

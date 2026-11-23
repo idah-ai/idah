@@ -562,6 +562,282 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
     end
   end
 
+  describe "Dashboard filter schema" do
+    [
+      {}, { project_id: "invalid" }, { project_id: nil },
+      { dataset_id: "not-an-array" },
+      { dataset_id: ["invalid"] }, { dataset_id: Array.new(101) { UUIDv7.generate } },
+      { unexpected: "value" }
+    ].each_with_index do |invalid, index|
+      it "rejects invalid filter case #{index + 1} before invoking the Service" do
+        expect_any_instance_of(Entry::Service).not_to receive(:summary)
+        filter = { project_id: project_id }.merge(invalid)
+        filter = {} if invalid.empty?
+        get "/entries/summary?#{Rack::Utils.build_nested_query(filter: filter)}"
+        expect(last_response.status).to eq(422), last_response.body
+        expect(JSON.parse(last_response.body).fetch("errors")).not_to be_empty
+      end
+    end
+
+    it "rejects an explicit empty Dataset array in the input schema" do
+      result = Schemas::ProjectDatasetFilter.validate({ project_id: project_id, dataset_id: [] })
+      expect(result.success?).to be(false)
+    end
+
+    it "accepts 100 Dataset IDs" do
+      ids = Array.new(100) { UUIDv7.generate }
+      entries.client do |db|
+        db[:datasets].multi_insert(
+          ids.map do |id|
+            { id: id, project_id: project_id, modality: "video", labeling_configuration: "{}",
+              workflow_configuration: "{}" }
+          end
+        )
+      end
+      get "/entries/summary?#{Rack::Utils.build_nested_query(filter: { project_id: project_id, dataset_id: ids })}"
+      expect(last_response.status).to eq(200), last_response.body
+    end
+  end
+
+  describe "GET /entries/completion_history" do
+    def completion_rows(timestamps, dataset: dataset_id, assigned_to: nil)
+      rows = timestamps.map do |timestamp|
+        { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset,
+          status: "completed", wf_step: "done", assigned_to_id: assigned_to,
+          completed_at: timestamp && Time.iso8601(timestamp).utc }
+      end
+      entries.client do |db|
+        # Rollback-isolated historical/legacy fixtures; restore the existing trigger immediately.
+        db.run("ALTER TABLE entries DISABLE TRIGGER trg_set_entry_completed_at")
+        begin
+          db[:entries].multi_insert(rows)
+        ensure
+          db.run("ALTER TABLE entries ENABLE TRIGGER trg_set_entry_completed_at")
+        end
+      end
+      rows.map { |row| row[:id] }
+    end
+
+    def read_completion(from: "2026-11-01", to: "2026-11-30", timezone: "UTC",
+                        filter: { project_id: project_id })
+      get "/entries/completion_history?#{Rack::Utils.build_nested_query(
+        {
+          filter: filter,
+          from: from,
+          to: to,
+          tz: timezone
+        }.compact
+      )}"
+      JSON.parse(last_response.body)
+    end
+
+    it "aggregates more than 1000 completed Entries and excludes legacy nulls" do
+      completion_rows(Array.new(1001, "2026-11-02T12:00:00Z") + [nil])
+      body = read_completion
+      expect(last_response.status).to eq(200), last_response.body
+      expect(body).to eq(
+        "meta" => { "timezone" => "UTC", "from" => "2026-11-01", "to" => "2026-11-30",
+                    "daily" => { "2026-11-02" => 1001 } }
+      )
+      automatic = read_completion(from: nil, to: nil)
+      expect(automatic.fetch("meta")).to include(
+        "from" => "2026-10-27",
+        "to" => "2026-11-02",
+        "daily" => { "2026-11-02" => 1001 }
+      )
+    end
+
+    it "resolves the latest seven days independently of today's date" do
+      completion_rows(["2026-11-07T12:00:00Z", "2026-11-08T12:00:00Z", "2026-11-14T12:00:00Z"])
+      body = read_completion(from: nil, to: nil)
+      expect(last_response.status).to eq(200), last_response.body
+      expect(body.fetch("meta")).to include(
+        "from" => "2026-11-08",
+        "to" => "2026-11-14",
+        "daily" => { "2026-11-08" => 1, "2026-11-14" => 1 }
+      )
+    end
+
+    it "uses the viewer's local completion date and calendar days across DST" do
+      completion_rows(["2026-03-09T03:59:59.999999Z"])
+      body = read_completion(from: nil, to: nil, timezone: "America/New_York")
+      expect(body.fetch("meta")).to include(
+        "from" => "2026-03-02",
+        "to" => "2026-03-08",
+        "daily" => { "2026-03-08" => 1 }
+      )
+    end
+
+    it "falls back to the viewer's current day for empty or legacy-only scopes" do
+      timezone = "Pacific/Kiritimati"
+      day = entries.client { |db| db.get(Sequel.lit("(CURRENT_TIMESTAMP AT TIME ZONE ?)::date", timezone)) }
+      [false, true].each do |legacy|
+        completion_rows([nil]) if legacy
+        body = read_completion(from: nil, to: nil, timezone: timezone)
+        expect(body.fetch("meta")).to include("from" => (day - 6).iso8601, "to" => day.iso8601, "daily" => {})
+      end
+    end
+
+    it "ends the range today when the latest completion is today" do
+      day = entries.client { |db| db.get(Sequel.lit("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date")) }
+      completion_rows(["#{day.iso8601}T00:00:00Z"])
+      body = read_completion(from: nil, to: nil)
+      expect(body.fetch("meta")).to include("from" => (day - 6).iso8601, "to" => day.iso8601)
+    end
+
+    it "resolves each Dataset scope independently and excludes reopened Entries" do
+      other = Dataset::Repository.new(system_context).create(
+        project_id: project_id, modality: "video", labels: [], labeling_configuration: {}, workflow_configuration: {}
+      )
+      completion_rows(["2026-11-14T12:00:00Z"])
+      newer = completion_rows(["2026-11-18T12:00:00Z"], dataset: other).first
+      selected = read_completion(
+        from: nil,
+        to: nil,
+        filter: { project_id: project_id, dataset_id: [dataset_id] }
+      )
+      expect(selected.dig("meta", "to")).to eq("2026-11-14")
+      expect(read_completion(from: nil, to: nil).dig("meta", "to")).to eq("2026-11-18")
+      entries.update!(newer, { status: "pending" })
+      expect(read_completion(from: nil, to: nil).dig("meta", "to")).to eq("2026-11-14")
+    end
+
+    [{ from: "2026-11-01" }, { to: "2026-11-07" },
+     { from: "", to: "2026-11-07" }, { from: "2026-11-01", to: "" }, { from: "", to: "" },
+     { from: "2026-11-01", to: "invalid" }].each do |range|
+      it "rejects a partial, empty, or malformed completion range #{range}" do
+        get "/entries/completion_history?#{Rack::Utils.build_nested_query(
+          { filter: { project_id: project_id }, tz: "UTC" }.merge(range)
+        )}"
+        expect(last_response.status).to eq(422), last_response.body
+      end
+    end
+
+    it "returns an empty map for a successful empty range" do
+      expect(read_completion.dig("meta", "daily")).to eq({})
+      expect(last_response.status).to eq(200)
+    end
+
+    it "uses inclusive local dates and excludes the next midnight without rounding microseconds" do
+      completion_rows(
+        ["2026-11-01T16:59:59.999999Z", "2026-11-01T17:00:00Z",
+         "2026-11-02T16:59:59.999999Z", "2026-11-02T17:00:00Z"]
+      )
+      body = read_completion(from: "2026-11-02", to: "2026-11-02", timezone: "Asia/Bangkok")
+      expect(last_response.status).to eq(200), last_response.body
+      expect(body.dig("meta", "daily")).to eq("2026-11-02" => 2)
+    end
+
+    it "interprets stored wall-clock UTC independently of the database session timezone" do
+      completion_rows(["2026-11-01T23:30:00Z"])
+      entries.client do |db|
+        db.run("SET LOCAL TIME ZONE 'Pacific/Honolulu'")
+        body = read_completion(from: "2026-11-02", to: "2026-11-02", timezone: "Asia/Bangkok")
+        expect(body.dig("meta", "daily")).to eq("2026-11-02" => 1)
+      end
+    end
+
+    it "handles the 23-hour local day at DST start" do
+      completion_rows(
+        ["2026-03-08T04:59:59.999999Z", "2026-03-08T05:00:00Z",
+         "2026-03-09T03:59:59.999999Z", "2026-03-09T04:00:00Z"]
+      )
+      body = read_completion(from: "2026-03-08", to: "2026-03-08", timezone: "America/New_York")
+      expect(body.dig("meta", "daily")).to eq("2026-03-08" => 2)
+    end
+
+    it "counts both repeated hours in the 25-hour DST end day" do
+      completion_rows(
+        ["2026-11-01T03:59:59.999999Z", "2026-11-01T05:30:00Z",
+         "2026-11-01T06:30:00Z", "2026-11-02T04:59:59.999999Z", "2026-11-02T05:00:00Z"]
+      )
+      body = read_completion(from: "2026-11-01", to: "2026-11-01", timezone: "America/New_York")
+      expect(body.dig("meta", "daily")).to eq("2026-11-01" => 3)
+    end
+
+    it "supports a 366-day leap year and half-hour timezone across year end" do
+      completion_rows(["2024-02-29T12:00:00Z", "2023-12-31T18:30:00Z"])
+      body = read_completion(from: "2024-01-01", to: "2024-12-31", timezone: "Asia/Kolkata")
+      expect(last_response.status).to eq(200), last_response.body
+      expect(body.dig("meta", "daily")).to eq("2024-01-01" => 1, "2024-02-29" => 1)
+    end
+
+    [{ from: "2024-01-01", to: "2025-01-01" }, { from: "2026-2-1" },
+     { from: "2026-02-30" }, { from: "2026-12-01", to: "2026-11-01" },
+     { timezone: "Invalid/Timezone" }, { from: "2026-11-01T00:00:00Z" }].each do |invalid|
+      it "rejects invalid completion range #{invalid}" do
+        read_completion(**invalid)
+        expect(last_response.status).to eq(422), last_response.body
+      end
+    end
+
+    it "preserves reopen/recomplete lifecycle and counts only currently completed Entries" do
+      id = completion_rows(["2026-11-02T12:00:00Z"]).first
+      entries.update!(id, { status: "pending" })
+      expect(read_completion.dig("meta", "daily")).to eq({})
+      expect(entries.find!(id).completed_at).to be_nil
+      entries.update!(id, { status: "completed" })
+      day = entries.find!(id).completed_at.utc.to_date.iso8601
+      expect(read_completion(from: day, to: day).dig("meta", "daily")).to eq(day => 1)
+    end
+
+    it "filters selected and focused Datasets and rejects cross-project IDs" do
+      other = Dataset::Repository.new(system_context).create(
+        project_id: project_id,
+        modality: "video",
+        labels: [],
+        labeling_configuration: {},
+        workflow_configuration: {}
+      )
+      completion_rows(["2026-11-02T12:00:00Z"])
+      completion_rows(["2026-11-03T12:00:00Z"], dataset: other)
+      expect(read_completion(filter: { project_id: project_id, dataset_id: [other] }).dig("meta", "daily"))
+        .to eq("2026-11-03" => 1)
+      expect(
+        read_completion(filter: { project_id: project_id, dataset_id: [dataset_id, other] }).dig(
+          "meta",
+          "daily"
+        ).values.sum
+      )
+        .to eq(2)
+      read_completion(filter: { project_id: UUIDv7.generate, dataset_id: [dataset_id] })
+      expect(last_response.status).to be_between(403, 404)
+    end
+
+    it "enforces Project Owner access", as: :project_owner do
+      read_completion
+      expect(last_response.status).to be_between(403, 404)
+      read_completion(from: nil, to: nil)
+      expect(last_response.status).to be_between(403, 404)
+      ProjectMember::Repository.new(system_context).create(
+        project_id: project_id,
+        account_id: 3,
+        role: "project_owner",
+        email: "owner@example.com",
+        invited_by_id: 1
+      )
+      read_completion
+      expect(last_response.status).to eq(200), last_response.body
+      read_completion(from: nil, to: nil)
+      expect(last_response.status).to eq(200), last_response.body
+    end
+
+    it "uses the Entry read scope rather than a system repository", as: :annotator do
+      ProjectMember::Repository.new(system_context).create(
+        project_id: project_id,
+        account_id: 4,
+        role: "annotator",
+        email: "annotator@example.com",
+        invited_by_id: 1
+      )
+      completion_rows(["2026-11-02T12:00:00Z"], assigned_to: 4)
+      completion_rows(["2026-11-14T12:00:00Z"], assigned_to: 5)
+      expect(read_completion.dig("meta", "daily")).to eq("2026-11-02" => 1)
+      automatic = read_completion(from: nil, to: nil)
+      expect(automatic.fetch("meta")).to include("to" => "2026-11-02", "daily" => { "2026-11-02" => 1 })
+    end
+  end
+
   describe "offset-aware Entry pagination" do
     [999, 1000, 1001, 2005].each do |total|
       it "keeps metadata and rows correct for #{total} Entries" do
@@ -621,136 +897,16 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
     expect(completed_at).not_to eq(Time.iso8601(forged))
   end
 
-  describe "completion range filters" do
+  describe "Entry read scope" do
     let!(:entry_id) { entries.create(project_id:, dataset_id:, status: "completed", wf_step: "done") }
-    let(:completed_at) { entries.find!(entry_id).completed_at }
 
-    def read_entries(extra = {}, count: false)
+    def read_entries(extra = {})
       params = { filter: { project_id:, dataset_id: [dataset_id], status__in: ["completed"] }.merge(extra),
-                 sort: "id", page: { number: 1, size: 1000 }, count:,
+                 sort: "id", page: { number: 1, size: 1000 }, count: false,
                  fields: { Resource::Dataset::Entries => ["id", "completed_at"] } }
       get "/entries?#{Rack::Utils.build_nested_query(params)}"
       expect(last_response.status).to eq(200), last_response.body
       JSON.parse(last_response.body)
-    end
-
-    it "normalizes offset-bearing bounds and includes exact lower and upper timestamps" do
-      lower = completed_at.getlocal("+07:00").iso8601(6)
-      upper = completed_at.getlocal("-08:00").iso8601(6)
-      expect(
-        read_entries({ completed_at__gte: lower, completed_at__lte: upper })["data"].map { |e|
-          e["id"]
-        }
-      ).to eq([entry_id])
-      expect(
-        read_entries(
-          { completed_at__lte: (completed_at - Rational(
-            1,
-            1_000_000
-          )).iso8601(6) }
-        )["data"]
-      ).to be_empty
-      expect(
-        read_entries(
-          { completed_at__gte: (completed_at + Rational(
-            1,
-            1_000_000
-          )).iso8601(6) }
-        )["data"]
-      ).to be_empty
-    end
-
-    it "includes the final microsecond of the selected local date but excludes the next midnight" do
-      next_entry = entries.create(project_id:, dataset_id:, status: "completed", wf_step: "done")
-      inclusive_end = Time.iso8601("2026-10-30T23:59:59.999999-07:00").utc
-      next_midnight = Time.iso8601("2026-10-31T00:00:00-07:00").utc
-      entries.client do |db|
-        db.run("ALTER TABLE entries DISABLE TRIGGER trg_set_entry_completed_at")
-        begin
-          db[:entries].where(id: entry_id).update(completed_at: inclusive_end)
-          db[:entries].where(id: next_entry).update(completed_at: next_midnight)
-        ensure
-          db.run("ALTER TABLE entries ENABLE TRIGGER trg_set_entry_completed_at")
-        end
-      end
-      filters = {
-        completed_at__gte: "2026-10-01T00:00:00-07:00",
-        completed_at__lte: "2026-10-30T23:59:59.999999-07:00"
-      }
-      expect(read_entries(filters)["data"].map { |e| e["id"] }).to eq([entry_id])
-      expect(
-        read_entries(
-          filters.merge(
-            completed_at__lte: (inclusive_end - Rational(
-              1,
-              1_000_000
-            )).iso8601(6)
-          )
-        )["data"]
-      ).to be_empty
-      expect(
-        read_entries({ completed_at__gte: next_midnight.iso8601(6) })["data"].map { |e|
-          e["id"]
-        }
-      ).to eq([next_entry])
-    end
-
-    [:completed_at__gte, :completed_at__lte].each do |filter|
-      ["not-a-date", "2026-11-05", "2026-11-05T12:00:00", "2026-02-30T00:00:00Z",
-       ["2026-11-05T00:00:00Z"]].each do |value|
-        it "rejects an invalid/ambiguous #{filter} timestamp #{value.inspect}" do
-          get "/entries?#{Rack::Utils.build_nested_query(filter: { filter => value })}"
-          expect(last_response.status).to eq(422)
-        end
-      end
-    end
-
-    it "excludes legacy null timestamps from dated completions" do
-      # Recreate a pre-migration unknown timestamp only in this rollback-isolated fixture.
-      entries.client do |db|
-        db.run("ALTER TABLE entries DISABLE TRIGGER trg_set_entry_completed_at")
-        begin
-          db[:entries].where(id: entry_id).update(completed_at: nil)
-        ensure
-          db.run("ALTER TABLE entries ENABLE TRIGGER trg_set_entry_completed_at")
-        end
-      end
-      expect(
-        read_entries(
-          { completed_at__gte: Time.utc(2000).iso8601,
-            completed_at__lte: Time.utc(2100).iso8601 }
-        )["data"]
-      ).to be_empty
-    end
-
-    it "continues beyond capped metadata with UUID ordering and no offset drift" do
-      ids = Array.new(2004) { UUIDv7.generate }
-      entries.client { |db|
-        db[:entries].multi_insert(
-          ids.map { |id|
-            { id:, project_id:, dataset_id:, status: "completed", wf_step: "done" }
-          }
-        )
-      }
-      expected = ([entry_id] + ids).sort
-      filters = { completed_at__gte: (completed_at - 1).iso8601(6), completed_at__lte: (completed_at + 1).iso8601(6) }
-      capped = read_entries(filters, count: true)
-      expect(capped.dig("meta", "count")).to eq(1000)
-      expect(capped.dig("meta", "more")).to be(true)
-      collected = []
-      cursor = nil
-      loop do
-        page = read_entries(filters.merge(cursor ? { id__gt: cursor } : {}))["data"]
-        break if page.empty?
-
-        page_ids = page.map { |e| e["id"] }
-        expect(page_ids).to eq(page_ids.sort)
-        collected.concat(page_ids)
-        cursor = page_ids.last
-        entries.update!(expected.first, { status: "pending" }) if collected.length == 1000
-      end
-      expect(collected).to eq(expected)
-      expect(collected.uniq.length).to eq(2005)
     end
 
     context "as a Project Owner", as: :project_owner do
@@ -775,14 +931,11 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
           workflow_configuration: {}
         )
         entries.create(project_id: foreign_project, dataset_id: foreign_dataset, status: "completed", wf_step: "done")
-        filters = { completed_at__gte: (completed_at - 1).iso8601(6), completed_at__lte: (completed_at + 1).iso8601(6) }
-        expect(read_entries(filters)["data"].length).to eq(1)
+        expect(read_entries["data"].map { |entry| entry["id"] }).to eq([entry_id])
         expect(
           read_entries(
-            filters.merge(
-              project_id: foreign_project,
-              dataset_id: [foreign_dataset]
-            )
+            project_id: foreign_project,
+            dataset_id: [foreign_dataset]
           )["data"]
         ).to be_empty
       end

@@ -14,7 +14,7 @@
   import ProgressByDatasetCard from "@/components/app/projects/dashboard/sections/_ProgressByDatasetCard.svelte";
   // import OpenEntriesCard from "@/components/app/projects/dashboard/sections/_OpenEntriesCard.svelte";
   import OpenEntriesCardV2 from "@/components/app/projects/dashboard/sections/_OpenEntriesCardV2.svelte";
-  // import AnnotationsByCategoryCard from "@/components/app/projects/dashboard/sections/_AnnotationsByCategoryCard.svelte";
+  import AnnotationsByCategoryCard from "@/components/app/projects/dashboard/sections/_AnnotationsByCategoryCard.svelte";
 
   // Props
   interface Props {
@@ -23,6 +23,7 @@
   let { projectId }: Props = $props();
 
   // Variables
+  let entryCard: ReturnType<typeof OpenEntriesCardV2> | undefined;
   const controller = new ProjectDashboardController(projectId);
   setProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY, controller);
 
@@ -36,7 +37,7 @@
 <div class="grid grid-cols-1 gap-4">
   <ProjectDatasetSelection />
 
-  <DatasetMetricsCard />
+  <DatasetMetricsCard onOpenEntries={() => void entryCard?.showOpenEntries()} />
 
   <EntriesByStatusCard />
 
@@ -44,9 +45,9 @@
 
   <ProgressByDatasetCard />
 
-  <!-- <OpenEntriesCard /> -->
+  <!-- <OpenEntriesCard bind:this={entryCard} /> -->
 
-  <OpenEntriesCardV2 />
+  <OpenEntriesCardV2 bind:this={entryCard} />
 
   <AnnotationsByCategoryCard />
 </div>

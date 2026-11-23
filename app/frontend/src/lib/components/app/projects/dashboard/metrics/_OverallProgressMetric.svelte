@@ -18,7 +18,7 @@
     : controller.selectedDatasetIds.length
       ? "Progress of selection"
       : "Overall progress"}
-  value={controller.progress === null ? "—" : `${controller.progress}%`}
+  value={controller.progress === null ? "-" : `${controller.progress}%`}
 >
   {#snippet SlotDescription()}
     <div class="space-y-1">

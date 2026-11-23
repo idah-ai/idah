@@ -68,6 +68,7 @@ export interface SelectFieldBaseProps extends FormFieldBaseProps {
       },
     ]
   >;
+  emptyChoicePlaceholder?: string;
 }
 
 export interface SingleSelectFieldBaseProps extends SelectFieldBaseProps {

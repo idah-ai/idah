@@ -12,12 +12,14 @@
     COMPLETION_DATE_PRESETS,
     getPresetValue,
     type DateRangeValue,
+    type DateRangePreset,
   } from "@/components/app/forms/fields/picker/constants";
   import Text from "@/components/ui/text/Text.svelte";
 
   // Props
   interface Props {
     value: DateRangeValue;
+    presets?: readonly DateRangePreset[];
     maxDate?: string;
     onApply: (value: DateRangeValue) => void | Promise<void>;
     isValid?: (value: DateRangeValue) => boolean;
@@ -26,7 +28,16 @@
     timezone?: string;
   }
 
-  let { value, maxDate, onApply, isValid, dateFormat = "d MMM yyyy", title = "Date range", timezone }: Props = $props();
+  let {
+    value,
+    presets = COMPLETION_DATE_PRESETS.map((label) => ({ label, getValue: () => getPresetValue(label) })),
+    maxDate,
+    onApply,
+    isValid,
+    dateFormat = "d MMM yyyy",
+    title = "Date range",
+    timezone,
+  }: Props = $props();
 
   // Variables
   const desktop = new MediaQuery("(min-width:768px)");
@@ -59,8 +70,8 @@
     draft = next ? { start: parseDate(value.start), end: parseDate(value.end) } : undefined;
   }
 
-  function selectPreset(label: (typeof COMPLETION_DATE_PRESETS)[number]): void {
-    const range = getPresetValue(label);
+  function selectPreset(preset: DateRangePreset): void {
+    const range = preset.getValue();
     draft = { start: parseDate(range.start), end: parseDate(range.end) };
   }
 
@@ -92,13 +103,15 @@
     </div>
 
     <div class="flex flex-col md:flex-row">
-      <div class="flex max-w-lg flex-wrap gap-1 border-b p-2 md:w-36 md:flex-col md:border-r md:border-b-0">
-        {#each COMPLETION_DATE_PRESETS as label (label)}
-          <Button variant="ghost" size="sm" class="justify-start font-normal" onclick={() => selectPreset(label)}
-            >{label}</Button
-          >
-        {/each}
-      </div>
+      {#if presets.length}
+        <div class="flex max-w-lg flex-wrap gap-1 border-b p-2 md:w-36 md:flex-col md:border-r md:border-b-0">
+          {#each presets as preset (preset.label)}
+            <Button variant="ghost" size="sm" class="justify-start font-normal" onclick={() => selectPreset(preset)}>
+              {preset.label}
+            </Button>
+          {/each}
+        </div>
+      {/if}
       <RangeCalendar
         bind:value={draft}
         maxValue={maximum}
