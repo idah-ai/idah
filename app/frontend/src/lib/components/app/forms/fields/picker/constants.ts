@@ -1,4 +1,16 @@
-import { endOfMonth, format, startOfDay, startOfMonth, startOfWeek, subDays, subMonths, subWeeks } from "date-fns";
+import {
+  endOfMonth,
+  endOfYear,
+  format,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  startOfYear,
+  subDays,
+  subMonths,
+  subWeeks,
+  subYears,
+} from "date-fns";
 
 export interface DateRangeValue {
   start: string;
@@ -20,6 +32,8 @@ export const COMPLETION_DATE_PRESETS = [
   "Last week",
   "This month",
   "Last month",
+  "This year",
+  "Last year",
 ] as const;
 
 export function getPresetValue(preset: (typeof COMPLETION_DATE_PRESETS)[number]): DateRangeValue {
@@ -54,6 +68,15 @@ export function getPresetValue(preset: (typeof COMPLETION_DATE_PRESETS)[number])
     case "Last month":
       start = startOfMonth(subMonths(end, 1));
       end = endOfMonth(start);
+      break;
+    case "This year":
+      start = startOfYear(end);
+      end = endOfYear(end);
+      break;
+
+    case "Last year":
+      start = startOfYear(subYears(end, 1));
+      end = endOfYear(start);
       break;
   }
 

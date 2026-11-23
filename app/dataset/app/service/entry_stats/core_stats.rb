@@ -17,6 +17,11 @@ module EntryStats
     #                                         deleted or renamed). Each annotation counted
     #                                         individually.
     #
+    # System shapes (declared via the plugin manifest's `systemShapes`, e.g. the
+    # image plugin's "done-area") are excluded before any counting: they are not
+    # annotator-drawn shapes, so they never contribute to the annotation,
+    # category, shape, or orphan counts.
+    #
     # Note: Verse::Sequel::JsonEncoder deserialises JSON with symbolized keys.
     #
     # @param entry [Entry::Record] entry with dataset and annotations preloaded
@@ -38,20 +43,26 @@ module EntryStats
         shape_counts[key_s.split(":", 2).last] = 0 if key_s.include?(":")
       end
 
+      system_shapes = EntryStats::SystemShapes.for_all
+
       annotations = entry.annotations || []
       live_annotations = annotations.reject(&:deleted_at)
-      live_annotations.each do |annotation|
+      counted_annotations = live_annotations.reject do |annotation|
+        type = annotation.shape_type
+        type && system_shapes.include?(type)
+      end
+      counted_annotations.each do |annotation|
         type = annotation.shape_type
         shape_counts[type.split(":", 2).last] += 1 if type
       end
 
-      stats = { "annotation.count" => live_annotations.size.to_s }
+      stats = { "annotation.count" => counted_annotations.size.to_s }
 
       # Count annotations whose category is not present in the labeling configuration.
       # These are "orphan" annotations — the category was deleted, renamed, or never
       # configured. Each annotation is counted individually (not per distinct category).
       configured_set = configured_ids.to_set
-      orphan_annotation_count = live_annotations.count do |annotation|
+      orphan_annotation_count = counted_annotations.count do |annotation|
         category = annotation.category
         category && !configured_set.include?(category)
       end

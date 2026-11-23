@@ -23,7 +23,7 @@
   {#snippet SlotDescription()}
     <div class="space-y-1">
       {#if controller.progress !== null}
-        <Progress value={controller.progress} class="bg-muted [&>[data-slot=progress-indicator]]:bg-emerald-500" />
+        <Progress value={controller.progress} class="bg-muted [&>[data-slot=progress-indicator]]:bg-green-600" />
       {/if}
       {#if controller.summary}
         <Text size="sm" class="text-muted-foreground">

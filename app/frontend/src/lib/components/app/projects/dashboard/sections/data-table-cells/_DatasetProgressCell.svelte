@@ -29,11 +29,11 @@
   <span>-</span>
 {:else}
   <div class="min-w-32 space-y-1">
-    <Progress value={percentage} class="bg-muted [&>[data-slot=progress-indicator]]:bg-emerald-500" />
+    <Progress value={percentage} class="bg-muted [&>[data-slot=progress-indicator]]:bg-green-600" />
 
     <div class="flex w-full items-center justify-between gap-2">
       <Text size="xs" class="text-muted-foreground">
-        {dataset.entries_completed_count.toLocaleString()} of {dataset.entries_total_count.toLocaleString()} entries completed
+        {dataset.entries_completed_count.toLocaleString()} of {dataset.entries_total_count.toLocaleString()}
       </Text>
 
       <Text size="xs" weight="semibold">{percentage}%</Text>

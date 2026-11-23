@@ -29,6 +29,7 @@ import type {
   ISyncErrorEvent,
   IShortcut,
   ICommandStackEntry,
+  ToolbarGroupOptions,
   ToolbarItemOptions,
   Unsubscribe,
   IFeedbackConfig,
@@ -419,6 +420,10 @@ class ToolbarDriverAdapter implements IToolbarDriverV2 {
 
   orderGroups(mode: string, groups: string[]): void {
     this.mgr.orderGroups(mode, groups);
+  }
+
+  defineGroup(path: string, options: ToolbarGroupOptions): void {
+    this.mgr.defineGroup(path, options);
   }
 
   get revision(): number {
