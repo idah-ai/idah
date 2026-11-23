@@ -68,9 +68,11 @@ RSpec.describe "Dashboard category totals", database: true, as: :project_owner d
     cars = rows.select { |row| row.category == "car" }
     expect(cars.map { |row| [row.label, row.annotation_count] }).to eq([["car", 6]])
     expect(cars.first.datasets)
-      .to contain_exactly({ id: first_id, name: "First", annotation_count: 2 },
-                          { id: second_id, name: "Second", annotation_count: 3 },
-                          { id: third_id, name: "Third", annotation_count: 1 })
+      .to contain_exactly(
+        { id: first_id, name: "First", annotation_count: 2 },
+        { id: second_id, name: "Second", annotation_count: 3 },
+        { id: third_id, name: "Third", annotation_count: 1 }
+      )
     expect(rows.find { |row| row.category == "person" }.annotation_count).to eq(0)
     expect(rows.find { |row| row.category == "removed" }.configured).to be(false)
     expect(rows.sum(&:annotation_count)).to eq(7)

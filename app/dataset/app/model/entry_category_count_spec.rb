@@ -67,10 +67,10 @@ RSpec.describe "entry_category_counts", database: true do
 
   it "decrements on soft delete and increments on restore without zero rows" do
     id = add_annotation("car")
-    annotations.update!(id, { deleted_at: Time.now.utc })
+    annotations.soft_delete(id, deleted_by_email: "system@example.com")
     expect(category_counts).to be_empty
 
-    annotations.update!(id, { deleted_at: nil })
+    annotations.restore(id)
     expect(category_counts.map { |row| [row[:category], row[:count]] }).to eq([["car", 1]])
   end
 

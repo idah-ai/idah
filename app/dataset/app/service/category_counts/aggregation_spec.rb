@@ -31,9 +31,11 @@ RSpec.describe CategoryCounts::Aggregation do
         [["car", "car", 60],
          ["automobile", "Car", 5], ["removed", "removed", 2], ["zero", "Zero", 0]]
       )
-    expect(totals.first.datasets).to eq([{ id: "a", name: "a", annotation_count: 30 },
-                                         { id: "b", name: "b", annotation_count: 20 },
-                                         { id: "c", name: "c", annotation_count: 10 }])
+    expect(totals.first.datasets).to eq(
+      [{ id: "a", name: "a", annotation_count: 30 },
+       { id: "b", name: "b", annotation_count: 20 },
+       { id: "c", name: "c", annotation_count: 10 }]
+    )
     expect(totals.find { |row| row.category == "removed" }.configured).to be(false)
     expect(totals.sum(&:annotation_count)).to eq(67)
   end
@@ -48,8 +50,10 @@ RSpec.describe CategoryCounts::Aggregation do
     car = described_class.project_rows("project", datasets, rows).find { |row| row.category == "car" }
 
     expect([car.label, car.annotation_count, car.configured]).to eq(["car", 5, true])
-    expect(car.datasets).to eq([{ id: "a", name: "a", annotation_count: 2 },
-                                { id: "b", name: "b", annotation_count: 3 }])
+    expect(car.datasets).to eq(
+      [{ id: "a", name: "a", annotation_count: 2 },
+       { id: "b", name: "b", annotation_count: 3 }]
+    )
   end
 
   it "does not double count a category configured by multiple annotation tools" do
