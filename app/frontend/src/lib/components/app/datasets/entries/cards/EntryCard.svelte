@@ -401,12 +401,13 @@
                     <DateText
                       size="sm"
                       showTooltip
+                      dateOnly
                       datetime={parseISO(effectiveDeliveryDate)}
                       datetimeFormat="MMM dd, yyyy"
                       weight="light"
                     />
                   {:else}
-                    <span>—</span>
+                    <span>-</span>
                   {/if}
 
                   {#if deliveryDateWarning}

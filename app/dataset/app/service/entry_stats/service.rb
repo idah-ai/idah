@@ -27,7 +27,12 @@ module EntryStats
       EntryStats::Recompute.call(entry)
     end
 
-    def recompute_from_annotation(entry_id:, dataset_id:, new_category:)
+    def recompute_from_annotation(entry_id:, dataset_id:, new_category:, shape_type: nil)
+      # A system shape (e.g. a done area) is never counted, so a change to one
+      # cannot change the orphan count. Its category is usually not configured,
+      # so without this every create or restore of one would recompute.
+      return if shape_type && EntryStats::SystemShapes.for_all.include?(shape_type)
+
       # Recompute only if the entry already has orphans, or this change makes
       # the annotation an orphan.
       return unless system_entry_stats.orphan_category(entry_id) ||
