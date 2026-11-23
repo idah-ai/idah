@@ -25,7 +25,6 @@ import { get, type Unsubscriber } from "svelte/store";
 import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 import { EntryRecord, entriesBackendDataSource } from "@/data/model/dataset/entries/record";
 import { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
-import { entryStatuses } from "@/data/model/dataset/entries/constants";
 import { getDeliveryStatusBadge, today } from "@/utils/date";
 import { PROJECT_DASHBOARD_WORKFLOW_GROUPS } from "@/components/app/projects/dashboard/project-dashboard.constants";
 
@@ -214,7 +213,7 @@ export class ProjectDashboardController {
   }
 
   public get openEntriesCount(): number | null {
-    return this.summary ? this.summary.total - this.summary.completed : null;
+    return this.summary?.open ?? null;
   }
 
   public get openEntriesDescription(): string {
@@ -279,16 +278,20 @@ export class ProjectDashboardController {
       const counts = [
         summary.total,
         summary.completed,
+        summary.errored,
+        summary.processing,
+        summary.pending_annotation,
+        summary.pending_review,
+        summary.open,
         summary.review,
         summary.annotation,
-        summary.reviewing,
-        summary.annotating,
       ];
       if (
         counts.some((count) => !Number.isSafeInteger(count) || count < 0) ||
-        summary.completed + summary.review + summary.annotation > summary.total ||
-        summary.reviewing > summary.review ||
-        summary.annotating > summary.annotation
+        summary.completed + summary.errored + summary.processing + summary.open > summary.total ||
+        summary.annotation + summary.review > summary.open ||
+        summary.pending_annotation > summary.annotation ||
+        summary.pending_review > summary.review
       ) {
         throw new Error("Dashboard counts are inconsistent. Please retry.");
       }
@@ -313,13 +316,17 @@ export class ProjectDashboardController {
 
     const values = {
       completed: summary.completed,
-      reviewing: summary.reviewing,
-      pendingReview: summary.review - summary.reviewing,
-      annotating: summary.annotating,
-      pendingAnnotation: summary.annotation - summary.annotating,
+      reviewing: summary.review - summary.pending_review,
+      pendingReview: summary.pending_review,
+      annotating: summary.annotation - summary.pending_annotation,
+      pendingAnnotation: summary.pending_annotation,
+      notReady: summary.processing,
+      errored: summary.errored,
     };
-    const residual = summary.total - summary.completed - summary.review - summary.annotation;
-    if (values.pendingReview < 0 || values.pendingAnnotation < 0 || residual < 0) return null;
+    const residual =
+      summary.total - summary.completed - summary.errored - summary.processing - summary.annotation - summary.review;
+    if (values.annotating < 0 || values.reviewing < 0 || residual < 0) return null;
+
     return {
       total: summary.total,
       residual,
@@ -437,21 +444,14 @@ export class ProjectDashboardController {
     );
   }
 
-  public completionGroupingAllowed(grouping: CompletionGrouping): boolean {
-    const days = differenceInCalendarDays(parseISO(this.completionRange.end), parseISO(this.completionRange.start)) + 1;
-    return grouping === "Day" ? days <= 62 : grouping === "Month" ? days >= 60 : days >= 14;
-  }
-
   public setCompletionGrouping(grouping: CompletionGrouping): void {
-    if (this.completionGroupingAllowed(grouping)) this.completionGrouping = grouping;
+    this.completionGrouping = grouping;
   }
 
   public async applyCompletionRange(range: CompletionRange): Promise<void> {
     if (this.disposed || this.denied || !this.isCompletionRangeValid(range)) return;
     this.automaticCompletionRange = false;
     this.completionRange = { ...range };
-    const days = differenceInCalendarDays(parseISO(range.end), parseISO(range.start)) + 1;
-    this.completionGrouping = days <= 14 ? "Day" : days <= 92 ? "Week" : "Month";
     this.clearCompletionHistory();
     if (this.scopeReady) await this.loadCompletionHistory();
   }
@@ -594,7 +594,8 @@ export class ProjectDashboardController {
   public entryTab: OpenEntryTab = $state("all");
 
   changeEntryTab(value: string): void {
-    if (value !== "all" && value !== "open" && value !== "completed") return;
+    if (value !== "all" && value !== "open" && value !== "not_ready" && value !== "completed" && value !== "error")
+      return;
     if (value === this.entryTab || this.disposed || this.denied) return;
     this.entryOverviewPage = 1;
     this.entryTab = value;
@@ -690,11 +691,15 @@ export class ProjectDashboardController {
       if (!this.projectId || (this.selectedDatasetIds.length > 0 && ids.length === 0))
         throw new Error("Entry scope is unavailable. Please retry.");
       const statuses =
-        this.entryTab === "completed"
-          ? ["completed"]
-          : this.entryTab === "open"
-            ? entryStatuses.filter((status) => status.value !== "completed").map((status) => status.value)
-            : null;
+        this.entryTab === "error"
+          ? ["errored"]
+          : this.entryTab === "completed"
+            ? ["completed"]
+            : this.entryTab === "not_ready"
+              ? ["processing"]
+              : this.entryTab === "open"
+                ? ["pending", "in_progress"]
+                : null;
       const response = await entriesBackendDataSource.list({
         filters: {
           project_id: this.projectId,

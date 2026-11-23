@@ -9,7 +9,7 @@
 </script>
 
 {#if entry.assigned_to_id === null}
-  <Text size="xs">Unassigned</Text>
+  <Text size="xs" class="italic">Unassigned</Text>
 {:else if entry.assigned_to?.email}
   <ProjectMemberAvatar member={entry.assigned_to} />
 {:else if entry.assigned_to_email}

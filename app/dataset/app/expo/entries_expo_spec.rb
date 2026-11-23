@@ -430,7 +430,7 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
       get "/entries/summary?#{Rack::Utils.build_nested_query(filter: filters)}"
     end
 
-    it "returns all six exact counts, including non-workflow entries" do
+    it "returns exact KPI and mutually exclusive dashboard counts" do
       rows = [
         ["completed", "done", nil], ["pending", "review", nil],
         ["in_progress", "review", 7], ["pending", "annotate", nil],
@@ -445,8 +445,87 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
       expect(last_response.status).to eq(200), last_response.body
       expect(JSON.parse(last_response.body)).to eq(
         "meta" => { "total" => 7, "completed" => 1, "review" => 2,
-                    "annotation" => 2, "reviewing" => 1, "annotating" => 1 }
+                    "annotation" => 2, "reviewing" => 1, "annotating" => 1, "errored" => 1,
+                    "processing" => 1, "pending_annotation" => 1, "pending_review" => 1, "open" => 4 }
       )
+    end
+
+    it "classifies every status and workflow independently of assignment" do
+      combinations = %w[pending in_progress processing errored completed].product(%w[annotate review start], [nil, 7])
+      rows = combinations.map do |status, step, assigned|
+        { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset_id,
+          status: status, wf_step: step, assigned_to_id: assigned }
+      end
+      entries.client { |db| db[:entries].multi_insert(rows) }
+      read_summary
+      expect(last_response.status).to eq(200), last_response.body
+      counts = JSON.parse(last_response.body).fetch("meta")
+      expect(counts).to include(
+        { "total" => 30, "completed" => 6, "errored" => 6, "processing" => 6, "open" => 12,
+          "annotation" => 4, "review" => 4, "pending_annotation" => 2, "pending_review" => 2 }
+      )
+      expect(counts["annotation"] - counts["pending_annotation"]).to eq(2)
+      expect(counts["review"] - counts["pending_review"]).to eq(2)
+      classified = counts.values_at("completed", "errored", "processing", "annotation", "review").sum
+      expect(counts["total"] - classified).to eq(4)
+      filters = {
+        open: %w[pending in_progress], not_ready: ["processing"], error: ["errored"], completed: ["completed"]
+      }
+      results = filters.transform_values do |statuses|
+        get "/entries?#{Rack::Utils.build_nested_query(filter: { project_id: project_id, status__in: statuses })}"
+        expect(last_response.status).to eq(200), last_response.body
+        JSON.parse(last_response.body).fetch("data").map { |row| row.fetch("id") }
+      end
+      expect(results.transform_values(&:size)).to eq(open: 12, not_ready: 6, error: 6, completed: 6)
+      expect(results.values.flatten.uniq.size).to eq(30)
+      processing_ids = rows.select { |row| row[:status] == "processing" }.map { |row| row[:id] }
+      expect(results[:not_ready]).to match_array(processing_ids)
+      expect(counts["total"] - counts["completed"]).to eq(24)
+    end
+
+    it "does not include an unknown legacy status in the Open count" do
+      entries.client do |db|
+        db[:entries].insert(
+          { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset_id,
+            status: "legacy_status", wf_step: "annotate" }
+        )
+      end
+      read_summary
+      expect(last_response.status).to eq(200), last_response.body
+      expect(JSON.parse(last_response.body).fetch("meta")).to include("total" => 1, "open" => 0, "processing" => 0)
+      filters = { project_id: project_id, status__in: %w[pending in_progress] }
+      get "/entries?#{Rack::Utils.build_nested_query(filter: filters)}"
+      expect(last_response.status).to eq(200), last_response.body
+      expect(JSON.parse(last_response.body).fetch("data")).to be_empty
+    end
+
+    it "counts and paginates more than 1000 processing Entries independently of assignment" do
+      entries.client do |db|
+        db[:entries].multi_insert(
+          Array.new(1001) do |index|
+            { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset_id,
+              status: "processing", wf_step: "annotate", assigned_to_id: index.even? ? 7 : nil }
+          end
+        )
+      end
+      read_summary
+      expect(last_response.status).to eq(200), last_response.body
+      expect(JSON.parse(last_response.body).fetch("meta")).to include(
+        "total" => 1001,
+        "processing" => 1001,
+        "open" => 0,
+        "annotation" => 0
+      )
+      [100, 101, 102].each do |page|
+        get "/entries?#{Rack::Utils.build_nested_query(
+          filter: { project_id: project_id, status__in: ["processing"] },
+          page: { number: page, size: 10 },
+          sort: "id",
+          count: true
+        )}"
+        expect(last_response.status).to eq(200), last_response.body
+        expect(JSON.parse(last_response.body).fetch("data").size).to eq({ 100 => 10, 101 => 1, 102 => 0 }.fetch(page))
+      end
     end
 
     it "returns exact counts above the list count cap" do
@@ -458,6 +537,24 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
       read_summary
       expect(last_response.status).to eq(200), last_response.body
       expect(JSON.parse(last_response.body).fetch("meta")).to include("total" => 2005, "completed" => 2005)
+    end
+
+    it "returns exact counts for more than 1000 errored Entries" do
+      entries.client do |db|
+        db[:entries].multi_insert(
+          Array.new(1001) do
+            { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset_id,
+              status: "errored", wf_step: "annotate" }
+          end
+        )
+      end
+      read_summary
+      expect(last_response.status).to eq(200), last_response.body
+      expect(JSON.parse(last_response.body).fetch("meta")).to eq(
+        { "total" => 1001, "completed" => 0, "review" => 0, "annotation" => 0,
+          "reviewing" => 0, "annotating" => 0, "errored" => 1001,
+          "processing" => 0, "pending_annotation" => 0, "pending_review" => 0, "open" => 0 }
+      )
     end
 
     ["review", "annotate"].each do |step|
@@ -488,12 +585,12 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
       )
       read_summary
       expect(JSON.parse(last_response.body).fetch("meta").values).to all(eq(0))
-      entries.create(project_id: project_id, dataset_id: dataset_id, status: "pending", wf_step: "annotate")
+      entries.create(project_id: project_id, dataset_id: dataset_id, status: "errored", wf_step: "annotate")
       entries.create(project_id: project_id, dataset_id: other, status: "completed", wf_step: "done")
       read_summary(project_id: project_id, dataset_id: [dataset_id])
-      expect(JSON.parse(last_response.body).fetch("meta")).to include("total" => 1, "completed" => 0)
+      expect(JSON.parse(last_response.body).fetch("meta")).to include("total" => 1, "completed" => 0, "errored" => 1)
       read_summary(project_id: project_id, dataset_id: [dataset_id, other])
-      expect(JSON.parse(last_response.body).fetch("meta")).to include("total" => 2, "completed" => 1)
+      expect(JSON.parse(last_response.body).fetch("meta")).to include("total" => 2, "completed" => 1, "errored" => 1)
     end
 
     [{}, { project_id: "invalid" }, { dataset_id: [""] }, { dataset_id: "bad" },

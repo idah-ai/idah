@@ -53,8 +53,14 @@ RSpec.describe Entry, database: true do
           wf_step: "done",
           assigned_to_id: 5
         )
+        entry_repo.create(
+          project_id: project_id, dataset_id: dataset_id, status: "errored", wf_step: "annotate", assigned_to_id: 5
+        )
         counts = described_class.new(current_auth_context).summary(project_id: project_id)
-        expect(counts).to eq(total: 1, completed: 0, review: 0, annotation: 1, reviewing: 0, annotating: 1)
+        expect(counts).to eq(
+          { total: 1, completed: 0, review: 0, annotation: 1, reviewing: 0, annotating: 1, errored: 0,
+            processing: 0, pending_annotation: 1, pending_review: 0, open: 1 }
+        )
       end
     end
 

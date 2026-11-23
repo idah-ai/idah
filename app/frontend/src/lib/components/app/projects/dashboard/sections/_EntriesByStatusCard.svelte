@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { PROJECT_DASHBOARD_WORKFLOW_GROUPS } from "@/components/app/projects/dashboard/project-dashboard.constants";
   import * as Card from "$lib/components/ui/card/index";
   import {
     PROJECT_DASHBOARD_CONTROLLER_KEY,
@@ -36,8 +37,8 @@
       <div class="flex flex-col gap-4">
         <Skeleton class="h-4 w-full" />
 
-        <div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-          {#each Array.from({ length: 5 }) as _, index (index)}
+        <div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+          {#each PROJECT_DASHBOARD_WORKFLOW_GROUPS as _, index (index)}
             <div class="grid gap-2">
               <Skeleton class="h-3 w-24" />
               <Skeleton class="h-6 w-4" />

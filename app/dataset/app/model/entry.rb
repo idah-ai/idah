@@ -83,6 +83,11 @@ module Entry
         counts = {
           total: nil,
           completed: { status: "completed" },
+          errored: { status: "errored" },
+          processing: { status: "processing" },
+          pending_annotation: { status: "pending", wf_step: "annotate" },
+          pending_review: { status: "pending", wf_step: "review" },
+          open: workflow,
           review: workflow.merge(wf_step: "review"),
           annotation: workflow.merge(wf_step: "annotate"),
           reviewing: Sequel.&(workflow.merge(wf_step: "review"), Sequel.~(assigned_to_id: nil)),
