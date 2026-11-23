@@ -21,6 +21,8 @@
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
+  import type { ProjectMemberScope } from "@/security/types";
+
   // Props
   interface Props {
     children: Snippet;
@@ -61,7 +63,7 @@
 
     try {
       const [canReadExport, canReadDashboard] = await Promise.all([
-        currentAccount?.can("read", "sync:exports", ["as_org_owner", as_project_owner]),
+        currentAccount?.canOnProject("read", "sync:exports", projectId, "project_owner"),
         currentAccount?.can("read", "dataset:datasets", ["as_org_owner", as_project_owner]),
       ]);
       tabs = projectTabs.filter(

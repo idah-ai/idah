@@ -221,9 +221,11 @@ export class ProjectDashboardController {
     if (this.summaryLoading) return "";
     const summary = this.summary;
     if (!summary) return "Workflow breakdown unavailable";
-    const parts = [`${summary.review.toLocaleString()} Reviewing`, `${summary.annotation.toLocaleString()} Annotating`];
-    const outsideWorkflow = summary.total - summary.completed - summary.review - summary.annotation;
-    if (outsideWorkflow) parts.push(`${outsideWorkflow.toLocaleString()} outside active workflow`);
+    const parts = [
+      `${summary.review.toLocaleString()} In reviewing`,
+      `${summary.annotation.toLocaleString()} In annotating`,
+    ];
+
     return parts.join(" · ");
   }
 
