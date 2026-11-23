@@ -4,6 +4,7 @@
     getProjectDashboardController,
   } from "@/components/app/projects/dashboard/project-dashboard-controller.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import { ArrowDownIcon, ArrowUpIcon } from "@lucide/svelte";
 
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
 
@@ -20,6 +21,12 @@
 >
   Total time spent
   {#if controller.entryProgressSort[0]?.endsWith("total_time_spent")}
-    <span class="ml-1">{sortedDesc ? "↓" : "↑"}</span>
+    <span class="ml-1">
+      {#if sortedDesc}
+        <ArrowDownIcon />
+      {:else}
+        <ArrowUpIcon />
+      {/if}
+    </span>
   {/if}
 </Button>
