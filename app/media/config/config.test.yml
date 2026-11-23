@@ -28,6 +28,10 @@ plugins:
       url: <%= ENV.fetch("REDIS_STREAM_URL") %>
       max_connections: 10
 idah:
+  # Disable the membership cache in tests so specs stay deterministic; the cache
+  # and invalidation specs enable it explicitly.
+  project_membership_cache:
+    enabled: false
   # Define where mounted plugins are stored.
   # Plugin system is managed directly by the application,
   # except for manual mounting and dev mode.

@@ -65,17 +65,14 @@ RSpec.describe AccountsExpo, type: :exposition, as: :system do
     expect(record.email).to eq "test@example.com"
   end
 
-  it "create an account" do
-    expect(service).to receive(:create).and_return(account_record)
-    post "/accounts", account_data
+  it "invite an account" do
+    expect(service).to receive(:invite) do |args|
+      expect(args[:email]).to eq "test@example.com"
+      account_record
+    end
 
-    expect(last_response.status).to eq 201
-    body = JSON.parse(last_response.body, symbolize_names: true)
-    created_record = deserialize(body)
-
-    expect(created_record.id).to eq "1"
-    expect(created_record.name).to eq "Test User"
-    expect(created_record.email).to eq "test@example.com"
+    post "/accounts/invite", { email: "test@example.com", role_name: "user" }
+    expect(last_response.status).to eq 200
   end
 
   it "update an account" do
@@ -109,7 +106,7 @@ RSpec.describe AccountsExpo, type: :exposition, as: :system do
   end
 
   it "resend account invitation" do
-    expect(service).to receive(:resend_pending_invitations) do |id|
+    expect(service).to receive(:resend_invitation) do |id|
       expect(id).to eq "1"
     end
 
@@ -119,8 +116,13 @@ RSpec.describe AccountsExpo, type: :exposition, as: :system do
   end
 
   describe "on organization deleted" do
-    it "removes the organization from the account role scope" do
-      expect(service).to receive(:remove_org_from_account_role_scope).with("1")
+    it "removes the organization from the account role scope, propagating the actor" do
+      metadata = {
+        actor_account_id: 1,
+        actor_account_email: "admin@example.com",
+        actor_account_role_name: "admin"
+      }
+      expect(service).to receive(:remove_org_from_account_role_scope).with("1", metadata)
 
       Verse.publish_resource_event(
         resource_type: "iam:organizations",
@@ -128,6 +130,7 @@ RSpec.describe AccountsExpo, type: :exposition, as: :system do
         event: "deleted",
         payload: {
           resource_id: "1",
+          metadata:
         }
       )
     end
