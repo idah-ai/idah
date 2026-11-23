@@ -1,15 +1,20 @@
+import { format, parseISO } from "date-fns";
 import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
-import { isOverdue } from "@/utils/date";
+import { getDeliveryStatusBadge, isOverdue, type DeliveryStatusBadgeProps } from "@/utils/date";
 import { showErrorToast } from "@/utils/error/error.toasts";
 
 import { EntryRecord } from "@/data/model/dataset/entries/record";
 import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
 import type { DataSourceOptions } from "@/data/DataSource";
-import { type DatasetStatusBadgeProps, datasetsStatuses } from "@/data/model/dataset/datasets/constants";
+import {
+  type DatasetStatusBadgeProps,
+  type DatasetDeliveryBreakdown,
+  datasetsStatuses,
+} from "@/data/model/dataset/datasets/constants";
 import type { RecordResponse } from "@/data/model/types";
 
 import type { Hash } from "@/utils/types";
@@ -26,6 +31,7 @@ export class DatasetRecord extends Record {
   @field() public status!: string;
   @field() public progress!: number;
   @field() public entries_total_count!: number;
+  @field() public entries_completed_count!: number;
   @field() public readonly syncing_stats!: boolean;
   @field() public updated_at!: Date;
   @field() public created_at!: string;
@@ -33,6 +39,14 @@ export class DatasetRecord extends Record {
 
   @relationship() public project!: ProjectRecord;
   @relationship() public entries!: EntryRecord[];
+
+  public get formattedDeliveryDate(): string | null {
+    return this.delivery_date ? format(parseISO(this.delivery_date), "MMM dd, yyyy") : null;
+  }
+
+  public get deliveryStatusBadge(): DeliveryStatusBadgeProps {
+    return getDeliveryStatusBadge(this.delivery_date, this.status === "completed");
+  }
 
   public get statusBadge(): DatasetStatusBadgeProps {
     const defaultBadgeProps: DatasetStatusBadgeProps = {
@@ -62,6 +76,7 @@ RecordFactory.registerTypes(DatasetRecord);
 export const datasetBasePath: string = `/api/v1/dataset/datasets`;
 
 interface DatasetsCustomMethods {
+  deliveryBreakdown(projectId: string, datasetIds: string[], day: string): Promise<DatasetDeliveryBreakdown>;
   duplicate(id: string, payload?: Hash, options?: DataSourceOptions): Promise<RecordResponse<DatasetRecord>>;
   updateFeedbackConfiguration(params: {
     id: string;
@@ -74,6 +89,23 @@ export const datasetsBackendDataSource = createBackendDataSource<DatasetRecord, 
   DatasetRecord,
   datasetBasePath,
   {
+    async deliveryBreakdown(projectId: string, datasetIds: string[], day: string): Promise<DatasetDeliveryBreakdown> {
+      const response = await fetch(
+        resourcePath(datasetBasePath, "delivery_breakdown", {
+          filter: { project_id: projectId, ...(datasetIds.length ? { dataset_id: datasetIds } : {}) },
+          day,
+        }),
+      );
+      const body = await response.json().catch((reason) => {
+        if (!response.ok) throw parseSingleElementError({ status: response.status, errors: [] });
+        throw reason;
+      });
+      if (!response.ok || body?.errors) {
+        throw parseSingleElementError({ status: response.status, errors: body?.errors ?? [] });
+      }
+      if (!body?.meta) throw new Error("Delivery breakdown unavailable.");
+      return body.meta;
+    },
     async duplicate(id: string, payload?: Hash, options?: DataSourceOptions): Promise<RecordResponse<DatasetRecord>> {
       // Cache Management
       const cacheIndexKey = resourcePath(datasetBasePath, null, undefined);
