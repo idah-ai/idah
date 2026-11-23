@@ -1,10 +1,17 @@
 // ---------------------------------------------------------------------------
-// core-stats.test.ts — core entry stats count only live annotations
+// core-stats.test.ts — core entry stats count only live annotations and
+// exclude plugin-declared system shapes (e.g. idah-image's "done-area").
 // ---------------------------------------------------------------------------
 
-import { describe, it, expect, vi } from "vitest";
-import { computeCoreStats } from "./core-stats";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { computeCoreStats, systemShapeKeys } from "./core-stats";
 import type { IIdahDriverV2, IAnnotationRecord } from "../../types";
+
+const { modalitiesMock } = vi.hoisted(() => ({ modalitiesMock: vi.fn() }));
+
+vi.mock("@/data/model/setting/plugin/record", () => ({
+  pluginsBackendDataSource: { modalities: modalitiesMock },
+}));
 
 function makeRecord(overrides: Partial<IAnnotationRecord> = {}): IAnnotationRecord {
   return {
@@ -32,7 +39,31 @@ function makeDriver(annotations: IAnnotationRecord[]): IIdahDriverV2 {
   } as unknown as IIdahDriverV2;
 }
 
+describe("systemShapeKeys", () => {
+  it("builds modality_id:shape_name keys from the modalities data", () => {
+    const keys = systemShapeKeys({
+      "idah-image": {
+        label: "Image",
+        description: null,
+        system_shapes: { "done-area": { label: "Done Area" } },
+      },
+      "idah-video": { label: "Video", description: null },
+    });
+
+    expect([...keys]).toEqual(["idah-image:done-area"]);
+  });
+
+  it("returns an empty set when no modality declares system_shapes", () => {
+    const keys = systemShapeKeys({ "idah-video": { label: "Video", description: null } });
+    expect(keys.size).toBe(0);
+  });
+});
+
 describe("computeCoreStats", () => {
+  beforeEach(() => {
+    modalitiesMock.mockResolvedValue({ modalities: {}, plugins: {} });
+  });
+
   it("counts only live annotations, ignoring tombstones", async () => {
     const live = makeRecord({ id: "live-1", category: "vehicles/car" });
     const tomb = makeRecord({ id: "tomb-1", category: "vehicles/truck", deleted_at: new Date("2026-01-02T00:00:00Z") });
@@ -47,5 +78,51 @@ describe("computeCoreStats", () => {
     const truck = stats.find((s) => s.key === "category.vehicles/truck.count");
     expect(car?.value).toBe("1");
     expect(truck?.value).toBe("0");
+  });
+
+  it("excludes system-shape annotations from every count", async () => {
+    modalitiesMock.mockResolvedValue({
+      modalities: {
+        "idah-image": {
+          label: "Image",
+          description: null,
+          system_shapes: { "done-area": { label: "Done Area" } },
+        },
+      },
+      plugins: {},
+    });
+
+    const doneArea = makeRecord({ id: "done-1", shape_type: "idah-image:done-area", category: "done_area" });
+    const box = makeRecord({ id: "box-1", category: "vehicles/car" });
+    const driver = makeDriver([doneArea, box]);
+
+    const stats = await computeCoreStats(driver);
+
+    expect(stats.find((s) => s.key === "annotation.count")?.value).toBe("1");
+    expect(stats.find((s) => s.key === "orphan_category.count")?.value).toBe("0");
+    expect(stats.find((s) => s.key === "shape.done-area.count")).toBeUndefined();
+    expect(stats.find((s) => s.key === "category.done_area.count")).toBeUndefined();
+    expect(stats.find((s) => s.key === "shape.bounding-box.count")?.value).toBe("1");
+  });
+
+  it("reports 0 annotations when only system-shape annotations are present", async () => {
+    modalitiesMock.mockResolvedValue({
+      modalities: {
+        "idah-image": {
+          label: "Image",
+          description: null,
+          system_shapes: { "done-area": { label: "Done Area" } },
+        },
+      },
+      plugins: {},
+    });
+
+    const doneArea = makeRecord({ id: "done-1", shape_type: "idah-image:done-area", category: "done_area" });
+    const driver = makeDriver([doneArea]);
+
+    const stats = await computeCoreStats(driver);
+
+    expect(stats.find((s) => s.key === "annotation.count")?.value).toBe("0");
+    expect(stats.find((s) => s.key === "orphan_category.count")?.value).toBe("0");
   });
 });
