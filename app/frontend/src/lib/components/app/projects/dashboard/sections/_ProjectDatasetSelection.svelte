@@ -50,7 +50,7 @@
           disabled={controller.loading || controller.denied}
           onclick={() => controller.showAllDatasets()}
         >
-          All datasets ({controller.selectedDatasetIds.length})
+          All selected datasets ({controller.selectedDatasetIds.length})
         </Button>
 
         <Separator orientation="vertical" class="mx-1 h-4" />

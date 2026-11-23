@@ -33,7 +33,7 @@
 
     <div class="flex w-full items-center justify-between gap-2">
       <Text size="xs" class="text-muted-foreground">
-        {dataset.entries_completed_count.toLocaleString()} of {dataset.entries_total_count.toLocaleString()} completed
+        {dataset.entries_completed_count.toLocaleString()} of {dataset.entries_total_count.toLocaleString()} entries completed
       </Text>
 
       <Text size="xs" weight="semibold">{percentage}%</Text>

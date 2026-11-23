@@ -79,7 +79,10 @@ export class ProjectDashboardController {
 
       if (this.scopeReady && !this.denied) {
         if (changed) void this.loadAttention();
-        if (this.completionHistory.zone !== Intl.DateTimeFormat().resolvedOptions().timeZone)
+        if (
+          (changed && this.automaticCompletionRange) ||
+          this.completionHistory.zone !== Intl.DateTimeFormat().resolvedOptions().timeZone
+        )
           void this.loadCompletionHistory();
       }
     });
@@ -226,10 +229,7 @@ export class ProjectDashboardController {
     if (this.summaryLoading) return "";
     const summary = this.summary;
     if (!summary) return "Workflow breakdown unavailable";
-    const parts = [
-      `${summary.review.toLocaleString()} in review`,
-      `${summary.annotation.toLocaleString()} in annotation`,
-    ];
+    const parts = [`${summary.review.toLocaleString()} Reviewing`, `${summary.annotation.toLocaleString()} Annotating`];
     const outsideWorkflow = summary.total - summary.completed - summary.review - summary.annotation;
     if (outsideWorkflow) parts.push(`${outsideWorkflow.toLocaleString()} outside active workflow`);
     return parts.join(" · ");
@@ -341,9 +341,7 @@ export class ProjectDashboardController {
 
   public get attention(): number | null {
     const breakdown = this.attentionBreakdown;
-    return breakdown
-      ? breakdown.overdue + breakdown.due_today + breakdown.due_tomorrow + (breakdown.upcoming?.count ?? 0)
-      : null;
+    return breakdown ? breakdown.overdue + breakdown.due_today + breakdown.due_tomorrow : null;
   }
 
   public get deliveryDescription(): string {
@@ -357,13 +355,10 @@ export class ProjectDashboardController {
     if (!breakdown) return "Delivery breakdown unavailable for this scope";
 
     const parts: string[] = [];
-    if (breakdown.overdue) parts.push(`${breakdown.overdue.toLocaleString()} overdue`);
-    if (breakdown.due_today) parts.push(`${breakdown.due_today.toLocaleString()} due today`);
-    if (breakdown.due_tomorrow) parts.push(`${breakdown.due_tomorrow.toLocaleString()} due tomorrow`);
-    if (breakdown.upcoming) {
-      const days = differenceInCalendarDays(parseISO(breakdown.upcoming.date), this.reportingDay);
-      parts.push(`${breakdown.upcoming.count.toLocaleString()} due in ${days} days`);
-    }
+    if (breakdown.overdue) parts.push(`${breakdown.overdue.toLocaleString()} Overdue`);
+    if (breakdown.due_today) parts.push(`${breakdown.due_today.toLocaleString()} Due today`);
+    if (breakdown.due_tomorrow) parts.push(`${breakdown.due_tomorrow.toLocaleString()} Due tomorrow`);
+
     return parts.join(" · ") || "No overdue or upcoming delivery dates";
   }
   public attentionLoading = $state(false);
@@ -417,6 +412,7 @@ export class ProjectDashboardController {
     error: "",
   });
   private completionGeneration = 0;
+  private automaticCompletionRange = true;
 
   public get completionToday(): string {
     return format(this.reportingDay, "yyyy-MM-dd");
@@ -460,6 +456,7 @@ export class ProjectDashboardController {
 
   public async applyCompletionRange(range: CompletionRange): Promise<void> {
     if (this.disposed || this.denied || !this.isCompletionRangeValid(range)) return;
+    this.automaticCompletionRange = false;
     this.completionRange = { ...range };
     const days = differenceInCalendarDays(parseISO(range.end), parseISO(range.start)) + 1;
     this.completionGrouping = days <= 14 ? "Day" : days <= 92 ? "Week" : "Month";
@@ -565,6 +562,7 @@ export class ProjectDashboardController {
     const request = ++this.completionGeneration;
     const ids = this.effectiveDatasetIds;
     const range = { ...this.completionRange };
+    const automatic = this.automaticCompletionRange;
     const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const current = (): boolean =>
@@ -575,12 +573,13 @@ export class ProjectDashboardController {
     this.completionHistory = { status: "loading", daily: {}, zone, error: "" };
 
     try {
-      const result = await entriesBackendDataSource.completionHistory(this.projectId, ids, {
-        from: range.start,
-        to: range.end,
-        tz: zone,
-      });
+      const result = await entriesBackendDataSource.completionHistory(
+        this.projectId,
+        ids,
+        automatic ? { tz: zone } : { from: range.start, to: range.end, tz: zone },
+      );
       if (!current()) return;
+      if (automatic) this.completionRange = { start: result.from, end: result.to };
       this.completionHistory = {
         status: Object.keys(result.daily).length ? "ready" : "empty",
         daily: result.daily,
@@ -598,7 +597,7 @@ export class ProjectDashboardController {
     }
   }
 
-  // ==================== Open Entries ====================
+  // ==================== Progress by entry ====================
 
   public entryTab: OpenEntryTab = $state("all");
 

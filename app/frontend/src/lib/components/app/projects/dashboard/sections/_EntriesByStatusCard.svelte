@@ -76,7 +76,7 @@
               <div class="flex items-baseline gap-1 whitespace-nowrap">
                 <Text size="h2" weight="semibold">{group.value.toLocaleString()}</Text>
                 <Text size="xs" class="text-muted-foreground">
-                  {distribution.total ? ((group.value / distribution.total) * 100).toFixed(2) : "0.00"}%
+                  ({distribution.total ? ((group.value / distribution.total) * 100).toFixed(2) : "0.00"}%)
                 </Text>
               </div>
             </div>

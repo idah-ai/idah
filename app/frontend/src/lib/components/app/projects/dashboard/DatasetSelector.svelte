@@ -25,10 +25,10 @@
   searchKeyWithOperation="name__match"
   searchable
   searchPlaceholder="Search dataset by name…"
+  emptyChoicePlaceholder="No dataset found."
   placeholder="All datasets"
   clearable
   maxSelections={100}
-  emptyChoicePlaceholder="No dataset found."
   onSelected={(choices) => select(choices.map((choice) => String(choice.value)))}
 >
   {#snippet slotTriggerValues({ selectedChoices })}

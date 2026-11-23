@@ -26,6 +26,7 @@
   interface Props extends MultipleSelectDataSourceFieldBaseProps<T> {
     values: Array<string | number>;
     maxSelections?: number;
+    emptyChoicePlaceholder?: string;
   }
   let {
     displayKey,

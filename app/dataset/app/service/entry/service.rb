@@ -39,11 +39,17 @@ module Entry
       entries.summary(project_id: project_id, dataset_ids: dataset_ids)
     end
 
-    def completion_history(filters, from:, to:, timezone:)
-      start_date = Date.iso8601(from)
-      end_date = Date.iso8601(to)
-      unless start_date.iso8601 == from && end_date.iso8601 == to && (end_date - start_date).to_i.between?(0, 365)
-        raise Verse::Error::ValidationFailed, "Select a valid date range of up to 366 days"
+    def completion_history(filters, timezone:, from: nil, to: nil)
+      if from.nil? != to.nil?
+        raise Verse::Error::ValidationFailed, "Provide both from and to, or neither"
+      end
+
+      if from
+        start_date = Date.iso8601(from)
+        end_date = Date.iso8601(to)
+        unless start_date.iso8601 == from && end_date.iso8601 == to && (end_date - start_date).to_i.between?(0, 365)
+          raise Verse::Error::ValidationFailed, "Select a valid date range of up to 366 days"
+        end
       end
 
       TZInfo::Timezone.get(timezone)

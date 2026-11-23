@@ -23,7 +23,7 @@ class DatasetsExpo < BaseExpo
   expose on_http(:get, "/delivery_breakdown") do
     desc "Dataset delivery counts for the viewer's local reporting date"
     input do
-      field :filter, PROJECT_DATASET_FILTER_SCHEMA
+      field :filter, Schemas::ProjectDatasetFilter
       field :day, String
     end
     output do
