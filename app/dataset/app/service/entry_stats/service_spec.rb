@@ -177,6 +177,54 @@ RSpec.describe EntryStats::Service, database: true do
       expect(stats).to be_empty
     end
 
+    context "when the annotation is a system shape" do
+      before do
+        allow(EntryStats::SystemShapes).to receive(:for_all).and_return(Set["idah-image:done-area"])
+      end
+
+      # A system shape (e.g. a done area) is never counted, so its category
+      # (here not configured) cannot make it an orphan.
+      it "skips even though its category is not configured" do
+        stat_repo.delete_by_entry_id(entry_id)
+        expect(EntryStats::Recompute).not_to receive(:orphan_only)
+
+        subject.recompute_from_annotation(
+          entry_id: entry_id,
+          dataset_id: ds_id,
+          new_category: "done_area",
+          shape_type: "idah-image:done-area"
+        )
+
+        expect(stat_repo.index({ entry_id__eq: entry_id })).to be_empty
+      end
+
+      it "skips even when the entry already has orphans" do
+        expect(EntryStats::Recompute).not_to receive(:orphan_only)
+
+        subject.recompute_from_annotation(
+          entry_id: entry_id,
+          dataset_id: ds_id,
+          new_category: "done_area",
+          shape_type: "idah-image:done-area"
+        )
+
+        orphan_stat = stat_repo.index({ entry_id__eq: entry_id, key__eq: "orphan_category.count" }).first
+        expect(orphan_stat.value).to eq("1") # unchanged
+      end
+
+      it "still recomputes for a drawn shape with an unconfigured category" do
+        stat_repo.delete_by_entry_id(entry_id)
+        expect(EntryStats::Recompute).to receive(:orphan_only)
+
+        subject.recompute_from_annotation(
+          entry_id: entry_id,
+          dataset_id: ds_id,
+          new_category: "bird",
+          shape_type: "idah-image:rect"
+        )
+      end
+    end
+
     it "skips when new_category is nil (annotation update without category change)" do
       subject.recompute_from_annotation(
         entry_id: entry_id,
