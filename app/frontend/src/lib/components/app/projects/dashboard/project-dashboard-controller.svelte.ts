@@ -221,8 +221,8 @@ export class ProjectDashboardController {
     const summary = this.summary;
     if (!summary) return "Workflow breakdown unavailable";
     const parts = [
-      `${summary.review.toLocaleString()} In reviewing`,
-      `${summary.annotation.toLocaleString()} In annotating`,
+      `${summary.review.toLocaleString()} In review`,
+      `${summary.annotation.toLocaleString()} In annotation`,
     ];
 
     return parts.join(" · ");
@@ -450,6 +450,8 @@ export class ProjectDashboardController {
 
   public async applyCompletionRange(range: CompletionRange): Promise<void> {
     if (this.disposed || this.denied || !this.isCompletionRangeValid(range)) return;
+    const days = differenceInCalendarDays(parseISO(range.end), parseISO(range.start)) + 1;
+    this.completionGrouping = days <= 14 ? "Day" : days <= 92 ? "Week" : "Month";
     this.automaticCompletionRange = false;
     this.completionRange = { ...range };
     this.clearCompletionHistory();

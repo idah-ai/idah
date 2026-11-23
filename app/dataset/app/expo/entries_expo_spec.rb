@@ -445,7 +445,7 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
       expect(last_response.status).to eq(200), last_response.body
       expect(JSON.parse(last_response.body)).to eq(
         "meta" => { "total" => 7, "completed" => 1, "review" => 2,
-                    "annotation" => 2, "reviewing" => 1, "annotating" => 1, "errored" => 1,
+                    "annotation" => 2, "errored" => 1,
                     "processing" => 1, "pending_annotation" => 1, "pending_review" => 1, "open" => 4 }
       )
     end
@@ -552,7 +552,7 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
       expect(last_response.status).to eq(200), last_response.body
       expect(JSON.parse(last_response.body).fetch("meta")).to eq(
         { "total" => 1001, "completed" => 0, "review" => 0, "annotation" => 0,
-          "reviewing" => 0, "annotating" => 0, "errored" => 1001,
+          "errored" => 1001,
           "processing" => 0, "pending_annotation" => 0, "pending_review" => 0, "open" => 0 }
       )
     end
@@ -570,8 +570,8 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
         read_summary
         expect(last_response.status).to eq(200), last_response.body
         counts = JSON.parse(last_response.body).fetch("meta")
-        total_key, assigned_key = step == "review" ? %w[review reviewing] : %w[annotation annotating]
-        expect(counts).to include("total" => 1001, total_key => 1001, assigned_key => 1001)
+        total_key, pending_key = step == "review" ? %w[review pending_review] : %w[annotation pending_annotation]
+        expect(counts).to include("total" => 1001, "open" => 1001, total_key => 1001, pending_key => 0)
       end
     end
 

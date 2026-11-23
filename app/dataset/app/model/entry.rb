@@ -89,9 +89,7 @@ module Entry
           pending_review: { status: "pending", wf_step: "review" },
           open: workflow,
           review: workflow.merge(wf_step: "review"),
-          annotation: workflow.merge(wf_step: "annotate"),
-          reviewing: Sequel.&(workflow.merge(wf_step: "review"), Sequel.~(assigned_to_id: nil)),
-          annotating: Sequel.&(workflow.merge(wf_step: "annotate"), Sequel.~(assigned_to_id: nil))
+          annotation: workflow.merge(wf_step: "annotate")
         }
         collection.select(
           *counts.map do |name, condition|
