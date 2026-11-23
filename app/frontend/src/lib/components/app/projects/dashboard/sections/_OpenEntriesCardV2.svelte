@@ -99,7 +99,6 @@
                       ? (controller.summary?.errored.toLocaleString() ?? "-")
                       : (controller.summary?.completed.toLocaleString() ?? "-")})
             </TabsTrigger>
-
           {/each}
         </TabsList>
 
