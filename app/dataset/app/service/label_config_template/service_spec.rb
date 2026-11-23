@@ -86,6 +86,7 @@ RSpec.describe LabelConfigTemplate::Service, database: true do
       expect(record.organization_id).to eq(1)
       expect(record.created_by_id).to eq(1)
       expect(record.updated_by_id).to eq(1)
+      expect(subject.auth_context.checked?).to be(true)
     end
 
     it "can create in any organization" do

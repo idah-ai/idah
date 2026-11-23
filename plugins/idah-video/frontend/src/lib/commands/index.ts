@@ -91,6 +91,7 @@ import { register as registerModeSelect } from "./mode/select";
 import { register as registerModeBoundingBox } from "./mode/bounding_box";
 import { register as registerModePolygon } from "./mode/polygon";
 import { register as registerSnapMagneticToggle } from "./snap/magnetic_toggle";
+import { register as registerHistoryToggle } from "./history/toggle";
 import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
 import { hasConfig } from "$idah/v2/utils";
 /**
@@ -172,4 +173,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
 
   // ── Snap ─────────────────────────────────────────────────────────────
   registerSnapMagneticToggle(driver);
+
+  // ── History ───────────────────────────────────────────────────────────
+  registerHistoryToggle(driver);
 }

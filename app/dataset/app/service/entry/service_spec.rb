@@ -10,6 +10,7 @@ RSpec.describe Entry::Service, database: true do
   let(:repo) { Entry::Repository.new(auth_context) }
   let(:project_repo) { Project::Repository.new(auth_context) }
   let(:dataset_repo) { Dataset::Repository.new(auth_context) }
+  let(:project_member_repo) { ProjectMember::Repository.new(auth_context) }
 
   let!(:project_id) do
     project_repo.create(
@@ -1076,6 +1077,79 @@ RSpec.describe Entry::Service, database: true do
           .to raise_error(Verse::Error::ValidationFailed, /Invalid reopen target step/)
       end
     end
+
+    context "as org_owner with a membership on a foreign project", as: :org_owner do
+      subject { described_class.new(current_auth_context) }
+
+      let(:foreign_project_id) do
+        project_repo.create(name: "Foreign Project", created_by_email: "system@example.com", organization_id: 999)
+      end
+      let(:foreign_dataset_id) do
+        dataset_repo.create(
+          name: "Foreign Dataset",
+          project_id: foreign_project_id,
+          modality: "video",
+          workflow_configuration: {},
+          labeling_configuration: {}
+        )
+      end
+      let(:foreign_completed_entry) do
+        repo.create(
+          project_id: foreign_project_id,
+          dataset_id: foreign_dataset_id,
+          resource: "foreign-completed.mp4",
+          status: "completed",
+          wf_step: "done",
+          assigned_to_id: current_auth_context.metadata[:id],
+          submitted_by_id: 42,
+          submitted_by_email: "annotator@example.com",
+          reviewed_by_id: 43,
+          reviewed_by_email: "reviewer@example.com"
+        )
+      end
+
+      context "as a reviewer member of the foreign project" do
+        before do
+          project_member_repo.create(
+            project_id: foreign_project_id,
+            account_id: current_auth_context.metadata[:id],
+            role: "reviewer",
+            name: "Org Owner User",
+            email: "org_owner@example.com",
+            invited_by_id: 1
+          )
+        end
+
+        it "cannot reopen an entry there" do
+          foreign_completed_entry
+
+          expect { subject.reopen(foreign_completed_entry, target_step: "review") }
+            .to raise_error(Verse::Error::RecordNotFound)
+        end
+      end
+
+      context "as a project_owner member of the foreign project" do
+        before do
+          project_member_repo.create(
+            project_id: foreign_project_id,
+            account_id: current_auth_context.metadata[:id],
+            role: "project_owner",
+            name: "Org Owner User",
+            email: "org_owner@example.com",
+            invited_by_id: 1
+          )
+        end
+
+        it "can reopen an entry there" do
+          foreign_completed_entry
+
+          result = subject.reopen(foreign_completed_entry, target_step: "review")
+
+          expect(result.wf_step).to eq("review")
+          expect(result.status).to eq("pending")
+        end
+      end
+    end
   end
 
   describe "#reopen_targets" do
@@ -1374,6 +1448,52 @@ RSpec.describe Entry::Service, database: true do
 
         duplicated_annotations = annotation_repo.index({ entry_id: duplicated_entries.first.id })
         expect(duplicated_annotations.count).to eq(0)
+      end
+
+      it "starts every duplicated annotation at version 1 with its own created history row" do
+        subject.duplicate_entries(
+          new_dataset_id,
+          duping_dataset_id: dataset_id,
+          entry_ids: [entry_processed],
+          with_annotations: true
+        )
+
+        duplicated_entries = repo.index({ dataset_id: new_dataset_id })
+        duplicated_annotation = annotation_repo.index({ entry_id: duplicated_entries.first.id }).first
+
+        expect(duplicated_annotation.version).to eq(1)
+
+        rows = subject.annotations.client do |db|
+          db[:annotation_changes].where(annotation_id: duplicated_annotation.id).all
+        end
+        expect(rows.size).to eq(1)
+        expect(rows.first[:op]).to eq("created")
+        expect(rows.first[:version]).to eq(1)
+      end
+
+      it "records deleted_at / deleted_by_email as + entries when copying a soft-deleted annotation" do
+        annotation_repo.client do |db|
+          db[:annotations].where(entry_id: entry_processed)
+                          .update(deleted_at: Time.now.utc, deleted_by_email: "user@example.com")
+        end
+
+        subject.duplicate_entries(
+          new_dataset_id,
+          duping_dataset_id: dataset_id,
+          entry_ids: [entry_processed],
+          with_annotations: true
+        )
+
+        duplicated_entries = repo.index({ dataset_id: new_dataset_id })
+        duplicated_annotation = annotation_repo.index({ entry_id: duplicated_entries.first.id }).first
+        expect(duplicated_annotation.deleted_at).not_to be_nil
+
+        rows = subject.annotations.client do |db|
+          db[:annotation_changes].where(annotation_id: duplicated_annotation.id).all
+        end
+        changes = rows.first[:changes]
+        expect(changes).to include(["+", "deleted_by_email", nil, "user@example.com"])
+        expect(changes.any? { |c| c[1] == "deleted_at" && c[0] == "+" }).to be(true)
       end
     end
   end
