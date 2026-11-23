@@ -60,14 +60,18 @@
   <Card.Content>
     <Tabs value={controller.entryTab} onValueChange={changeTab}>
       <div class="flex items-center justify-between gap-4">
-        <TabsList>
+        <TabsList class="h-auto flex-wrap">
           {#each PROJECT_DASHBOARD_OPEN_ENTRIES_TABS as { label, value } (value)}
             <TabsTrigger {value}>
               {label} ({value === "all"
                 ? (controller.summary?.total.toLocaleString() ?? "-")
                 : value === "open"
                   ? (controller.openEntriesCount?.toLocaleString() ?? "-")
-                  : (controller.summary?.completed.toLocaleString() ?? "-")})
+                  : value === "not_ready"
+                    ? (controller.summary?.processing.toLocaleString() ?? "-")
+                    : value === "error"
+                      ? (controller.summary?.errored.toLocaleString() ?? "-")
+                      : (controller.summary?.completed.toLocaleString() ?? "-")})
             </TabsTrigger>
           {/each}
         </TabsList>

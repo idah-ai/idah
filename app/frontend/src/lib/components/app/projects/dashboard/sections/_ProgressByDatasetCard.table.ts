@@ -15,7 +15,7 @@ export const columns: DataTableColumnSettings<DatasetRecord> = {
   },
   progress: {
     key: "progress",
-    title: "Progress",
+    title: "Completed entries",
     cellComponent: DatasetProgressCell,
   },
   // annotations: {

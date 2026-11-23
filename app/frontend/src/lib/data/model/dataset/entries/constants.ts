@@ -61,6 +61,11 @@ export const entryWorkflowSteps: EntryWorkflowStepBadgeProps[] = [
 
 export interface EntrySummary {
   total: number;
+  errored: number;
+  processing: number;
+  pending_annotation: number;
+  pending_review: number;
+  open: number;
   completed: number;
   review: number;
   annotation: number;

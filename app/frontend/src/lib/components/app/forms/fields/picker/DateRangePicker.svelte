@@ -4,6 +4,7 @@
   import { CalendarIcon } from "@lucide/svelte";
   import { format, isValid as isValidDate, parseISO } from "date-fns";
   import type { DateRange } from "bits-ui";
+  import { today } from "@/utils/date";
 
   import { Button } from "@/components/ui/button";
   import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -20,6 +21,7 @@
   interface Props {
     value: DateRangeValue;
     presets?: readonly DateRangePreset[];
+    minDate?: string;
     maxDate?: string;
     onApply: (value: DateRangeValue) => void | Promise<void>;
     isValid?: (value: DateRangeValue) => boolean;
@@ -31,6 +33,7 @@
   let {
     value,
     presets = COMPLETION_DATE_PRESETS.map((label) => ({ label, getValue: () => getPresetValue(label) })),
+    minDate,
     maxDate,
     onApply,
     isValid,
@@ -43,19 +46,30 @@
   const desktop = new MediaQuery("(min-width:768px)");
   let open = $state(false);
   let draft: DateRange | undefined = $state();
+  const minimum = $derived(minDate ? parseDate(minDate) : undefined);
   const maximum = $derived(maxDate ? parseDate(maxDate) : undefined);
+  const invalidBounds = $derived(!!minimum && !!maximum && minimum.compare(maximum) > 0);
+  const presetRanges = $derived.by(() => {
+    // Relative preset availability must update when the browser-local day changes.
+    void $today;
+    return presets.map((preset) => ({ preset, range: resolvePreset(preset) }));
+  });
   const valid = $derived(
     !!draft?.start && !!draft.end && validRange({ start: draft.start.toString(), end: draft.end.toString() }),
   );
 
   // Functions
+  function validDate(date: string): boolean {
+    const parsed = parseISO(date);
+    return /^\d{4}-\d{2}-\d{2}$/.test(date) && isValidDate(parsed) && format(parsed, "yyyy-MM-dd") === date;
+  }
+
   function validRange(range: DateRangeValue): boolean {
     return (
-      [range.start, range.end].every((date) => {
-        const parsed = parseISO(date);
-        return /^\d{4}-\d{2}-\d{2}$/.test(date) && isValidDate(parsed) && format(parsed, "yyyy-MM-dd") === date;
-      }) &&
+      !invalidBounds &&
+      [range.start, range.end].every(validDate) &&
       range.start <= range.end &&
+      (!minDate || range.start >= minDate) &&
       (!maxDate || range.end <= maxDate) &&
       (!isValid || isValid(range))
     );
@@ -70,9 +84,19 @@
     draft = next ? { start: parseDate(value.start), end: parseDate(value.end) } : undefined;
   }
 
+  function resolvePreset(preset: DateRangePreset): DateRangeValue | null {
+    const requested = preset.getValue();
+    if (![requested.start, requested.end].every(validDate) || requested.start > requested.end) return null;
+    const range = {
+      start: minDate && requested.start < minDate ? minDate : requested.start,
+      end: maxDate && requested.end > maxDate ? maxDate : requested.end,
+    };
+    return validRange(range) ? range : null;
+  }
+
   function selectPreset(preset: DateRangePreset): void {
-    const range = preset.getValue();
-    draft = { start: parseDate(range.start), end: parseDate(range.end) };
+    const range = resolvePreset(preset);
+    if (range) draft = { start: parseDate(range.start), end: parseDate(range.end) };
   }
 
   function apply(): void {
@@ -105,8 +129,14 @@
     <div class="flex flex-col md:flex-row">
       {#if presets.length}
         <div class="flex max-w-lg flex-wrap gap-1 border-b p-2 md:w-36 md:flex-col md:border-r md:border-b-0">
-          {#each presets as preset (preset.label)}
-            <Button variant="ghost" size="sm" class="justify-start font-normal" onclick={() => selectPreset(preset)}>
+          {#each presetRanges as { preset, range } (preset.label)}
+            <Button
+              variant="ghost"
+              size="sm"
+              class="justify-start font-normal"
+              disabled={!range}
+              onclick={() => selectPreset(preset)}
+            >
               {preset.label}
             </Button>
           {/each}
@@ -114,6 +144,8 @@
       {/if}
       <RangeCalendar
         bind:value={draft}
+        minValue={minimum}
+        disabled={invalidBounds}
         maxValue={maximum}
         numberOfMonths={desktop.current ? 2 : 1}
         locale="en-GB"
