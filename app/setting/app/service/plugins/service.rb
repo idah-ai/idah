@@ -70,6 +70,7 @@ module Plugins
           mod_hash = (output[:modalities][mod_id] ||= {})
           mod_hash[:label] ||= mod.label
           mod_hash[:description] ||= mod.description
+          mod_hash[:system_shapes] ||= mod.system_shapes.transform_values(&:to_h) if mod.system_shapes
 
           plugin_arr = (output[:plugins][mod_id] ||= [])
           plugin_arr << name

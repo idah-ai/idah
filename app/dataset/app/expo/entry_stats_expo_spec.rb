@@ -81,7 +81,8 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
       expect(service).to receive(:recompute_from_annotation).with(
         entry_id: entry_id,
         dataset_id: dataset_id,
-        new_category: "dog"
+        new_category: "dog",
+        shape_type: "idah-image:polygon"
       )
 
       Verse.publish_resource_event(
@@ -90,7 +91,9 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
         event: "updated",
         payload: {
           resource_id: annotation_id,
-          metadata: { old_category: "cat", entry_id: entry_id, dataset_id: dataset_id },
+          metadata: {
+            old_category: "cat", entry_id: entry_id, dataset_id: dataset_id, shape_type: "idah-image:polygon"
+          },
           args: [{ category: "dog" }]
         }
       )
@@ -112,6 +115,32 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
     end
   end
 
+  describe "#compute_stats_on_annotation_created" do
+    let(:annotation_id) { UUIDv7.generate }
+
+    it "passes the shape type from the create args" do
+      expect(service).to receive(:recompute_from_annotation).with(
+        entry_id: entry_id,
+        dataset_id: dataset_id,
+        new_category: "done_area",
+        shape_type: "idah-image:done-area"
+      )
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Annotations,
+        resource_id: annotation_id,
+        event: "created",
+        payload: {
+          resource_id: annotation_id,
+          args: [{
+            entry_id: entry_id, dataset_id: dataset_id,
+            category: "done_area", shape_type: "idah-image:done-area"
+          }]
+        }
+      )
+    end
+  end
+
   describe "#compute_stats_on_annotation_deleted" do
     let(:annotation_id) { UUIDv7.generate }
 
@@ -119,7 +148,8 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
       expect(service).to receive(:recompute_from_annotation).with(
         entry_id: entry_id,
         dataset_id: dataset_id,
-        new_category: nil
+        new_category: nil,
+        shape_type: "idah-image:mask"
       )
 
       Verse.publish_resource_event(
@@ -128,7 +158,7 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
         event: "deleted",
         payload: {
           resource_id: annotation_id,
-          metadata: { entry_id: entry_id, dataset_id: dataset_id },
+          metadata: { entry_id: entry_id, dataset_id: dataset_id, shape_type: "idah-image:mask" },
           args: [{ deleted_by_email: "user@example.com" }]
         }
       )
@@ -142,7 +172,8 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
       expect(service).to receive(:recompute_from_annotation).with(
         entry_id: entry_id,
         dataset_id: dataset_id,
-        new_category: "cat"
+        new_category: "cat",
+        shape_type: "idah-image:mask"
       )
 
       Verse.publish_resource_event(
@@ -151,7 +182,7 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
         event: "restored",
         payload: {
           resource_id: annotation_id,
-          metadata: { entry_id: entry_id, dataset_id: dataset_id, category: "cat" },
+          metadata: { entry_id: entry_id, dataset_id: dataset_id, category: "cat", shape_type: "idah-image:mask" },
           args: []
         }
       )
