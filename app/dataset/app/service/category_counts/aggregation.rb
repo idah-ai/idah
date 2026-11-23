@@ -31,15 +31,17 @@ module CategoryCounts
 
     def self.project_rows(project_id, datasets, rows)
       names = datasets.to_h { |dataset| [dataset.id, dataset.name] }
-      labels = rows.group_by(&:category).transform_values { |group| group.map(&:label).uniq }
-      rows.group_by { |row| [row.category, row.label] }.map do |(category, label), group|
-        # Hash the tuple rather than joining it: category IDs and labels can contain separators.
-        key = Digest::SHA256.hexdigest(JSON.generate([category, label]))
+      rows.group_by(&:category).map do |category, group|
+        # Use the category ID when dataset labels disagree, rather than favoring one dataset's label.
+        labels = group.map(&:label).uniq
+        label = labels.length == 1 ? labels.first : category
+        key = Digest::SHA256.hexdigest(category)
         ProjectCategoryTotal::Record.new(
           { id: "#{project_id}:#{key}", project_id:, category:, label:,
             annotation_count: group.sum(&:annotation_count), configured: group.any?(&:configured),
-            label_conflict: labels.fetch(category).length > 1,
-            datasets: group.map { |row| { id: row.dataset_id, name: names.fetch(row.dataset_id) } } }
+            datasets: group.map do |row|
+              { id: row.dataset_id, name: names.fetch(row.dataset_id), annotation_count: row.annotation_count }
+            end }
         )
       end.sort_by { |row| [-row.annotation_count, row.label, row.category] }
     end

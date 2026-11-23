@@ -10,7 +10,7 @@ RSpec.describe "category count endpoints", type: :exposition, as: :system do
     project_id = UUIDv7.generate
     row = ProjectCategoryTotal::Record.new(
       { id: "total", project_id:, category: "car", label: "Car", annotation_count: 3,
-        configured: true, label_conflict: false, datasets: [{ id: dataset_id, name: "Dataset" }] }
+        configured: true, datasets: [{ id: dataset_id, name: "Dataset", annotation_count: 3 }] }
     )
     expect_any_instance_of(Project::Service).to receive(:category_counts)
       .with(project_id, { dataset_id: [dataset_id] }).and_return([row])
@@ -22,6 +22,9 @@ RSpec.describe "category count endpoints", type: :exposition, as: :system do
     body = JSON.parse(last_response.body)
     expect(body.fetch("data").first.fetch("type")).to eq(Resource::Dataset::ProjectCategoryTotals)
     expect(body.fetch("data").first.dig("attributes", "label")).to eq("Car")
+    expect(body.fetch("data").first.dig("attributes", "datasets"))
+      .to eq([{ "id" => dataset_id, "name" => "Dataset", "annotation_count" => 3 }])
+    expect(body.fetch("data").first.fetch("attributes")).not_to have_key("label_conflict")
   end
 
   it "routes batch totals before the dataset show route" do

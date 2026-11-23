@@ -366,9 +366,10 @@ accounts; admin and organization scopes retain repository authorization.
 
 Counts sum the scoped `entry_category_counts` table across all entry statuses, independently of the dashboard's
 completion date range and entry tabs. Configured categories with zero annotations and observed unconfigured
-categories are included. Project aggregation combines only identical `(category ID, configured label)` pairs.
-Conflicting labels remain separate rows with `label_conflict: true`; each row includes its contributing dataset
-IDs and names. Unconfigured categories use their ID as the label. These collections are complete, unpaginated
+categories are included. Project aggregation combines all rows with the same category ID, including categories
+with different labels or missing configuration. When labels differ, the aggregate uses the category ID as its
+label. Each row includes its contributing dataset IDs, names, and annotation counts. Unconfigured categories use
+their ID as the label. These collections are complete, unpaginated
 aggregates; the dataset batch endpoint is intended for the visible dashboard table page.
 
 ### Entry-Specific Endpoints

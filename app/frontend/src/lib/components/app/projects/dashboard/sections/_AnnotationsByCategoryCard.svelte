@@ -6,7 +6,6 @@
     ArrowDownZAIcon,
     ArrowUpDownIcon,
     RefreshCwIcon,
-    TriangleAlertIcon,
   } from "@lucide/svelte";
 
   import * as Card from "$lib/components/ui/card/index";
@@ -153,7 +152,7 @@
                 <HoverCard.Root>
                   <HoverCard.Trigger
                     class="flex max-w-full min-w-0 cursor-pointer items-center gap-1.5 text-left text-sm font-medium"
-                    aria-label={`${row.category}${row.label_conflict ? ", different labels across datasets" : ""}${!row.configured ? ", unconfigured" : ""}: show category details and datasets`}
+                    aria-label={`${row.category}: show category details and datasets`}
                     title={row.category}
                   >
                     <span class="flex min-w-0">
@@ -166,30 +165,17 @@
                         {row.category.slice(slashIndex + 1)}
                       </span>
                     </span>
-                    {#if row.label_conflict || !row.configured}
-                      <TriangleAlertIcon
-                        class="size-4 shrink-0 text-amber-600 dark:text-amber-400"
-                        aria-hidden="true"
-                      />
-                    {/if}
                   </HoverCard.Trigger>
                   <HoverCard.Content align="start" class="max-w-[calc(100vw-2rem)] text-xs">
                     <p class="font-medium break-words">{row.label}</p>
                     <p class="text-muted-foreground mt-1 break-all">ID: {row.category}</p>
-                    {#if row.label_conflict || !row.configured}
-                      <div class="mt-3 space-y-1 text-amber-700 dark:text-amber-300">
-                        {#if row.label_conflict}
-                          <p>This category has different labels across contributing datasets.</p>
-                        {/if}
-                        {#if !row.configured}
-                          <p>This category is not configured in the contributing datasets.</p>
-                        {/if}
-                      </div>
-                    {/if}
                     <p class="mt-3 font-medium">Contributing datasets</p>
                     <ul class="mt-1 max-h-48 space-y-1 overflow-y-auto">
                       {#each row.datasets as dataset (dataset.id)}
-                        <li class="break-words">{dataset.name}</li>
+                        <li class="flex justify-between gap-3">
+                          <span class="min-w-0 break-words">{dataset.name}</span>
+                          <span class="shrink-0 tabular-nums">{dataset.annotation_count.toLocaleString()}</span>
+                        </li>
                       {/each}
                     </ul>
                   </HoverCard.Content>

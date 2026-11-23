@@ -11,7 +11,7 @@ RSpec.describe CategoryCounts::Aggregation do
     )
   end
 
-  it "groups by ID and label, preserving different IDs with identical labels and counting each annotation once" do
+  it "groups by category ID despite different labels, preserving distinct IDs and dataset counts" do
     datasets = [dataset("a", "Car"), dataset("b", "Vehicle"), dataset("c", "Car"),
                 dataset("d", "Car", category: "automobile")]
     rows = described_class.dataset_rows(
@@ -26,14 +26,30 @@ RSpec.describe CategoryCounts::Aggregation do
     )
     totals = described_class.project_rows("project", datasets, rows)
 
-    expect(totals.map { |row| [row.category, row.label, row.annotation_count, row.label_conflict] })
+    expect(totals.map { |row| [row.category, row.label, row.annotation_count] })
       .to eq(
-        [["car", "Car", 40, true], ["car", "Vehicle", 20, true],
-         ["automobile", "Car", 5, false], ["removed", "removed", 2, false], ["zero", "Zero", 0, false]]
+        [["car", "car", 60],
+         ["automobile", "Car", 5], ["removed", "removed", 2], ["zero", "Zero", 0]]
       )
-    expect(totals.first.datasets).to eq([{ id: "a", name: "a" }, { id: "c", name: "c" }])
+    expect(totals.first.datasets).to eq([{ id: "a", name: "a", annotation_count: 30 },
+                                         { id: "b", name: "b", annotation_count: 20 },
+                                         { id: "c", name: "c", annotation_count: 10 }])
     expect(totals.find { |row| row.category == "removed" }.configured).to be(false)
     expect(totals.sum(&:annotation_count)).to eq(67)
+  end
+
+  it "combines configured and unconfigured instances of the same category" do
+    datasets = [dataset("a", "Car"), Dataset::Record.new({ id: "b", name: "b", labeling_configuration: {} })]
+    rows = described_class.dataset_rows(
+      datasets,
+      [{ dataset_id: "a", category: "car", annotation_count: 2 },
+       { dataset_id: "b", category: "car", annotation_count: 3 }]
+    )
+    car = described_class.project_rows("project", datasets, rows).find { |row| row.category == "car" }
+
+    expect([car.label, car.annotation_count, car.configured]).to eq(["car", 5, true])
+    expect(car.datasets).to eq([{ id: "a", name: "a", annotation_count: 2 },
+                                { id: "b", name: "b", annotation_count: 3 }])
   end
 
   it "does not double count a category configured by multiple annotation tools" do

@@ -22,7 +22,7 @@ describe("category count records and transport", () => {
     expect(record.count).toBe(2);
   });
 
-  it("encodes selected datasets and decodes project totals with conflict metadata", async () => {
+  it("encodes selected datasets and decodes project totals with contributing counts", async () => {
     const fetch = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -36,8 +36,7 @@ describe("category count records and transport", () => {
                 label: "Vehicle",
                 annotation_count: 5,
                 configured: true,
-                label_conflict: true,
-                datasets: [{ id: "a", name: "A" }],
+                datasets: [{ id: "a", name: "A", annotation_count: 5 }],
               },
             },
           ],
@@ -49,7 +48,7 @@ describe("category count records and transport", () => {
     const url = new URL(fetch.mock.calls[0][0], "http://localhost");
     expect(url.searchParams.getAll("filter[dataset_id][]")).toEqual(["a", "b"]);
     expect(response.data[0]).toBeInstanceOf(ProjectCategoryTotalRecord);
-    expect(response.data[0].label_conflict).toBe(true);
+    expect(response.data[0].datasets).toEqual([{ id: "a", name: "A", annotation_count: 5 }]);
   });
 
   it("batches dataset IDs and preserves an empty successful collection", async () => {

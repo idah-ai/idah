@@ -89,14 +89,9 @@
       <Separator />
       <div class="max-h-64 overflow-y-auto p-1">
         {#each result.rows as row (row.id)}
-          <div class="flex items-start justify-between gap-4 p-2">
-            <div class="min-w-0">
-              <span class="break-words">{row.label}</span>
-              {#if result.rows.some((other) => other.category !== row.category && other.label === row.label)}
-                <p class="text-muted-foreground break-all">{row.category}</p>
-              {/if}
-              {#if !row.configured}<p class="text-muted-foreground">Unconfigured</p>{/if}
-            </div>
+          <div class="flex items-start justify-between gap-4 px-2 pt-2">
+            <span class="min-w-0 break-words">{row.category}</span>
+
             <span class="shrink-0 font-semibold tabular-nums">{row.annotation_count.toLocaleString()}</span>
           </div>
         {:else}

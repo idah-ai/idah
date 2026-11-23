@@ -10,7 +10,6 @@ module ProjectCategoryTotal
     field :label, type: String, readonly: true
     field :annotation_count, type: Integer, readonly: true
     field :configured, type: [TrueClass, FalseClass], readonly: true
-    field :label_conflict, type: [TrueClass, FalseClass], readonly: true
     field :datasets, type: Array, readonly: true
   end
 end

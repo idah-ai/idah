@@ -922,11 +922,10 @@ export class ProjectDashboardController {
       const total = categoryTotal(response.data);
       const identities = new SvelteSet<string>();
       for (const row of response.data) {
-        const identity = JSON.stringify([row.category, row.label]);
+        const identity = row.category;
         if (
           row.project_id !== this.projectId ||
           identities.has(identity) ||
-          typeof row.label_conflict !== "boolean" ||
           !Array.isArray(row.datasets) ||
           !row.datasets.length ||
           row.datasets.some(
@@ -934,6 +933,8 @@ export class ProjectDashboardController {
               typeof dataset.id !== "string" ||
               !dataset.id ||
               typeof dataset.name !== "string" ||
+              !Number.isSafeInteger(dataset.annotation_count) ||
+              dataset.annotation_count < 0 ||
               (ids.length > 0 && !ids.includes(dataset.id)),
           )
         )

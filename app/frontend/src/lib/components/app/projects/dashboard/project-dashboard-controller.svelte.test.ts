@@ -33,8 +33,7 @@ function projectTotal(count = 3): ProjectCategoryTotalRecord {
       label: "Car",
       configured: true,
       annotation_count: count,
-      label_conflict: false,
-      datasets: [{ id: "a", name: "A" }],
+      datasets: [{ id: "a", name: "A", annotation_count: count }],
     },
   });
 }

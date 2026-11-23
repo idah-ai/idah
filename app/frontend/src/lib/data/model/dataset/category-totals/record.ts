@@ -19,8 +19,7 @@ export class ProjectCategoryTotalRecord extends Record {
   @field() public readonly label!: string;
   @field() public readonly configured!: boolean;
   @field() public readonly annotation_count!: number;
-  @field() public readonly label_conflict!: boolean;
-  @field() public readonly datasets!: { id: string; name: string }[];
+  @field() public readonly datasets!: { id: string; name: string; annotation_count: number }[];
 }
 
 RecordFactory.registerTypes(DatasetCategoryTotalRecord, ProjectCategoryTotalRecord);
