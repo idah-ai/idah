@@ -85,12 +85,15 @@
     if (value && !choices.some((choice) => choice.value == value)) {
       try {
         // `get` looks records up by id; any other value key needs a filtered list.
+        // Keep the caller's list options (e.g. the project scope of a membership
+        // list) so the lookup cannot resolve to a record outside that scope.
         const record =
           valueKey === "id"
             ? (await dataSource.get(String(value))).data
             : (
                 await dataSource.list({
-                  filters: { [valueKey]: value },
+                  ...listOptions,
+                  filters: { ...listOptions?.filters, [valueKey]: value },
                   pagination: { page: 1, itemsPerPage: 1 },
                 })
               ).data[0];

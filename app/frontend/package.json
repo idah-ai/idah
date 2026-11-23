@@ -37,6 +37,7 @@
     "fake-indexeddb": "^6.2.7",
     "globals": "^16.2.0",
     "jsdom": "^26.1.0",
+    "layerchart": "^2.10.0",
     "peggy": "^5.0.6",
     "prettier": "^3.5.3",
     "prettier-plugin-svelte": "^3.4.0",

@@ -27,3 +27,9 @@ export const datasetsStatuses: DatasetStatusBadgeProps[] = [
   { label: "In Progress", value: "in_progress", variant: "warning" },
   { label: "Completed", value: "completed", variant: "success" },
 ];
+
+export interface DatasetDeliveryBreakdown {
+  overdue: number;
+  due_today: number;
+  due_tomorrow: number;
+}

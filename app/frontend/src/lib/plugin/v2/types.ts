@@ -209,11 +209,18 @@ export type ASTNode = [string, ASTNodeValue[]];
 
 // ─── Toolbar ──────────────────────────────────────────────────────────────
 
+/**
+ * A toolbar value that is either fixed or read from plugin state on every render.
+ * Functions are re-evaluated whenever the toolbar re-renders — after a mode change or
+ * `toolbar.invalidate()` — so call `invalidate()` after changing the state they read.
+ */
+export type ToolbarText = string | (() => string);
+
 export interface IToolbarItem {
-  /** Raw HTML/SVG string for the icon. */
-  icon: string;
-  /** Label for tooltips. */
-  label: string;
+  /** Raw HTML/SVG string for the icon, or a function returning one (e.g. eye / eye-off). */
+  icon: ToolbarText;
+  /** Label for tooltips and dropdown items, or a function returning one. */
+  label: ToolbarText;
   /** The mode this item belongs to (e.g. "default", "idah-video:bounding-box"). */
   mode: string;
   /**
@@ -226,6 +233,23 @@ export interface IToolbarItem {
   group: string | null;
   /** Click handler. */
   onClick: Unsubscribe;
+  /**
+   * Optional button variant when the item is toggled (e.g. "success" for green,
+   * "destructive" for red). Defaults to "default" (primary color).
+   */
+  toggledVariant?: string;
+  /**
+   * Optional styling for the item when it is not toggled. `"destructive"` renders it in the
+   * destructive colour (e.g. "Clear All").
+   */
+  variant?: "destructive";
+  /** Inside a group dropdown, draw a separator line above this item. */
+  separatorBefore?: boolean;
+  /**
+   * Toolbar section (e.g. "select", "draw", "check"). Top-level buttons are separated by a
+   * divider wherever the section changes. Omit to stay in the unnamed section.
+   */
+  section?: string;
   /**
    * Optional command name for shortcut lookup.
    * If provided, the toolbar item's shortcut will be fetched from the command registry.
@@ -252,9 +276,37 @@ export interface IToolbarGroupNode {
   kind: "group";
   /** Full colon path, e.g. "mask". */
   path: string;
-  /** Last path segment, used for the tooltip label. */
+  /** Last path segment, used as the label when the group has no `label`. */
   segment: string;
+  /** Title from `toolbar.defineGroup` — shown as the dropdown header and trigger tooltip. */
+  label?: string;
+  /** Icon from `toolbar.defineGroup` — shown on the trigger while no child is toggled. */
+  icon?: string;
+  /** Accent predicate from `toolbar.defineGroup`. See {@link ToolbarGroupOptions.whenAccented}. */
+  whenAccented?: () => boolean;
+  /** Accent colour from `toolbar.defineGroup`. See {@link ToolbarGroupOptions.accentVariant}. */
+  accentVariant?: "success" | "destructive";
+  /** Section from `toolbar.defineGroup`, else its first item's. See {@link IToolbarItem.section}. */
+  section?: string;
   children: IToolbarNode[];
+}
+
+/** Display metadata for a toolbar group, registered with `toolbar.defineGroup`. */
+export interface ToolbarGroupOptions {
+  /** Title shown at the top of the group's dropdown and as the trigger tooltip. */
+  label?: string;
+  /** Raw HTML/SVG icon for the collapsed trigger while no child is toggled. */
+  icon?: string;
+  /**
+   * When it returns true and no child is toggled, the collapsed trigger gets a light tint
+   * of `accentVariant` — e.g. to show that the entry already has data for this group's tools.
+   * Re-evaluated like `whenToggled`, so call `toolbar.invalidate()` when its inputs change.
+   */
+  whenAccented?: () => boolean;
+  /** Colour of the light tint. Default: `"success"` (green). */
+  accentVariant?: "success" | "destructive";
+  /** Toolbar section of the collapsed button. Default: the section of its first item. */
+  section?: string;
 }
 
 /** A single standalone toolbar item (leaf). */
@@ -717,10 +769,10 @@ export interface ICommandDriverV2 {
 // ─── V2 Driver — Toolbar submodule ────────────────────────────────────────
 
 export interface ToolbarItemOptions {
-  /** Raw HTML/SVG string for the icon. */
-  icon: string;
-  /** Label for tooltips. */
-  label: string;
+  /** Raw HTML/SVG string for the icon, or a function returning one. See {@link ToolbarText}. */
+  icon: ToolbarText;
+  /** Label for tooltips and dropdown items, or a function returning one. */
+  label: ToolbarText;
   /**
    * One or more modes this item belongs to.
    * The item will be visible in any matching mode.
@@ -749,6 +801,23 @@ export interface ToolbarItemOptions {
    * Default: `false`.
    */
   whenToggled?: () => boolean;
+  /**
+   * Optional button variant when the item is toggled (e.g. "success" for green,
+   * "destructive" for red). Defaults to "default" (primary color).
+   */
+  toggledVariant?: string;
+  /**
+   * Optional styling for the item when it is not toggled. `"destructive"` renders it in the
+   * destructive colour (e.g. "Clear All").
+   */
+  variant?: "destructive";
+  /** Inside a group dropdown, draw a separator line above this item. */
+  separatorBefore?: boolean;
+  /**
+   * Toolbar section (e.g. "select", "draw", "check"). Top-level buttons are separated by a
+   * divider wherever the section changes. Omit to stay in the unnamed section.
+   */
+  section?: string;
 }
 
 export interface IToolbarDriverV2 {
@@ -757,8 +826,19 @@ export interface IToolbarDriverV2 {
    */
   add(options: ToolbarItemOptions): void;
 
-  /** Define the display order of groups for a given mode. */
+  /**
+   * Reorder groups for a given mode. Buttons and groups otherwise appear in registration
+   * order (a group at its first item's position); the groups listed here are rearranged
+   * among the slots that groups occupy. Names that are not groups are ignored.
+   */
   orderGroups(mode: string, groups: string[]): void;
+
+  /**
+   * Give a group (by its full colon path) display options: a title (dropdown header and
+   * trigger tooltip), a resting icon, a light accent tint (`whenAccented`, `accentVariant`)
+   * and a toolbar section. See {@link ToolbarGroupOptions}.
+   */
+  defineGroup(path: string, options: ToolbarGroupOptions): void;
 
   /**
    * Return the toolbar as a node tree for the given mode — standalone items as leaves,

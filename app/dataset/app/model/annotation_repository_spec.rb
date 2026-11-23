@@ -248,6 +248,34 @@ RSpec.describe Annotation::Repository, database: true do
       ).once
     end
 
+    # The entry-stats listener skips system shapes (e.g. a done area), so each
+    # event says which shape type changed.
+    it "attaches the shape type to the deleted and restored events" do
+      allow(Verse).to receive(:publish_resource_event).and_call_original
+
+      subject.soft_delete(annotation_id, deleted_by_email: "admin@example.com")
+      subject.restore(annotation_id)
+
+      %w[deleted restored].each do |event|
+        expect(Verse).to have_received(:publish_resource_event).with(
+          hash_including(event:, payload: hash_including(metadata: hash_including(shape_type: "mask")))
+        ).once
+      end
+    end
+
+    it "attaches the shape type to the updated event" do
+      allow(Verse).to receive(:publish_resource_event).and_call_original
+
+      subject.update(annotation_id, { category: "dog" })
+
+      expect(Verse).to have_received(:publish_resource_event).with(
+        hash_including(
+          event: "updated",
+          payload: hash_including(metadata: hash_including(old_category: "cat", shape_type: "mask"))
+        )
+      ).once
+    end
+
     it "soft_delete twice is a no-op on the second call: no event, unchanged state" do
       subject.soft_delete(annotation_id, deleted_by_email: "admin@example.com")
       state_after_first = subject.client { |db| db[:annotations].where(id: annotation_id).first }
