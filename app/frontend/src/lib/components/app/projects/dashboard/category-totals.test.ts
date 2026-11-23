@@ -33,4 +33,13 @@ describe("category totals", () => {
     expect(sortCategories(rows).map((item) => item.label)).toEqual(["person", "Car", "Vehicle"]);
     expect(rows[0].label).toBe("Vehicle");
   });
+
+  it("sorts by the full category path and count in both directions", () => {
+    const rows = [row("z/dog", 2, "Dog"), row("a/cat", 4, "Cat"), row("a/dog", 2, "Dog")];
+    expect(sortCategories(rows, "category-asc").map((item) => item.category)).toEqual(["a/cat", "a/dog", "z/dog"]);
+    expect(sortCategories(rows, "category-desc").map((item) => item.category)).toEqual(["z/dog", "a/dog", "a/cat"]);
+    expect(sortCategories(rows, "count-asc").map((item) => item.category)).toEqual(["a/dog", "z/dog", "a/cat"]);
+    expect(sortCategories(rows, "count-desc").map((item) => item.category)).toEqual(["a/cat", "a/dog", "z/dog"]);
+    expect(rows.map((item) => item.category)).toEqual(["z/dog", "a/cat", "a/dog"]);
+  });
 });

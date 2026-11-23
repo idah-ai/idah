@@ -13,6 +13,8 @@ export interface CategoryTotalsResult<T extends CategoryTotal> {
   error: string;
 }
 
+export type CategorySort = "category-asc" | "category-desc" | "count-asc" | "count-desc";
+
 export function categoryTotal(rows: CategoryTotal[]): number {
   let total = 0;
   const ids = new Set<string>();
@@ -41,9 +43,13 @@ export function categoryShare(count: number, total: number): { value: number; la
   return { value, label: value > 0 && value < 1 ? "<1%" : `${Math.round(value)}%` };
 }
 
-export function sortCategories<T extends CategoryTotal>(rows: T[]): T[] {
-  return [...rows].sort(
-    (a, b) =>
-      b.annotation_count - a.annotation_count || a.label.localeCompare(b.label) || a.category.localeCompare(b.category),
-  );
+export function sortCategories<T extends CategoryTotal>(rows: T[], sort: CategorySort = "count-desc"): T[] {
+  return [...rows].sort((a, b) => {
+    const byCategory = a.category.localeCompare(b.category);
+    if (sort === "category-asc") return byCategory || a.label.localeCompare(b.label);
+    if (sort === "category-desc") return -byCategory || a.label.localeCompare(b.label);
+    const byCount = a.annotation_count - b.annotation_count;
+    if (sort === "count-asc") return byCount || byCategory || a.label.localeCompare(b.label);
+    return -byCount || a.label.localeCompare(b.label) || byCategory;
+  });
 }

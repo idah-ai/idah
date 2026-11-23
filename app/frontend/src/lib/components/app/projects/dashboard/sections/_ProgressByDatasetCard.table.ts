@@ -21,7 +21,7 @@ export const columns: DataTableColumnSettings<DatasetRecord> = {
   annotations: {
     key: "annotation_count",
     title: "Annotations",
-    align: "right",
+    align: "center",
     cellComponent: DatasetAnnotationsCell,
   },
   delivery_date: {
