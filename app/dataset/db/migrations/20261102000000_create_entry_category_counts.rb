@@ -25,17 +25,21 @@ Sequel.migration do
         remove_old boolean := false;
         add_new boolean := false;
         key_changed boolean := false;
+        old_counted boolean := false;
+        new_counted boolean := false;
         remaining_count integer;
       BEGIN
         IF TG_OP = 'INSERT' THEN
-          add_new := NEW.deleted_at IS NULL;
+          add_new := NEW.deleted_at IS NULL AND NEW.shape_type <> 'idah-image:done-area';
         ELSIF TG_OP = 'DELETE' THEN
-          remove_old := OLD.deleted_at IS NULL;
+          remove_old := OLD.deleted_at IS NULL AND OLD.shape_type <> 'idah-image:done-area';
         ELSE
+          old_counted := OLD.deleted_at IS NULL AND OLD.shape_type <> 'idah-image:done-area';
+          new_counted := NEW.deleted_at IS NULL AND NEW.shape_type <> 'idah-image:done-area';
           key_changed := ROW(OLD.entry_id, OLD.dataset_id, OLD.project_id, OLD.category)
             IS DISTINCT FROM ROW(NEW.entry_id, NEW.dataset_id, NEW.project_id, NEW.category);
-          remove_old := OLD.deleted_at IS NULL AND (NEW.deleted_at IS NOT NULL OR key_changed);
-          add_new := NEW.deleted_at IS NULL AND (OLD.deleted_at IS NOT NULL OR key_changed);
+          remove_old := old_counted AND (NOT new_counted OR key_changed);
+          add_new := new_counted AND (NOT old_counted OR key_changed);
         END IF;
 
         IF remove_old THEN
@@ -68,7 +72,7 @@ Sequel.migration do
       $$ LANGUAGE plpgsql;
 
       CREATE TRIGGER trg_sync_entry_category_counts
-      AFTER INSERT OR UPDATE OF entry_id, dataset_id, project_id, category, deleted_at OR DELETE
+      AFTER INSERT OR UPDATE OF entry_id, dataset_id, project_id, category, shape_type, deleted_at OR DELETE
       ON annotations FOR EACH ROW EXECUTE FUNCTION sync_entry_category_counts();
     SQL
 
@@ -78,7 +82,7 @@ Sequel.migration do
       INSERT INTO entry_category_counts (entry_id, dataset_id, project_id, category, count)
       SELECT entry_id, dataset_id, project_id, category, COUNT(*)::integer
       FROM annotations
-      WHERE deleted_at IS NULL
+      WHERE deleted_at IS NULL AND shape_type <> 'idah-image:done-area'
       GROUP BY entry_id, dataset_id, project_id, category;
     SQL
 

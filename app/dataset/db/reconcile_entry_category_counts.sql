@@ -3,7 +3,7 @@
 WITH expected AS (
   SELECT entry_id, dataset_id, project_id, category, COUNT(*)::integer AS count
   FROM annotations
-  WHERE deleted_at IS NULL
+  WHERE deleted_at IS NULL AND shape_type <> 'idah-image:done-area'
   GROUP BY entry_id, dataset_id, project_id, category
 ), actual AS (
   SELECT entry_id, dataset_id, project_id, category, count

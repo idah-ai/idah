@@ -26,12 +26,12 @@ RSpec.describe "entry_category_counts", database: true do
     entries.create(project_id:, dataset_id:, status: "pending", wf_step: "start")
   end
 
-  def add_annotation(category, entry: entry_id, deleted_at: nil)
+  def add_annotation(category, entry: entry_id, deleted_at: nil, shape_type: "image:box")
     annotations.create(
       project_id:,
       dataset_id:,
       entry_id: entry,
-      shape_type: "image:box",
+      shape_type:,
       shape_args: {},
       category:,
       deleted_at:,
@@ -74,6 +74,28 @@ RSpec.describe "entry_category_counts", database: true do
     expect(category_counts.map { |row| [row[:category], row[:count]] }).to eq([["car", 1]])
   end
 
+  it "excludes done-area shapes but counts regular annotations with the same category" do
+    add_annotation("done_area", shape_type: "idah-image:done-area")
+    add_annotation("done_area")
+    add_annotation("car", shape_type: "idah-image:done-area")
+
+    expect(category_counts.map { |row| [row[:category], row[:count]] }).to eq([["done_area", 1]])
+  end
+
+  it "updates counts when an annotation changes to or from a done-area shape" do
+    id = add_annotation("car")
+    annotations.update!(id, { shape_type: "idah-image:done-area" })
+    expect(category_counts).to be_empty
+
+    annotations.update!(id, { category: "person" })
+    annotations.soft_delete(id, deleted_by_email: "system@example.com")
+    annotations.restore(id)
+    expect(category_counts).to be_empty
+
+    annotations.update!(id, { shape_type: "image:box" })
+    expect(category_counts.map { |row| [row[:category], row[:count]] }).to eq([["person", 1]])
+  end
+
   it "removes counts when an entry and its annotations are hard deleted" do
     add_annotation("car")
     entries.delete!(entry_id)
@@ -81,16 +103,17 @@ RSpec.describe "entry_category_counts", database: true do
     expect(category_counts).to be_empty
   end
 
-  it "backfills only visible annotations" do
+  it "backfills only visible non-system annotations" do
     add_annotation("car")
     add_annotation("car", deleted_at: Time.now.utc)
+    add_annotation("done_area", shape_type: "idah-image:done-area")
 
     annotations.client do |db|
       db[:entry_category_counts].delete
       db.run(<<~SQL)
         INSERT INTO entry_category_counts (entry_id, dataset_id, project_id, category, count)
         SELECT entry_id, dataset_id, project_id, category, COUNT(*)::integer
-        FROM annotations WHERE deleted_at IS NULL
+        FROM annotations WHERE deleted_at IS NULL AND shape_type <> 'idah-image:done-area'
         GROUP BY entry_id, dataset_id, project_id, category
       SQL
     end
