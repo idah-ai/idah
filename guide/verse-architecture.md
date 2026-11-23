@@ -455,7 +455,7 @@ event(name: "assigned")
 def assign(id, attributes)
   entry = find!(id)
 
-  add_event_metadata(
+  add_metadata(
     project_id: attributes[:project_id] || entry.project_id,
     dataset_id: attributes[:dataset_id] || entry.dataset_id,
     entry_id: id
@@ -480,8 +480,6 @@ Enrich event payloads with contextual data:
 ```ruby
 def create(attributes)
   with_metadata do
-    add_event_metadata
-
     super(attributes)
   end
 end
@@ -490,7 +488,7 @@ def update!(id, attributes, scope: scoped(:update))
   with_metadata do
     project = find!(id)
 
-    add_event_metadata(
+    add_metadata(
       organization_id: attributes[:organization_id] || project.organization_id,
       project_id: id
     )
@@ -502,26 +500,13 @@ end
 def delete!(id)
   with_metadata do
     find!(id)
-    add_event_metadata(organization_id: id)
+    add_metadata(organization_id: id)
     super(id)
   end
 end
 ```
 
-The helper method pattern:
-
-```ruby
-private
-
-def add_event_metadata(**opts)
-  add_metadata(
-    actor_account_id: auth_context.metadata[:id],
-    actor_account_email: auth_context.metadata[:email],
-    actor_account_role_name: auth_context.metadata[:role],
-    **opts
-  )
-end
-```
+Actor fields (`actor_account_id`, `actor_account_email`, `actor_account_role_name`) are seeded automatically: repositories `include ActorEventMetadata` (`common/lib/actor_event_metadata.rb`), which adds them to the repository's metadata from the auth context. Call Verse's `add_metadata(...)` directly for domain context. Do not define `add_metadata` or a wrapper in a repository. For writes made on a system context on behalf of a user, wrap them in `with_actor(actor) { ... }`.
 
 #### Encoders
 

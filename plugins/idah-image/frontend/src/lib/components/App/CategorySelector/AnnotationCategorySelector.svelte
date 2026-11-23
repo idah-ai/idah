@@ -9,12 +9,14 @@
   import { cn } from "$lib/utils";
 
   import CategoryTree from "$lib/components/App/CategorySelector/_CategoryTree.svelte";
+  import HistoryPanel from "$lib/components/App/CategorySelector/HistoryPanel.svelte";
 
   import { getDriver } from "$lib/state/driver.svelte";
   import { entryRoot } from "$lib/state/entry-root.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { categorySearch } from "$lib/state/category-search.svelte";
+  import { history } from "$lib/state/history.svelte";
 
   import type { IConfigValue } from "$idah/v2/types";
 
@@ -24,7 +26,6 @@
   // Props
   let {
     view,
-    sidebarWidthRem,
     annotationValue,
     onEditValue,
     onSelectAnnotation,
@@ -34,7 +35,6 @@
     class: className,
   }: {
     view: "sidebar" | "popover";
-    sidebarWidthRem: number;
     annotationValue: IImageAnnotationValue;
     onEditValue: (category: string | undefined, mode: string) => void;
     onSelectAnnotation: (annotation?: IImageAnnotationRecord) => void;
@@ -111,7 +111,10 @@
   }
 </script>
 
-<Sidebar variant="inset" collapsible="none" class={cn(className)} style="width: ${sidebarWidthRem}rem">
+{#if view === "sidebar" && history.open}
+  <HistoryPanel />
+{:else}
+<Sidebar variant="inset" collapsible="none" class={cn(view === "sidebar" && "w-full", className)}>
   {#if !tools.has(mode) || selAnnotation}
     <SidebarHeader>
       <InputField
@@ -148,3 +151,4 @@
     {/each}
   </SidebarContent>
 </Sidebar>
+{/if}

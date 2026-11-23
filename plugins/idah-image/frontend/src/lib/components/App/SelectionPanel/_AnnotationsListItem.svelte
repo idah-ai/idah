@@ -27,7 +27,11 @@
 	const category = $derived(categoryForShape(config, shapeType, annotation.category));
 	const isOrphan = $derived(category === undefined);
 	const categoryColor = $derived(category?.color ?? null);
-	const displayName = $derived(category?.label ?? annotation.category ?? "Uncategorized");
+	// `{label}-{idLastPart}`, the same naming as the History cards, so
+	// same-category annotations can be told apart and matched to their history.
+	const displayName = $derived(
+		`${category?.label ?? annotation.category ?? "Uncategorized"}-${annotation.id.split("-").pop()}`,
+	);
 	const parentLabel = $derived(category ? categoryValueToLabel(category.id) : (resolveAnnotationLabel(annotation)?.text ?? ""));
 </script>
 

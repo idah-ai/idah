@@ -21,8 +21,6 @@
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
-  import type { ProjectMemberScope } from "@/security/types";
-
   // Props
   interface Props {
     children: Snippet;

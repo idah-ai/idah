@@ -172,9 +172,14 @@ module Annotation
     field :project_id,      type: String, readonly: true
     field :dataset_id,      type: String, readonly: true
     field :entry_id,        type: String, readonly: true
-    field :dimensions,      type: Hash
-    field :annotation,      type: Hash
+    field :shape_type,      type: String
+    field :shape_args,      type: Hash
+    field :category,        type: String
+    field :properties,      type: Hash
     field :metadata,        type: Hash
+    field :deleted_at,      type: Time, readonly: true
+    field :deleted_by_email,type: String, readonly: true
+    field :version,         type: Integer, readonly: true
     field :created_by_email,type: String, readonly: true
     field :created_at,      type: Time, readonly: true
     field :updated_at,      type: Time, readonly: true
@@ -182,9 +187,12 @@ module Annotation
 end
 ```
 
-- **`dimensions`** (JSONB): Shape information — e.g., `{ type: "idah-video:bounding-box", x: 0.1, y: 0.2, w: 0.5, h: 0.3 }`.
-- **`annotation`** (JSONB): The actual label data — e.g., `{ category: "cat", properties: { ... } }`.
-- **`metadata`** (JSONB, added in migration `20260211000000`): Free-form extra data for plugins.
+- **`shape_type`**: The plugin shape type, e.g. `"idah-video:bounding-box"`.
+- **`shape_args`** (JSONB): The shape geometry. Tile keys written through `write_shape`/`write_shapes` live in the `annotation_shape` child table and are merged into `shape_args` on reads.
+- **`category`**: The annotation category.
+- **`properties`** / **`metadata`** (JSONB): Free-form extra data.
+- **`deleted_at`** / **`deleted_by_email`**: Soft-delete tombstone. Read-only over the API — only `soft_delete`, `restore` and `create` (when duplicating a soft-deleted annotation) set them.
+- **`version`**: Bumped on every write (see "Annotation change history" below). Read-only.
 - **`created_by_email`**: Set from auth context at creation.
 
 **Scoping** (`Annotation::Repository#scoped`):
@@ -335,7 +343,7 @@ All HTTP endpoints use JSON:API format (`Content-Type: application/vnd.api+json`
 | Prefix             | Endpoints                                                                                                    |
 |--------------------|--------------------------------------------------------------------------------------------------------------|
 | `/projects`        | CRUD — `index`, `show`, `create`, `update`, `delete`                                                         |
-| `/project_members` | CRUD + event handler for account updates (sync name/email via `DuplicateFieldHelper`), account disable, account delete |
+| `/project_members` | `index`, `show`, `update`, `delete` + `POST /invite` (batch, all-or-nothing) + `POST /:id/resend_invitation` + event handler for account updates (sync name/email via `DuplicateFieldHelper`), account disable, account delete |
 | `/datasets`        | CRUD + event handler for dataset completion (sends notification emails)                                      |
 | `/entries`         | CRUD + `PATCH /:id/assign`, `GET /:id/select`, `POST /:id/submit`, `POST /:id/error`, event handlers for job completion/error |
 | `/annotations`     | CRUD + `POST /_rpc` (JSON-RPC batch interface)                                                               |
@@ -424,7 +432,7 @@ Mounted at `/annotations/_rpc`:
 json_rpc http_path: "_rpc", batch_limit: 50, batch_failure: :stop
 ```
 
-**Methods**: `show`, `create`, `update`, `delete`
+**Methods**: `show`, `create`, `update`, `delete`, `restore`, `write_shape`, `write_shapes`
 
 - **Batch limit**: 50 calls per request. Exceeding returns an error.
 - **batch_failure**: `:stop` — on any failure in a batch, processing stops and an error is returned.
@@ -432,11 +440,51 @@ json_rpc http_path: "_rpc", batch_limit: 50, batch_failure: :stop
 
 RPC method schemas:
 - `show`: takes `id` (String).
-- `create`: takes `id`, `entry_id`, `dimensions`, `annotation`, optional `metadata`.
-- `update`: takes `id`, `entry_id`, `dimensions`, `annotation`, optional `metadata`.
+- `create`: takes `id`, `entry_id`, `shape_type`, `shape_args`, `category`, optional `properties`/`metadata`.
+- `update`: takes `id`, `entry_id`, and any mutable field (`shape_type`, `shape_args`, `category`, `properties`, `metadata`).
 - `delete`: takes `id` (String).
+- `restore`: takes `id` (String).
+- `write_shape`: takes `annotation_id`, `key`, optional `value` (Hash to upsert, nil to delete).
+- `write_shapes`: takes `annotation_id` and `entries` (array of `{ key, value }`), writing several `annotation_shape` rows as one change.
 
-The `update` RPC method uses `Annotation::Service#update_attr` which directly updates only the provided attributes (unlike the JSON:API `update` path which expects a full record).
+The `update` RPC method uses `Annotation::Service#update_attr` which directly updates only the provided attributes (unlike the JSON:API `update` path which expects a full record). Both paths enforce the same rules in `Annotation::Repository#update`: read-only fields are ignored, `annotation_shape` keys are stripped from `shape_args`, and a blank `category` is rejected.
+
+---
+
+### Annotation change history
+
+Every annotation write records who made it, what changed (old and new values) and when, in the same database transaction as the write.
+
+**Table** (`annotation_changes`):
+
+| Column | Meaning |
+|--------|---------|
+| `annotation_id` | The annotation (no FK — history outlives the annotation row) |
+| `entry_id`, `project_id` | Denormalized for per-entry/per-project listing |
+| `account_id` | The actor (null for system writes) |
+| `account_email` | The actor's email (null for system writes) |
+| `op` | `baseline` \| `created` \| `updated` \| `deleted` \| `restored` |
+| `version` | The annotation version this row records |
+| `changes` | `[[op, path, old, new], ...]` |
+| `changed_at` | When the write happened |
+
+**Change format**: each entry is `[op, path, old, new]`.
+
+| Entry op | Meaning | `old` | `new` |
+|----------|---------|-------|-------|
+| `+` | added | `null` | value |
+| `-` | removed | value | `null` |
+| `~` | changed | value | value |
+
+**Versions**: `annotations.version` starts at 1. New annotations are created at version 1 with a `created` row; every later write bumps the version and records that number. A write that changes nothing writes nothing and does not bump the version. The one-off backfill (`rake annotation_history:backfill`) gives every annotation without a version-1 row a `baseline` row: its state when tracking started, with no author.
+
+**Baseline rows**: the one-off `annotation_history:backfill` rake task inserts a version-1 `baseline` row for every annotation that has none, so every annotation's history starts with a full snapshot without claiming it is the original creation. It rebuilds the state the way `AnnotationChange::Service#rebuild` does (current state with `annotation_shape` tiles merged, then every later row reverted), writes one `+` entry per non-nil tracked field, sets `changed_at` to the run time and both `account_id`/`account_email` to null (the card shows "system"), and is safe to re-run thanks to the unique `(annotation_id, version)` index.
+
+**Repository write path**: all writes go through `Annotation::Repository` — `create`, `update` (with `op:`), `soft_delete`, `restore`, and `write_shapes`. Each runs inside `with_db_mode(:rw) { transaction { ... } }`, locks the row `FOR UPDATE`, computes the diff with `AnnotationDiff.call` (using manifest-declared identity keys), bumps the version literally, and inserts one history row via `record_change!`.
+
+**Endpoints**: history is listed per annotation or per entry at `GET /annotation_changes` (filters: `annotation_id`, `entry_id`, `account_id`, `op__in`, `changed_at__gte`/`__lte`, `version__gte`/`__lte`), and any past version can be rebuilt at `GET /annotations/:id/versions/:version`.
+
+**Visibility**: history visibility follows annotation visibility exactly — `AnnotationChange::Repository#scoped(:read)` delegates to `Annotation::Repository#scoped(:read)`. History of annotations that no longer exist is only reachable from a system context.
 
 ---
 
@@ -656,6 +704,40 @@ Key design decisions:
 - **Scoped read for write**: The repository's `submit` method uses `scope: scoped(:read)` when updating, because submit requires read-level access (anyone who can read the entry can submit it).
 
 ---
+
+## Project Member Invitation & Guards
+
+Member creation for real actors goes through the guarded batch endpoint `POST /project_members/invite` (`ProjectMember::Service#invite`); the generic `create` service method and its route were removed.
+
+**Project-level invite rules** (decided by the actor's **effective rank** on the project via `ProjectAccess::Service`, not the `can?` symbol):
+- Only effective rank ≥ `project_owner` can invite or manage members (reviewers cannot).
+- Assigning `project_owner` requires effective rank ≥ `org_owner`. A `project_owner` assigns `reviewer`/`annotator` only.
+- Managing existing members (role change, disable, remove): a `project_owner` can manage rows up to and including `project_owner`; org_owner of the project's org and admin manage everything.
+- A project invite **never** modifies the account: dataset calls the IAM invite with `role_name: "user"` and empty scope (a no-op for existing accounts). Access to the project comes from the membership.
+- A disabled account cannot be invited to a project; the per-member error is generic (`This email can't be invited — contact an administrator`), because dataset cannot check the actor's IAM read scope.
+- Batch invites validate every member first; if any fails, write nothing and return a per-email reason. Accounts are then provisioned (IAM invite) **outside** the membership transaction, so a failed membership write does not roll back already-provisioned accounts. Leftover pending accounts are harmless: they are un-joined, expire after 3 days, and are reused on retry.
+- Membership `account_id`, `email`, `name` are resolved server-side from IAM; `invited_by_id` comes from `auth_context`. `role` is validated against the project roles enum.
+
+**Resend invitation** (`POST /project_members/:id/resend_invitation`) is guarded by the project-level resend rule (the actor can manage that member), then delegates to `Api[:idah].iam.accounts.resend_invitation` with the service token. It rejects accounts that already joined and disabled accounts.
+
+**No generic `create`:** `ProjectMember::Service#create` was removed; the frontend uses `invite`. Internal/system flows (e.g. `invite_single`) use the repository-level `create`.
+
+### Project Access Resolver
+
+`ProjectAccess::Service` (`app/service/project_access/service.rb`) resolves the effective access an actor has on a concrete project, using the system repositories so the result does not depend on repository scoping. It returns `:all` (admin/system), `:org_owner` (project in the actor's orgs), the actor's enabled membership role, or `nil`. `effective_rank` maps that to a `RoleHierarchy` rank. The actor's identity is passed explicitly (org ids from `auth_context.custom_scopes[:org]`, account id from `auth_context.metadata[:id]`); when `custom_scopes[:project]` is present (API keys), only those projects resolve to anything other than `nil`.
+
+It is used by `ProjectMember::Service` authorisation **and** by the service-level create checks of `project`, `dataset`, `entry`, `annotation`, `note_feed`, `note_comment` and `label_config_template`. This means an org_owner who is a member of a foreign project is evaluated with their **membership role** there, not org_owner powers.
+
+### Org_owner membership union in repositories
+
+Every dataset repository's `as_org_owner` scope is the **union** of the org condition (projects of the actor's orgs) and the `as_user` condition for the same action (projects where the actor is an enabled member, with the same per-action role rules). Each branch is produced as a Sequel **condition** and combined with `Sequel.|`; API-key `custom_scopes[:project]` branches are unchanged (no union).
+
+Per-repository notes:
+- `note_feeds` / `note_comments`: `update`/`delete` are "own records" (`created_by_email`) in both branches, so the union stays "own records".
+- `entry_stats`: the org branch joins `entries`+`projects`, the user branch joins `entries`+`project_members`; combined at condition level.
+- `label_config_templates`: organization-level; union = actor's orgs ∪ orgs where the actor is an enabled `project_owner` (the existing `as_user` rule).
+
+An org_owner of Org A who is a reviewer on an Org B project therefore sees exactly what a reviewer sees on Org B and nothing more; disabled memberships grant nothing; own-org behaviour is unchanged.
 
 ## Soft-Delete Pattern (ProjectMembers)
 
