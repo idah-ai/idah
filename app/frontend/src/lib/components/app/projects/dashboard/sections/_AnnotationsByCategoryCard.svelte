@@ -2,7 +2,7 @@
   import { RefreshCwIcon } from "@lucide/svelte";
 
   import * as Card from "$lib/components/ui/card/index";
-  import * as Popover from "@/components/ui/popover/index";
+  import * as HoverCard from "@/components/ui/hover-card/index";
   import Button from "@/components/ui/button/button.svelte";
   import Skeleton from "@/components/ui/skeleton/skeleton.svelte";
   import Progress from "@/components/ui/progress/progress.svelte";
@@ -88,17 +88,17 @@
           {#each result.rows as row (row.id)}
             {@const share = categoryShare(row.annotation_count, result.total ?? 0)}
             <div
-              class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 py-2 sm:grid-cols-[minmax(8rem,3fr)_minmax(0,7fr)_auto_auto]"
+              class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 py-2 pr-2 sm:grid-cols-[minmax(8rem,3fr)_minmax(0,7fr)_auto_auto]"
             >
               <div class="col-start-1 row-start-1 min-w-0">
-                <Popover.Root>
-                  <Popover.Trigger
-                    class="max-w-full truncate text-left text-sm font-medium underline decoration-dotted underline-offset-4"
+                <HoverCard.Root>
+                  <HoverCard.Trigger
+                    class="max-w-full cursor-pointer truncate text-left text-sm font-medium underline decoration-dotted underline-offset-4"
                     aria-label={`${row.label}: show category ID and datasets`}
                   >
                     {row.label}
-                  </Popover.Trigger>
-                  <Popover.Content align="start" class="max-w-[calc(100vw-2rem)] text-xs">
+                  </HoverCard.Trigger>
+                  <HoverCard.Content align="start" class="max-w-[calc(100vw-2rem)] text-xs">
                     <p class="font-medium break-words">{row.label}</p>
                     <p class="text-muted-foreground mt-1 break-all">ID: {row.category}</p>
                     <p class="mt-3 font-medium">Contributing datasets</p>
@@ -107,8 +107,8 @@
                         <li class="break-words">{dataset.name}</li>
                       {/each}
                     </ul>
-                  </Popover.Content>
-                </Popover.Root>
+                  </HoverCard.Content>
+                </HoverCard.Root>
                 {#if row.label_conflict || duplicateLabels.has(row.label)}
                   <p class="text-muted-foreground truncate text-xs" title={row.category}>{row.category}</p>
                 {/if}
