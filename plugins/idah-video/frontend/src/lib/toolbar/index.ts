@@ -18,21 +18,19 @@ const magnetIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="1
 export function initToolbar(driver: IIdahDriverV2): void {
   const t = driver.toolbar;
 
+  // Layout (registration order = toolbar order; a divider separates sections):
+  //   annotate: selection, box, polygon (review: note) | assist: magnetic snap, history
+
   t.add({
     icon: cursorIcon,
     label: "Selection",
     name: "idah-video:tool.selection",
     modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
     group: null,
+    section: "annotate",
     visibleWhen: () => true,
-    onClick: () => {
-      // Return to the parent resting mode of the current workspace
-      if (driver.mode === "review" || driver.mode === "note") {
-        driver.setMode("review");
-      } else {
-        driver.setMode("editor");
-      }
-    },
+    // Same command as the D shortcut, so the button and the key always behave alike.
+    onClick: () => driver.command.call("idah-video:tool.selection"),
     whenToggled: () => driver.mode === "editor" || driver.mode === "review",
   });
 
@@ -43,6 +41,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
       name: "idah-video:tool.bounding-box",
       modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
       group: null,
+      section: "annotate",
       visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
       onClick: () => {
         if (!isEditable()) return;
@@ -51,7 +50,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
       },
       whenToggled: () => driver.mode === "idah-video:bounding-box",
     });
-    t.orderGroups("idah-video:bounding-box", ["selection"]);
   }
   if (hasConfig(driver, POLYGON_MODE)) {
     t.add({
@@ -60,6 +58,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
       name: "idah-video:tool.polygon",
       modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
       group: null,
+      section: "annotate",
       visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
       onClick: () => {
         if (!isEditable()) return;
@@ -68,7 +67,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
       },
       whenToggled: () => driver.mode === "idah-video:polygon",
     });
-    t.orderGroups("idah-video:polygon", ["selection"]);
   }
   t.add({
     icon: noteIcon,
@@ -76,14 +74,11 @@ export function initToolbar(driver: IIdahDriverV2): void {
     name: "idah-video:tool.note",
     modes: ["review", "note"],
     group: null,
+    section: "annotate",
     visibleWhen: () => driver.mode === "review" || driver.mode === "note",
     onClick: () => driver.setMode("note"),
     whenToggled: () => driver.mode === "note",
   });
-
-  t.orderGroups("editor", ["selection"]);
-  t.orderGroups("review", ["selection"]);
-  t.orderGroups("note", ["selection"]);
 
   // ── Magnetic snap toggle ──────────────────────────────────────────
   t.add({
@@ -92,6 +87,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     name: "idah-video:snap.toggle-magnetic",
     modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
     group: null,
+    section: "assist",
     visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
     onClick: () => {
       magneticSnap.toggle();
@@ -100,15 +96,16 @@ export function initToolbar(driver: IIdahDriverV2): void {
     whenToggled: () => magneticSnap.enabled,
   });
 
-  // ── History toggle (registered last so it appears as the last tool) ──
+  // ── History toggle (last tool of the "assist" section) ──
   // The item is hidden when the driver has no `changes()` (an older platform).
   if (typeof driver.annotations.changes === "function") {
     t.add({
       icon: historyIcon,
       label: "History",
-      name: "idah-video:tool.history",
+      name: "idah-video:history.toggle", // same as the Y command, so the tooltip shows its key
       modes: ["editor", "review", "note", "idah-video:bounding-box", "idah-video:polygon"],
       group: null,
+      section: "assist",
       visibleWhen: () => true,
       onClick: () => history.toggle(),
       whenToggled: () => history.open,
