@@ -57,8 +57,10 @@ class EntryStatsExpo < BaseExpo
 
       # if undo from deleted annotation, use the old category as the new category
       new_category = args[:category] || message.content.dig(:metadata, :old_category)
+      # create carries it in the args, update in the metadata
+      shape_type = args[:shape_type] || message.content.dig(:metadata, :shape_type)
 
-      service.recompute_from_annotation(entry_id:, dataset_id:, new_category:)
+      service.recompute_from_annotation(entry_id:, dataset_id:, new_category:, shape_type:)
     end
   end
 
@@ -70,7 +72,8 @@ class EntryStatsExpo < BaseExpo
     service.recompute_from_annotation(
       entry_id: metadata[:entry_id],
       dataset_id: metadata[:dataset_id],
-      new_category: nil
+      new_category: nil,
+      shape_type: metadata[:shape_type]
     )
   end
 
@@ -81,7 +84,8 @@ class EntryStatsExpo < BaseExpo
     service.recompute_from_annotation(
       entry_id: metadata[:entry_id],
       dataset_id: metadata[:dataset_id],
-      new_category: metadata[:category]
+      new_category: metadata[:category],
+      shape_type: metadata[:shape_type]
     )
   end
 end
