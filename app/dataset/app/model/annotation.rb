@@ -136,7 +136,8 @@ module Annotation
               project_id: row[:project_id],
               dataset_id: row[:dataset_id],
               entry_id: row[:entry_id],
-              old_category: row[:category]
+              old_category: row[:category],
+              shape_type: row[:shape_type]
             )
             super(id, attributes.merge(version:), scope:)
           end
@@ -157,7 +158,8 @@ module Annotation
           project_id: annotation.project_id,
           dataset_id: annotation.dataset_id,
           entry_id: annotation.entry_id,
-          old_category: old_category
+          old_category: old_category,
+          shape_type: annotation.shape_type
         )
 
         super(id, attributes, scope:)
@@ -175,7 +177,7 @@ module Annotation
         next false if row[:deleted_at] # already deleted: no write, no history row, no event
 
         # Context for the `deleted` event (entry-stats listener).
-        add_metadata(entry_id: row[:entry_id], dataset_id: row[:dataset_id])
+        add_metadata(entry_id: row[:entry_id], dataset_id: row[:dataset_id], shape_type: row[:shape_type])
         update(id, { deleted_at: Time.now.utc, deleted_by_email: }, scope: scoped(:delete), op: :deleted) or
           raise Verse::Error::RecordNotFound, id
       end
@@ -191,8 +193,14 @@ module Annotation
         next false if row[:deleted_at].nil? # live annotation: no write, no history row, no event
 
         # Context for the `restored` event: the entry-stats listener needs the
-        # category, since a restored annotation counts again.
-        add_metadata(entry_id: row[:entry_id], dataset_id: row[:dataset_id], category: row[:category])
+        # category, since a restored annotation counts again, and the shape
+        # type, since a system shape never counts.
+        add_metadata(
+          entry_id: row[:entry_id],
+          dataset_id: row[:dataset_id],
+          category: row[:category],
+          shape_type: row[:shape_type]
+        )
         update(id, { deleted_at: nil, deleted_by_email: nil }, scope: scoped(:update), op: :restored) or
           raise Verse::Error::RecordNotFound, id
       end

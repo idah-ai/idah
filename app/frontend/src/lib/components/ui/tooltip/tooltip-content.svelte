@@ -35,7 +35,9 @@
           class={cn(
             "dark:bg-background z-50 size-2.5 rotate-45 rounded-[2px] bg-gray-800",
             "data-[side=top]:translate-x-1/2 data-[side=top]:translate-y-[calc(-50%_+_2px)]",
-            "data-[side=bottom]:translate-x-1/2 data-[side=bottom]:-translate-y-[calc(-50%_+_1px)]",
+            // Bottom: bits-ui flips the arrow 180° around its top edge, which mirrors the x shift — so
+            // it moves left here (not right as for top) to land centred under the trigger.
+            "data-[side=bottom]:-translate-x-1/2 data-[side=bottom]:-translate-y-[calc(-50%_+_1px)]",
             "data-[side=right]:translate-x-[calc(50%_+_2px)] data-[side=right]:translate-y-1/2",
             "data-[side=left]:translate-y-[calc(50%_-_3px)]",
             arrowClasses,

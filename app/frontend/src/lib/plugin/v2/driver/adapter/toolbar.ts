@@ -1,5 +1,5 @@
 import type { ToolbarManagerV2 } from "../manager/toolbar-manager.svelte";
-import type { IToolbarDriverV2, IToolbarNode, ToolbarItemOptions } from "../../types";
+import type { IToolbarDriverV2, IToolbarNode, ToolbarGroupOptions, ToolbarItemOptions } from "../../types";
 
 // ---------------------------------------------------------------------------
 // Adapter: toolbar driver → IToolbarDriverV2
@@ -13,6 +13,10 @@ export class ToolbarDriverAdapter implements IToolbarDriverV2 {
 
   orderGroups(mode: string, groups: string[]): void {
     this.mgr.orderGroups(mode, groups);
+  }
+
+  defineGroup(path: string, options: ToolbarGroupOptions): void {
+    this.mgr.defineGroup(path, options);
   }
 
   getNodesForMode(mode: string): IToolbarNode[] {
