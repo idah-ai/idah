@@ -19,6 +19,7 @@ import { Transformers } from "@/data/model/transformers";
 import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
+import { EntryWorkTimeRecord } from "@/data/model/dataset/entry-work-times/record";
 
 @type("dataset:entries")
 export class EntryRecord extends Record {
@@ -98,18 +99,7 @@ export class EntryRecord extends Record {
 
 export const entriesBasePath: string = `/api/v1/dataset/entries`;
 
-/** Per-stint rolled-up time for an entry (from the `entry_work_times` relation). */
-@type("dataset:entry_work_times")
-export class EntryWorkTimeRecord extends Record {
-  @field() public readonly account_id!: number;
-  @field() public readonly wf_step!: string;
-  @field() public readonly seconds!: number;
-  @field() public readonly email!: string | null;
-  @field({ transformer: Transformers.Time })
-  public readonly session_started_at!: Date | null;
-}
-
-RecordFactory.registerTypes(EntryRecord, EntryWorkTimeRecord);
+RecordFactory.registerTypes(EntryRecord);
 
 export const entriesBackendDataSource = createBackendDataSource(EntryRecord, entriesBasePath, {
   summary: async (projectId: string, datasetIds: string[]): Promise<EntrySummary> => {
@@ -362,6 +352,9 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
   },
   /** Fire-and-forget activity ping for time tracking. */
   activity: async (entryId: string): Promise<void> => {
-    await fetch(`${entriesBasePath}/${entryId}/activity`, { method: "POST" });
+    await fetch(`${entriesBasePath}/${entryId}/activity`, {
+      method: "POST",
+      headers: { "Content-Type": "application/vnd.api+json" },
+    });
   },
 });

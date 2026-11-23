@@ -2,7 +2,7 @@
   import * as Table from "@/components/ui/table/index";
   import DataTablePaginator from "@/components/app/data-table/_DataTablePaginator.svelte";
 
-  import type { DataTableColumnSettings, DataTableRows, IDataTablePagination, DataTableSortState } from "./types";
+  import type { DataTableColumnSettings, DataTableRows, IDataTablePagination, DataTableListOptions } from "./types";
   import { cn } from "@/utils";
   import type { Snippet } from "svelte";
   import type { Record } from "@/data/model/Record";
@@ -18,8 +18,8 @@
     onPageChange?: (page: number) => void | Promise<void>;
 
     // Sorting
-    sort?: DataTableSortState;
-    onSort?: (sort: DataTableSortState) => void;
+    sort?: DataTableListOptions;
+    onSort?: (sort: DataTableListOptions) => void;
   }
   let {
     columns,
@@ -35,10 +35,14 @@
 
   function handleSort(key: string): void {
     if (!onSort) return;
-    if (sort?.key === key) {
-      onSort({ key, dir: sort.dir === "asc" ? "desc" : "asc" });
+    const current = sort?.sort ?? [];
+    const currentKey = current[0]?.replace(/^-/, "");
+    if (currentKey === key) {
+      // Toggle direction
+      onSort({ sort: [current[0]?.startsWith("-") ? key : `-${key}`] });
     } else {
-      onSort({ key, dir: "desc" });
+      // New column → default DESC
+      onSort({ sort: [`-${key}`] });
     }
   }
 </script>

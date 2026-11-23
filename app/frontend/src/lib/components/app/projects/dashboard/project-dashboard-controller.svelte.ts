@@ -607,20 +607,18 @@ export class ProjectDashboardController {
   }
 
   sortTotalTimeSpent(): void {
-    if (this.entryProgressSortKey === "total_time_spent") {
-      this.entryProgressSortDir = this.entryProgressSortDir === "asc" ? "desc" : "asc";
+    if (this.entryProgressSort[0] === "-total_time_spent") {
+      this.entryProgressSort = ["total_time_spent", "-id"];
     } else {
-      this.entryProgressSortKey = "total_time_spent";
-      this.entryProgressSortDir = "desc";
+      this.entryProgressSort = ["-total_time_spent", "-id"];
     }
     this.entryProgressPagination = { ...this.entryProgressPagination, page: 1 };
     void this.loadEntryProgress(true);
   }
 
   public entryProgressResponse: CollectionResponse<EntryRecord> | null = $state.raw(null);
+  public entryProgressSort: string[] = $state([]);
   public entryProgressPagination: Pagination = $state.raw({ page: 1, itemsPerPage: 10 });
-  public entryProgressSortKey: string | null = $state(null);
-  public entryProgressSortDir: "asc" | "desc" = $state("desc");
   public entryProgressLoading = $state(false);
   public entryProgressError = $state("");
   private entryProgressGeneration = 0;
@@ -739,9 +737,7 @@ export class ProjectDashboardController {
           ...(overview ? { [DatasetRecord.type]: ["name"] } : {}),
         },
         included: ["assigned_to", "entry_work_times", ...(overview ? ["dataset"] : [])],
-        sort: this.entryProgressSortKey
-          ? [`${this.entryProgressSortDir === "desc" ? "-" : ""}${this.entryProgressSortKey}`, "-id"]
-          : ["-created_at", "-id"],
+        sort: this.entryProgressSort.length ? this.entryProgressSort : ["-created_at", "-id"],
         pagination: { ...this.entryProgressPagination },
         count: true,
         noCache: true,

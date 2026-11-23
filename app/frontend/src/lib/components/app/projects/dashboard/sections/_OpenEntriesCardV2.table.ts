@@ -1,4 +1,5 @@
-import { EntryRecord, EntryWorkTimeRecord } from "@/data/model/dataset/entries/record";
+import { EntryRecord } from "@/data/model/dataset/entries/record";
+import { EntryWorkTimeRecord } from "@/data/model/dataset/entry-work-times/record";
 import EntryNameCell from "@/components/app/projects/dashboard/sections/data-table-cells/_EntryNameCell.svelte";
 import EntryDatasetCell from "@/components/app/projects/dashboard/sections/data-table-cells/_EntryDatasetCell.svelte";
 import EntryStatusCell from "@/components/app/projects/dashboard/sections/data-table-cells/_EntryStatusCell.svelte";

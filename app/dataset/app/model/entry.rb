@@ -514,7 +514,7 @@ module Entry
             "CASE WHEN entries.time_tracking IS NOT NULL " \
             "THEN (SELECT SUM((value)::integer) " \
             "FROM jsonb_each_text(entries.time_tracking)) END " \
-            "#{ascending ? 'ASC' : 'DESC'} NULLS LAST"
+            "#{ascending ? "ASC" : "DESC"} NULLS LAST"
         else
           exprs << x
           has_id = true if x.delete_prefix("-") == "id"

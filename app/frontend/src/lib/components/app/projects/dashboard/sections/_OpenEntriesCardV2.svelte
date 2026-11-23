@@ -121,7 +121,7 @@
               >
             {/snippet}
           </ResponseBlock>
-        {:else if controller.loading || controller.entryProgressLoading || !controller.scopeReady }
+        {:else if controller.loading || controller.entryProgressLoading || !controller.scopeReady}
           <div class="flex min-h-32 items-center justify-center" role="status" aria-label="Loading entries">
             <Spinner size="sm" />
           </div>
@@ -137,7 +137,7 @@
         {:else}
           <DataTable
             {columns}
-            rows={rows}
+            {rows}
             {pagination}
             showPaginator={pagination !== undefined}
             onPageChange={changePage}
