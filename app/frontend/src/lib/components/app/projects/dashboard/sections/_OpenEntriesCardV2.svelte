@@ -78,7 +78,7 @@
 
 <Card.Root bind:ref={section} class="scroll-mt-4">
   <Card.Header>
-    <Card.Title>Open entries V2</Card.Title>
+    <Card.Title>Progress by entry</Card.Title>
   </Card.Header>
 
   <Card.Content>
@@ -92,7 +92,11 @@
                 ? (controller.summary?.total.toLocaleString() ?? "—")
                 : value === "open"
                   ? (controller.openEntriesCount?.toLocaleString() ?? "—")
-                  : (controller.summary?.completed.toLocaleString() ?? "—")})
+                  : value === "not_ready"
+                    ? (controller.summary?.processing.toLocaleString() ?? "-")
+                    : value === "error"
+                      ? (controller.summary?.errored.toLocaleString() ?? "-")
+                      : (controller.summary?.completed.toLocaleString() ?? "-")})
             </TabsTrigger>
           {/each}
         </TabsList>
