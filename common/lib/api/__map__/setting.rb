@@ -11,3 +11,17 @@ Api[:idah].register(
 
   deserialize output.body
 end
+
+# A storage target's location and decrypted credentials. The setting service
+# serves them to the system role only (the media and sync service accounts).
+Api[:idah].register(
+  :setting, :storage_targets, :credentials
+) do |id:|
+  output = get(
+    "setting/storage_targets/:id/_credentials",
+    params: { id: },
+    options: { auth: :bearer }
+  )
+
+  deserialize output.body
+end
