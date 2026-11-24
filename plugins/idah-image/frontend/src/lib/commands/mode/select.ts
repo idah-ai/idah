@@ -11,6 +11,8 @@ import {
   IMAGE_MASK,
   REVIEW_MODE,
 } from "$lib/types";
+import { ui } from "$lib/state/ui.svelte";
+import { doOff, invalidate } from "$lib/commands/coverage-mask/_shared";
 
 export const command = {
   name: "idah-image:tool.selection",
@@ -36,6 +38,12 @@ export function register(driver: IIdahDriverV2): void {
           driver.setMode(REVIEW_MODE);
         } else {
           driver.setMode(DEFAULT_MODE);
+        }
+        // Done Area add/remove lives inside the resting mode, so setMode above may not fire a
+        // mode change when you're already there — turn it off explicitly.
+        if (ui.coverageMaskActive) {
+          doOff();
+          invalidate(driver);
         }
       },
       isCombinable() {

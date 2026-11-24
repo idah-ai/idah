@@ -13,8 +13,6 @@
   import { cn } from "@/utils";
   import { refetches } from "@/utils/refetch";
 
-  import type { ProjectMemberScope } from "@/security/types";
-
   // Props
   interface Props {
     entry: EntryRecord;
@@ -25,19 +23,12 @@
   // Lifecycle
   onMount(async () => {
     canUpdateEntry =
-      (await $authStatus.authContext?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+      (await $authStatus.authContext?.canOnProject("update", "dataset:entries", projectId, "project_owner")) || false;
   });
 
   // Variables
   let projectId = page.params.projectId as string;
   let canUpdateEntry = $state(false);
-
-  const as_project_owner: { as_user: ProjectMemberScope } = {
-    as_user: {
-      projectId,
-      projectMemberRoles: ["project_owner"],
-    },
-  };
 
   // Functions
   async function changePriority(priorityValue: number) {

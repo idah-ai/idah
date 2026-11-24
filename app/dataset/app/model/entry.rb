@@ -30,6 +30,7 @@ module Entry
     field :reopened_by_id, type: [Integer, NilClass]
     field :reopened_by_email, type: [String, NilClass]
 
+    field :completed_at, type: [Time, NilClass], readonly: true
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
@@ -68,8 +69,70 @@ module Entry
   end
 
   class Repository < Verse::Sequel::Repository
+    include ActorEventMetadata
+
     self.table = "entries"
     self.resource = Resource::Dataset::Entries
+
+    query
+    def summary(project_id:, dataset_ids: nil)
+      with_db_mode :r do
+        collection = scoped(:read).where(project_id: project_id)
+        collection = collection.where(dataset_id: dataset_ids) if dataset_ids
+        workflow = { status: %w[pending in_progress] }
+        counts = {
+          total: nil,
+          completed: { status: "completed" },
+          errored: { status: "errored" },
+          processing: { status: "processing" },
+          pending_annotation: { status: "pending", wf_step: "annotate" },
+          pending_review: { status: "pending", wf_step: "review" },
+          open: workflow,
+          review: workflow.merge(wf_step: "review"),
+          annotation: workflow.merge(wf_step: "annotate")
+        }
+        collection.select(
+          *counts.map do |name, condition|
+            count = Sequel.function(:count, Sequel.lit("*"))
+            (condition ? count.filter(condition) : count).as(name)
+          end
+        ).first
+      end
+    end
+
+    query
+    def completion_history(project_id:, timezone:, from: nil, to: nil, dataset_ids: nil)
+      with_db_mode :r do
+        # Currently completed Entries with known completion timestamps in the authorized scope.
+        collection = scoped(:read).where(project_id: project_id, status: "completed").exclude(completed_at: nil)
+        collection = collection.where(dataset_id: dataset_ids) if dataset_ids
+
+        if from.nil? && to.nil?
+          # Find the latest authorized completion's local date, or today's local date when unknown.
+          latest_day = Sequel.lit(
+            "COALESCE(((MAX(completed_at) AT TIME ZONE 'UTC') AT TIME ZONE ?)::date, " \
+            "(CURRENT_TIMESTAMP AT TIME ZONE ?)::date)",
+            timezone,
+            timezone
+          )
+          end_date = collection.select(latest_day.as(:day)).first[:day]
+          from = (end_date - 6).iso8601
+          to = end_date.iso8601
+        end
+
+        # Convert inclusive local dates to half-open UTC bounds for the raw completed_at index.
+        # completed_at stores UTC wall-clock values as timestamp without time zone.
+        lower = Sequel.lit("(?::date::timestamp AT TIME ZONE ?) AT TIME ZONE 'UTC'", from, timezone)
+        upper = Sequel.lit("((?::date + 1)::timestamp AT TIME ZONE ?) AT TIME ZONE 'UTC'", to, timezone)
+
+        # Interpret stored timestamps as UTC, then group by the viewer's local calendar date.
+        day = Sequel.lit("((entries.completed_at AT TIME ZONE 'UTC') AT TIME ZONE ?)::date", timezone)
+        daily = collection.where { completed_at >= lower }.where { completed_at < upper }
+                          .select(day.as(:day), Sequel.function(:count, Sequel.lit("*")).as(:count))
+                          .group(day).order(day).all.to_h { |row| [row[:day].iso8601, row[:count]] }
+        { from: from, to: to, daily: daily }
+      end
+    end
 
     custom_filter :participated do |collection, value|
       where_fragment = <<-SQL
@@ -159,23 +222,15 @@ module Entry
         scope.all? { table }
 
         scope.as_org_owner? do
-          org_ids = auth_context.custom_scopes[:org]
-          project_ids = auth_context.custom_scopes[:project]
-          if org_ids
-            table.where(
-              table.db[:projects]
-                .where(organization_id: org_ids)
-                .where(id: Sequel[:entries][:project_id])
-                .select(1).exists
-            )
-          elsif project_ids
-            table.where(project_id: project_ids)
+          if auth_context.custom_scopes[:project]
+            # API-key project scope: no membership union.
+            table.where(project_id: auth_context.custom_scopes[:project])
           else
-            table.where(Sequel.lit("false"))
+            table.where(org_projects_condition | user_project_scoped_condition(action))
           end
         end
 
-        scope.as_user? { user_project_scoped_query(action) }
+        scope.as_user? { table.where(user_project_scoped_condition(action)) }
       end
     end
 
@@ -186,10 +241,21 @@ module Entry
     # Info:
     # 1. project_owner can create, update and delete entries
     # 2. annotator and reviewer can only read entries assigned to them
+
+    def org_projects_condition
+      org_ids = auth_context.custom_scopes[:org]
+      return Sequel.lit("false") unless org_ids&.any?
+
+      table.db[:projects]
+           .where(organization_id: org_ids)
+           .where(id: Sequel[:entries][:project_id])
+           .select(1).exists
+    end
+
     query
-    def user_project_scoped_query(action)
+    def user_project_scoped_condition(action)
       # Ignore create action as it will be handled in service layer
-      return table if action == :create
+      return Sequel.lit("true") if action == :create
 
       account_id = auth_context.metadata[:id]
 
@@ -226,14 +292,12 @@ module Entry
           )
         SQL
 
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            with_roles: %w[project_owner],
-            annotator_roles: %w[annotator],
-            reviewer_roles: %w[reviewer]
-          )
+        Sequel.lit(
+          scoped_fragment,
+          account_id:,
+          with_roles: %w[project_owner],
+          annotator_roles: %w[annotator],
+          reviewer_roles: %w[reviewer]
         )
       when :update, :delete
         scoped_fragment = <<-SQL
@@ -247,12 +311,10 @@ module Entry
           )
         SQL
 
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            roles: %w[project_owner]
-          )
+        Sequel.lit(
+          scoped_fragment,
+          account_id:,
+          roles: %w[project_owner]
         )
       else
         raise Verse::Error::Unauthorized,
@@ -262,7 +324,7 @@ module Entry
 
     def create(attributes)
       with_metadata do
-        add_event_metadata(
+        add_metadata(
           project_id: attributes[:project_id],
           dataset_id: attributes[:dataset_id]
         )
@@ -275,7 +337,7 @@ module Entry
       with_metadata do
         entry = find!(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: attributes[:project_id] || entry.project_id,
           dataset_id: attributes[:dataset_id] || entry.dataset_id,
           entry_id: id
@@ -289,7 +351,7 @@ module Entry
       with_metadata do
         entry = find!(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: entry.project_id,
           dataset_id: entry.dataset_id,
           entry_id: id
@@ -324,7 +386,7 @@ module Entry
     def assign(id, assigned_to_id, assigned_to_email)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: entry.project_id,
         dataset_id: entry.dataset_id,
         entry_id: id
@@ -341,7 +403,7 @@ module Entry
     def unassign(id)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: entry.project_id,
         dataset_id: entry.dataset_id,
         entry_id: id
@@ -358,7 +420,7 @@ module Entry
     def reopen(id, attributes)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: entry.project_id,
         dataset_id: entry.dataset_id,
         entry_id: id
@@ -375,7 +437,7 @@ module Entry
     def submit(id, attributes)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: attributes[:project_id] || entry.project_id,
         dataset_id: attributes[:dataset_id] || entry.dataset_id,
         entry_id: id,
@@ -394,7 +456,7 @@ module Entry
     def error(id, attributes)
       entry = find!(id)
 
-      add_event_metadata(
+      add_metadata(
         project_id: attributes[:project_id] || entry.project_id,
         dataset_id: attributes[:dataset_id] || entry.dataset_id,
         entry_id: id
@@ -413,17 +475,6 @@ module Entry
       transaction do
         update!(entry.id, { status: })
       end
-    end
-
-    private
-
-    def add_event_metadata(**opts)
-      add_metadata(
-        actor_account_id: auth_context.metadata[:id],
-        actor_account_email: auth_context.metadata[:email],
-        actor_account_role_name: auth_context.metadata[:role],
-        **opts
-      )
     end
   end
 end

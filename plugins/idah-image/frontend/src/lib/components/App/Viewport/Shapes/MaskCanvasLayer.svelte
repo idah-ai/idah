@@ -26,6 +26,7 @@
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { getOrCreate, invalidateAll } from "$lib/mask/tile-cache";
+  import { rasterizeTile } from "$lib/mask/rasterize-tile";
   import { ui } from "$lib/state/ui.svelte";
 
   interface Props {
@@ -195,8 +196,6 @@
     }
     sessionColor = withAlpha(sessionColor, HIGHLIGHT_ALPHA);
 
-    const [r, g, b, a] = sessionColor;
-
     for (const key of maskSession.dirty) {
       const buffer = maskSession.getTileBuffer(
         parseInt(key.split(":")[0], 10),
@@ -216,30 +215,10 @@
 
       let bitmap = _sessionTileBitmaps.get(key);
       if (!bitmap || cachedVersion !== currentVersion) {
-        // Rasterize this session tile to an offscreen bitmap using ImageData
+        // Rasterize this session tile to an offscreen bitmap
         if (bitmap) bitmap.close(); // free old GPU memory
 
-        const imageData = new ImageData(MASK_TILE_SIZE, MASK_TILE_SIZE);
-        const pixels = imageData.data;
-
-        for (let py = 0; py < MASK_TILE_SIZE; py++) {
-          for (let px = 0; px < MASK_TILE_SIZE; px++) {
-            if (buffer[py * MASK_TILE_SIZE + px] === 1) {
-              const idx = (py * MASK_TILE_SIZE + px) * 4;
-              pixels[idx] = r;
-              pixels[idx + 1] = g;
-              pixels[idx + 2] = b;
-              pixels[idx + 3] = a;
-            }
-          }
-        }
-
-        const offscreen = new OffscreenCanvas(MASK_TILE_SIZE, MASK_TILE_SIZE);
-        const octx = offscreen.getContext("2d")!;
-        octx.imageSmoothingEnabled = false;
-        octx.putImageData(imageData, 0, 0);
-
-        bitmap = offscreen.transferToImageBitmap();
+        bitmap = rasterizeTile(buffer, sessionColor);
         _sessionTileBitmaps.set(key, bitmap);
         _sessionTileVersions.set(key, currentVersion);
       }

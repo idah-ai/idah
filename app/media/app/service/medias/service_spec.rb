@@ -137,6 +137,120 @@ RSpec.describe Medias::Service, as: :system, database: true do
       FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
     end
 
+    it "keeps nested folders at any depth, naming each media by its path in the zip" do
+      require "zip"
+
+      zip_path = Tempfile.create(["nested", ".zip"]).tap(&:close).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        zip.put_next_entry("root.jpg")
+        zip.write("root")
+        zip.put_next_entry("clip_a/")
+        zip.put_next_entry("clip_a/0001.jpg")
+        zip.write("a1")
+        zip.put_next_entry("clip_b/0001.jpg") # same basename, different folder
+        zip.write("b1")
+        zip.put_next_entry("clip_b/deep/er/0002.jpg")
+        zip.write("b2")
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "nested.zip",
+          type: "application/zip",
+          tempfile: File.open(zip_path, "rb")
+        }
+      )
+
+      result = subject.upload(zip_file, resource: "res", project_id: "pid")
+
+      # same basename in different folders stays apart, and each media gets its own resource
+      expect(result[:processed].map(&:filename)).to contain_exactly(
+        "root.jpg", "clip_a/0001.jpg", "clip_b/0001.jpg", "clip_b/deep/er/0002.jpg"
+      )
+      expect(result[:processed].map(&:resource).uniq.length).to eq(4)
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    def zip_with(*names)
+      path = Tempfile.create(["wrapped", ".zip"]).tap(&:close).path
+      Zip::OutputStream.open(path) do |zip|
+        names.each do |name|
+          zip.put_next_entry(name)
+          zip.write("x") unless name.end_with?("/")
+        end
+      end
+      path
+    end
+
+    def upload_zip(path)
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        { filename: "clip.zip", type: "application/zip", tempfile: File.open(path, "rb") }
+      )
+      subject.upload(zip_file, resource: "res", project_id: "pid")
+    end
+
+    it "drops the single folder a zipped folder wraps everything in, like the folder itself" do
+      require "zip"
+
+      # as made by "Compress" on macOS, artifacts included
+      zip_path = zip_with(
+        "clip/",
+        "clip/cam_a/0001.jpg",
+        "clip/cam_b/0001.jpg",
+        "clip/0002.jpg",
+        "__MACOSX/clip/._0002.jpg"
+      )
+
+      expect(upload_zip(zip_path)[:processed].map(&:filename)).to contain_exactly(
+        "cam_a/0001.jpg", "cam_b/0001.jpg", "0002.jpg"
+      )
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "keeps the top folders when there are several of them" do
+      require "zip"
+
+      zip_path = zip_with("cam_a/0001.jpg", "cam_b/0001.jpg")
+
+      expect(upload_zip(zip_path)[:processed].map(&:filename)).to contain_exactly("cam_a/0001.jpg", "cam_b/0001.jpg")
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
+    it "drops the wrapping folder from skipped and errored files too" do
+      allow(Processor::Registry).to receive(:allowed_mime_types).with("image_only").and_return(["image/.*"])
+      require "zip"
+      stub_const("Medias::UploadConstants::MAX_ENTRY_UNCOMPRESSED_SIZE", 10)
+
+      zip_path = Tempfile.create(["wrapped", ".zip"]).tap(&:close).path
+      Zip::OutputStream.open(zip_path) do |zip|
+        { "clip/ok.jpg" => "ok", "clip/big.jpg" => "x" * 50, "clip/notes.sh" => "hi", "clip/bad.jpg" => "ko" }
+          .each do |name, content|
+            zip.put_next_entry(name)
+            zip.write(content)
+          end
+      end
+
+      allow(subject).to receive(:store_media).and_wrap_original do |original, **kwargs|
+        raise "storage exploded" if kwargs[:filename] == "bad.jpg"
+
+        original.call(**kwargs)
+      end
+
+      zip_file = Verse::Http::UploadedFileStruct.new(
+        { filename: "clip.zip", type: "application/zip", tempfile: File.open(zip_path, "rb") }
+      )
+      result = subject.upload(zip_file, resource: "res", project_id: "pid", modality: "image_only")
+
+      expect(result[:processed].map(&:filename)).to eq(["ok.jpg"])
+      expect(result[:skipped].map { |s| s[:filename] }).to contain_exactly("big.jpg", "notes.sh")
+      expect(result[:errored]).to eq([{ filename: "bad.jpg", message: "storage exploded" }])
+    ensure
+      FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
+    end
+
     it "skips system artifacts in zip files" do
       require "zip"
 
@@ -152,6 +266,11 @@ RSpec.describe Medias::Service, as: :system, database: true do
         zip.write("ds-store")
         zip.put_next_entry("ehthumbs.db")
         zip.write("win-thumbs")
+        # artifacts nested inside folders (zipped folder uploads)
+        zip.put_next_entry("clip/__MACOSX/._frame.jpg")
+        zip.write("apple-double-nested")
+        zip.put_next_entry("clip/.DS_Store")
+        zip.write("ds-store-nested")
         # near-miss: artifact name as a substring must NOT be skipped
         zip.put_next_entry("my.DS_Store.jpg")
         zip.write("legit-image")

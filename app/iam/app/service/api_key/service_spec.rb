@@ -439,8 +439,8 @@ RSpec.describe ApiKey::Service, database: true do
       end
 
       it "returns a list of API keys scoped to the current organization" do
-        allow(Api[:idah].dataset.projects).to receive(:index).and_return(
-          double(data: [double(id: "1", name: "Test Organization")])
+        allow(ProjectMembership::Lookup).to receive(:new).and_return(
+          double(project_ids_for_organizations: ["1"])
         )
         # Create a key owned by the current org owner (id: 2)
         api_keys_repo.create(

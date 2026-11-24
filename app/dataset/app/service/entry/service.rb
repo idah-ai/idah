@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "tzinfo"
+
 module Entry
   class Service < Verse::Service::Base
     use entries: Entry::Repository,
@@ -26,6 +28,55 @@ module Entry
         sort:,
         query_count:
       )
+    end
+
+    def summary(filters)
+      filters = filters.transform_keys(&:to_sym)
+      project_id = filters[:project_id]
+      dataset_ids = filters[:dataset_id]
+      dataset_ids = validate_dashboard_scope(project_id, dataset_ids)
+      entries.summary(project_id: project_id, dataset_ids: dataset_ids)
+    end
+
+    def completion_history(filters, timezone:, from: nil, to: nil)
+      if from.nil? != to.nil?
+        raise Verse::Error::ValidationFailed, "Provide both from and to, or neither"
+      end
+
+      if from
+        start_date = Date.iso8601(from)
+        end_date = Date.iso8601(to)
+        unless start_date.iso8601 == from && end_date.iso8601 == to && (end_date - start_date).to_i.between?(0, 365)
+          raise Verse::Error::ValidationFailed, "Select a valid date range of up to 366 days"
+        end
+      end
+
+      TZInfo::Timezone.get(timezone)
+      filters = filters.transform_keys(&:to_sym)
+      project_id = filters.fetch(:project_id)
+      dataset_ids = validate_dashboard_scope(project_id, filters[:dataset_id])
+      entries.completion_history(
+        project_id: project_id,
+        dataset_ids: dataset_ids,
+        from: from,
+        to: to,
+        timezone: timezone
+      )
+    rescue Date::Error, TZInfo::InvalidTimezoneIdentifier
+      raise Verse::Error::ValidationFailed, "Invalid completion date range or timezone"
+    end
+
+    private def validate_dashboard_scope(project_id, dataset_ids)
+      projects.find!(project_id)
+      return unless dataset_ids
+
+      ids = dataset_ids.uniq
+      records = datasets.index({ project_id: project_id, id: ids }, items_per_page: 100)
+      unless records.length == ids.length
+        raise Verse::Error::ValidationFailed, "Datasets are not available in this Project"
+      end
+
+      ids
     end
 
     def select_next(dataset_id:, wf_step:)
@@ -74,16 +125,8 @@ module Entry
               "dataset not found to create an entry"
       end
 
-      # With "as_user" access ensure account can "create" entry to the project
-      if auth_context.can?(:create, entries.class.resource) == :as_user &&
-         ScopedQuery::Service.without_project_access?(
-           auth_context.metadata[:id],
-           dataset.project_id,
-           ["project_owner"]
-         )
-        raise Verse::Error::Unauthorized,
-              "You do not have permission to create entry on this project"
-      end
+      # Creating an entry requires effective rank >= project_owner on the project.
+      ensure_project_owner!(dataset.project_id)
 
       # Assign attributes
       attributes[:id] = record.id || UUIDv7.generate
@@ -267,16 +310,8 @@ module Entry
               "dataset not found to duplicate entries"
       end
 
-      # With "as_user" access ensure account can "create" entry to the project
-      if auth_context.can?(:create, entries.class.resource) == :as_user &&
-         ScopedQuery::Service.without_project_access?(
-           auth_context.metadata[:id],
-           dataset.project_id,
-           ["project_owner"]
-         )
-        raise Verse::Error::Unauthorized,
-              "You do not have permission to create entry on this project"
-      end
+      # Creating an entry requires effective rank >= project_owner on the project.
+      ensure_project_owner!(dataset.project_id)
 
       duping_entries = if entry_ids
                          # INFO: also filter with duping_dataset_id to ensure the entries are in the duping dataset
@@ -346,6 +381,21 @@ module Entry
           next
         end
       end
+    end
+
+    private
+
+    # Creating an entry requires effective rank >= project_owner on the project.
+    # Decides on the resolver so an org_owner with a membership on a foreign
+    # project is evaluated with their membership role.
+    def ensure_project_owner!(project_id)
+      effective_rank = ProjectAccess::Service.effective_rank(
+        auth_context, project_id, action: :create, resource: entries.class.resource
+      )
+      return if effective_rank && effective_rank >= RoleHierarchy.rank("project_owner")
+
+      raise Verse::Error::Unauthorized,
+            "You do not have permission to create entry on this project"
     end
   end
 end

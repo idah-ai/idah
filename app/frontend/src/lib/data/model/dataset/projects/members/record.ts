@@ -1,4 +1,6 @@
-import { createBackendDataSource } from "@/data/BackendDataSource";
+import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
+import { clearCache } from "@/data/Cache";
+import { parseCollectionReturn, parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
 
@@ -29,7 +31,58 @@ RecordFactory.registerTypes(ProjectMemberRecord);
 
 export const projectMembersBasePath: string = `/api/v1/dataset/project_members`;
 
-export const projectMembersBackendDataSource = createBackendDataSource(ProjectMemberRecord, projectMembersBasePath);
+export const projectMembersBackendDataSource = createBackendDataSource(ProjectMemberRecord, projectMembersBasePath, {
+  /**
+   * Batch-invite members to a project (all-or-nothing). The backend validates
+   * every member first and returns a per-email reason on failure.
+   */
+  invite: async (params: { project_id: string; members: Array<{ email: string; role: ProjectMemberRole }> }) => {
+    const res = await fetch(`${projectMembersBasePath}/invite`, {
+      method: "POST",
+      body: JSON.stringify(params),
+      headers: { "Content-Type": "application/vnd.api+json" },
+    });
+
+    const body = await res.json();
+
+    if (body && body.errors) {
+      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    }
+
+    // Drop the cached member lists so the table shows the new rows on refetch.
+    clearCache(resourcePath(projectMembersBasePath, null, undefined));
+
+    // The backend returns the batch of created/re-enabled members as a JSON:API
+    // collection (`data: [...]`), so parse it as a collection.
+    if (body && body.data) return Promise.resolve(parseCollectionReturn<ProjectMemberRecord>(body));
+
+    throw "No data returned";
+  },
+
+  /** Resend a project member invitation (guarded). */
+  resend_invitation: async (params: { id: string }) => {
+    const { id } = params;
+
+    const res = await fetch(`${projectMembersBasePath}/${id}/resend_invitation`, {
+      method: "POST",
+      body: JSON.stringify({ id }),
+      headers: { "Content-Type": "application/vnd.api+json" },
+    });
+
+    const body = await res.json();
+
+    if (body && body.errors) {
+      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    }
+
+    clearCache(resourcePath(projectMembersBasePath, null, undefined));
+    clearCache(resourcePath(projectMembersBasePath, id, undefined));
+
+    if (body && body.data) return Promise.resolve(parseSingleElementReturn<ProjectMemberRecord>(body));
+
+    throw "No data returned";
+  },
+});
 
 export const projectMemberRoles = [
   { label: "Project Owner", value: "project_owner" },

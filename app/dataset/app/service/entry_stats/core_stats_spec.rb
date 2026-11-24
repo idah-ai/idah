@@ -225,6 +225,37 @@ RSpec.describe EntryStats::CoreStats do
       end
     end
 
+    context "with system-shape annotations (declared in the plugin manifest)" do
+      before do
+        allow(PluginSystem::SystemShapes).to receive(:for_all).and_return(Set["idah-image:done-area"])
+      end
+
+      it "excludes system-shape annotations from every count" do
+        config = { "idah-video:bounding-box" => { values: [{ id: "cat" }] } }
+        annotations = [
+          make_annotation(category: "cat", type: "idah-video:bounding-box"),
+          make_annotation(category: "done_area", type: "idah-image:done-area")
+        ]
+        result = described_class.call(make_entry(annotations: annotations, config: config))
+
+        expect(result["annotation.count"]).to eq("1")
+        expect(result["category.cat.count"]).to eq("1")
+        expect(result["category.done_area.count"]).to be_nil
+        expect(result["shape.bounding-box.count"]).to eq("1")
+        expect(result["shape.done-area.count"]).to be_nil
+        expect(result["orphan_category.count"]).to eq("0")
+      end
+
+      it "reports 0 orphans when only system-shape annotations are present" do
+        annotations = [make_annotation(category: "done_area", type: "idah-image:done-area")]
+        result = described_class.call(make_entry(annotations: annotations))
+
+        expect(result["annotation.count"]).to eq("0")
+        expect(result["orphan_category.count"]).to eq("0")
+        expect(result.keys.none? { |k| k.start_with?("category.", "shape.") }).to be true
+      end
+    end
+
     context "with soft-deleted annotations" do
       it "excludes deleted annotations from all counts" do
         annotations = [

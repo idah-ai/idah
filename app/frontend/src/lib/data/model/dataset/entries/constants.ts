@@ -58,3 +58,22 @@ export const entryWorkflowSteps: EntryWorkflowStepBadgeProps[] = [
   { label: "Review", value: "review" },
   { label: "Export", value: "export" },
 ];
+
+export interface EntrySummary {
+  total: number;
+  errored: number;
+  processing: number;
+  pending_annotation: number;
+  pending_review: number;
+  open: number;
+  completed: number;
+  review: number;
+  annotation: number;
+}
+
+export interface EntryCompletionHistory {
+  timezone: string;
+  from: string;
+  to: string;
+  daily: Record<string, number>;
+}

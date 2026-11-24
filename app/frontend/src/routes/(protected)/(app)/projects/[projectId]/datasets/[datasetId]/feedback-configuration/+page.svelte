@@ -12,16 +12,12 @@
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import type { ProjectRecord } from "@/data/model/dataset/projects/project-record";
-  import type { ProjectMemberScope } from "@/security/types";
 
   const project: ProjectRecord = getContext("project");
   const dataset: DatasetRecord = getContext("dataset");
 
   const projectId: string = page.params.projectId as string;
   const datasetId: string = page.params.datasetId as string;
-  const as_project_owner: { as_user: ProjectMemberScope } = {
-    as_user: { projectId, projectMemberRoles: ["project_owner"] },
-  };
 
   pageBreadcrumbsStore.set([
     projectBreadcrumb,
@@ -36,6 +32,6 @@
   <Text size="sm" class="text-muted-foreground">Pre-configured feedback reviewers can attach to notes.</Text>
 </section>
 
-<Can action="update" resource="dataset:datasets" scopes={["as_org_owner", as_project_owner]}>
+<Can action="update" resource="dataset:datasets" {projectId} minRole="project_owner">
   <DatasetFeedbackManagement />
 </Can>

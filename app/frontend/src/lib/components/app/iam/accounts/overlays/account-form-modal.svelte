@@ -6,6 +6,7 @@
 
   import { refetches } from "@/utils/refetch";
 
+  import { getChangedAccountFields, serializeAccountFields } from "@/data/model/iam/accounts/form-values";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { createAccountSchema, updateAccountSchema } from "@/data/model/iam/accounts/schema";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -41,7 +42,7 @@
             name: null,
             email: null,
             role_name: "user",
-            role_scope: null,
+            role_scope: { org: [] },
             sso_channel: null,
             enabled: true,
           },
@@ -50,20 +51,7 @@
   // Local edit buffer holding the current form values.
   let draft: Hash = $state({});
 
-  // Single source of truth for the dirty comparison. Keys MUST be limited to
-  // fields the form emits via onValueChange (name, email, role_name, enabled) —
-  // used for BOTH the original-record and current-value snapshots. sso_channel
-  // is displayed but read-only and never emitted, so it must not be diffed.
-  function serializeEditableFields(source: Hash): Hash {
-    return {
-      name: source.name,
-      email: source.email,
-      role_name: source.role_name,
-      role_scope: source.role_scope,
-      enabled: source.enabled,
-    };
-  }
-  const changeTracker = new FormChangeTracker(serializeEditableFields, () => accountRecord);
+  const changeTracker = new FormChangeTracker(serializeAccountFields, () => accountRecord);
 
   // Functions
   function closeThisModal(): void {
@@ -77,54 +65,30 @@
   }
 
   function setValue(value: Hash): void {
-    // sso_channel is read-only and not emitted by the form; it is sourced from
-    // the original record at submit time, so it is intentionally absent here.
     draft = { ...value };
     changeTracker.update(value);
   }
 
   async function createAccount(): Promise<void> {
-    await accountsBackendDataSource.create(
-      {
-        attributes: {
-          name: draft.name,
-          email: draft.email,
-          sso_channel: accountRecord?.sso_channel ?? null,
-          enabled: draft.enabled,
-          role_name: draft.role_name,
-          role_scope: draft.role_name === "org_owner" ? draft.role_scope : {},
-        },
-      },
-      {
-        showErrorToast: false,
-      },
-    );
+    // Account creation goes through the guarded invite endpoint; the backend
+    // decides the assignable role and scope.
+    await accountsBackendDataSource.invite({
+      name: draft.name,
+      email: draft.email,
+      role_name: draft.role_name,
+      role_scope: draft.role_name === "org_owner" ? serializeAccountFields(draft).role_scope : undefined,
+    });
 
     closeThisModal();
     $refetches.accounts.list = new Date();
     showToast.success({
-      title: "Account created",
-      description: `The account has been created and an invitation email has been sent to "${draft.email}".`,
+      title: "Account invited",
+      description: `The account has been invited and an invitation email has been sent to "${draft.email}".`,
     });
   }
 
-  async function updateAccount(): Promise<void> {
-    await accountsBackendDataSource.update(
-      accountRecord!.id,
-      {
-        attributes: {
-          name: draft.name,
-          email: draft.email,
-          role_name: draft.role_name,
-          sso_channel: accountRecord?.sso_channel ?? null,
-          enabled: draft.enabled,
-          role_scope: draft.role_name === "org_owner" ? draft.role_scope : {},
-        },
-      },
-      {
-        showErrorToast: false,
-      },
-    );
+  async function updateAccount(attributes: Hash): Promise<void> {
+    await accountsBackendDataSource.update(accountRecord!.id, { attributes }, { showErrorToast: false });
 
     closeThisModal();
 
@@ -146,14 +110,17 @@
     const schema: ZodSchema = newRecord ? createAccountSchema : updateAccountSchema;
 
     try {
-      const validated = validateData(schema, {
-        name: draft.name,
-        email: draft.email,
-        role_name: draft.role_name,
-        role_scope: draft.role_scope,
-        sso_channel: accountRecord?.sso_channel ?? null,
-        enabled: draft.enabled,
-      });
+      const attributes = newRecord ? serializeAccountFields(draft) : getChangedAccountFields(accountRecord, draft);
+      if (!newRecord && Object.keys(attributes).length === 0) return;
+      const validated = validateData(
+        schema,
+        newRecord
+          ? { ...attributes, email: draft.email }
+          : {
+              ...attributes,
+              role_name: attributes.role_scope ? draft.role_name : attributes.role_name,
+            },
+      );
 
       if (!validated.success) {
         fieldErrors = getFieldErrors(validated.error);
@@ -164,7 +131,7 @@
       if (newRecord) {
         await createAccount();
       } else {
-        await updateAccount();
+        await updateAccount(attributes);
       }
     } catch (error) {
       showActionFailedToast(error);

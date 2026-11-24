@@ -23,6 +23,7 @@
 
 import { MASK_TILE_SIZE } from "$lib/mask/constants";
 import { decode } from "$lib/mask/rle";
+import { rasterizeTile } from "$lib/mask/rasterize-tile";
 
 interface CacheEntry {
   /** The RLE string that was decoded to produce this entry. */
@@ -86,25 +87,8 @@ export function getOrCreate(
   // Decode the RLE
   const buffer = decode(rle, MASK_TILE_SIZE, MASK_TILE_SIZE);
 
-  // Render to an offscreen canvas, then produce an ImageBitmap.
-  // Use nearest-neighbour interpolation so the mask pixels stay sharp
-  // when the bitmap is composited onto a zoomed-in main canvas.
-  const offscreen = new OffscreenCanvas(MASK_TILE_SIZE, MASK_TILE_SIZE);
-  const octx = offscreen.getContext("2d")!;
-  octx.imageSmoothingEnabled = false;
-  const [r, g, b, a] = color;
-  octx.fillStyle = `rgba(${r},${g},${b},${a / 255})`;
-
-  // Only draw painted pixels
-  for (let py = 0; py < MASK_TILE_SIZE; py++) {
-    for (let px = 0; px < MASK_TILE_SIZE; px++) {
-      if (buffer[py * MASK_TILE_SIZE + px] === 1) {
-        octx.fillRect(px, py, 1, 1);
-      }
-    }
-  }
-
-  const bitmap = offscreen.transferToImageBitmap();
+  // Render the buffer to an ImageBitmap using the shared rasterizer.
+  const bitmap = rasterizeTile(buffer, color);
 
   const entry: CacheEntry = { sourceRle: rle, buffer, bitmap };
   tileMap.set(ck, entry);

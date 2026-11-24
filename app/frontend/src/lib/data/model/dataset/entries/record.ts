@@ -8,10 +8,13 @@ import {
   type EntryPriorityBadgeProps,
   type EntryStatus,
   type EntryStatusBadgeProps,
+  type EntrySummary,
+  type EntryCompletionHistory,
   type EntryWorkflowStep,
 } from "@/data/model/dataset/entries/constants";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
-import { isOverdue } from "@/utils/date";
+import { getDeliveryStatusBadge, isOverdue, type DeliveryStatusBadgeProps } from "@/utils/date";
+import { Transformers } from "@/data/model/transformers";
 
 import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
@@ -44,6 +47,9 @@ export class EntryRecord extends Record {
   @field() public reopened_by_id!: number | null;
   @field() public reopened_by_email!: string | null;
 
+  @field({ transformer: Transformers.Time })
+  public readonly completed_at!: Date | null;
+
   @field() public created_at!: Date;
   @field() public updated_at!: Date;
 
@@ -64,6 +70,10 @@ export class EntryRecord extends Record {
     const foundEntryPriority = entryPriorities.find((p) => p.value === this.priority);
 
     return foundEntryPriority ?? defaultBadgeProps;
+  }
+
+  public get deliveryStatusBadge(): DeliveryStatusBadgeProps {
+    return getDeliveryStatusBadge(this.delivery_date, this.status === "completed");
   }
 
   public get statusBadge(): EntryStatusBadgeProps {
@@ -88,6 +98,43 @@ export const entriesBasePath: string = `/api/v1/dataset/entries`;
 RecordFactory.registerTypes(EntryRecord);
 
 export const entriesBackendDataSource = createBackendDataSource(EntryRecord, entriesBasePath, {
+  summary: async (projectId: string, datasetIds: string[]): Promise<EntrySummary> => {
+    const response = await fetch(
+      resourcePath(entriesBasePath, "summary", {
+        filter: { project_id: projectId, ...(datasetIds.length ? { dataset_id: datasetIds } : {}) },
+      }),
+    );
+    const body = await response.json().catch((reason) => {
+      if (!response.ok) throw parseSingleElementError({ status: response.status, errors: [] });
+      throw reason;
+    });
+    if (!response.ok || body?.errors) {
+      throw parseSingleElementError({ status: response.status, errors: body?.errors ?? [] });
+    }
+    if (!body?.meta) throw new Error("Dashboard counts unavailable.");
+    return body.meta;
+  },
+  completionHistory: async (
+    projectId: string,
+    datasetIds: string[],
+    options: { tz: string; from?: string; to?: string },
+  ): Promise<EntryCompletionHistory> => {
+    const response = await fetch(
+      resourcePath(entriesBasePath, "completion_history", {
+        filter: { project_id: projectId, ...(datasetIds.length ? { dataset_id: datasetIds } : {}) },
+        ...options,
+      }),
+    );
+    const body = await response.json().catch((reason) => {
+      if (!response.ok) throw parseSingleElementError({ status: response.status, errors: [] });
+      throw reason;
+    });
+    if (!response.ok || body?.errors) {
+      throw parseSingleElementError({ status: response.status, errors: body?.errors ?? [] });
+    }
+    if (!body?.meta?.daily || body.meta.timezone !== options.tz) throw new Error("Completion counts unavailable.");
+    return body.meta;
+  },
   select: async (params: { id: string }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
     const res = await fetch(`${entriesBasePath}/${params.id}/select`, {
       method: "GET",

@@ -9,11 +9,17 @@ import noteIcon from "$lib/assets/icons/message-circle.svg?raw";
 import { BOUNDING_BOX_MODE, POLYGON_MODE } from "$lib/state/viewport.svelte";
 import { hasConfig } from "$idah/v2/utils";
 import { magneticSnap } from "$lib/state/magnetic-snap.svelte";
+import { history } from "$lib/state/history.svelte";
+
+const historyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>`;
 
 const magnetIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15 16 19"/><path d="M2.352 10.648a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l6.029-6.029a1 1 0 1 1 3 3l-6.029 6.029a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l6.365-6.367A1 1 0 0 0 8.716 4.282z"/><path d="M5 8 9 12"/></svg>`;
 
 export function initToolbar(driver: IIdahDriverV2): void {
   const t = driver.toolbar;
+
+  // Layout (registration order = toolbar order; a divider separates sections):
+  //   annotate: selection, box, polygon (review: note) | assist: magnetic snap, history
 
   t.add({
     icon: cursorIcon,
@@ -21,15 +27,10 @@ export function initToolbar(driver: IIdahDriverV2): void {
     name: "idah-video:tool.selection",
     modes: ["editor", "review", "idah-video:bounding-box", "idah-video:polygon", "note"],
     group: null,
+    section: "annotate",
     visibleWhen: () => true,
-    onClick: () => {
-      // Return to the parent resting mode of the current workspace
-      if (driver.mode === "review" || driver.mode === "note") {
-        driver.setMode("review");
-      } else {
-        driver.setMode("editor");
-      }
-    },
+    // Same command as the D shortcut, so the button and the key always behave alike.
+    onClick: () => driver.command.call("idah-video:tool.selection"),
     whenToggled: () => driver.mode === "editor" || driver.mode === "review",
   });
 
@@ -40,6 +41,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
       name: "idah-video:tool.bounding-box",
       modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
       group: null,
+      section: "annotate",
       visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
       onClick: () => {
         if (!isEditable()) return;
@@ -48,7 +50,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
       },
       whenToggled: () => driver.mode === "idah-video:bounding-box",
     });
-    t.orderGroups("idah-video:bounding-box", ["selection"]);
   }
   if (hasConfig(driver, POLYGON_MODE)) {
     t.add({
@@ -57,6 +58,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
       name: "idah-video:tool.polygon",
       modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
       group: null,
+      section: "annotate",
       visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
       onClick: () => {
         if (!isEditable()) return;
@@ -65,7 +67,6 @@ export function initToolbar(driver: IIdahDriverV2): void {
       },
       whenToggled: () => driver.mode === "idah-video:polygon",
     });
-    t.orderGroups("idah-video:polygon", ["selection"]);
   }
   t.add({
     icon: noteIcon,
@@ -73,14 +74,11 @@ export function initToolbar(driver: IIdahDriverV2): void {
     name: "idah-video:tool.note",
     modes: ["review", "note"],
     group: null,
+    section: "annotate",
     visibleWhen: () => driver.mode === "review" || driver.mode === "note",
     onClick: () => driver.setMode("note"),
     whenToggled: () => driver.mode === "note",
   });
-
-  t.orderGroups("editor", ["selection"]);
-  t.orderGroups("review", ["selection"]);
-  t.orderGroups("note", ["selection"]);
 
   // ── Magnetic snap toggle ──────────────────────────────────────────
   t.add({
@@ -89,6 +87,7 @@ export function initToolbar(driver: IIdahDriverV2): void {
     name: "idah-video:snap.toggle-magnetic",
     modes: ["editor", "idah-video:bounding-box", "idah-video:polygon"],
     group: null,
+    section: "assist",
     visibleWhen: () => driver.mode !== "review" && driver.mode !== "note",
     onClick: () => {
       magneticSnap.toggle();
@@ -96,4 +95,20 @@ export function initToolbar(driver: IIdahDriverV2): void {
     },
     whenToggled: () => magneticSnap.enabled,
   });
+
+  // ── History toggle (last tool of the "assist" section) ──
+  // The item is hidden when the driver has no `changes()` (an older platform).
+  if (typeof driver.annotations.changes === "function") {
+    t.add({
+      icon: historyIcon,
+      label: "History",
+      name: "idah-video:history.toggle", // same as the Y command, so the tooltip shows its key
+      modes: ["editor", "review", "note", "idah-video:bounding-box", "idah-video:polygon"],
+      group: null,
+      section: "assist",
+      visibleWhen: () => true,
+      onClick: () => history.toggle(),
+      whenToggled: () => history.open,
+    });
+  }
 }

@@ -5,7 +5,7 @@
   import { onMount } from "svelte";
 
   import DatasetDuplicateModal from "@/components/app/datasets/overlays/dataset-duplicate-modal.svelte";
-  import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
+  import DatasetFormModal from "@/components/app/datasets/overlays/DatasetFormModal.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ExportFormModal from "@/components/app/projects/exports/overlays/_ExportFormModal.svelte";
 
@@ -19,7 +19,6 @@
 
   import type { DropdownMenuContentAlignment, IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
-  import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
@@ -98,21 +97,12 @@
 
   // Functions
   async function checkRights() {
-    const as_project_owner: { as_user: ProjectMemberScope } = {
-      as_user: {
-        projectId,
-        projectMemberRoles: ["project_owner"],
-      },
-    };
+    const account = $authStatus.authContext;
 
-    canCreateDataset =
-      (await $authStatus.authContext?.can("create", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
-    canUpdateDataset =
-      (await $authStatus.authContext?.can("update", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
-    canDeleteDataset =
-      (await $authStatus.authContext?.can("delete", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
-    canExportDataset =
-      (await $authStatus.authContext?.can("create", "sync:exports", ["as_org_owner", as_project_owner])) || false;
+    canCreateDataset = (await account?.canOnProject("create", "dataset:datasets", projectId, "project_owner")) || false;
+    canUpdateDataset = (await account?.canOnProject("update", "dataset:datasets", projectId, "project_owner")) || false;
+    canDeleteDataset = (await account?.canOnProject("delete", "dataset:datasets", projectId, "project_owner")) || false;
+    canExportDataset = (await account?.canOnProject("create", "sync:exports", projectId, "project_owner")) || false;
   }
 
   async function fetchDataset() {

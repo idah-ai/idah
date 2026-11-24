@@ -19,33 +19,22 @@ export const accountSchema = z.object({
   updated_at: z.string().transform((str) => new Date(str)),
 });
 
-const ownerScopeSchema = z.object({
-  role_name: z.string().nullable().optional(),
-  role_scope: z
-    .object({ org: z.array(z.union([z.string(), z.number()])).optional() })
-    .nullable()
-    .optional(),
-});
-
-const ownerScopeRequired = (account: z.infer<typeof ownerScopeSchema>) =>
-  account.role_name !== "org_owner" || !!account.role_scope?.org?.length;
-const ownerScopeError = { message: "Select at least one organization.", path: ["role_scope"] };
-
-export const createAccountSchema = accountSchema
-  .pick({
-    name: true,
-    email: true,
-    enabled: true,
-  })
-  .extend(ownerScopeSchema.shape)
-  .refine(ownerScopeRequired, ownerScopeError);
-
-export const updateAccountSchema = accountSchema
+const accountFormSchema = accountSchema
   .pick({
     name: true,
     email: true,
     enabled: true,
     role_name: true,
   })
-  .extend({ role_scope: ownerScopeSchema.shape.role_scope })
-  .refine(ownerScopeRequired, ownerScopeError);
+  .extend({
+    role_scope: z.object({ org: z.array(z.string()) }).optional(),
+  });
+
+const ownerScopeRequired = (account: Partial<z.infer<typeof accountFormSchema>>) =>
+  account.role_name !== "org_owner" || !!account.role_scope?.org.length;
+
+const ownerScopeError = { message: "Select at least one organization.", path: ["role_scope"] };
+
+export const createAccountSchema = accountFormSchema.refine(ownerScopeRequired, ownerScopeError);
+
+export const updateAccountSchema = accountFormSchema.partial().refine(ownerScopeRequired, ownerScopeError);

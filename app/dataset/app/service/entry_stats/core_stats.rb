@@ -22,6 +22,11 @@ module EntryStats
     #                                         deleted or renamed). Each annotation counted
     #                                         individually.
     #
+    # System shapes (declared via the plugin manifest's `systemShapes`, e.g. the
+    # image plugin's "done-area") are excluded before any counting: they are not
+    # annotator-drawn shapes, so they never contribute to the annotation,
+    # category, shape, or orphan counts.
+    #
     # Category ids are collected by flattening values[*][:id] across all tool-type keys
     # in labeling_configuration (e.g. "idah-video:bounding-box" → :values → :id).
     # The category field is always `category` — no per-dataset override is supported.
@@ -51,9 +56,15 @@ module EntryStats
         shape_counts[key_s.split(":", 2).last] = 0 if key_s.include?(":")
       end
 
+      system_shapes = PluginSystem::SystemShapes.for_all
+
       annotations = entry.annotations || []
       live_annotations = annotations.reject(&:deleted_at)
-      live_annotations.each do |annotation|
+      counted_annotations = live_annotations.reject do |annotation|
+        type = annotation.shape_type
+        type && system_shapes.include?(type)
+      end
+      counted_annotations.each do |annotation|
         category = annotation.category
         label_counts[category] += 1 if category
 
@@ -61,7 +72,7 @@ module EntryStats
         shape_counts[type.split(":", 2).last] += 1 if type
       end
 
-      stats = { "annotation.count" => live_annotations.size.to_s }
+      stats = { "annotation.count" => counted_annotations.size.to_s }
 
       label_counts.each do |label, count|
         stats["category.#{label}.count"] = count.to_s
@@ -71,7 +82,7 @@ module EntryStats
       # These are "orphan" annotations — the category was deleted, renamed, or never
       # configured. Each annotation is counted individually (not per distinct category).
       configured_set = configured_ids.to_set
-      orphan_annotation_count = live_annotations.count do |annotation|
+      orphan_annotation_count = counted_annotations.count do |annotation|
         category = annotation.category
         category && !configured_set.include?(category)
       end

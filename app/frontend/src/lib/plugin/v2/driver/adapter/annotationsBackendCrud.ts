@@ -2,10 +2,14 @@
 
 import { JsonRpcDatasource } from "@/data/jsonrpc";
 import { annotationsBackendDataSource, type AnnotationRecord } from "@/data/model/dataset/annotations/record";
-import type { IAnnotationRecord, IAnnotationsDriverV2, IFilter } from "../../types";
+import type { IAnnotationRecord, IAnnotationsDriverV2, IChangesQuery, IChangesResult, IFilter } from "../../types";
 import type { ICrudDriver } from "./idb-driver";
+import { createChangesAdapter, type ChangesAdapter } from "./changes";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
+
+/** Server-side limit for one `write_shapes` call (Annotation::Service). */
+const ENTRIES_PER_WRITE = 1000;
 
 function annotationRecordToV2(rec: AnnotationRecord): IAnnotationRecord {
   return {
@@ -20,6 +24,7 @@ function annotationRecordToV2(rec: AnnotationRecord): IAnnotationRecord {
     created_by_id: rec.created_by_id,
     created_at: rec.created_at,
     updated_at: rec.updated_at,
+    version: rec.version,
   };
 }
 
@@ -73,12 +78,11 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
       });
     },
 
-    async restore(id: string): Promise<IAnnotationRecord> {
-      const result = await rpc.call({
+    async restore(id: string): Promise<void> {
+      await rpc.call({
         method: "restore",
         params: { id, entry_id: entryId },
       });
-      return result as unknown as IAnnotationRecord;
     },
 
     async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
@@ -89,14 +93,19 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
     },
 
     async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
-      await Promise.all(
-        entries.map(({ key, value }) =>
-          rpc.call({
-            method: "write_shape",
-            params: { annotation_id: annotationId, key, value: value ?? null },
-          }),
-        ),
-      );
+      // One write_shapes call per up-to-1000-entry chunk: a stroke becomes one
+      // change on the server (one version, one history row). Above the server
+      // limit, split into calls of 1000, one version each.
+      for (let i = 0; i < entries.length; i += ENTRIES_PER_WRITE) {
+        const chunk = entries.slice(i, i + ENTRIES_PER_WRITE);
+        await rpc.call({
+          method: "write_shapes",
+          params: {
+            annotation_id: annotationId,
+            entries: chunk.map(({ key, value }) => ({ key, value: value ?? null })),
+          },
+        });
+      }
     },
   };
 }
@@ -110,11 +119,15 @@ export function createBackendCrudDriver(entryId: string, rpc: JsonRpcDatasource)
  */
 export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
   private virtualFields = new Map<string, (ann: IAnnotationRecord) => unknown>();
+  private changesAdapter: ChangesAdapter;
 
   constructor(
     private entryId: string,
     private rpc: JsonRpcDatasource,
-  ) {}
+    changes?: ChangesAdapter,
+  ) {
+    this.changesAdapter = changes ?? createChangesAdapter(entryId);
+  }
 
   registerField(name: string, fn: (ann: IAnnotationRecord) => unknown): void {
     this.virtualFields.set(name, fn);
@@ -126,6 +139,16 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
       for (const [key, val] of Object.entries(filter)) {
         if (key === "entry_id") {
           filters["entry_id"] = val;
+        } else if (key === "deleted") {
+          // The backend treats any value other than "true" as live only, so
+          // "all" must send no `deleted` filter at all to include tombstones.
+          if (val === "true") {
+            filters["deleted"] = "true";
+          } else if (val !== "all") {
+            filters["deleted"] = "false";
+          } else {
+            delete filters["deleted"];
+          }
         } else if (typeof val === "object" && !Array.isArray(val)) {
           const op = val as Record<string, unknown>;
           if (op.eq !== undefined) filters[key] = op.eq;
@@ -171,9 +194,8 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
     await this.rpc.call({ method: "delete", params: { id, entry_id: this.entryId } });
   }
 
-  async restore(id: string): Promise<IAnnotationRecord> {
-    const result = await this.rpc.call({ method: "restore", params: { id, entry_id: this.entryId } });
-    return result as unknown as IAnnotationRecord;
+  async restore(id: string): Promise<void> {
+    await this.rpc.call({ method: "restore", params: { id, entry_id: this.entryId } });
   }
 
   async create(data: IAnnotationRecord): Promise<IAnnotationRecord> {
@@ -200,13 +222,25 @@ export class AnnotationsDriverAdapter implements IAnnotationsDriverV2 {
   }
 
   async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
-    await Promise.all(
-      entries.map(({ key, value }) =>
-        this.rpc.call({
-          method: "write_shape",
-          params: { annotation_id: annotationId, key, value: value ?? null },
-        }),
-      ),
-    );
+    for (let i = 0; i < entries.length; i += ENTRIES_PER_WRITE) {
+      const chunk = entries.slice(i, i + ENTRIES_PER_WRITE);
+      await this.rpc.call({
+        method: "write_shapes",
+        params: {
+          annotation_id: annotationId,
+          entries: chunk.map(({ key, value }) => ({ key, value: value ?? null })),
+        },
+      });
+    }
+  }
+
+  // ── Annotation change history (delegated to the shared adapter) ──
+
+  changes(query?: IChangesQuery): Promise<IChangesResult> {
+    return this.changesAdapter.changes(query);
+  }
+
+  version(id: string, version: number): Promise<IAnnotationRecord> {
+    return this.changesAdapter.version(id, version) as Promise<IAnnotationRecord>;
   }
 }

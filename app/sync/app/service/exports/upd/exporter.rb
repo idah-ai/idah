@@ -31,6 +31,10 @@ module Exports
         # before updcli-static reads them during the append call.
         media_tempfiles = []
 
+        # Shapes a plugin draws itself, such as a coverage mask's done area,
+        # are not annotations: they stay out of the file.
+        system_shapes = PluginSystem::SystemShapes.for_all
+
         Open3.popen3("updcli-static", "--input", file_path, "append") do |stdin, stdout, stderr, wait_thr|
           io = SubprocessIO.new(stdin, stdout, stderr)
 
@@ -47,6 +51,8 @@ module Exports
                 io.write_jsonl(build_entry_jsonl(dataset.record.id, entry, include_medias))
 
                 entry.annotations.each do |annotation|
+                  next if system_shapes.include?(annotation.record.shape_type)
+
                   jsonl = build_annotation_jsonl(entry.record.id, annotation)
                   io.write_jsonl(jsonl) if jsonl
                 end

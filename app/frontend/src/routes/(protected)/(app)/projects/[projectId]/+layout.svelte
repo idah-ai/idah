@@ -2,10 +2,11 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { onMount, setContext, type Snippet } from "svelte";
+  import { setContext, type Snippet } from "svelte";
 
   import AddNewDatasetButton from "@/components/app/datasets/buttons/add-new-dataset-button.svelte";
   import SelectedDatasetsDropdownMenu from "@/components/app/datasets/dropdowns/selected-datasets-dropdown-menu.svelte";
+  import Redirect from "@/components/app/misc/redirect.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
@@ -20,8 +21,6 @@
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
-  import type { ProjectMemberScope } from "@/security/types";
-
   // Props
   interface Props {
     children: Snippet;
@@ -29,8 +28,7 @@
   let { children }: Props = $props();
 
   // Variables
-  let projectId: string = page.params.projectId as string;
-  let tabs = $state(projectTabs);
+  let projectId = $derived(page.params.projectId as string);
   let activeTab: ProjectTab = $derived(page.url.pathname.split("/").pop() as ProjectTab);
 
   // Reactive variables
@@ -41,32 +39,29 @@
 
   setContext("project", project);
 
-  // Lifecycle
-  onMount(async () => {
-    const currentAccount = $authStatus.authContext;
-    const as_project_owner: { as_user: ProjectMemberScope } = {
-      as_user: {
-        projectId,
-        projectMemberRoles: ["project_owner"],
-      },
-    };
-    const canReadExport = await currentAccount?.can("read", "sync:exports", ["as_org_owner", as_project_owner]);
-
-    if (!canReadExport) {
-      tabs = projectTabs.filter((tab) => tab.value !== "exports");
-    }
-  });
-
   // Functions
-  async function fetchProject(): Promise<ProjectRecord> {
-    const projectRes = await projectsBackendDataSource.get(projectId, {
+  async function fetchProject(): Promise<{ project: ProjectRecord }> {
+    const requestedProjectId = projectId;
+    const projectRes = await projectsBackendDataSource.get(requestedProjectId, {
       fields: {
         [ProjectRecord.type]: ["name", "description", "organization_id"],
       },
     });
-    Object.assign(project, projectRes.data);
+    if (requestedProjectId === projectId) Object.assign(project, projectRes.data);
+    return { project };
+  }
 
-    return project;
+  function getProjectPermissions(projectId: string) {
+    const currentAccount = $authStatus.authContext;
+
+    return {
+      dashboard: Promise.resolve(currentAccount?.canOnProject("read", "dataset:datasets", projectId, "project_owner"))
+        .then(Boolean)
+        .catch(() => false),
+      exports: Promise.resolve(currentAccount?.canOnProject("read", "sync:exports", projectId, "project_owner"))
+        .then(Boolean)
+        .catch(() => false),
+    };
   }
 
   function handleTabChange(value: ProjectTab): void {
@@ -77,7 +72,8 @@
 {#key $refetches.projects.get}
   {#await fetchProject()}
     <PageLoading />
-  {:then project}
+  {:then { project }}
+    {@const permissions = getProjectPermissions(project.id)}
     <PageProvider
       name="project-detail"
       roles={["admin", "org_owner", "user"]}
@@ -101,8 +97,12 @@
         <Tabs bind:value={activeTab}>
           <div class="flex items-center gap-4">
             <TabsList>
-              {#each tabs as { label, value } (value)}
-                <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
+              {#each projectTabs as { label, value } (value)}
+                {#await value === "dashboard" || value === "exports" ? permissions[value] : true then allowed}
+                  {#if allowed}
+                    <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
+                  {/if}
+                {/await}
               {/each}
             </TabsList>
 
@@ -125,7 +125,15 @@
         </Tabs>
       {/if}
 
-      {@render children()}
+      {#await activeTab === "dashboard" || activeTab === "exports" ? permissions[activeTab] : true}
+        <PageLoading />
+      {:then allowed}
+        {#if allowed}
+          {@render children()}
+        {:else}
+          <Redirect to={resolve(`/projects/${projectId}/datasets`)} />
+        {/if}
+      {/await}
     </PageProvider>
   {/await}
 {/key}

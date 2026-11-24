@@ -37,16 +37,9 @@ module NoteComment
               "note feed not found to create a comment"
       end
 
-      # With "as_user" access ensure account can "create" note feed to the project
-      if auth_context.can?(:create, note_comments.class.resource) == :as_user &&
-         ScopedQuery::Service.without_project_access?(
-           auth_context.metadata[:id],
-           note_feed.project_id,
-           ["project_owner", "reviewer", "annotator"]
-         )
-        raise Verse::Error::Unauthorized,
-              "You do not have permission to create comment on this project"
-      end
+      # Creating a comment requires effective rank >= project_owner, or an
+      # annotator/reviewer membership on the note feed's project.
+      ensure_note_comment_create_access!(note_feed.project_id)
 
       attributes = record.attributes
       attributes[:id] = record.id || UUIDv7.generate
@@ -73,6 +66,20 @@ module NoteComment
     end
 
     private
+
+    # Creating a comment requires effective rank >= project_owner, or an
+    # annotator/reviewer membership on the note feed's project.
+    def ensure_note_comment_create_access!(project_id)
+      access = ProjectAccess::Service.resolve(
+        auth_context, project_id, action: :create, resource: note_comments.class.resource
+      )
+      return if %i[all org_owner].include?(access)
+
+      return if %i[project_owner annotator reviewer].include?(access)
+
+      raise Verse::Error::Unauthorized,
+            "You do not have permission to create comment on this project"
+    end
 
     def validate_content!(content)
       return if content.is_a?(String) && !content.strip.empty?

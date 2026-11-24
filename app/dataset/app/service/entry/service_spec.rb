@@ -10,6 +10,7 @@ RSpec.describe Entry::Service, database: true do
   let(:repo) { Entry::Repository.new(auth_context) }
   let(:project_repo) { Project::Repository.new(auth_context) }
   let(:dataset_repo) { Dataset::Repository.new(auth_context) }
+  let(:project_member_repo) { ProjectMember::Repository.new(auth_context) }
 
   let!(:project_id) do
     project_repo.create(
@@ -28,6 +29,14 @@ RSpec.describe Entry::Service, database: true do
       workflow_configuration: {},
       project_id:
     )
+  end
+
+  describe "#summary" do
+    it "counts through the existing repositories with the selected Project scope" do
+      repo.create(project_id: project_id, dataset_id: dataset_id, status: "completed", wf_step: "done")
+      expect(subject.summary(project_id: project_id, dataset_id: [dataset_id]))
+        .to include(total: 1, completed: 1, review: 0, annotation: 0)
+    end
   end
 
   let(:attributes) do
@@ -588,7 +597,9 @@ RSpec.describe Entry::Service, database: true do
   end
 
   describe "#update" do
-    it "updates an entry" do
+    it "updates an entry status and clears its previous completion timestamp" do
+      repo.update!(entry.id, { status: "completed", wf_step: "done" })
+      expect(repo.find!(entry.id).completed_at).to be_a(Time)
       record = deserialize(
         {
           data: {
@@ -605,16 +616,39 @@ RSpec.describe Entry::Service, database: true do
 
       updated_entry = repo.find!(entry.id)
       expect(updated_entry.status).to eq("in_progress")
+      expect(updated_entry.completed_at).to be_nil
+    end
+
+    it "preserves completion when name, priority and delivery date are changed" do
+      id = repo.create(project_id:, dataset_id:, status: "completed", wf_step: "done")
+      completed_at = repo.find!(id).completed_at
+      expect(completed_at).to be_a(Time)
+      date = Date.today + 1
+      record = deserialize(
+        data: { type: Resource::Dataset::Entries, id:,
+                attributes: { name: "Renamed", priority: 3, delivery_date: date } }
+      )
+
+      result = subject.update(record)
+
+      expect(result.name).to eq("Renamed")
+      expect(result.priority).to eq(3)
+      expect(result.delivery_date).to eq(date)
+      expect(result.status).to eq("completed")
+      expect(result.completed_at).to eq(completed_at)
     end
   end
 
   describe "#assign_member" do
-    it "assigns a member to an entry and sets status to in_progress" do
+    it "assigns a member, sets status to in_progress and clears completion" do
+      repo.update!(entry.id, { status: "completed", wf_step: "done" })
+      expect(repo.find!(entry.id).completed_at).to be_a(Time)
       subject.assign_member(entry.id, 2)
 
       updated_entry = repo.find!(entry.id)
       expect(updated_entry.assigned_to_id).to eq(2)
       expect(updated_entry.status).to eq("in_progress")
+      expect(updated_entry.completed_at).to be_nil
     end
 
     it "moves the dataset to in_progress" do
@@ -629,12 +663,15 @@ RSpec.describe Entry::Service, database: true do
       subject.assign_member(entry.id, 2)
     end
 
-    it "clears the assigned member and sets status to pending" do
+    it "clears the assigned member and completion timestamp and sets status to pending" do
+      repo.update!(entry.id, { status: "completed", wf_step: "done" })
+      expect(repo.find!(entry.id).completed_at).to be_a(Time)
       subject.unassign_member(entry.id)
 
       updated_entry = repo.find!(entry.id)
       expect(updated_entry.assigned_to_id).to be_nil
       expect(updated_entry.status).to eq("pending")
+      expect(updated_entry.completed_at).to be_nil
     end
 
     it "moves the dataset back to pending when the last assignment is removed" do
@@ -780,6 +817,7 @@ RSpec.describe Entry::Service, database: true do
 
         expect(result.wf_step).to eq("review")
         expect(result.status).to eq("pending")
+        expect(result.completed_at).to be_nil
       end
     end
 
@@ -798,6 +836,7 @@ RSpec.describe Entry::Service, database: true do
 
         expect(result.wf_step).to eq("done")
         expect(result.status).to eq("completed")
+        expect(result.completed_at).to be_a(Time)
       end
     end
 
@@ -811,6 +850,7 @@ RSpec.describe Entry::Service, database: true do
 
         expect(result.wf_step).to eq("done")
         expect(result.status).to eq("completed")
+        expect(result.completed_at).to be_a(Time)
       end
     end
 
@@ -824,6 +864,7 @@ RSpec.describe Entry::Service, database: true do
 
         expect(result.wf_step).to eq("annotate")
         expect(result.status).to eq("in_progress")
+        expect(result.completed_at).to be_nil
       end
     end
 
@@ -982,7 +1023,19 @@ RSpec.describe Entry::Service, database: true do
         expect(result.reopened_by_email).to eq("admin@example.com")
       end
 
-      it "moves entry back to the requested step" do
+      it "moves back to the requested step and assigns a new timestamp on re-completion" do
+        # CURRENT_TIMESTAMP is fixed per transaction. Seed an earlier cycle only
+        # in this rollback-isolated fixture so replacement can be asserted.
+        previous_completed_at = Time.utc(2000, 1, 1)
+        repo.client do |db|
+          db.run("ALTER TABLE entries DISABLE TRIGGER trg_set_entry_completed_at")
+          begin
+            db[:entries].where(id: completed_entry).update(completed_at: previous_completed_at)
+          ensure
+            db.run("ALTER TABLE entries ENABLE TRIGGER trg_set_entry_completed_at")
+          end
+        end
+        expect(repo.find!(completed_entry).completed_at).to eq(previous_completed_at)
         result = subject.reopen(completed_entry, target_step: "review")
 
         expect(result.wf_step).to eq("review")
@@ -991,6 +1044,12 @@ RSpec.describe Entry::Service, database: true do
         expect(result.assigned_to_email).to be_nil
         expect(result.reopened_by_id).to eq(1)
         expect(result.reopened_by_email).to eq("admin@example.com")
+        expect(result.completed_at).to be_nil
+
+        completed = subject.submit(completed_entry, approved: true)
+        expect(completed.status).to eq("completed")
+        expect(completed.completed_at).to be_a(Time)
+        expect(completed.completed_at).to be > previous_completed_at
       end
 
       it "marks the dataset as in_progress when it was previously completed" do
@@ -1016,6 +1075,79 @@ RSpec.describe Entry::Service, database: true do
       it "raises ValidationFailed" do
         expect { subject.reopen(completed_entry, target_step: "export") }
           .to raise_error(Verse::Error::ValidationFailed, /Invalid reopen target step/)
+      end
+    end
+
+    context "as org_owner with a membership on a foreign project", as: :org_owner do
+      subject { described_class.new(current_auth_context) }
+
+      let(:foreign_project_id) do
+        project_repo.create(name: "Foreign Project", created_by_email: "system@example.com", organization_id: 999)
+      end
+      let(:foreign_dataset_id) do
+        dataset_repo.create(
+          name: "Foreign Dataset",
+          project_id: foreign_project_id,
+          modality: "video",
+          workflow_configuration: {},
+          labeling_configuration: {}
+        )
+      end
+      let(:foreign_completed_entry) do
+        repo.create(
+          project_id: foreign_project_id,
+          dataset_id: foreign_dataset_id,
+          resource: "foreign-completed.mp4",
+          status: "completed",
+          wf_step: "done",
+          assigned_to_id: current_auth_context.metadata[:id],
+          submitted_by_id: 42,
+          submitted_by_email: "annotator@example.com",
+          reviewed_by_id: 43,
+          reviewed_by_email: "reviewer@example.com"
+        )
+      end
+
+      context "as a reviewer member of the foreign project" do
+        before do
+          project_member_repo.create(
+            project_id: foreign_project_id,
+            account_id: current_auth_context.metadata[:id],
+            role: "reviewer",
+            name: "Org Owner User",
+            email: "org_owner@example.com",
+            invited_by_id: 1
+          )
+        end
+
+        it "cannot reopen an entry there" do
+          foreign_completed_entry
+
+          expect { subject.reopen(foreign_completed_entry, target_step: "review") }
+            .to raise_error(Verse::Error::RecordNotFound)
+        end
+      end
+
+      context "as a project_owner member of the foreign project" do
+        before do
+          project_member_repo.create(
+            project_id: foreign_project_id,
+            account_id: current_auth_context.metadata[:id],
+            role: "project_owner",
+            name: "Org Owner User",
+            email: "org_owner@example.com",
+            invited_by_id: 1
+          )
+        end
+
+        it "can reopen an entry there" do
+          foreign_completed_entry
+
+          result = subject.reopen(foreign_completed_entry, target_step: "review")
+
+          expect(result.wf_step).to eq("review")
+          expect(result.status).to eq("pending")
+        end
       end
     end
   end
@@ -1230,6 +1362,9 @@ RSpec.describe Entry::Service, database: true do
     # advanced off "start" immediately. Sources still processing are skipped.
     it "advances a processed source's duplicate off start without reprocessing" do
       allow(subject.send(:entries)).to receive(:no_event).and_call_original
+      repo.update!(entry_processed, { status: "completed", wf_step: "done" })
+      original_completed_at = repo.find!(entry_processed).completed_at
+      expect(original_completed_at).to be_a(Time)
 
       subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_processed])
 
@@ -1239,6 +1374,8 @@ RSpec.describe Entry::Service, database: true do
       expect(duplicated.status).to eq("pending")
       expect(duplicated.job_id).to be_nil
       expect(duplicated.resource).to eq("http://example.com/processed.mp4")
+      expect(duplicated.completed_at).to be_nil
+      expect(repo.find!(entry_processed).completed_at).to eq(original_completed_at)
     end
 
     it "resets the duplicated deadline even when the destination Dataset has a date" do
@@ -1311,6 +1448,52 @@ RSpec.describe Entry::Service, database: true do
 
         duplicated_annotations = annotation_repo.index({ entry_id: duplicated_entries.first.id })
         expect(duplicated_annotations.count).to eq(0)
+      end
+
+      it "starts every duplicated annotation at version 1 with its own created history row" do
+        subject.duplicate_entries(
+          new_dataset_id,
+          duping_dataset_id: dataset_id,
+          entry_ids: [entry_processed],
+          with_annotations: true
+        )
+
+        duplicated_entries = repo.index({ dataset_id: new_dataset_id })
+        duplicated_annotation = annotation_repo.index({ entry_id: duplicated_entries.first.id }).first
+
+        expect(duplicated_annotation.version).to eq(1)
+
+        rows = subject.annotations.client do |db|
+          db[:annotation_changes].where(annotation_id: duplicated_annotation.id).all
+        end
+        expect(rows.size).to eq(1)
+        expect(rows.first[:op]).to eq("created")
+        expect(rows.first[:version]).to eq(1)
+      end
+
+      it "records deleted_at / deleted_by_email as + entries when copying a soft-deleted annotation" do
+        annotation_repo.client do |db|
+          db[:annotations].where(entry_id: entry_processed)
+                          .update(deleted_at: Time.now.utc, deleted_by_email: "user@example.com")
+        end
+
+        subject.duplicate_entries(
+          new_dataset_id,
+          duping_dataset_id: dataset_id,
+          entry_ids: [entry_processed],
+          with_annotations: true
+        )
+
+        duplicated_entries = repo.index({ dataset_id: new_dataset_id })
+        duplicated_annotation = annotation_repo.index({ entry_id: duplicated_entries.first.id }).first
+        expect(duplicated_annotation.deleted_at).not_to be_nil
+
+        rows = subject.annotations.client do |db|
+          db[:annotation_changes].where(annotation_id: duplicated_annotation.id).all
+        end
+        changes = rows.first[:changes]
+        expect(changes).to include(["+", "deleted_by_email", nil, "user@example.com"])
+        expect(changes.any? { |c| c[1] == "deleted_at" && c[0] == "+" }).to be(true)
       end
     end
   end

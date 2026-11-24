@@ -13,8 +13,12 @@
   import { roles } from "@/data/model/iam/accounts/constants";
   import { AccountRecord } from "@/data/model/iam/accounts/record";
   import { organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
+  import { authStatus } from "@/security/AuthContext";
+  import { canAssignAccountRole, filterAssignableAccountRoles } from "@/security/roleHierarchy";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
+  import type { Role } from "@/data/model/iam/accounts/auth/constants";
+  import type { LabelValue } from "@/utils/types";
 
   // Props
   interface Props extends FormBaseProps {
@@ -25,11 +29,47 @@
 
   // Variables
   let resource: string = AccountRecord.type;
+  let assignableRoles: Array<LabelValue<string | number>> = $state(roles);
 
   // Variables::Reactive
   let { name, email, role_name, role_scope, enabled } = $derived(account);
 
-  let isOrgOwner = $derived(role_name === "org_owner");
+  let currentAccount = $derived($authStatus.authContext);
+  let actorOrgIds: string[] | undefined = $derived(
+    currentAccount?.roleName === "org_owner" ? (currentAccount.roleScope?.org ?? []).map(String) : undefined,
+  );
+  let targetRole = $derived(account.role_name ?? "user");
+  let editingSelf = $derived(!newRecord && currentAccount?.id === account.id);
+  let canChangeRoleOrEnabled = $derived(
+    !!currentAccount &&
+      !editingSelf &&
+      canAssignAccountRole(currentAccount.roleName, targetRole) &&
+      !(currentAccount.roleName === "org_owner" && targetRole === "org_owner"),
+  );
+  let selectedOrgIds: string[] = $derived((role_scope?.org ?? []).map(String));
+  let editableOrgIds = $derived(selectedOrgIds.filter((id) => !actorOrgIds || actorOrgIds.includes(id)));
+  let hasForeignExistingScope = $derived(
+    actorOrgIds !== undefined &&
+      (account.role_scope?.org ?? []).some((id: string | number) => !actorOrgIds?.includes(String(id))),
+  );
+
+  // Filter the assignable roles by the actor's account role.
+  $effect(() => {
+    const currentAccount = $authStatus.authContext;
+    if (!currentAccount) return;
+
+    const allowed = filterAssignableAccountRoles(
+      currentAccount.roleName,
+      roles.map((r) => String(r.value)),
+    );
+    // IAM preserves out-of-scope IDs on update. A scoped actor cannot safely
+    // promote a non-owner who still has an organization outside their reach.
+    assignableRoles = roles.filter(
+      (r) =>
+        allowed.includes(String(r.value)) &&
+        (r.value !== "org_owner" || newRecord || targetRole === "org_owner" || !hasForeignExistingScope),
+    );
+  });
 
   // Functions
   $effect(() => {
@@ -70,43 +110,46 @@
       label="Role"
       placeholder="Select a role"
       required
-      choices={roles}
+      choices={assignableRoles}
+      disabled={!newRecord && !canChangeRoleOrEnabled}
       errors={fieldErrors["role_name"]}
       value={role_name}
       onSelected={(selectedValue) => {
-        role_name = selectedValue as string;
+        if (role_name === selectedValue) return;
+        role_scope = selectedValue === targetRole ? account.role_scope : { org: [] };
+        role_name = selectedValue as Role;
       }}
     />
     <!-- {/if} -->
 
-    {#if isOrgOwner}
+    {#if role_name === "org_owner" && !editingSelf && (!actorOrgIds || actorOrgIds.length > 0)}
       <MultipleSelectDatasourceField
         name="{resource}/role_scope"
         label="Organizations"
         placeholder="Select organizations"
         dataSource={organizationsBackendDataSource}
         displayKey="name"
+        listOptions={actorOrgIds ? { filters: { id__in: actorOrgIds } } : undefined}
         searchKeyWithOperation="name__match"
         searchable
         required
         errors={fieldErrors["role_scope"]}
-        values={role_scope?.org ?? []}
+        values={editableOrgIds}
       >
         {#snippet slotChoice({ choice })}
           <CommandItem
             onclick={() => {
-              const org = role_scope?.org ?? [];
+              const id = String(choice.value);
               role_scope = {
-                ...role_scope,
-                org: org.some((id: string | number) => id == choice.value)
-                  ? org.filter((id: string | number) => id != choice.value)
-                  : [...org, choice.value],
+                org: selectedOrgIds.includes(id)
+                  ? selectedOrgIds.filter((selectedId) => selectedId !== id)
+                  : [...selectedOrgIds, id],
               };
             }}
           >
             <CheckIcon
               class={cn("mr-2 size-4", {
-                "opacity-0": !role_scope?.org?.some((id: string | number) => id == choice.value),
+                "opacity-0": !selectedOrgIds.includes(String(choice.value)),
               })}
             />
             {choice.label}
@@ -131,6 +174,7 @@
       bordered
       required
       errors={fieldErrors["enabled"]}
+      disabled={!newRecord && !canChangeRoleOrEnabled}
       bind:checked={enabled}
     ></CheckboxField>
 

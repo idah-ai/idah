@@ -21,10 +21,24 @@ module PluginSystem
       shape_type = define do
         field :label, String
         field? :icon, String
+
+        # Open per-shape configuration. Today only `type: "array"` entries
+        # with an `x-identity-key` are read (by AnnotationDiff::IdentityKeys,
+        # dataset service); anything else is ignored. Kept an open Hash so it
+        # can grow into fuller descriptions or validation without a format
+        # change. A non-Hash value fails validation, like any other type error.
+        field? :args, Hash
       end
 
       field? :shapes, Hash, of: shape_type
       field? :tagging, Hash, of: shape_type
+
+      # System shapes are produced by the plugin itself (e.g. a coverage mask's
+      # "done area") rather than drawn by annotators. They are not configurable
+      # tools and are excluded from the core entry stats (orphan count,
+      # annotation/category/shape counts). Optional: a plugin without it is
+      # loaded unchanged.
+      field? :system_shapes, Hash, of: shape_type, key: :systemShapes
     end
 
     field? :repository do
