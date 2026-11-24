@@ -32,3 +32,5 @@ require_relative "./routes"
 Dir[File.join(__dir__, "initializers/**.rb")].each do |file|
   load file
 end
+
+# temp: trigger media CI for PR #711, revert before merge

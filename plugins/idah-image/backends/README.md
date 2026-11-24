@@ -51,3 +51,5 @@ The specs run without the services: `spec_data/` holds fakes of the contexts
 the services pass in (`fake_processor_context.rb`, `fake_export_context.rb`),
 and `mask_tiles.rb` builds masks as the annotation tool stores them. Coverage
 reports are generated in `coverage/index.html`.
+
+<!-- temp: trigger Plugins CI for PR #711, revert before merge -->
