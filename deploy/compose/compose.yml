@@ -218,6 +218,9 @@ services:
       SERVICE_JWT_KEY: file:/keys/public.pem
       IDAH_SERVICE_ACCOUNT: setting@services.idah.ai
       IDAH_SERVICE_PASSWORD: ${IDAH_SERVICE_PASSWORD_SETTING:?run install.sh to generate secrets}
+      # Optional so the service starts before install.sh has generated it;
+      # storage targets refuse to store or read secrets until it is set.
+      STORAGE_TARGETS_MASTER_KEY: ${STORAGE_TARGETS_MASTER_KEY:-}
       SENTRY_DSN: ${SENTRY_DSN_SETTING:-}
     volumes:
       - ./config/keys/public.pem:/keys/public.pem:ro
