@@ -2,7 +2,10 @@
 
 require "spec_helper"
 
-module EntryStats
+require_relative "../lib/plugin_system"
+require_relative "../lib/plugin_system/system_shapes"
+
+module PluginSystem
   RSpec.describe SystemShapes do
     # The parsed manifest has symbol keys at every level, including shape names
     # (:"done-area").
@@ -58,9 +61,15 @@ module EntryStats
       end
     end
 
-    describe ".for_all", database: false do
-      it "reads the system shapes of the repository's plugins" do
-        expect(described_class.for_all).to include("idah-image:done-area")
+    describe ".for_all" do
+      it "reads the system shapes of the loaded plugins" do
+        plugin = Struct.new(:modalities).new(
+          [{ id: "idah-image", system_shapes: { "done-area": { label: "Done Area" } } }]
+        )
+        registry = Struct.new(:plugins).new({ "idah-image" => plugin, "unloaded" => nil })
+        allow(PluginSystem).to receive(:registry).and_return(registry)
+
+        expect(described_class.for_all).to eq(Set["idah-image:done-area"])
       end
 
       it "returns an empty Set when there is no registry" do
