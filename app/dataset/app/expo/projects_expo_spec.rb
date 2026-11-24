@@ -41,6 +41,7 @@ RSpec.describe ProjectsExpo, type: :exposition, as: :system do
 
   before do
     allow(Project::Service).to receive(:new).and_return(service)
+    allow(service).to receive(:storage_target_summary).and_return(nil)
   end
 
   it "index" do
@@ -62,6 +63,25 @@ RSpec.describe ProjectsExpo, type: :exposition, as: :system do
     record = deserialize(body)
     expect(record.id).to eq uuid
     expect(record.name).to eq "Test Project"
+  end
+
+  it "show puts the project's storage target in the meta" do
+    summary = { id: "target-id", name: "Acme bucket", endpoint: "https://s3.example.com", bucket: "acme-bucket" }
+    expect(service).to receive(:show).with(uuid, included: []).and_return(project_record)
+    expect(service).to receive(:storage_target_summary).with(project_record).and_return(summary)
+
+    get "/projects/#{uuid}"
+
+    expect(last_response.status).to eq 200
+    expect(JSON.parse(last_response.body, symbolize_names: true).dig(:meta, :storage_target)).to eq(summary)
+  end
+
+  it "show has no storage target meta for a project in the default storage" do
+    expect(service).to receive(:show).with(uuid, included: []).and_return(project_record)
+
+    get "/projects/#{uuid}"
+
+    expect(JSON.parse(last_response.body, symbolize_names: true)).not_to have_key(:meta)
   end
 
   it "create" do

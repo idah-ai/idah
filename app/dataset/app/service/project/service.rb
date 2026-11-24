@@ -26,6 +26,9 @@ module Project
       attributes = record.attributes
       attributes[:id] = record.id || UUIDv7.generate
       attributes[:created_by_email] = auth_context.metadata[:email]
+      attributes[:storage_target_id] = presence(attributes[:storage_target_id])
+
+      check_storage_target!(attributes[:storage_target_id], attributes[:organization_id])
 
       projects.transaction do
         id = projects.create(attributes)
@@ -55,6 +58,7 @@ module Project
     end
 
     def update(record)
+      refuse_storage_target_change!(record)
       authorize_organization_move(record)
 
       projects.update!(record.id, record.attributes)
@@ -90,6 +94,61 @@ module Project
                 "You do not have permission to move this project to another organization"
         end
       end
+
+      check_storage_target_allows_move!(record.id, new_org)
+    end
+
+    # The project's storage target, for showing it to the project's members:
+    # name and location, never credentials. An archived target is still named
+    # by its id. Nil for the default storage.
+    def storage_target_summary(project)
+      return unless project.storage_target_id
+
+      target = StorageTargetLookup.find(project.storage_target_id)
+      return { id: project.storage_target_id, archived: true } unless target
+
+      { id: target.id, name: target.name, endpoint: target.endpoint, bucket: target.bucket }
+    end
+
+    private def presence(value)
+      value.to_s.strip.empty? ? nil : value
+    end
+
+    # A project may only be created in an enabled target that allows its
+    # organization. Asked fresh, so a target disabled a moment ago is refused.
+    private def check_storage_target!(target_id, organization_id)
+      return if target_id.nil?
+
+      target = StorageTargetLookup.find(target_id, fresh: true)
+      return if target&.enabled && target.organization_ids.include?(organization_id.to_i)
+
+      raise Verse::Error::ValidationFailed,
+            "storage target `#{target_id}` can't be used for a project of this organization"
+    end
+
+    # The target is chosen once: its files would otherwise be split between two
+    # storages. Sending the current value back, as a form does, is fine.
+    private def refuse_storage_target_change!(record)
+      return unless record.attributes.key?(:storage_target_id)
+
+      current = projects.find!(record.id, scope: projects.scoped(:update)).storage_target_id
+      return if presence(record.attributes[:storage_target_id]) == current
+
+      raise Verse::Error::ValidationFailed, "storage_target_id can't be changed once the project exists"
+    end
+
+    # A project kept in a dedicated storage target may only move to an
+    # organization that target allows: otherwise one customer's files would sit
+    # in another customer's bucket.
+    private def check_storage_target_allows_move!(project_id, new_org)
+      target_id = projects.find!(project_id, scope: projects.scoped(:update)).storage_target_id
+      return if target_id.nil?
+
+      target = StorageTargetLookup.find(target_id, fresh: true)
+      return if target&.organization_ids&.include?(new_org.to_i)
+
+      raise Verse::Error::ValidationFailed,
+            "the project's storage target doesn't allow organization #{new_org}"
     end
 
     def delete(id)

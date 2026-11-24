@@ -15,6 +15,10 @@ module Project
 
     field :organization_id, type: Integer, readonly: true
 
+    # Where the project's files and exports are stored: set at creation, never
+    # changed (Project::Service refuses it). Nil is the default storage.
+    field :storage_target_id, type: [String, NilClass]
+
     has_many :project_members, repository: "ProjectMember::Repository", foreign_key: :project_id
     has_many :datasets, repository: "Dataset::Repository", foreign_key: :project_id
     has_many :entries, repository: "Entry::Repository", foreign_key: :project_id
