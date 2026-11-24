@@ -679,6 +679,40 @@ RSpec.describe Medias::Service, as: :system, database: true do
       expect(result[:processed].first.storage_target_id).to be_nil
     end
 
+    it "uploads to the project's storage target and records it" do
+      target_id = UUIDv7.generate
+      allow(StorageRegistry::ProjectTargets).to receive(:for).with("confidential_project").and_return(target_id)
+      expect(StorageRegistry).to receive(:with_storage)
+        .with(target_id, retriable: false)
+        .and_yield(Verse::Plugin[:shrine].storage)
+
+      result = subject.upload(uploaded_file, resource: "confidential_resource", project_id: "confidential_project")
+
+      expect(result[:processed].first.storage_target_id).to eq(target_id)
+    end
+
+    it "puts every file of a zip in the project's storage target" do
+      target_id = UUIDv7.generate
+      allow(StorageRegistry::ProjectTargets).to receive(:for).and_return(target_id)
+      allow(StorageRegistry).to receive(:with_storage).and_yield(Verse::Plugin[:shrine].storage)
+
+      zip_path = Tempfile.create(["batch", ".zip"]).path
+      Zip::File.open(zip_path, create: true) do |zip|
+        zip.get_output_stream("a.jpg") { |f| f.write("a") }
+        zip.get_output_stream("b.jpg") { |f| f.write("b") }
+      end
+      zip = Verse::Http::UploadedFileStruct.new(
+        { filename: "batch.zip", type: "application/zip", tempfile: File.open(zip_path, "rb") }
+      )
+
+      result = subject.upload(zip, resource: "ignored", project_id: "confidential_project")
+
+      expect(result[:processed].map(&:storage_target_id)).to eq([target_id, target_id])
+      expect(StorageRegistry).to have_received(:with_storage).with(target_id, retriable: false).twice
+    ensure
+      FileUtils.rm_f(zip_path)
+    end
+
     it "writes to the given target, without retrying the streamed upload, and records it" do
       target_id = UUIDv7.generate
       expect(StorageRegistry).to receive(:with_storage)

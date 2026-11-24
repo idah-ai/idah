@@ -39,6 +39,7 @@ module Medias
     def upload(file, resource:, project_id:, key: "", modality: nil)
       # Before anything is stored: the project decides where its files go.
       medias.authorize_project!(project_id)
+      storage_target_id = StorageRegistry::ProjectTargets.for(project_id)
 
       results = []
       skipped = []
@@ -75,7 +76,8 @@ module Medias
                   resource: "#{SecureRandom.hex(8)}#{ext}",
                   key:,
                   project_id:,
-                  modality:
+                  modality:,
+                  storage_target_id:
                 )
 
                 if result.is_a?(Medias::Record)
@@ -110,7 +112,8 @@ module Medias
             resource:,
             key:,
             project_id:,
-            modality:
+            modality:,
+            storage_target_id:
           )
 
           if result.is_a?(Medias::Record)

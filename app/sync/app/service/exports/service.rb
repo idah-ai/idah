@@ -45,6 +45,10 @@ module Exports
       # avoids generating an export that silently skips (or misses) entries.
       entry_ids = filter_entry_ids_by_rights(dataset_ids, entry_ids)
 
+      # Where the export file will go, fixed now so the job can't put it
+      # anywhere else.
+      storage_target_id = StorageRegistry::ProjectTargets.for(project_id)
+
       exports.transaction do
         arguments = {
           exporter:, # Exporter class
@@ -62,6 +66,7 @@ module Exports
           {
             job_id: job.id,
             project_id:,
+            storage_target_id:,
             created_by_id: auth_context.metadata[:id]
           }
         )

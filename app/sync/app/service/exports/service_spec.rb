@@ -65,6 +65,17 @@ RSpec.describe Exports::Service, database: true do
         expect(export).not_to be_nil
       end
 
+      it "records the project's storage target, where the export file will go" do
+        target_id = UUIDv7.generate
+        allow(StorageRegistry::ProjectTargets).to receive(:for).with(project_id).and_return(target_id)
+
+        expect(subject.create(project_id, dataset_ids, exporter).storage_target_id).to eq(target_id)
+      end
+
+      it "records no target for a project in the default storage" do
+        expect(subject.create(project_id, dataset_ids, exporter).storage_target_id).to be_nil
+      end
+
       it "stores the created_by_id from auth context" do
         export = subject.create(project_id, dataset_ids, exporter)
 
