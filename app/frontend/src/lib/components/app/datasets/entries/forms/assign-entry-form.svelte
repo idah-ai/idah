@@ -27,7 +27,7 @@
   let wfStep = $derived(entryRecord?.wf_step || undefined);
 
   // Variables::Reactive
-  let assignedToAccountId = $state(selectedMemberAccountId);
+  let assignedToAccountId = $derived(selectedMemberAccountId);
 </script>
 
 <FieldSet class="p-1">

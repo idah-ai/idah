@@ -57,8 +57,14 @@ RecordFactory.registerTypes(ApiKeyRecord);
 
 const apiKeyBasePath: string = `/api/v1/iam/api_keys`;
 
+/** A grantable permission, as returned by `GET /api_keys/permissions/:scope_type`. */
+export type ApiKeyPermission = {
+  id: string;
+  attributes: { title: string; description?: string };
+};
+
 export const apiKeysBackendDataSource = createBackendDataSource(ApiKeyRecord, apiKeyBasePath, {
-  permission_list: async (params: { scope_type: string }) => {
+  permission_list: async (params: { scope_type: string }): Promise<{ data: ApiKeyPermission[] }> => {
     const { scope_type } = params;
     const res = await fetch(`${apiKeyBasePath}/permissions/${scope_type}`, {
       method: "GET",

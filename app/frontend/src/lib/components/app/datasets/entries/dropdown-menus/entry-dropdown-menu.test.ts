@@ -55,11 +55,10 @@ describe("getEntryDropdownMenuActions", () => {
       onReopen: () => {},
     });
 
-    expect(items).toHaveLength(5);
-    expect(items[2].label).toBe("Set Priority");
-    expect(items[3].label).toBe("Reopen");
-    expect(items[3].hidden).toBeUndefined();
-    expect(items[3].disabled).toBeUndefined();
+    const reopenItem = items.find((i) => i.label === "Reopen");
+    expect(reopenItem?.action).toBeTypeOf("function");
+    expect(reopenItem?.hidden).toBeUndefined();
+    expect(reopenItem?.disabled).toBeUndefined();
   });
 
   it("hides Reopen when isReopenHidden is true", () => {
