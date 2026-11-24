@@ -63,6 +63,7 @@ by an annotation but missing from the configuration is added at the end.
 | Ellipse | A 64-point polygon, rotated as drawn; in Mask Segmentation, filled, or its outline as for a circle. |
 | Mask | Its pixels: COCO RLE in COCO; in YOLO, the outline of each separate piece, holes joined by zero-width cuts; in Mask Segmentation, painted pixel for pixel. |
 | Line | Mask Segmentation only: painted 1 pixel wide. COCO and YOLO hold no open line and count it as `unsupported_shape_type:idah-image:line`. |
+| Done area | Not exported: a coverage mask's done area is drawn by the tool, not an annotator, and is left out without a count in `skipped`. UPD keeps it. |
 
 Shapes are stored in IDAH as fractions of the image. The export places them in
 pixels of the original image:
@@ -145,6 +146,10 @@ format, then the date and time in UTC).
 | `too_many_classes` | Mask Segmentation only: a shape of a dataset's 256th class or later, as a mask PNG holds 255 classes besides background. |
 | `images_without_annotations` | An entry with nothing to export. |
 | `datasets_without_annotations` | A dataset with nothing to export; it gets no file or folder. |
+
+A coverage mask's done area (`idah-image:done-area`) is not counted here: the
+tool draws it, not an annotator, so it is not annotation data and is left out
+silently. UPD keeps it.
 
 ### warnings
 

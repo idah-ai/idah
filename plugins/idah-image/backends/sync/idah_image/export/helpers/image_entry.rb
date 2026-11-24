@@ -17,6 +17,11 @@ module IdahImage
         MASK = "idah-image:mask"
         LINE = "idah-image:line"
         SHAPES = [BOUNDING_BOX, POLYGON, CIRCLE, ELLIPSE, MASK].freeze
+        # Shapes the plugin draws itself, not annotators: a coverage mask's
+        # "done area". They are not annotations to export and are left out
+        # without a trace in the report. Matches `systemShapes` in the
+        # plugin's manifest.json.
+        SYSTEM_SHAPES = ["idah-image:done-area"].freeze
 
         # A shape in pixels. `points` is its outline, rotated as drawn and
         # clamped to the image, or for a line its open path; a mask has none
@@ -86,6 +91,7 @@ module IdahImage
         def filename = @media&.record&.data&.dig(:attributes, :filename)
 
         def collect(record)
+          return if SYSTEM_SHAPES.include?(record.shape_type)
           return @report.skip(:deleted) if record.data[:attributes][:deleted_at]
 
           if record.shape_type == ENTRY_ROOT
