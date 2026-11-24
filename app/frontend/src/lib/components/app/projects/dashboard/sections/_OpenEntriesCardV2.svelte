@@ -6,7 +6,6 @@
     PROJECT_DASHBOARD_CONTROLLER_KEY,
     getProjectDashboardController,
   } from "@/components/app/projects/dashboard/project-dashboard-controller.svelte";
-  import { PROJECT_DASHBOARD_OPEN_ENTRIES_TABS } from "../project-dashboard.constants";
   import { getColumns, enrichWithTimeData } from "./_OpenEntriesCardV2.table";
   import DataTable from "@/components/app/data-table/DataTable.svelte";
   import DataTablePaginator from "@/components/app/data-table/_DataTablePaginator.svelte";
@@ -16,6 +15,7 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
 
   import type { EntryWithTimeData } from "./_OpenEntriesCardV2.table";
+  import { ListChevronsDownUpIcon, ListChevronsUpDownIcon } from "@lucide/svelte";
 
   // Variables
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
@@ -86,29 +86,28 @@
     <Tabs value={controller.entryTab} onValueChange={changeTab}>
       <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
         <TabsList>
-          {#each PROJECT_DASHBOARD_OPEN_ENTRIES_TABS as { label, value } (value)}
+          {#each controller.entryTabItems as { label, value, count } (value)}
             <TabsTrigger {value}>
-              {label}
-              ({value === "all"
-                ? (controller.summary?.total.toLocaleString() ?? "—")
-                : value === "open"
-                  ? (controller.openEntriesCount?.toLocaleString() ?? "—")
-                  : value === "not_ready"
-                    ? (controller.summary?.processing.toLocaleString() ?? "-")
-                    : value === "error"
-                      ? (controller.summary?.errored.toLocaleString() ?? "-")
-                      : (controller.summary?.completed.toLocaleString() ?? "-")})
+              {label} ({count?.toLocaleString() ?? "—"})
             </TabsTrigger>
           {/each}
         </TabsList>
 
-        <button
-          class="text-link hover:text-link-hover disabled:text-muted-foreground text-sm font-medium disabled:cursor-not-allowed"
+        <Button
+          variant="ghost"
+          size="sm"
+          class="text-link hover:text-link-hover"
           disabled={rows.length === 0}
           onclick={toggleAll}
         >
-          {allVisibleExpanded ? "Collapse all" : "Expand all"}
-        </button>
+          {#if allVisibleExpanded}
+            <ListChevronsDownUpIcon />
+            Collapse all
+          {:else}
+            <ListChevronsUpDownIcon />
+            Expand all
+          {/if}
+        </Button>
       </div>
       <div
         bind:this={tableArea}

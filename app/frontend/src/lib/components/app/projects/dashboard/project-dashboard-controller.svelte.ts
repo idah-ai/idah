@@ -597,6 +597,18 @@ export class ProjectDashboardController {
 
   public entryTab: OpenEntryTab = $state("all");
 
+  /** Tab definitions with live counts derived from summary. */
+  public get entryTabItems(): { label: string; value: string; count: number | null }[] {
+    const s = this.summary;
+    return [
+      { label: "All", value: "all", count: s?.total ?? null },
+      { label: "Open", value: "open", count: s != null ? s.total - s.completed - s.errored - s.processing : null },
+      { label: "Not ready", value: "not_ready", count: s?.processing ?? null },
+      { label: "Completed", value: "completed", count: s?.completed ?? null },
+      { label: "Errored", value: "error", count: s?.errored ?? null },
+    ];
+  }
+
   changeEntryTab(value: string): void {
     if (value !== "all" && value !== "open" && value !== "not_ready" && value !== "completed" && value !== "error")
       return;

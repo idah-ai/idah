@@ -16,7 +16,7 @@
 <Button
   variant="ghost"
   size="sm"
-  class="text-muted-foreground hover:text-foreground -mr-2 font-medium"
+  class="mb-0.5 text-sm text-muted-foreground hover:text-foreground -mr-2 font-medium"
   onclick={() => controller.sortTotalTimeSpent()}
 >
   Total time spent
