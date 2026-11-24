@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { enrichWithTimeData } from "./_OpenEntriesCardV2.table";
-import type { EntryRecord, EntryWorkTimeRecord } from "@/data/model/dataset/entries/record";
+import type { EntryRecord } from "@/data/model/dataset/entries/record";
+import type { EntryWorkTimeRecord } from "@/data/model/dataset/entry-work-times/record";
 
 type MockEntry = Partial<EntryRecord> & {
   id: string;
