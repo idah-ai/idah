@@ -409,8 +409,9 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
         annotations: [
           {
             id: "anno-1",
-            annotation: { label: "cat" },
-            dimensions: { type: "rectangle", x: 10, y: 20, width: 50, height: 50 },
+            shape_type: "bbox",
+            shape_args: { x: 10, y: 20, width: 50, height: 50 },
+            category: "cat",
             metadata: { qc_score: 0.95 }
           }
         ],
@@ -434,13 +435,13 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
     end
 
     it "calls service.workflow_callback with entry_id and attributes" do
-      expect(
-        service
-      ).to receive(
-        :workflow_callback
-      ).with(
+      expect(service).to receive(:workflow_callback).with(
         uuid,
-        hash_including(:token, :annotations, :notes)
+        hash_including(
+          :token,
+          :annotations,
+          :notes
+        )
       ).and_return(entry_record)
 
       post "/entries/#{uuid}/workflow_callback", callback_payload

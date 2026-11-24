@@ -357,8 +357,9 @@ module Entry
             system_annotations_repo.update!(
               existing.id,
               {
-                annotation: anno_data[:annotation] || existing.annotation,
-                dimensions: anno_data[:dimensions] || existing.dimensions,
+                shape_type: anno_data[:shape_type] || existing.shape_type,
+                shape_args: anno_data[:shape_args] || existing.shape_args,
+                category: anno_data[:category] || existing.category,
                 metadata: (existing.metadata || {}).merge(anno_data[:metadata] || {})
               }
             )
@@ -368,8 +369,9 @@ module Entry
               entry_id: entry.id,
               project_id: entry.project_id,
               dataset_id: entry.dataset_id,
-              annotation: anno_data[:annotation] || {},
-              dimensions: anno_data[:dimensions] || {},
+              shape_type: anno_data[:shape_type] || "",
+              shape_args: anno_data[:shape_args] || {},
+              category: anno_data[:category] || "",
               metadata: anno_data[:metadata] || {},
               created_by_email: "external-service@idah.local"
             )

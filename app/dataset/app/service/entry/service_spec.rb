@@ -1522,8 +1522,9 @@ RSpec.describe Entry::Service, database: true do
         project_id:,
         dataset_id: qc_dataset_id,
         created_by_email: "user@example.com",
-        annotation: { label: "cat" },
-        dimensions: { type: "rectangle", x: 10, y: 20, width: 50, height: 50 },
+        shape_type: "bbox",
+        shape_args: { x: 10, y: 20, width: 50, height: 50 },
+        category: "cat",
         metadata: {}
       )
     end
@@ -1538,8 +1539,9 @@ RSpec.describe Entry::Service, database: true do
         annotations: [
           {
             id: qc_annotation_id,
-            annotation: { label: "cat" },
-            dimensions: { type: "rectangle", x: 10, y: 20, width: 50, height: 50 },
+            shape_type: "bbox",
+            shape_args: { x: 10, y: 20, width: 50, height: 50 },
+            category: "cat",
             metadata: { qc_score: 0.95 }
           }
         ],
