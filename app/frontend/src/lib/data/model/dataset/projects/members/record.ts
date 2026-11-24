@@ -1,4 +1,5 @@
-import { createBackendDataSource } from "@/data/BackendDataSource";
+import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
+import { clearCache } from "@/data/Cache";
 import { parseCollectionReturn, parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
@@ -48,6 +49,9 @@ export const projectMembersBackendDataSource = createBackendDataSource(ProjectMe
       return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
     }
 
+    // Drop the cached member lists so the table shows the new rows on refetch.
+    clearCache(resourcePath(projectMembersBasePath, null, undefined));
+
     // The backend returns the batch of created/re-enabled members as a JSON:API
     // collection (`data: [...]`), so parse it as a collection.
     if (body && body.data) return Promise.resolve(parseCollectionReturn<ProjectMemberRecord>(body));
@@ -70,6 +74,9 @@ export const projectMembersBackendDataSource = createBackendDataSource(ProjectMe
     if (body && body.errors) {
       return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
     }
+
+    clearCache(resourcePath(projectMembersBasePath, null, undefined));
+    clearCache(resourcePath(projectMembersBasePath, id, undefined));
 
     if (body && body.data) return Promise.resolve(parseSingleElementReturn<ProjectMemberRecord>(body));
 
