@@ -91,9 +91,16 @@ services:
       - "${IDAH_HTTPS_BIND:-0.0.0.0}:${IDAH_HTTPS_PORT:-8443}:443"
     volumes:
       - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./config/nginx/routes.conf:/etc/nginx/routes.conf:ro
+      # A template: the image fills in the IDAH_* variables below and writes the
+      # result to /etc/nginx/routes.conf when the container starts.
+      - ./config/nginx/routes.conf:/etc/nginx/templates/routes.conf.template:ro
       - ${IDAH_TLS_CONF:-./config/nginx/tls-disabled.conf}:/etc/nginx/tls/tls.conf:ro
       - ./config/certs:/certs:ro
+    environment:
+      NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx
+      # Only IDAH_* variables are replaced; nginx's own ($host, …) stay as they are.
+      NGINX_ENVSUBST_FILTER: ^IDAH_
+      IDAH_UPLOAD_TIMEOUT: ${IDAH_UPLOAD_TIMEOUT:-1800s}
     depends_on:
       - frontend
       - iam

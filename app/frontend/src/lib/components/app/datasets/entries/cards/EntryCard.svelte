@@ -28,7 +28,7 @@
   import { JobRecord, jobsBackendDataSource } from "@/data/model/media/jobs/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
   import { authStatus } from "@/security/AuthContext";
-  import { humanize } from "@/utils/string";
+  import { humanize, truncatePath } from "@/utils/string";
 
   import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
@@ -42,6 +42,9 @@
     onEntryUpdated: () => void;
   }
   let { entry, orphanCategoryCount, today, selectedEntryIds, onRowSelect, onEntryUpdated }: Props = $props();
+  // Entry names are often paths inside an uploaded zip: shortened from the middle, in full on hover.
+  let fullName = $derived(entry.name || entry.id);
+  let shortName = $derived(truncatePath(fullName, 80));
   let effectiveDeliveryDate = $derived(entry.delivery_date || entry.dataset?.delivery_date);
 
   let deliveryDateWarning = $derived(
@@ -293,10 +296,28 @@
   }
 </script>
 
+{#snippet entryName()}
+  {#if shortName === fullName}
+    {fullName}
+  {:else}
+    <TooltipProvider>
+      <Tooltip delayDuration={200}>
+        <TooltipTrigger>
+          {#snippet child({ props })}
+            <span {...props}>{shortName}</span>
+          {/snippet}
+        </TooltipTrigger>
+        <TooltipContent><p class="max-w-md break-all">{fullName}</p></TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  {/if}
+{/snippet}
+
 <Card class="hover:bg-primary/5 hover:shadow-primary/10 group transition-shadow hover:shadow-md">
   <CardContent class="flex">
-    <!-- SECTION::LEFT -->
-    <section class="flex flex-1 flex-row gap-4">
+    <!-- SECTION::LEFT: min-w-0 lets it shrink, so the status and actions on the right stay in the card;
+         the info wraps below the thumbnail when there is no room for it beside it -->
+    <section class="flex min-w-0 flex-1 flex-row flex-wrap gap-4">
       <!-- CHECKBOX -->
       {#if canUpdateEntry || canDeleteEntry}
         <div class="my-auto">
@@ -305,7 +326,11 @@
       {/if}
 
       <!-- THUMBNAIL -->
-      <div class="h-full overflow-hidden" style:width="{containerWidth}px" style:max-width="{containerWidth}px">
+      <div
+        class="shrink-0 self-start overflow-hidden"
+        style:width="{containerWidth}px"
+        style:max-width="{containerWidth}px"
+      >
         <AspectRatio ratio={16 / 9} class="bg-muted h-full rounded-lg">
           {#if thumbnailUrl}
             {#if dataset.modality === "idah-image"}
@@ -346,26 +371,26 @@
       </div>
 
       <!-- INFO -->
-      <div class="flex flex-1 flex-col gap-6">
+      <div class="@container flex min-w-0 flex-1 basis-56 flex-col gap-6">
         <!-- RESOURCE -->
         {#if canOpenEntry}
           <Button
             variant="link"
-            class="group-hover:text-primary justify-start px-0 group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
+            class="group-hover:text-primary h-auto max-w-full justify-start px-0 text-left break-all whitespace-normal group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
             onclick={selectEntry}
           >
-            <span class="-ml-3">{entry.name || entry.id}</span>
+            <span class="-ml-3">{@render entryName()}</span>
 
-            <ExternalLinkIcon class="opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+            <ExternalLinkIcon class="shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
           </Button>
         {:else}
           <Text size="sm" weight="medium" class="text-muted-foreground">
-            {entry.name || entry.id}
+            {@render entryName()}
           </Text>
         {/if}
 
-        <!-- INFO -->
-        <div class="grid grid-cols-2 gap-4">
+        <!-- INFO: two columns once the card is wide enough, stacked otherwise -->
+        <div class="grid grid-cols-1 gap-4 @md:grid-cols-2">
           <div class="flex flex-col gap-2">
             <!-- CREATED AT -->
             <DataDisplay label="Created at">
@@ -499,7 +524,7 @@
     </section>
 
     <!-- SECTION::RIGHT -->
-    <section class="flex flex-row gap-4">
+    <section class="flex shrink-0 flex-row gap-4">
       <!-- STATUS & ACTIONS -->
       <div>
         <div class="flex items-center gap-2">

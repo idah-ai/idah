@@ -20,7 +20,7 @@
     {#each items as item, idx (idx)}
       <li class="flex min-w-0 items-baseline gap-2 text-xs">
         <span class="min-w-0 truncate" title={item.filename}>{item.filename}</span>
-        <span class={cn("shrink-0", reasonColor)}>{item.message}</span>
+        <span class={cn("ml-auto shrink-0", reasonColor)}>{item.message}</span>
       </li>
     {/each}
   </ul>
