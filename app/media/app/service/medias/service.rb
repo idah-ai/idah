@@ -215,7 +215,9 @@ module Medias
       basename.start_with?("._")
     end
 
-    def store_media(io:, filename:, mime_type:, resource:, key:, project_id:, size: nil, modality: nil)
+    # `storage_target_id` is where the file goes: nil is the default storage.
+    def store_media(io:, filename:, mime_type:, resource:, key:, project_id:, size: nil, modality: nil,
+                    storage_target_id: nil)
       # Check if the modality allows this mime type BEFORE uploading
       if modality &&
          (allowed = Processor::Registry.allowed_mime_types(modality)) &&
@@ -223,7 +225,8 @@ module Medias
         return "File type is not supported"
       end
 
-      Verse::Plugin[:shrine].with_storage do |storage|
+      # The upload streams from `io`, which can't always be rewound for a retry.
+      StorageRegistry.with_storage(storage_target_id, retriable: false) do |storage|
         output = storage.upload(io)
 
         medias.create(
@@ -236,7 +239,8 @@ module Medias
             mime_type:,
             created_by: auth_context.metadata[:id],
             created_role: auth_context.metadata[:role]&.to_s,
-            project_id:
+            project_id:,
+            storage_target_id:
           }
         )
         medias.find!(output.id)

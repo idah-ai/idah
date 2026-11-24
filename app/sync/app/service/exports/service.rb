@@ -76,7 +76,8 @@ module Exports
       export = exports.find!(id)
       filename ||= File.basename(file.path)
 
-      Verse::Plugin[:shrine].with_storage do |storage|
+      # The upload streams from `file`, so a rejected upload is not retried.
+      StorageRegistry.with_storage(export.storage_target_id, retriable: false) do |storage|
         file = storage.upload(file)
 
         exports.table.db.after_rollback do

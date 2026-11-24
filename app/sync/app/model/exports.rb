@@ -16,10 +16,13 @@ module Exports
 
     field :created_at, type: Time
 
+    # The storage target the file is written to; nil is the default storage.
+    field :storage_target_id, type: [String, NilClass], readonly: true
+
     belongs_to :job, repository: "Jobs::Repository", foreign_key: :job_id
 
     def open
-      Verse::Plugin[:shrine].with_storage do |storage|
+      StorageRegistry.with_storage(storage_target_id) do |storage|
         storage.open(file_id)
       rescue Shrine::FileNotFound
         raise Verse::Error::NotFound, "File not found"

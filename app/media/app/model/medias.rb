@@ -26,8 +26,11 @@ module Medias
 
     field :project_id, type: String, readonly: true
 
+    # The storage target the file was written to; nil is the default storage.
+    field :storage_target_id, type: [String, NilClass], readonly: true
+
     def open
-      Verse::Plugin[:shrine].with_storage do |storage|
+      StorageRegistry.with_storage(storage_target_id) do |storage|
         storage.open(id)
       rescue Shrine::FileNotFound
         raise Verse::Error::NotFound, "File not found"

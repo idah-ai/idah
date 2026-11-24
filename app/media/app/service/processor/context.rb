@@ -20,8 +20,7 @@ module Processor
 
       Verse.logger.info{ "Downloading media #{media.id} (#{media.key})" }
 
-      # Assuming we have a method to download the media
-      Verse::Plugin[:shrine].with_storage do |storage|
+      StorageRegistry.with_storage(media.storage_target_id) do |storage|
         file = storage.open(media.id)
 
         # Copy the file to a temporary location, keeping the extension last:
@@ -70,7 +69,12 @@ module Processor
 
         filename = io.respond_to?(:path) ? File.basename(io.path) : "streamed_file"
 
-        Verse::Plugin[:shrine].with_storage do |storage|
+        # A derived file goes where the resource's files already are: the same
+        # project and the same storage target.
+        source = medias.find_by({ resource: })
+
+        # The upload streams from `io`, which can't always be rewound for a retry.
+        StorageRegistry.with_storage(source&.storage_target_id, retriable: false) do |storage|
           file = storage.upload(io)
 
           medias.table.db.after_rollback do
@@ -90,7 +94,8 @@ module Processor
               mime_type: mime_type || file.mime_type,
               created_by: nil,
               created_role: "processor",
-              project_id: medias.find_by({ resource: })&.project_id,
+              project_id: source&.project_id,
+              storage_target_id: source&.storage_target_id,
               meta: metadata
             }
           )

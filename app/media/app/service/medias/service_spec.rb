@@ -656,6 +656,53 @@ RSpec.describe Medias::Service, as: :system, database: true do
     end
   end
 
+  describe "storage targets" do
+    it "stores a file in the default storage and records no target" do
+      result = subject.upload(uploaded_file, resource: "default_resource", project_id: "mocked_project_id")
+
+      expect(result[:processed].first.storage_target_id).to be_nil
+    end
+
+    it "writes to the given target, without retrying the streamed upload, and records it" do
+      target_id = UUIDv7.generate
+      expect(StorageRegistry).to receive(:with_storage)
+        .with(target_id, retriable: false)
+        .and_yield(Verse::Plugin[:shrine].storage)
+
+      media = subject.send(
+        :store_media,
+        io: File.open(file_path, "rb"),
+        filename: "test.mp4",
+        mime_type: "video/mp4",
+        resource: "target_resource",
+        key: "",
+        project_id: "mocked_project_id",
+        storage_target_id: target_id
+      )
+
+      expect(media.storage_target_id).to eq(target_id)
+    end
+
+    it "opens a file from the target recorded on it" do
+      target_id = UUIDv7.generate
+      allow(StorageRegistry).to receive(:with_storage).and_yield(Verse::Plugin[:shrine].storage)
+      media = subject.send(
+        :store_media,
+        io: File.open(file_path, "rb"),
+        filename: "test.mp4",
+        mime_type: "video/mp4",
+        resource: "open_resource",
+        key: "",
+        project_id: "mocked_project_id",
+        storage_target_id: target_id
+      )
+
+      expect(StorageRegistry).to receive(:with_storage).with(target_id).and_yield(Verse::Plugin[:shrine].storage)
+
+      media.open.close
+    end
+  end
+
   describe "#create" do
     let(:media_record) do
       Verse::JsonApi::Struct.new(
