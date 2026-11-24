@@ -37,8 +37,8 @@ module Medias
     end
 
     def upload(file, resource:, project_id:, key: "", modality: nil)
-      # satisfy the mandatory context check, in case the repository is never hit, avoid throwing an error
-      medias.scoped(:create)
+      # Before anything is stored: the project decides where its files go.
+      medias.authorize_project!(project_id)
 
       results = []
       skipped = []

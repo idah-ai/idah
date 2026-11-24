@@ -656,6 +656,22 @@ RSpec.describe Medias::Service, as: :system, database: true do
     end
   end
 
+  describe "project access" do
+    it "refuses an upload to a project the actor can't access, before storing anything" do
+      user = Verse::Auth::Context.new(
+        ["media:medias.*.as_user"],
+        role: :user,
+        metadata: { id: 9, email: "user@test.com", role: :user }
+      )
+      allow(ProjectMembership::Lookup).to receive(:new).and_return(double(memberships_for: []))
+      expect(StorageRegistry).not_to receive(:with_storage)
+
+      expect {
+        described_class.new(user).upload(uploaded_file, resource: "foreign", project_id: "foreign-project")
+      }.to raise_error(Verse::Error::Authorization)
+    end
+  end
+
   describe "storage targets" do
     it "stores a file in the default storage and records no target" do
       result = subject.upload(uploaded_file, resource: "default_resource", project_id: "mocked_project_id")
