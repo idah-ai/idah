@@ -1,7 +1,7 @@
 {
   "type": "idah-plugin",
   "name": "idah-image",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "idahVersion": "0.1.5",
   "title": "IDAH Image Annotation",
   "description": "A module for annotating image.",
