@@ -10,7 +10,7 @@
   let { record: exportRecord, contexts }: DataTableCellBaseProps<ExportRecord> = $props();
 
   // Variables
-  let { exportFormats } = contexts as { exportFormats: ExportFormat[] };
+  let { exportFormats } = $derived(contexts as { exportFormats: ExportFormat[] });
 
   let syncJobExporter = $derived((exportRecord.job as unknown as SyncJobRecord).arguments.exporter);
   let exporter = $derived(exportFormats.find((format) => format.exporter === syncJobExporter));

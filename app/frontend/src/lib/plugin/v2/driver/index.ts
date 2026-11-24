@@ -526,7 +526,7 @@ import { ToolbarDriverAdapter } from "./adapter/toolbar";
 import { StatsDriverAdapter } from "./adapter/stats";
 import { SettingsDriverAdapter } from "./adapter/settings.svelte";
 
-export async function createIdahDriverV2(entryId: string): Promise<IIdahDriverV2> {
+export async function createIdahDriverV2(entryId: string): Promise<IdahDriverV2> {
   const latestEntryRes = await entriesBackendDataSource.get(entryId, {
     included: ["dataset", "dataset.project", "entry_work_times"],
     noCache: true,

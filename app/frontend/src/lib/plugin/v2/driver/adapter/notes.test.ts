@@ -49,7 +49,7 @@ describe("noteFeedToV2", () => {
       content_md: null,
       feedback_keys: feedbackKeys,
       status: "pending",
-    } as NoteFeedRecord;
+    } as unknown as NoteFeedRecord;
 
     expect(noteFeedToV2(feed).feedback_keys).toEqual(expected);
   });

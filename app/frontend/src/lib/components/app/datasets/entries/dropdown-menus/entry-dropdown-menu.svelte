@@ -26,6 +26,7 @@
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
+  import type { JsonApiErrorResponse } from "@/data/model/types";
 
   // Props
   interface Props {
@@ -107,7 +108,9 @@
         } catch (error) {
           showToast.error({
             title: "Unable to unassign entry",
-            description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
+            description:
+              (error as JsonApiErrorResponse)?.errors?.[0]?.detail ||
+              "The action could not be completed, please try again later.",
           });
           return confirmModalResult.KeepOpen;
         }
@@ -133,7 +136,9 @@
         } catch (error) {
           showToast.error({
             title: "Unable to delete entry",
-            description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
+            description:
+              (error as JsonApiErrorResponse)?.errors?.[0]?.detail ||
+              "The action could not be completed, please try again later.",
           });
           return confirmModalResult.KeepOpen;
         }

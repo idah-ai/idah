@@ -1,4 +1,4 @@
-import { CircleQuestionMarkIcon, type LucideIcon } from "@lucide/svelte";
+import type { LucideIcon } from "@lucide/svelte";
 import type { BadgeVariant } from "$lib/components/ui/badge";
 
 export interface BadgeConfig {
@@ -26,9 +26,3 @@ export function arrayToBadgeMap<Value extends string, C extends BadgeConfig>(
     {} as Record<Value, C>,
   );
 }
-
-export const UNKNOWN_BADGE_CONFIG: BadgeConfig = {
-  label: "Unknown",
-  variant: "outline",
-  icon: CircleQuestionMarkIcon,
-};

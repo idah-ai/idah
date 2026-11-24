@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
 
   import {
     PROJECT_DASHBOARD_CONTROLLER_KEY,
@@ -23,7 +23,8 @@
 
   // Variables
   let entryCard: ReturnType<typeof OpenEntriesCardV2> | undefined;
-  const controller = new ProjectDashboardController(projectId);
+  // One controller per instance; the page keys this component by project.
+  const controller = new ProjectDashboardController(untrack(() => projectId));
   setProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY, controller);
 
   // LifeCycle

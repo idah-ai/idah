@@ -1,6 +1,6 @@
 import z from "zod";
 
-import { projectMemberRoles } from "@/data/model/dataset/projects/members/record";
+import { projectMemberRoleValues } from "@/data/model/dataset/projects/members/record";
 import { getRequiredErrorMessage } from "@/utils/validate";
 
 export const projectMemberSchema = z.object({
@@ -10,7 +10,7 @@ export const projectMemberSchema = z.object({
 
   name: z.string().nullable(),
   email: z.email("Make sure to provide a valid email address."),
-  role: z.enum(projectMemberRoles.map((role) => role.value)),
+  role: z.enum(projectMemberRoleValues),
 
   invited_by_id: z.number(),
 

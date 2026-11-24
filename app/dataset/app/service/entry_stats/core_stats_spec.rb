@@ -227,7 +227,7 @@ RSpec.describe EntryStats::CoreStats do
 
     context "with system-shape annotations (declared in the plugin manifest)" do
       before do
-        allow(EntryStats::SystemShapes).to receive(:for_all).and_return(Set["idah-image:done-area"])
+        allow(PluginSystem::SystemShapes).to receive(:for_all).and_return(Set["idah-image:done-area"])
       end
 
       it "excludes system-shape annotations from every count" do

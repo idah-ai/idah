@@ -17,7 +17,7 @@ import { getDeliveryStatusBadge, isOverdue, type DeliveryStatusBadgeProps } from
 import { Transformers } from "@/data/model/transformers";
 
 import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
-import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
+import type { RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
 import { EntryWorkTimeRecord } from "@/data/model/dataset/entry-work-times/record";
 
@@ -139,7 +139,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
     if (!body?.meta?.daily || body.meta.timezone !== options.tz) throw new Error("Completion counts unavailable.");
     return body.meta;
   },
-  select: async (params: { id: string }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+  select: async (params: { id: string }): Promise<RecordResponse<EntryRecord>> => {
     const res = await fetch(`${entriesBasePath}/${params.id}/select`, {
       method: "GET",
     });
@@ -166,10 +166,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     throw "No data returned";
   },
-  assign: async (params: {
-    id: string;
-    memberAccountId: number;
-  }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+  assign: async (params: { id: string; memberAccountId: number }): Promise<RecordResponse<EntryRecord>> => {
     const res = await fetch(`${entriesBasePath}/${params.id}/assign`, {
       method: "PATCH",
       body: encodeModel(EntryRecord, { attributes: { assigned_to_id: params.memberAccountId } }),
@@ -199,7 +196,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     throw "No data returned";
   },
-  unassign: async (entryId: string): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+  unassign: async (entryId: string): Promise<RecordResponse<EntryRecord>> => {
     const res = await fetch(`${entriesBasePath}/${entryId}/unassign`, {
       method: "PATCH",
     });
@@ -229,7 +226,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     throw "No data returned";
   },
-  reopen: async (entryId: string, targetStep: string): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+  reopen: async (entryId: string, targetStep: string): Promise<RecordResponse<EntryRecord>> => {
     const res = await fetch(`${entriesBasePath}/${entryId}/reopen`, {
       method: "POST",
       body: JSON.stringify({

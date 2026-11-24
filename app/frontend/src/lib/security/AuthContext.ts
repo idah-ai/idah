@@ -10,7 +10,7 @@ import { ActionMap } from "@/security/ActionMap";
 import { rank } from "@/security/roleHierarchy";
 
 import type { Role } from "@/data/model/iam/accounts/auth/constants";
-import type { Action, Resource, Scope } from "@/security/types";
+import type { Action, NamedScope, Resource, Scope } from "@/security/types";
 import type { Hash } from "@/utils/types";
 
 export type AuthenticationStatus = {
@@ -190,7 +190,7 @@ export class AuthContext {
   /*
    * Tell whether the account can perform the given action on the given resource
    */
-  hasScope(action: Action, resource: Resource, scope?: Scope): boolean {
+  hasScope(action: Action, resource: Resource, scope?: NamedScope): boolean {
     const rights = this.actionMap.get(action, resource);
 
     if (!scope) return !!rights;

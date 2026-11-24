@@ -23,7 +23,7 @@
   // Variables
   let submitting: boolean = $state(false);
   let fieldErrors: Hash = $state({});
-  let selectedMemberAccountId: number | null = $state(entryRecord?.assigned_to_id ?? null);
+  let selectedMemberAccountId: number | null = $derived(entryRecord?.assigned_to_id ?? null);
   let selectedEntryCount: number = $derived(entryIds.length);
 
   // Functions
@@ -34,7 +34,7 @@
   async function assignMember(): Promise<void> {
     if (entryIds.length === 0 || !selectedMemberAccountId) return;
 
-    let projectMemberRecord: ProjectMemberRecord | undefined = $state(undefined);
+    let projectMemberRecord: ProjectMemberRecord | undefined;
     for (const entryId of entryIds) {
       await entriesBackendDataSource.assign({ id: entryId, memberAccountId: selectedMemberAccountId });
 

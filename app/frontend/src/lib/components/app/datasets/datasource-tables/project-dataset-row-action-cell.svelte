@@ -9,7 +9,7 @@
   // Props
 
   let { record: dataset }: DataTableCellBaseProps<DatasetRecord> = $props();
-  const data = dataset._jsonapiData?.relationships?.project.data as JsonApiReference;
+  const data = $derived(dataset._jsonapiData?.relationships?.project.data as JsonApiReference);
 </script>
 
 <ProjectDatasetDropdownMenu datasetId={dataset.id} datasetName={dataset.name} projectId={data.id!} />

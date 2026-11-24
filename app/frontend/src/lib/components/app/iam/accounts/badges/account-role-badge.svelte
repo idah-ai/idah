@@ -32,8 +32,8 @@
   });
 
   // Variables
-  let belongsToOrganization: OrganizationRecord[] = [];
-  let belongsToProjectMembers: ProjectMemberRecord[] = [];
+  let belongsToOrganization = $state<OrganizationRecord[]>([]);
+  let belongsToProjectMembers = $state<ProjectMemberRecord[]>([]);
 
   let { role_name } = $derived(accountRecord);
   let roleName = $derived.by(() => {

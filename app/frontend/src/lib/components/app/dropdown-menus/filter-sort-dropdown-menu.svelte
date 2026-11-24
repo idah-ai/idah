@@ -89,7 +89,7 @@
   // Variables
   let openDropdown: boolean = $state(false);
 
-  let { label, filterable, hidable, sortable, filterComponent, filterOptions } = columnSetting;
+  let { label, filterable, hidable, sortable, filterComponent, filterOptions } = $derived(columnSetting);
   let filterKey: string = $derived(`${filterOptions?.filterKey || columnKey}`);
   let filterKeyWithOperation: string = $derived(
     filterOptions?.filterOperation ? `${filterKey}__${filterOptions.filterOperation}` : filterKey,
@@ -146,7 +146,7 @@
     icon: typeof IconType;
     onSelect: () => Promise<void> | void;
   }
-  const sortOptionItems: SortOptionItem[] = [
+  const sortOptionItems: SortOptionItem[] = $derived([
     {
       label: "Sort A-Z",
       value: columnKey,
@@ -168,7 +168,7 @@
         closeDropdown();
       },
     },
-  ];
+  ]);
 
   const datePresets = {
     today: { label: "Today" },

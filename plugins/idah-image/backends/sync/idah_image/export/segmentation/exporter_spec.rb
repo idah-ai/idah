@@ -218,6 +218,22 @@ RSpec.describe IdahImage::Export::Segmentation::Exporter do
       end
     end
 
+    context "with a coverage mask's done area" do
+      let(:annotations) do
+        [
+          car,
+          shape("done", "idah-image:done-area", { rle: [0, 10] }, category: nil),
+          shape("done-deleted", "idah-image:done-area", {}, category: nil, deleted_at: "2026-01-01")
+        ]
+      end
+
+      it "leaves it out without counting it as skipped" do
+        exporter.export(context)
+
+        expect(report[:skipped]).to eq({})
+      end
+    end
+
     it "leaves out an image with no shape, and a dataset with none" do
       entries.replace([FakeExportContext::Entry.new(id: "entry-2", name: "empty.jpg", annotations: [], meta:)])
 

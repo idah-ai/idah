@@ -28,8 +28,6 @@ export const datasetsStatuses: DatasetStatusBadgeProps[] = [
   { label: "Completed", value: "completed", variant: "success" },
 ];
 
-export const DATASET_STATUS_MAP: Record<string, BadgeConfig> = arrayToBadgeMap(datasetsStatuses);
-
 export interface DatasetDeliveryBreakdown {
   overdue: number;
   due_today: number;

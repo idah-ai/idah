@@ -44,7 +44,7 @@
   }: Props = $props();
 
   // Variables
-  const df = new DateFormatter("en-US", { dateStyle });
+  const df = $derived(new DateFormatter("en-US", { dateStyle }));
 
   let calendarValue = $state<DateValue | undefined>();
 
@@ -82,7 +82,7 @@
           <Button
             {...props}
             variant="outline"
-            class={cn(props.class, "w-full justify-start text-left font-normal", {
+            class={cn(props.class as string | undefined, "w-full justify-start text-left font-normal", {
               "text-muted-foreground": !value,
               "has-[>svg]:pr-10": clearable && !!value,
             })}
