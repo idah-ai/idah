@@ -56,7 +56,7 @@ module EntryStats
         shape_counts[key_s.split(":", 2).last] = 0 if key_s.include?(":")
       end
 
-      system_shapes = EntryStats::SystemShapes.for_all
+      system_shapes = PluginSystem::SystemShapes.for_all
 
       annotations = entry.annotations || []
       live_annotations = annotations.reject(&:deleted_at)
