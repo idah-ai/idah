@@ -129,6 +129,43 @@ RSpec.describe LogsExpo, type: :exposition, as: :system do
     end
   end
 
+  describe "storage target events" do
+    let(:content) do
+      {
+        args: [],
+        resource_id: "0194f5a2-0000-7000-8000-000000000001",
+        metadata: {
+          at: Time.now,
+          actor_account_id: 1,
+          actor_account_email: "admin@example.com",
+          actor_account_role_name: "admin",
+          secret_changed: true
+        }
+      }
+    end
+
+    %w[created updated deleted].each do |event|
+      it "logs a storage target #{event} event against the target" do
+        expect(service).to receive(:create).with(
+          hash_including(
+            action: event,
+            resource_service: "setting",
+            resource_type: "storage_targets",
+            resource_id: "0194f5a2-0000-7000-8000-000000000001",
+            actor_account_id: 1
+          )
+        )
+
+        Verse.publish_resource_event(
+          resource_type: Resource::Setting::StorageTargets,
+          resource_id: content[:resource_id],
+          event:,
+          payload: content
+        )
+      end
+    end
+  end
+
   describe "project events" do
     before do
       @resource_type = "dataset:projects"
