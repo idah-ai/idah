@@ -23,7 +23,7 @@
   let { driver }: Props = $props();
 
   // Variables
-  const disabledToolsIfWorkflowSteps = ["done", "error"];
+  const disabledToolsIfWorkflowSteps = ["done", "error", ...driver.externalSteps];
   let currentMode = $state(driver.mode);
   let toolbarNodes: IToolbarNode[] = $derived.by(() => driver.toolbar.getNodesForMode(currentMode));
 

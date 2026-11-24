@@ -228,7 +228,10 @@
   });
 
   let showAutoSelect = $derived(
-    driver.entryStatus && driver.entryStatus !== "completed" && driver.entryStatus !== "errored",
+    driver.entryStatus &&
+      driver.entryStatus !== "completed" &&
+      driver.entryStatus !== "errored" &&
+      !driver.externalSteps.includes(driver.workflowStep),
   );
 
   // Switch to review mode when entry is completed (only evaluated at mount since entryStatus is static)
@@ -743,7 +746,7 @@
     </Tooltips>
   {/if}
 
-  {#if ["done", "error"].includes(driver.workflowStep)}
+  {#if ["done", "error"].includes(driver.workflowStep) || driver.externalSteps.includes(driver.workflowStep)}
     <!-- TODO: What to show? -->
   {:else if driver.workflowStep === "review"}
     {#if currentStepConfig}

@@ -894,20 +894,9 @@ RSpec.describe Annotation::Service, database: true do
           results = subject.index
           expect(results.size).to eq(3)
 
-          # index returns annotations ordered by id ASC; UUIDv7 ids generated in
-          # the same millisecond have no guaranteed creation order, so look each
-          # result up by id instead of relying on positional order.
-          expected = {}
-          ids.each_with_index do |id, idx|
-            expected[id] = {
-              "tile-0x0" => { "rle" => "VAL#{idx}" },
-              "tile-0x1" => { "rle" => "VAL#{idx}b" },
-            }
-          end
-
-          results.each do |r|
-            expect(r.shape_args["tile-0x0"]).to eq(expected[r.id]["tile-0x0"])
-            expect(r.shape_args["tile-0x1"]).to eq(expected[r.id]["tile-0x1"])
+          results.each_with_index do |r, idx|
+            expect(r.shape_args["tile-0x0"]).to eq({ "rle" => "VAL#{idx}" })
+            expect(r.shape_args["tile-0x1"]).to eq({ "rle" => "VAL#{idx}b" })
           end
 
           # merge_annotation_shapes should have fired exactly one query
