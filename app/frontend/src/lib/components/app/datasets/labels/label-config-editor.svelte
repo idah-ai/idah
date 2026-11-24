@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import {
     BoltIcon,
     CircleAlertIcon,
@@ -59,7 +60,7 @@
   }: Props = $props();
 
   // Share the controller instance with descendants (CategoryTree reads its orderMap).
-  setLabelConfigController(controller);
+  setLabelConfigController(untrack(() => controller));
 
   let labelConfig = $derived(controller.labelConfig);
 

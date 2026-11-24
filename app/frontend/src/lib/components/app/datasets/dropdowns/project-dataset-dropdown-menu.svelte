@@ -19,6 +19,7 @@
 
   import type { DropdownMenuContentAlignment, IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import type { JsonApiErrorResponse } from "@/data/model/types";
 
   // Props
   interface Props {
@@ -132,7 +133,9 @@
         } catch (error) {
           showToast.error({
             title: "Unable to delete dataset",
-            description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
+            description:
+              (error as JsonApiErrorResponse)?.errors?.[0]?.detail ||
+              "The action could not be completed, please try again later.",
           });
           return confirmModalResult.KeepOpen;
         }

@@ -5,7 +5,7 @@
   import { Badge } from "@/components/ui/badge";
   import { ExternalLinkIcon, TriangleAlertIcon } from "@lucide/svelte";
   import { format, isAfter, parseISO } from "date-fns";
-  import { getContext, onDestroy, onMount } from "svelte";
+  import { getContext, onDestroy, onMount, untrack } from "svelte";
 
   import EntryAnnotationErrorBadge from "@/components/app/datasets/entries/badges/EntryAnnotationErrorBadge.svelte";
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
@@ -110,7 +110,8 @@
   let currentImagePosition = $state(0);
   let animationInterval: ReturnType<typeof setInterval> | null = $state(null);
   let progressIntervalId: ReturnType<typeof setInterval> | null = $state(null);
-  let jobProgress: number = $state(entry.wf_step === "start" ? 0 : 1);
+  // Starting value; the job-status polling below owns it afterwards (it also reassigns `entry`).
+  let jobProgress: number = $state(untrack(() => (entry.wf_step === "start" ? 0 : 1)));
 
   const TOTAL_POSITIONS = 10; // 10 images inside the larger image
   const ANIMATION_INTERVAL_MS = 350;

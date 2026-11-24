@@ -58,8 +58,9 @@
   }: Props = $props();
 
   // Variables
-  let editedContentMd = $state<string | null>(content_md);
-  let editedFeedbackKeys = $state<string[]>(feedbackKeys ?? []);
+  // Edit drafts, loaded from the current note each time edit mode starts.
+  let editedContentMd = $state<string | null>(null);
+  let editedFeedbackKeys = $state<string[]>([]);
   let mode = $state<"view" | "edit">("view");
   let isEditMode = $derived(mode === "edit");
   let isViewMode = $derived(mode === "view");
@@ -90,6 +91,8 @@
   }
 
   function switchToEditMode() {
+    editedContentMd = content_md;
+    editedFeedbackKeys = feedbackKeys ?? [];
     mode = "edit";
   }
 
@@ -184,11 +187,7 @@
           switchToViewMode();
         }}
         showCancel
-        onCancel={() => {
-          editedContentMd = content_md;
-          editedFeedbackKeys = feedbackKeys ?? [];
-          switchToViewMode();
-        }}
+        onCancel={switchToViewMode}
       />
     {/if}
   </section>

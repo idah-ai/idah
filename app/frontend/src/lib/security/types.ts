@@ -50,4 +50,6 @@ export type ProjectMemberScope = {
   projectMemberRoles: ProjectMemberRole[];
 };
 
-export type Scope = (typeof scopes)[number] | { as_user: ProjectMemberScope };
+export type NamedScope = (typeof scopes)[number];
+
+export type Scope = NamedScope | { as_user: ProjectMemberScope };

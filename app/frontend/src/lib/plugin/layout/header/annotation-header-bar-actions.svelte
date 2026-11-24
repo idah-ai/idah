@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import {
     ChevronDownIcon,
     CircleQuestionMarkIcon,
@@ -219,9 +220,9 @@
   );
 
   // Switch to review mode when entry is completed (only evaluated at mount since entryStatus is static)
-  if (driver.entryStatus === "completed") {
-    driver.setMode("review");
-  }
+  untrack(() => {
+    if (driver.entryStatus === "completed") driver.setMode("review");
+  });
 
   // Unresolved note feed count
   let unresolvedFeedCount = $state(0);
@@ -250,9 +251,14 @@
   });
 
   // Track mode changes reactively
-  let currentMode = $state(driver.mode);
-  driver.onModeChange((event) => {
-    currentMode = event.newValue;
+  let currentMode = $state(untrack(() => driver.mode));
+  $effect(() => {
+    const d = driver;
+    return untrack(() =>
+      d.onModeChange((event) => {
+        currentMode = event.newValue;
+      }),
+    );
   });
 
   const reviewMenus: IDropdownMenus = {

@@ -84,10 +84,12 @@ export const projectMembersBackendDataSource = createBackendDataSource(ProjectMe
   },
 });
 
-export const projectMemberRoles = [
+export const projectMemberRoleValues = ["project_owner", "reviewer", "annotator"] as const;
+
+export type ProjectMemberRole = (typeof projectMemberRoleValues)[number];
+
+export const projectMemberRoles: LabelValue<ProjectMemberRole>[] = [
   { label: "Project Owner", value: "project_owner" },
   { label: "Reviewer", value: "reviewer" },
   { label: "Annotator", value: "annotator" },
-] as LabelValue<string | number>[];
-
-export type ProjectMemberRole = (typeof projectMemberRoles)[number]["value"];
+];

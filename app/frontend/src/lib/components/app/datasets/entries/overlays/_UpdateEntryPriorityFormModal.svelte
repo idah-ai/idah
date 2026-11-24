@@ -22,7 +22,7 @@
   // Variables
   let resource: string = EntryRecord.type;
   let submitting: boolean = $state(false);
-  let selectedPriority: number | null = $state(entryRecord?.priority ?? null);
+  let selectedPriority: number | null = $derived(entryRecord?.priority ?? null);
   let selectedEntryCount: number = $derived(entryIds.length);
 
   // Functions

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import type { HTMLAttributes } from "svelte/elements";
 
   import Separator from "@/components/ui/separator/separator.svelte";
@@ -19,12 +20,17 @@
   let { ref = $bindable(null), driver }: WithElementRef<HTMLAttributes<HTMLElement>> & Props = $props();
 
   // Derive note sidebar state from the driver's notesAdapter
-  let noteSidebarOpen = $state(driver.notesAdapter!.noteSidebarOpen);
+  let noteSidebarOpen = $state(untrack(() => driver.notesAdapter!.noteSidebarOpen));
   function onNoteToggle() {
     driver.notesAdapter!.toggleNoteSidebar();
   }
-  driver.notesAdapter!.onNoteSidebarChange((open) => {
-    noteSidebarOpen = open;
+  $effect(() => {
+    const notesAdapter = driver.notesAdapter!;
+    return untrack(() =>
+      notesAdapter.onNoteSidebarChange((open) => {
+        noteSidebarOpen = open;
+      }),
+    );
   });
 </script>
 
