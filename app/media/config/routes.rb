@@ -6,4 +6,5 @@ Verse.on_boot do
   MediasExpo.register
   ProcessorExpo.register
   ProjectMembership::CacheExpo.register
+  StorageRegistry::EvictionExpo.register
 end
