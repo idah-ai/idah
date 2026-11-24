@@ -5,6 +5,7 @@ Verse.on_boot do
     HealthcheckExpo,
     AccountSettingsExpo,
     SettingsExpo,
-    PluginsExpo
+    PluginsExpo,
+    StorageTargetsExpo
   ].each(&:register)
 end

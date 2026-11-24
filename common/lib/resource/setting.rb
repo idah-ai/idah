@@ -7,6 +7,8 @@ module Resource
     AccountSettings = "setting:account_settings"
 
     Plugins = "setting:plugins"
+
+    StorageTargets = "setting:storage_targets"
     # rubocop:enable Naming/ConstantName
   end
 end
