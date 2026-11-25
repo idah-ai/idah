@@ -32,7 +32,7 @@
 <PageProvider name="storageTargets" roles={["admin"]} action="read" resource="setting:storage_targets">
   <PageHeader
     title="Storage Targets"
-    description="Dedicated S3 buckets for projects whose files must be kept apart. A project's storage is chosen when it is created and never changes."
+    info="Dedicated S3 buckets for projects whose files must be kept apart. A project's storage is chosen when it is created and never changes."
   >
     {#snippet actions()}
       {@render AddNewTargetButton()}
