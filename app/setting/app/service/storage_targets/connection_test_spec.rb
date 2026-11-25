@@ -40,10 +40,18 @@ RSpec.describe StorageTargets::ConnectionTest do
       endpoint: "https://s3.example.com",
       region: "eu-west-1",
       access_key_id: "AKIAEXAMPLE",
+      force_path_style: false,
       http_open_timeout: 5,
       http_read_timeout: 5,
       retry_limit: 0
     )
+  end
+
+  it "addresses the bucket by path when told to, as MinIO or Ceph need" do
+    options = nil
+    described_class.new(client_factory: ->(opts) { options = opts; client }).call(**target, path_style: true)
+
+    expect(options[:force_path_style]).to be(true)
   end
 
   it "uses a placeholder region when the target has none, as S3-compatible stores ignore it" do

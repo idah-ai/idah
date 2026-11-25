@@ -19,8 +19,8 @@ require "monitor"
 # the default storages: `<prefix>/media/files` and `<prefix>/sync/files`.
 #
 # Credentials come from `credentials_provider`, a callable taking a target id and
-# returning `{ endpoint:, region:, bucket:, prefix:, access_key_id:,
-# secret_access_key: }`. They are kept in memory only, and `#inspect` never shows
+# returning `{ endpoint:, region:, bucket:, prefix:, path_style:,
+# access_key_id:, secret_access_key: }`. They are kept in memory only, and `#inspect` never shows
 # them.
 class StorageRegistry
   include MonitorMixin
@@ -39,6 +39,10 @@ class StorageRegistry
   # S3 error codes meaning the credentials were rejected: the target's secret may
   # have been rotated since the entry was built.
   CREDENTIAL_ERROR_CODES = %w[InvalidAccessKeyId SignatureDoesNotMatch ExpiredToken].freeze
+
+  # S3-compatible stores ignore the region, but the SDK needs one to sign; the
+  # setting service's connection test uses the same one.
+  DEFAULT_REGION = "us-east-1"
 
   Entry = Struct.new(:key, :expires_at)
 
@@ -163,9 +167,11 @@ class StorageRegistry
       bucket: target.fetch(:bucket),
       access_key_id: target.fetch(:access_key_id),
       secret_access_key: target.fetch(:secret_access_key),
-      region: target[:region],
+      region: target[:region].to_s.empty? ? DEFAULT_REGION : target[:region],
       endpoint: target[:endpoint],
       prefix: folder(target[:prefix]),
+      # Self-hosted S3 services (MinIO, Ceph...) address buckets by path.
+      force_path_style: target[:path_style] == true,
       public: false
     )
   end

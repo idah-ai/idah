@@ -22,6 +22,10 @@ module StorageTarget
     field :bucket, type: String
     field :prefix, type: [String, NilClass]
 
+    # Path-style addressing (endpoint/bucket/key), which self-hosted S3 services
+    # such as MinIO or Ceph need.
+    field :path_style, type: TrueClass
+
     field :access_key_id, type: String
     # The last 4 characters of the secret, so an admin can tell which one is set.
     field :secret_hint, type: [String, NilClass], readonly: true
@@ -60,6 +64,7 @@ module StorageTarget
     field :region, type: [String, NilClass]
     field :bucket, type: String
     field :prefix, type: [String, NilClass]
+    field :path_style, type: TrueClass
     field :access_key_id, type: String
     field :secret_access_key, type: String
 

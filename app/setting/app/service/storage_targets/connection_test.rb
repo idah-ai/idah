@@ -27,7 +27,7 @@ module StorageTargets
       }
     end
 
-    def call(endpoint:, bucket:, access_key_id:, secret_access_key:, region: nil, prefix: nil)
+    def call(endpoint:, bucket:, access_key_id:, secret_access_key:, region: nil, prefix: nil, path_style: false)
       error = check_endpoint(endpoint)
       return error if error
 
@@ -36,6 +36,7 @@ module StorageTargets
         region: region.to_s.empty? ? DEFAULT_REGION : region,
         access_key_id:,
         secret_access_key:,
+        force_path_style: path_style == true,
         http_open_timeout: TIMEOUT,
         http_read_timeout: TIMEOUT,
         retry_limit: 0

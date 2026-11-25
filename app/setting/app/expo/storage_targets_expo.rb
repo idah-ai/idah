@@ -13,6 +13,7 @@ class StorageTargetsExpo < BaseExpo
     field?(:region, [String, NilClass])
     field(:bucket, String)
     field?(:prefix, [String, NilClass])
+    field?(:path_style, TrueClass)
     field(:access_key_id, String)
     field(:secret_access_key, String)
     field?(:organization_ids, Array)
@@ -27,6 +28,7 @@ class StorageTargetsExpo < BaseExpo
     field?(:region, [String, NilClass])
     field?(:bucket, String)
     field?(:prefix, [String, NilClass])
+    field?(:path_style, TrueClass)
     field?(:access_key_id, String)
     field?(:secret_access_key, [String, NilClass])
     field?(:organization_ids, Array)
@@ -57,6 +59,7 @@ class StorageTargetsExpo < BaseExpo
       field?(:region, [String, NilClass])
       field(:bucket, String)
       field?(:prefix, [String, NilClass])
+      field?(:path_style, TrueClass)
       field(:access_key_id, String)
       field(:secret_access_key, String)
     end

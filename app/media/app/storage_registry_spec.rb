@@ -47,6 +47,24 @@ RSpec.describe StorageRegistry do
       expect(storage.public).to be(false)
     end
 
+    it "addresses virtual-host style by default, as AWS and GCS expect" do
+      storage = ::Shrine.storages[registry.for("target-1").adapter]
+
+      expect(storage.client.config.force_path_style).to be(false)
+    end
+
+    it "addresses by path for a target that asks for it, as MinIO or Ceph need" do
+      credentials[:path_style] = true
+
+      expect(::Shrine.storages[registry.for("target-1").adapter].client.config.force_path_style).to be(true)
+    end
+
+    it "uses a placeholder region for a target without one, as the SDK needs one to sign" do
+      credentials[:region] = nil
+
+      expect(::Shrine.storages[registry.for("target-1").adapter].client.config.region).to eq("us-east-1")
+    end
+
     it "uses the sync folder in the sync service" do
       sync = described_class.new(service: :sync, credentials_provider: provider, ttl: 300, clock: -> { now.first })
 

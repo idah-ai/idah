@@ -6,7 +6,7 @@ class StorageRegistry
   # service, which serves them to the system role only. The result stays in the
   # registry's memory; nothing here logs or stores it.
   module SettingCredentials
-    FIELDS = %i[endpoint region bucket prefix access_key_id secret_access_key].freeze
+    FIELDS = %i[endpoint region bucket prefix path_style access_key_id secret_access_key].freeze
 
     module_function
 

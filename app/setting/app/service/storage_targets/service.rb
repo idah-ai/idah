@@ -11,8 +11,8 @@ module StorageTargets
   class Service < Verse::Service::Base
     use_repo storage_targets: StorageTarget::Repository
 
-    CREATE_FIELDS = %i[name endpoint region bucket prefix access_key_id organization_ids enabled].freeze
-    UPDATE_FIELDS = %i[name access_key_id organization_ids enabled].freeze
+    CREATE_FIELDS = %i[name endpoint region bucket prefix path_style access_key_id organization_ids enabled].freeze
+    UPDATE_FIELDS = %i[name path_style access_key_id organization_ids enabled].freeze
     REQUIRED_ON_CREATE = %i[name endpoint bucket access_key_id secret_access_key].freeze
 
     # Shorter secrets show no hint: 4 characters would be too much of them.
@@ -35,7 +35,11 @@ module StorageTargets
       raise Verse::Error::ValidationFailed, "missing: #{missing.join(", ")}" if missing.any?
 
       secret = attributes.delete(:secret_access_key)
-      check_connection!(**attributes.slice(*StorageTarget::LOCATION_FIELDS, :access_key_id), secret_access_key: secret)
+      check_connection!(
+        **attributes.slice(*StorageTarget::LOCATION_FIELDS, :access_key_id),
+        path_style: attributes[:path_style] == true,
+        secret_access_key: secret
+      )
 
       id = UUIDv7.generate
 
@@ -44,6 +48,7 @@ module StorageTargets
           attributes.slice(*CREATE_FIELDS).merge(
             id:,
             prefix: attributes[:prefix] || "",
+            path_style: attributes[:path_style] == true,
             organization_ids: attributes[:organization_ids] || [],
             enabled: attributes.fetch(:enabled, false),
             created_by: auth_context.metadata[:id]
@@ -78,11 +83,15 @@ module StorageTargets
         raise Verse::Error::ValidationFailed, "a new access_key_id needs its secret_access_key"
       end
 
-      if secret
+      path_style = attributes.fetch(:path_style, target.path_style) == true
+
+      # New credentials, or another way of addressing the bucket: test first.
+      if secret || path_style != (target.path_style == true)
         check_connection!(
           **location_of(target),
+          path_style:,
           access_key_id: attributes.fetch(:access_key_id, target.access_key_id),
-          secret_access_key: secret
+          secret_access_key: secret || secret_box.decrypt(storage_targets.secret_ciphertext(target.id))
         )
       end
 
@@ -117,6 +126,7 @@ module StorageTargets
       attributes = normalize(attributes)
       error = connection_test.call(
         **attributes.slice(*StorageTarget::LOCATION_FIELDS, :access_key_id),
+        path_style: attributes[:path_style] == true,
         secret_access_key: attributes[:secret_access_key]
       )
 
@@ -130,6 +140,7 @@ module StorageTargets
       target = storage_targets.find!(id)
       error = connection_test.call(
         **location_of(target),
+        path_style: target.path_style == true,
         access_key_id: target.access_key_id,
         secret_access_key: secret_box.decrypt(storage_targets.secret_ciphertext(target.id))
       )
@@ -152,6 +163,7 @@ module StorageTargets
         {
           **location_of(target),
           id: target.id,
+          path_style: target.path_style == true,
           access_key_id: target.access_key_id,
           secret_access_key: secret_box.decrypt(storage_targets.secret_ciphertext(target.id, action: :credentials))
         }

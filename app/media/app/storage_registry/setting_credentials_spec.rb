@@ -26,6 +26,7 @@ RSpec.describe StorageRegistry::SettingCredentials do
             region: "eu-west-1",
             bucket: "customer-bucket",
             prefix: "acme",
+            path_style: true,
             access_key_id: "AKIAEXAMPLE",
             secret_access_key: "LEAK-CANARY-123"
           }
@@ -38,6 +39,7 @@ RSpec.describe StorageRegistry::SettingCredentials do
       region: "eu-west-1",
       bucket: "customer-bucket",
       prefix: "acme",
+      path_style: true,
       access_key_id: "AKIAEXAMPLE",
       secret_access_key: "LEAK-CANARY-123"
     )

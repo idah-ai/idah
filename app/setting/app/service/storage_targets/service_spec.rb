@@ -49,6 +49,7 @@ RSpec.describe StorageTargets::Service, database: true do
         region: "eu-west-1",
         bucket: "acme-bucket",
         prefix: "idah",
+        path_style: false,
         access_key_id: "AKIANEW",
         secret_access_key: secret
       ).and_return(nil)
@@ -78,6 +79,13 @@ RSpec.describe StorageTargets::Service, database: true do
         service.create(input(new_target.except(:bucket, :secret_access_key)))
       }.to raise_error(Verse::Error::ValidationFailed, /bucket.*secret_access_key/)
       expect(connection_test).not_to have_received(:call)
+    end
+
+    it "tests and stores path-style addressing, which self-hosted S3 services need" do
+      record = service.create(input(new_target.merge(path_style: true)))
+
+      expect(connection_test).to have_received(:call).with(hash_including(path_style: true))
+      expect(record.path_style).to be(true)
     end
 
     it "is disabled and allowed for no organization unless told otherwise" do
@@ -126,6 +134,7 @@ RSpec.describe StorageTargets::Service, database: true do
         region: "eu-west-1",
         bucket: "customer-bucket",
         prefix: "acme",
+        path_style: false,
         access_key_id: "AKIAEXAMPLE",
         secret_access_key: "NEW-SECRET-9876"
       ).and_return(nil)
@@ -143,6 +152,13 @@ RSpec.describe StorageTargets::Service, database: true do
         service.update(input({ secret_access_key: "NEW-SECRET-9876" }, id:))
       }.to raise_error(Verse::Error::ValidationFailed, /access_denied/)
       expect(stored_secret(id)).to eq(secret)
+    end
+
+    it "retests with the stored secret when the addressing changes, then saves it" do
+      record = service.update(input({ path_style: true }, id:))
+
+      expect(connection_test).to have_received(:call).with(hash_including(path_style: true, secret_access_key: secret))
+      expect(record.path_style).to be(true)
     end
 
     it "needs the secret that goes with a new access key id" do
@@ -246,7 +262,12 @@ RSpec.describe StorageTargets::Service, database: true do
       credentials = described_class.new(system_context).credentials(id)
 
       expect(credentials).to have_attributes(
-        id:, bucket: "customer-bucket", prefix: "acme", access_key_id: "AKIAEXAMPLE", secret_access_key: secret
+        id:,
+        bucket: "customer-bucket",
+        prefix: "acme",
+        path_style: false,
+        access_key_id: "AKIAEXAMPLE",
+        secret_access_key: secret
       )
       expect(credentials.inspect).not_to include(secret)
     end
