@@ -14,6 +14,10 @@ Sequel.migration do
       column :region, String, null: true
       column :bucket, String, null: false
       column :prefix, String, null: false, default: ""
+      # Path-style addressing (`endpoint/bucket/key`) for S3-compatible services
+      # such as MinIO, Ceph or SeaweedFS, which don't resolve `bucket.endpoint`
+      # names.
+      column :path_style, TrueClass, null: false, default: false
 
       column :access_key_id, String, null: false
       # Set right after the insert, by a write that publishes no event, so the
