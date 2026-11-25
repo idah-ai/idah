@@ -29,7 +29,8 @@ class ProjectsExpo < BaseExpo
                       :organization_id__in,
                       :updated_at__gte,
                       :updated_at__lte,
-                      :name__match
+                      :name__match,
+                      :storage_target_id
     end
 
     create
