@@ -17,6 +17,9 @@ export const logResourceTypes: LabelValue<string>[] = [
 
   /** SYNC */
   { label: "Exports", value: "exports" },
+
+  /** SETTING */
+  { label: "Storage Targets", value: "storage_targets" },
 ];
 
 export type LogAction =

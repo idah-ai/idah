@@ -14,6 +14,7 @@
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
   import { Record } from "@/data/model/Record";
+  import { StorageTargetRecord, storageTargetsBackendDataSource } from "@/data/model/setting/storage_target/record";
   import { ExportRecord, ExportsBackendDataSource } from "@/data/model/sync/exports/record";
   import { refetches } from "@/utils/refetch";
 
@@ -59,6 +60,7 @@
       entries: [],
       medias: [],
       exports: [],
+      storage_targets: [],
     };
     response.data.forEach((log) => {
       switch (log.resource_type) {
@@ -109,6 +111,10 @@
           ids["exports"].push(log.resource_id);
           break;
         }
+        case "storage_targets": {
+          ids["storage_targets"].push(log.resource_id);
+          break;
+        }
         default: {
           break;
         }
@@ -122,6 +128,7 @@
     const entries: EntryRecord[] = [];
     const medias: MediaRecord[] = [];
     const exports: ExportRecord[] = [];
+    const storageTargets: StorageTargetRecord[] = [];
     /** Fetch each resource by ids */
     await Promise.all(
       Object.entries(ids).map(async ([resource, _ids]) => {
@@ -244,6 +251,23 @@
             exports.push(...exportsRes.data);
             break;
           }
+          case "storage_targets": {
+            // Names only: the rows fall back to the id if they can't be read.
+            try {
+              const storageTargetsRes = await storageTargetsBackendDataSource.list({
+                fields: {
+                  [StorageTargetRecord.type]: ["id", "name"],
+                },
+                filters: {
+                  id__in: Array.from(new Set(_ids)),
+                },
+              });
+              storageTargets.push(...storageTargetsRes.data);
+            } catch {
+              // Keep the ids.
+            }
+            break;
+          }
           default: {
             break;
           }
@@ -251,7 +275,7 @@
       }),
     );
 
-    return { accounts, organizations, projects, projectMembers, datasets, entries, medias, exports };
+    return { accounts, organizations, projects, projectMembers, datasets, entries, medias, exports, storageTargets };
   }
 </script>
 
