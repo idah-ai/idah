@@ -5,12 +5,17 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  accessSummary,
   connectionErrorMessage,
   connectionErrorMessages,
+  firstSectionWithErrors,
+  locationSummary,
   maskedSecret,
   normalizePrefix,
   projectStorageLabel,
+  sectionHasErrors,
   secretRequiredForUpdate,
+  stepErrors,
   storageTargetCreateAttributes,
   storageTargetIdFromChoice,
   storageTargetLocation,
@@ -166,5 +171,86 @@ describe("storageTargetIdFromChoice", () => {
 
   it("sends the chosen target's id", () => {
     expect(storageTargetIdFromChoice("0194f5a2")).toBe("0194f5a2");
+  });
+});
+
+describe("sectionHasErrors / firstSectionWithErrors", () => {
+  it("finds the section a field error belongs to", () => {
+    const errors = { access_key_id: ["Required"], organization_ids: ["Pick one"] };
+
+    expect(sectionHasErrors("location", errors)).toBe(false);
+    expect(sectionHasErrors("credentials", errors)).toBe(true);
+    expect(firstSectionWithErrors(errors)).toBe("credentials");
+  });
+
+  it("finds none without errors", () => {
+    expect(firstSectionWithErrors({})).toBeNull();
+    expect(firstSectionWithErrors({ name: [] })).toBeNull();
+    expect(firstSectionWithErrors(null)).toBeNull();
+  });
+});
+
+describe("locationSummary", () => {
+  it("says where the files go", () => {
+    expect(locationSummary({ endpoint: "https://s3.example.com", bucket: "acme", prefix: "/idah/" })).toBe(
+      "acme/idah on s3.example.com",
+    );
+  });
+
+  it("keeps an endpoint that isn't a URL as typed", () => {
+    expect(locationSummary({ endpoint: "s3.example.com", bucket: "acme" })).toBe("acme on s3.example.com");
+  });
+
+  it("says when it isn't filled in", () => {
+    expect(locationSummary({ endpoint: "", bucket: "acme" })).toBe("Not set yet");
+  });
+});
+
+describe("accessSummary", () => {
+  it("counts the organizations and says whether the target is offered", () => {
+    expect(accessSummary({ organization_ids: [1, 2], enabled: true })).toBe(
+      "2 organizations · offered for new projects",
+    );
+    expect(accessSummary({ organization_ids: [3], enabled: false })).toBe("1 organization · not offered");
+    expect(accessSummary({ organization_ids: [], enabled: true })).toBe("No organizations · offered for new projects");
+  });
+});
+
+describe("stepErrors", () => {
+  const location = { name: "Acme", endpoint: "https://s3.example.com", bucket: "acme" };
+
+  it("passes a step whose required fields are set", () => {
+    expect(stepErrors("location", location, true)).toEqual({});
+    expect(stepErrors("credentials", { access_key_id: "AKIA", secret_access_key: "s" }, true)).toEqual({});
+  });
+
+  it("gives the step's missing or invalid fields only", () => {
+    const errors = stepErrors("location", { ...location, name: " ", endpoint: "s3.example.com" }, true);
+
+    expect(Object.keys(errors).sort()).toEqual(["endpoint", "name"]);
+    expect(errors.name).toEqual(["Name is required."]);
+  });
+
+  it("needs the secret on create but not on update", () => {
+    expect(stepErrors("credentials", { access_key_id: "AKIA", secret_access_key: "" }, true)).toHaveProperty(
+      "secret_access_key",
+    );
+    expect(stepErrors("credentials", { access_key_id: "AKIA", secret_access_key: "" }, false)).toEqual({});
+  });
+
+  it("checks only the name of an update's location step, which can't change otherwise", () => {
+    expect(stepErrors("location", { name: "Acme", endpoint: "", bucket: "" }, false)).toEqual({});
+  });
+
+  it("has nothing to check in the access step", () => {
+    expect(stepErrors("access", {}, true)).toEqual({});
+  });
+});
+
+describe("stepErrors endpoint", () => {
+  it("says only that an empty endpoint is required", () => {
+    expect(stepErrors("location", { name: "Acme", endpoint: "", bucket: "acme" }, true).endpoint).toEqual([
+      "Endpoint is required.",
+    ]);
   });
 });

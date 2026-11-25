@@ -3,7 +3,8 @@ import { z } from "zod";
 const endpoint = z
   .string("Endpoint is required.")
   .trim()
-  .min(1, "Endpoint is required.")
+  // `abort`: an empty endpoint only says it is required, not also that it isn't a URL.
+  .min(1, { message: "Endpoint is required.", abort: true })
   .refine((value) => /^https?:\/\/[^\s/]+/.test(value), "Enter a URL such as https://s3.eu-west-1.amazonaws.com.");
 
 export const createStorageTargetSchema = z.object({

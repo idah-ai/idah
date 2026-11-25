@@ -2,6 +2,9 @@
 // Storage targets — pure helpers shared by the admin page and the project form.
 // ---------------------------------------------------------------------------
 
+import { createStorageTargetSchema, updateStorageTargetSchema } from "@/data/model/setting/storage_target/schema";
+import { getFieldErrors } from "@/utils/validate";
+
 import type { Hash } from "@/utils/types";
 
 /** What the backend's connection test answers. */
@@ -135,4 +138,72 @@ export function storageTargetIdFromChoice(choice: string | number | null | undef
   if (choice === null || choice === undefined || choice === "" || choice === DEFAULT_STORAGE_CHOICE) return null;
 
   return String(choice);
+}
+
+/** The storage target form's sections, in the order they are filled. */
+export const STORAGE_TARGET_SECTIONS = ["location", "credentials", "access"] as const;
+export type StorageTargetSection = (typeof STORAGE_TARGET_SECTIONS)[number];
+
+const SECTION_FIELDS: { [section in StorageTargetSection]: string[] } = {
+  location: ["name", "endpoint", "bucket", "region", "prefix", "path_style"],
+  credentials: ["access_key_id", "secret_access_key"],
+  access: ["organization_ids", "enabled"],
+};
+
+/** Whether one of a section's fields has a validation error. */
+export function sectionHasErrors(section: StorageTargetSection, fieldErrors: Hash | null | undefined): boolean {
+  return SECTION_FIELDS[section].some((field) => (fieldErrors?.[field] ?? []).length > 0);
+}
+
+/** The first section with a validation error, to open it; null when there is none. */
+export function firstSectionWithErrors(fieldErrors: Hash | null | undefined): StorageTargetSection | null {
+  return STORAGE_TARGET_SECTIONS.find((section) => sectionHasErrors(section, fieldErrors)) ?? null;
+}
+
+function endpointHost(endpoint: string): string {
+  try {
+    return new URL(endpoint).host;
+  } catch {
+    return endpoint;
+  }
+}
+
+/** The location section's summary while it is closed: "acme-bucket/idah on s3.example.com". */
+export function locationSummary(target: {
+  endpoint?: string | null;
+  bucket?: string | null;
+  prefix?: string | null;
+}): string {
+  const endpoint = trimmed(target.endpoint);
+  const bucket = trimmed(target.bucket);
+  if (!endpoint || !bucket) return "Not set yet";
+
+  return `${storageTargetLocation({ bucket, prefix: target.prefix })} on ${endpointHost(endpoint)}`;
+}
+
+/** The access section's summary while it is closed: who may pick the target, and whether it is offered. */
+export function accessSummary(target: { organization_ids?: unknown; enabled?: boolean | null }): string {
+  const count = organizationIds(target.organization_ids).length;
+  const organizations = count === 1 ? "1 organization" : `${count || "No"} organizations`;
+
+  return `${organizations} · ${target.enabled ? "offered for new projects" : "not offered"}`;
+}
+
+/**
+ * A step's validation errors, by field: the step's fields checked against the same schema the form is saved
+ * with, so the step can't be left with a value the save would refuse. An update only checks what it may
+ * change.
+ */
+export function stepErrors(section: StorageTargetSection, draft: Hash, newRecord: boolean): Hash {
+  const schema = newRecord ? createStorageTargetSchema : updateStorageTargetSchema;
+  const shape: Hash = schema.shape;
+  const fields = SECTION_FIELDS[section].filter((field) => field in shape);
+  if (fields.length === 0) return {};
+
+  const picked = (schema as typeof createStorageTargetSchema).pick(
+    Object.fromEntries(fields.map((field) => [field, true])) as { [field: string]: true },
+  );
+  const result = picked.safeParse(draft);
+
+  return result.success ? {} : getFieldErrors(result.error);
 }
