@@ -32,7 +32,29 @@
   const loading = $derived(!controller.error && (!controller.scopeReady || !result || result.status === "loading"));
   const error = $derived(controller.error || (result?.status === "error" ? result.error : ""));
   let sort = $state<CategorySort>("count-desc");
+  let content: HTMLDivElement | null = $state(null);
+  let categoryList: HTMLDivElement | undefined = $state();
+  const categoryScope = $derived(JSON.stringify(controller.effectiveDatasetIds));
+  let refreshPosition = $state<{ scope: string; top: number; height: number } | null>(null);
   const sortedRows = $derived(sortCategories(result?.rows ?? [], sort));
+
+  $effect.pre(() => {
+    if (refreshPosition?.scope !== categoryScope) refreshPosition = null;
+  });
+
+  function refreshCategories(): void {
+    refreshPosition = {
+      scope: categoryScope,
+      top: categoryList?.scrollTop ?? (refreshPosition?.scope === categoryScope ? refreshPosition.top : 0),
+      // Keep the page from shrinking while rows are replaced by loading/error UI.
+      height: content?.offsetHeight ?? 0,
+    };
+    void controller.refreshCategoryCounts();
+  }
+
+  function restoreCategoryScroll(node: HTMLDivElement): void {
+    if (refreshPosition?.scope === categoryScope) node.scrollTop = refreshPosition.top;
+  }
 
   const menus: IDropdownMenus = $derived({
     sort: {
@@ -100,7 +122,7 @@
         variant="outline"
         size="sm"
         disabled={loading || controller.denied || controller.loading}
-        onclick={() => void controller.refreshCategoryCounts()}
+        onclick={() => void refreshCategories()}
       >
         <RefreshCwIcon
           class={cn("", {
@@ -112,7 +134,10 @@
     </Card.Action>
   </Card.Header>
 
-  <Card.Content>
+  <Card.Content
+    bind:ref={content}
+    style={refreshPosition?.scope === categoryScope ? `min-height: ${refreshPosition.height}px` : undefined}
+  >
     {#if error}
       <ResponseBlock size="sm" title="Annotation categories unavailable" description={error}>
         {#snippet actions()}
@@ -120,7 +145,7 @@
             variant="outline"
             size="sm"
             disabled={controller.denied || controller.loading}
-            onclick={() => void controller.refreshCategoryCounts()}>Retry</Button
+            onclick={refreshCategories}>Retry</Button
           >
         {/snippet}
       </ResponseBlock>
@@ -146,7 +171,7 @@
         {#if result.total === 0}
           <p class="text-muted-foreground mb-3 text-sm">No annotations yet. Configured categories are shown below.</p>
         {/if}
-        <div class="max-h-96 overflow-y-auto pr-1">
+        <div bind:this={categoryList} use:restoreCategoryScroll class="max-h-96 overflow-y-auto pr-1">
           {#each sortedRows as row (row.id)}
             {@const share = categoryShare(row.annotation_count, result.total ?? 0)}
             {@const slashIndex = row.category.lastIndexOf("/")}
