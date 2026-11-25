@@ -32,9 +32,9 @@ RSpec.describe CategoryCounts::Aggregation do
          ["automobile", "Car", 5], ["removed", "removed", 2], ["zero", "Zero", 0]]
       )
     expect(totals.first.datasets).to eq(
-      [{ id: "a", name: "a", annotation_count: 30 },
-       { id: "b", name: "b", annotation_count: 20 },
-       { id: "c", name: "c", annotation_count: 10 }]
+      [{ id: "a", name: "a", label: "Car", configured: true, annotation_count: 30 },
+       { id: "b", name: "b", label: "Vehicle", configured: true, annotation_count: 20 },
+       { id: "c", name: "c", label: "Car", configured: true, annotation_count: 10 }]
     )
     expect(totals.find { |row| row.category == "removed" }.configured).to be(false)
     expect(totals.sum(&:annotation_count)).to eq(67)
@@ -51,8 +51,8 @@ RSpec.describe CategoryCounts::Aggregation do
 
     expect([car.label, car.annotation_count, car.configured]).to eq(["car", 5, true])
     expect(car.datasets).to eq(
-      [{ id: "a", name: "a", annotation_count: 2 },
-       { id: "b", name: "b", annotation_count: 3 }]
+      [{ id: "a", name: "a", label: "Car", configured: true, annotation_count: 2 },
+       { id: "b", name: "b", label: "car", configured: false, annotation_count: 3 }]
     )
   end
 

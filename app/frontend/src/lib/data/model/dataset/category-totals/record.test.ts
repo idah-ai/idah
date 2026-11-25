@@ -36,7 +36,7 @@ describe("category count records and transport", () => {
                 label: "Vehicle",
                 annotation_count: 5,
                 configured: true,
-                datasets: [{ id: "a", name: "A", annotation_count: 5 }],
+                datasets: [{ id: "a", name: "A", label: "Vehicle", configured: true, annotation_count: 5 }],
               },
             },
           ],
@@ -48,7 +48,9 @@ describe("category count records and transport", () => {
     const url = new URL(fetch.mock.calls[0][0], "http://localhost");
     expect(url.searchParams.getAll("filter[dataset_id][]")).toEqual(["a", "b"]);
     expect(response.data[0]).toBeInstanceOf(ProjectCategoryTotalRecord);
-    expect(response.data[0].datasets).toEqual([{ id: "a", name: "A", annotation_count: 5 }]);
+    expect(response.data[0].datasets).toEqual([
+      { id: "a", name: "A", label: "Vehicle", configured: true, annotation_count: 5 },
+    ]);
   });
 
   it("batches dataset IDs and preserves an empty successful collection", async () => {

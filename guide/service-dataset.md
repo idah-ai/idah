@@ -368,9 +368,10 @@ Counts sum the scoped `entry_category_counts` table across all entry statuses, i
 completion date range and entry tabs. Configured categories with zero annotations and observed unconfigured
 categories are included; `idah-image:done-area` system shapes are excluded. Project aggregation combines all rows with the same category ID, including categories
 with different labels or missing configuration. When labels differ, the aggregate uses the category ID as its
-label. Each row includes its contributing dataset IDs, names, and annotation counts. Unconfigured categories use
+label. Each row includes its contributing dataset IDs, names, category labels, configured flags, and annotation counts. Unconfigured categories use
 their ID as the label. These collections are complete, unpaginated
-aggregates; the dataset batch endpoint is intended for the visible dashboard table page.
+aggregates; the dashboard uses the project response for its category card and every page of its dataset table.
+The dataset batch endpoint remains available for other consumers.
 
 ### Entry-Specific Endpoints
 

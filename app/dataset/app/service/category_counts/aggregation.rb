@@ -40,7 +40,8 @@ module CategoryCounts
           { id: "#{project_id}:#{key}", project_id:, category:, label:,
             annotation_count: group.sum(&:annotation_count), configured: group.any?(&:configured),
             datasets: group.map do |row|
-              { id: row.dataset_id, name: names.fetch(row.dataset_id), annotation_count: row.annotation_count }
+              { id: row.dataset_id, name: names.fetch(row.dataset_id), label: row.label,
+                configured: row.configured, annotation_count: row.annotation_count }
             end }
         )
       end.sort_by { |row| [-row.annotation_count, row.label, row.category] }

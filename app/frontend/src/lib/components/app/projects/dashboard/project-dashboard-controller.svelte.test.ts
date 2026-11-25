@@ -33,21 +33,7 @@ function projectTotal(count = 3): ProjectCategoryTotalRecord {
       label: "Car",
       configured: true,
       annotation_count: count,
-      datasets: [{ id: "a", name: "A", annotation_count: count }],
-    },
-  });
-}
-
-function datasetTotal(id: string, count = 3): DatasetCategoryTotalRecord {
-  return new DatasetCategoryTotalRecord({
-    type: DatasetCategoryTotalRecord.type,
-    id: `${id}:car`,
-    attributes: {
-      dataset_id: id,
-      category: "car",
-      label: "Car",
-      configured: true,
-      annotation_count: count,
+      datasets: [{ id: "a", name: "A", label: "Car", configured: true, annotation_count: count }],
     },
   });
 }
@@ -65,6 +51,11 @@ beforeEach(() => {
   vi.spyOn(entriesBackendDataSource, "summary").mockResolvedValue({
     total: 0,
     completed: 0,
+    errored: 0,
+    processing: 0,
+    pending_annotation: 0,
+    pending_review: 0,
+    open: 0,
     review: 0,
     annotation: 0,
     reviewing: 0,
@@ -94,15 +85,73 @@ describe("dashboard category integration", () => {
     expect(categoryTotalsBackendDataSource.datasets).not.toHaveBeenCalled();
   });
 
-  it("batches visible selected datasets and does not reload the card when the table page changes", async () => {
+  it("reuses project totals while paging all datasets", async () => {
     const ids = Array.from({ length: 12 }, (_, index) => `dataset-${String(index).padStart(2, "0")}`);
-    await controller.select(ids);
-    await vi.waitFor(() => expect(categoryTotalsBackendDataSource.datasets).toHaveBeenCalledTimes(1));
-    expect(categoryTotalsBackendDataSource.datasets).toHaveBeenLastCalledWith("project", ids.slice(0, 10));
+    vi.mocked(datasetsBackendDataSource.list).mockImplementation(async (options) => {
+      const page = options?.pagination?.page ?? 1;
+      const pageIds = page === 1 ? ids.slice(0, 10) : ids.slice(10);
+      return { data: pageIds.map(dataset), meta: { count: 12, more: false } };
+    });
+    vi.mocked(categoryTotalsBackendDataSource.project).mockResolvedValue({
+      data: [
+        new ProjectCategoryTotalRecord({
+          type: ProjectCategoryTotalRecord.type,
+          id: "total",
+          attributes: {
+            project_id: "project",
+            category: "car",
+            label: "Car",
+            configured: true,
+            annotation_count: 4,
+            datasets: [
+              { id: ids[0], name: ids[0], label: "Car", configured: true, annotation_count: 1 },
+              { id: ids[10], name: ids[10], label: "Vehicle", configured: true, annotation_count: 3 },
+            ],
+          },
+        }),
+      ],
+    });
+    await controller.start();
+    await vi.waitFor(() => expect(controller.datasetAnnotations[ids[0]]?.total).toBe(1));
     await controller.changeDatasetProgressPage({ page: 2, itemsPerPage: 10 });
-    expect(categoryTotalsBackendDataSource.datasets).toHaveBeenLastCalledWith("project", ids.slice(10));
+    expect(controller.annotationsByCategory?.total).toBe(4);
+    expect(controller.datasetAnnotations[ids[10]].total).toBe(3);
+    expect(controller.datasetAnnotations[ids[11]].total).toBe(0);
     expect(categoryTotalsBackendDataSource.project).toHaveBeenCalledTimes(1);
-    expect(controller.datasetAnnotations[ids[10]].total).toBe(0);
+    expect(categoryTotalsBackendDataSource.datasets).not.toHaveBeenCalled();
+  });
+
+  it("derives both sections for selected datasets across pages from one request", async () => {
+    const ids = Array.from({ length: 12 }, (_, index) => `dataset-${String(index).padStart(2, "0")}`);
+    vi.mocked(categoryTotalsBackendDataSource.project).mockResolvedValue({
+      data: [
+        new ProjectCategoryTotalRecord({
+          type: ProjectCategoryTotalRecord.type,
+          id: "total",
+          attributes: {
+            project_id: "project",
+            category: "car",
+            label: "car",
+            configured: true,
+            annotation_count: 5,
+            datasets: [
+              { id: ids[0], name: ids[0], label: "Car", configured: true, annotation_count: 2 },
+              { id: ids[10], name: ids[10], label: "Vehicle", configured: true, annotation_count: 3 },
+            ],
+          },
+        }),
+      ],
+    });
+    await controller.select(ids);
+    await vi.waitFor(() => expect(controller.annotationsByCategory?.total).toBe(5));
+    expect(controller.datasetAnnotations[ids[0]].total).toBe(2);
+    expect(controller.datasetAnnotations[ids[0]].rows[0].label).toBe("Car");
+    expect(controller.datasetAnnotations[ids[1]].total).toBe(0);
+    await controller.changeDatasetProgressPage({ page: 2, itemsPerPage: 10 });
+    expect(categoryTotalsBackendDataSource.project).toHaveBeenCalledTimes(1);
+    expect(controller.datasetAnnotations[ids[10]].total).toBe(3);
+    expect(controller.datasetAnnotations[ids[10]].rows[0].label).toBe("Vehicle");
+    expect(controller.datasetAnnotations[ids[11]].total).toBe(0);
   });
 
   it("ignores a late project response after selecting a new scope", async () => {
@@ -137,15 +186,32 @@ describe("dashboard category integration", () => {
     expect(controller.selectedDatasetIds).toEqual(["a"]);
   });
 
-  it("deduplicates in-flight batch requests and rejects totals from another dataset", async () => {
-    const batch = deferred<CollectionResponse<DatasetCategoryTotalRecord>>();
-    vi.mocked(categoryTotalsBackendDataSource.datasets).mockReturnValueOnce(batch.promise);
+  it("rejects totals from another dataset and retries both sections", async () => {
+    vi.mocked(categoryTotalsBackendDataSource.project).mockResolvedValueOnce({ data: [projectTotal()] });
     await controller.select(["a"]);
-    await controller.retryDatasetAnnotations();
-    expect(categoryTotalsBackendDataSource.datasets).toHaveBeenCalledTimes(1);
-    batch.resolve({ data: [datasetTotal("foreign")] });
-    await vi.waitFor(() => expect(controller.datasetAnnotations.a.status).toBe("error"));
+    await vi.waitFor(() => expect(controller.datasetAnnotations.a?.total).toBe(3));
+    vi.mocked(categoryTotalsBackendDataSource.project).mockResolvedValueOnce({
+      data: [
+        new ProjectCategoryTotalRecord({
+          type: ProjectCategoryTotalRecord.type,
+          id: "bad",
+          attributes: {
+            project_id: "project",
+            category: "car",
+            label: "Car",
+            configured: true,
+            annotation_count: 3,
+            datasets: [{ id: "foreign", name: "Foreign", label: "Car", configured: true, annotation_count: 3 }],
+          },
+        }),
+      ],
+    });
+    await controller.refreshCategoryCounts();
+    expect(controller.annotationsByCategory?.status).toBe("error");
     expect(controller.datasetAnnotations.a.total).toBeNull();
+    vi.mocked(categoryTotalsBackendDataSource.project).mockResolvedValueOnce({ data: [projectTotal()] });
+    await controller.retryDatasetAnnotations();
+    expect(controller.datasetAnnotations.a.total).toBe(3);
   });
 
   it("clears totals when access is revoked", async () => {
@@ -158,16 +224,17 @@ describe("dashboard category integration", () => {
     expect(categoryTotalsBackendDataSource.project).toHaveBeenCalledTimes(1);
   });
 
-  it("refreshes cached dataset pages when annotation counts change", async () => {
+  it("refreshes all dataset pages when annotation counts change", async () => {
     const ids = Array.from({ length: 11 }, (_, index) => `dataset-${String(index).padStart(2, "0")}`);
     await controller.select(ids);
     await vi.waitFor(() => expect(controller.datasetAnnotations[ids[0]]?.status).toBe("ready"));
     await controller.changeDatasetProgressPage({ page: 2, itemsPerPage: 10 });
-    expect(controller.datasetAnnotations[ids[0]].status).toBe("ready");
-    await controller.refreshCategoryCounts();
     expect(controller.datasetAnnotations[ids[0]]).toBeUndefined();
+    await controller.refreshCategoryCounts();
+    expect(categoryTotalsBackendDataSource.project).toHaveBeenCalledTimes(2);
     await controller.changeDatasetProgressPage({ page: 1, itemsPerPage: 10 });
-    expect(categoryTotalsBackendDataSource.datasets).toHaveBeenCalledTimes(4);
+    expect(controller.datasetAnnotations[ids[0]].status).toBe("ready");
+    expect(categoryTotalsBackendDataSource.project).toHaveBeenCalledTimes(2);
   });
 
   it("rejects invalid counts instead of displaying misleading totals", async () => {
@@ -175,6 +242,28 @@ describe("dashboard category integration", () => {
     await controller.start();
     await vi.waitFor(() => expect(controller.annotationsByCategory?.status).toBe("error"));
     expect(controller.annotationsByCategory?.total).toBeNull();
+  });
+
+  it("rejects inconsistent per-dataset counts", async () => {
+    vi.mocked(categoryTotalsBackendDataSource.project).mockResolvedValue({
+      data: [
+        new ProjectCategoryTotalRecord({
+          type: ProjectCategoryTotalRecord.type,
+          id: "bad",
+          attributes: {
+            project_id: "project",
+            category: "car",
+            label: "Car",
+            configured: true,
+            annotation_count: 3,
+            datasets: [{ id: "a", name: "A", label: "Car", configured: true, annotation_count: 2 }],
+          },
+        }),
+      ],
+    });
+    await controller.select(["a"]);
+    await vi.waitFor(() => expect(controller.annotationsByCategory?.status).toBe("error"));
+    expect(controller.datasetAnnotations.a.status).toBe("error");
   });
 
   it("ignores responses after disposal", async () => {

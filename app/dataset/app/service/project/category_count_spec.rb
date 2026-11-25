@@ -69,12 +69,16 @@ RSpec.describe "Dashboard category totals", database: true, as: :project_owner d
     expect(cars.map { |row| [row.label, row.annotation_count] }).to eq([["car", 6]])
     expect(cars.first.datasets)
       .to contain_exactly(
-        { id: first_id, name: "First", annotation_count: 2 },
-        { id: second_id, name: "Second", annotation_count: 3 },
-        { id: third_id, name: "Third", annotation_count: 1 }
+        { id: first_id, name: "First", label: "Car", configured: true, annotation_count: 2 },
+        { id: second_id, name: "Second", label: "Vehicle", configured: true, annotation_count: 3 },
+        { id: third_id, name: "Third", label: "Car", configured: true, annotation_count: 1 }
       )
     expect(rows.find { |row| row.category == "person" }.annotation_count).to eq(0)
+    expect(rows.find { |row| row.category == "person" }.datasets)
+      .to include(id: first_id, name: "First", label: "Person", configured: true, annotation_count: 0)
     expect(rows.find { |row| row.category == "removed" }.configured).to be(false)
+    expect(rows.find { |row| row.category == "removed" }.datasets)
+      .to eq([{ id: first_id, name: "First", label: "removed", configured: false, annotation_count: 1 }])
     expect(rows.sum(&:annotation_count)).to eq(7)
     expect(rows.map(&:id).uniq.length).to eq(rows.length)
   end
@@ -83,7 +87,7 @@ RSpec.describe "Dashboard category totals", database: true, as: :project_owner d
     rows = Project::Service.new(current_auth_context).category_counts(project_id, { dataset_id: [first_id] })
     car = rows.find { |row| row.category == "car" }
     expect([car.label, car.annotation_count]).to eq(["Car", 2])
-    expect(car.datasets).to eq([{ id: first_id, name: "First", annotation_count: 2 }])
+    expect(car.datasets).to eq([{ id: first_id, name: "First", label: "Car", configured: true, annotation_count: 2 }])
   end
 
   it "returns a batch of separate dataset totals" do
