@@ -15,6 +15,7 @@ import { entryWorkflowSteps } from "@/data/model/dataset/entries/constants";
 export interface TimeTrackingStepPerson {
   who: string;
   seconds: number;
+  unsubmitted?: boolean;
 }
 
 export interface TimeTrackingStep {
@@ -97,9 +98,12 @@ export function enrichWithTimeData(entry: EntryRecord): EntryWithTimeData {
       // Check if a finalized step with the same stage already exists
       const existing = steps.find((s) => s.stage === stage);
       if (existing) {
-        // Merge unsubmitted people into the existing step
+        // Mark each person who has an open session as unsubmitted
+        const openEmails = new Set(people.map((p) => p.who));
         const current = existing.people ?? [{ who: existing.performedBy, seconds: existing.seconds }];
-        const merged = [...current];
+        const merged = current.map((p) =>
+          openEmails.has(p.who) ? { ...p, unsubmitted: true } : p,
+        );
         for (const p of people) {
           if (!merged.some((m) => m.who === p.who)) merged.push(p);
         }

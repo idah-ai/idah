@@ -105,7 +105,6 @@ module TimeTracking
     # Refresh the combined per-step cache
     recompute_entry_cache(system_entries_repo, entry_id)
   end
-  # rubocop:enable Metrics/ParameterLists
 
   # Recompute entries.time_tracking from all entry_work_times rows of the entry.
   def self.recompute_entry_cache(system_entries_repo, entry_id)

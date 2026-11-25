@@ -170,6 +170,36 @@ RSpec.describe Entry::Service, database: true do
     end
   end
 
+  describe "#select", as: :admin do
+    let(:claim_service) { described_class.new(current_auth_context) }
+    let(:entry_time_slot_repo) { EntryTimeSlot::Repository.new(auth_context) }
+
+    before do
+      ProjectMember::Repository.new(auth_context).create(
+        project_id: project_id,
+        account_id: 1,
+        email: "admin@example.com",
+        role: "project_owner",
+        invited_by_id: 1
+      )
+    end
+
+    it "creates a time-tracking slot for the assignee" do
+      entry_id = repo.create(
+        priority: 1,
+        wf_step: "annotate",
+        status: "in_progress",
+        assigned_to_id: 1,
+        project_id:,
+        dataset_id:
+      )
+
+      expect { claim_service.select(entry_id) }
+        .to change { entry_time_slot_repo.table.where(entry_id:, account_id: 1).count }
+        .by(1)
+    end
+  end
+
   describe "delivery dates" do
     before do
       # Keep media-processing events out of date contract tests.
@@ -1586,7 +1616,7 @@ RSpec.describe Entry::Service, database: true do
       )
     end
 
-    it "subject: submit rolls up the leaving step's open sessions into time_tracking" do
+    it "submit rolls up the leaving step's open sessions into time_tracking" do
       touch_entry(annotate_entry)
 
       result = subject.submit(annotate_entry)
@@ -1599,7 +1629,7 @@ RSpec.describe Entry::Service, database: true do
       expect(row[:session_started_at]).to be_nil
     end
 
-    it "subject: error rolls up the step being left (not 'error')" do
+    it "error rolls up the step being left (not 'error')" do
       touch_entry(annotate_entry)
 
       subject.error(annotate_entry)
@@ -1607,6 +1637,41 @@ RSpec.describe Entry::Service, database: true do
       row = work_repo.table.where(entry_id: annotate_entry, account_id: 10).first
       expect(row[:seconds]).to be > 0
       expect(Entry::Repository.new(auth_context).find!(annotate_entry).time_tracking[:annotate]).to be > 0
+    end
+
+    it "a wf_step PATCH rolls up the old step" do
+      touch_entry(annotate_entry)
+
+      record = deserialize(
+        data: { type: Resource::Dataset::Entries, id: annotate_entry,
+                attributes: { wf_step: "review" } }
+      )
+      result = subject.update(record)
+
+      expect(result.wf_step).to eq("review")
+      expect(result.time_tracking).to be_a(Hash)
+      expect(result.time_tracking[:annotate]).to be_a(Integer)
+      expect(result.time_tracking[:annotate]).to be > 0
+      # session finalized
+      row = work_repo.table.where(entry_id: annotate_entry, account_id: 10).first
+      expect(row[:session_started_at]).to be_nil
+    end
+
+    it "a refused wf_step PATCH leaves sessions untouched" do
+      touch_entry(annotate_entry)
+
+      allow(subject.entries).to receive(:update!).and_raise("ERROR")
+
+      record = deserialize(
+        data: { type: Resource::Dataset::Entries, id: annotate_entry,
+                attributes: { wf_step: "review" } }
+      )
+      expect { subject.update(record) }.to raise_error("ERROR")
+
+      # Sessions still open — not rolled up
+      row = work_repo.table.where(entry_id: annotate_entry, account_id: 10).first
+      expect(row[:session_started_at]).not_to be_nil
+      expect(row[:seconds]).to eq(0)
     end
   end
 end

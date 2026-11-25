@@ -494,48 +494,38 @@ module Entry
     end
 
     # Custom sort handler for `total_time_spent` — sums all values in the
-    # `time_tracking` JSONB column.  Falls back to the default behaviour for
-    # every other sort key.
+    # `time_tracking` JSONB column.  Delegates every other sort key to `super`
+    # which safely quotes identifiers.  Only the hardcoded CASE expression uses
+    # raw SQL.
     def prepare_ordering(query, sort)
       sort = (sort.is_a?(String) ? sort.split(",") : Array(sort)).dup
-      has_id = false
 
-      # Each ORDER BY expression: either a raw SQL string (CASE expression)
-      # or a plain column name with optional "-" prefix for DESC.
-      exprs = []
-
-      sort.each do |x|
-        if x.delete_prefix("-") == "total_time_spent"
-          # Raw SQL — already includes ASC/DESC NULLS LAST.
-          ascending = !x.start_with?("-")
-          exprs <<
-            "CASE WHEN entries.time_tracking IS NOT NULL " \
-            "THEN (SELECT SUM((value)::integer) " \
-            "FROM jsonb_each_text(entries.time_tracking)) END " \
-            "#{ascending ? "ASC" : "DESC"} NULLS LAST"
-        else
-          exprs << x
-          has_id = true if x.delete_prefix("-") == "id"
-        end
+      # Fast path: no total_time_spent — delegate entirely to super.
+      unless sort.any? { |x| x.delete_prefix("-") == "total_time_spent" }
+        return super(query, sort)
       end
 
-      if !has_id && sort.any? { |x| x.delete_prefix("-") == "total_time_spent" }
-        exprs << "-entries.id"
+      # Apply safe columns through super (quoted identifiers).
+      safe_keys = sort.reject { |x| x.delete_prefix("-") == "total_time_spent" }
+      query = super(query, safe_keys) unless safe_keys.empty?
+
+      # total_time_spent CASE expression — hardcoded, safe.
+      tts_key = sort.find { |x| x.delete_prefix("-") == "total_time_spent" }
+      ascending = !tts_key.start_with?("-")
+      query = query.order_append(
+        ::Sequel.lit(
+          "CASE WHEN entries.time_tracking IS NOT NULL " \
+          "THEN (SELECT SUM((value)::integer) " \
+          "FROM jsonb_each_text(entries.time_tracking)) END " \
+          "#{ascending ? "ASC" : "DESC"} NULLS LAST"
+        )
+      )
+
+      # Tiebreaker when id isn't explicit.
+      unless sort.any? { |x| x.delete_prefix("-") == "id" }
+        query = query.order_append(::Sequel.desc(::Sequel.qualify(:entries, :id)))
       end
 
-      # Convert column references to "col DIR" — raw SQL expressions are
-      # already directional and left as-is.
-      sql = exprs.map { |e|
-        if e.start_with?("CASE ")
-          e # raw expression, already has direction
-        elsif e.start_with?("-")
-          "#{e[1..]} DESC"
-        else
-          "#{e} ASC"
-        end
-      }.join(", ")
-
-      query = query.order(::Sequel.lit(sql)) unless sql.empty?
       query
     end
 

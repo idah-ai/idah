@@ -164,21 +164,21 @@ module Entry
     end
 
     def update(record)
-      attributes = record.attributes
-      if attributes.key?(:delivery_date) || attributes.key?(:wf_step)
-        current = entries.find!(record.id)
+      entries.transaction do
+        attributes = record.attributes
+        current = nil
+        needs_rollup = false
 
-        if attributes.key?(:delivery_date)
-          DeliveryDate.validate!(attributes, current.delivery_date)
+        if attributes.key?(:delivery_date) || attributes.key?(:wf_step)
+          current = entries.find!(record.id)
+          DeliveryDate.validate!(attributes, current.delivery_date) if attributes.key?(:delivery_date)
+          needs_rollup = attributes.key?(:wf_step) && attributes[:wf_step] != current.wf_step
         end
 
-        if attributes.key?(:wf_step) && attributes[:wf_step] != current.wf_step
-          rollup_entry_step!(current)
-        end
+        entries.update!(record.id, attributes)
+        rollup_entry_step!(current.id, current.wf_step) if needs_rollup
+        entries.find!(record.id)
       end
-
-      entries.update!(record.id, attributes)
-      entries.find!(record.id)
     end
 
     def delete(id)
@@ -263,7 +263,7 @@ module Entry
         entry_workflow = entry.dataset.entry_workflow.new(entries, entry, **opts)
         entry_workflow.submit!
 
-        rollup_entry_step!(entry)
+        rollup_entry_step!(entry.id, entry.wf_step)
 
         # Update dataset progress after entry status change
         # Use system dataset repo to avoid permission issues with update
@@ -289,7 +289,7 @@ module Entry
           }
         )
 
-        rollup_entry_step!(entry)
+        rollup_entry_step!(entry.id, entry.wf_step)
 
         # Update dataset progress after entry status change
         # Use system dataset repo to avoid permission issues with update
@@ -432,13 +432,13 @@ module Entry
     # Central rollup for any operation that leaves a workflow step: submit,
     # error, and bare wf_step patches via update.  Finalizes open sessions on
     # the leaving step, purges their slots, and refreshes the entry cache.
-    def rollup_entry_step!(entry, submitted_at: Time.now)
+    def rollup_entry_step!(entry_id, wf_step, submitted_at: Time.now)
       TimeTracking.rollup(
         slot_repo: system_entry_time_slots_repo,
         work_repo: system_entry_work_times_repo,
         system_entries_repo: system_entries_repo,
-        entry_id: entry.id,
-        wf_step: entry.wf_step,
+        entry_id: entry_id,
+        wf_step: wf_step,
         submitted_at: submitted_at
       )
     end

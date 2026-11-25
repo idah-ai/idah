@@ -87,7 +87,7 @@
                       {multi ? `${step.people!.length} users` : step.performedBy}
                     </td>
                     <td class="py-1.5 text-right text-[13px] font-medium tabular-nums">
-                      {step.seconds > 0 ? formatSeconds(step.seconds) : "Unsubmitted"}
+                      {step.people && step.people[0].unsubmitted ? "Unsubmitted" : formatSeconds(step.seconds)}
                     </td>
                   </tr>
                   {#if multi}
@@ -97,7 +97,7 @@
                         <td></td>
                         <td class="text-muted-foreground py-1 pr-2 text-[12px]">{person.who}</td>
                         <td class="text-muted-foreground py-1 text-right text-[12px] tabular-nums">
-                          {person.seconds > 0 ? formatSeconds(person.seconds) : "Unsubmitted"}
+                          {person.unsubmitted ? "Unsubmitted" : formatSeconds(person.seconds)}
                         </td>
                       </tr>
                     {/each}

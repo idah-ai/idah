@@ -355,6 +355,15 @@ RSpec.describe Entry, database: true do
           ids = result.map(&:id)
           expect(ids).to eq(ids.sort)
         end
+
+        it "rejects malicious SQL in sort keys" do
+          # A parenthesized sort key would be valid raw ORDER BY SQL but is
+          # not a valid column name when quoted as an identifier — confirm
+          # it raises rather than executing the payload.
+          expect {
+            subject.index({}, sort: ["(SELECT 1 FROM pg_sleep(2))"])
+          }.to raise_error(Sequel::DatabaseError, /PG::UndefinedColumn/)
+        end
       end
     end
 
