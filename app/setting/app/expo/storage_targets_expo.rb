@@ -94,7 +94,7 @@ class StorageTargetsExpo < BaseExpo
 
   json_api StorageTarget::Record do
     index do
-      allowed_filters :name__match, :enabled, :bucket
+      allowed_filters :id__in, :name__match, :enabled, :bucket
     end
     show
     create do

@@ -75,6 +75,15 @@ RSpec.describe StorageTargetsExpo, type: :exposition, database: true do
       expect(last_response.body).not_to include(secret)
     end
 
+    it "lists the targets with the given ids, for the audit log page" do
+      wanted = [create_target(name: "Wanted A"), create_target(name: "Wanted B")]
+      create_target(name: "Other")
+
+      get "/storage_targets?#{wanted.map { |id| "filter[id__in][]=#{id}" }.join("&")}"
+      expect(last_response.status).to eq(200)
+      expect(body[:data].map { |d| d[:id] }).to match_array(wanted)
+    end
+
     it "updates the name and refuses a new bucket" do
       id = create_target
 
