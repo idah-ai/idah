@@ -82,11 +82,23 @@ RSpec.describe Webhook::DeliveryJob, database: true do
     expect(jobs.find!(job_id).response.bytesize).to eq 4096
   end
 
+  it "gives up on a receiver that takes too long overall" do
+    stub_const("Webhook::Delivery::TOTAL_TIMEOUT", 0.1)
+    stub_request(:post, url).to_return do
+      sleep 0.5
+      { status: 200 }
+    end
+
+    expect(run_job.dig(0, 0)).to eq :error
+    expect(jobs.find!(job_id).http_code).to be_nil
+  end
+
   it "doesn't send when the webhook was disabled after the job was queued" do
     webhooks.update!(webhook_id, { enabled: false })
 
     expect(run_job).to be_empty
     expect(a_request(:post, url)).not_to have_been_made
+    expect(jobs.find!(job_id).response).to eq "not sent: webhook disabled"
   end
 
   it "doesn't send when the webhook was deleted" do

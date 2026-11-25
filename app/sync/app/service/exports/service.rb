@@ -99,61 +99,58 @@ module Exports
     end
 
     def filter_dataset_ids_by_rights(project_id, dataset_ids)
-      # Get the list of dataset ids that the user has access to
-      accessible_dataset_ids =
-        auth_context.can!(:read, Resource::Sync::Exports) do |scope|
-          scope.all? { dataset_ids }
-          scope.as_org_owner? {
-            org_ids = auth_context.custom_scopes[:org]
+      auth_context.can!(:read, Resource::Sync::Exports) do |scope|
+        scope.all? { dataset_ids }
 
-            # Ensure that the project belongs to the organization the user has access to
-            project_ids = Api[:idah].dataset.projects.index_all(
-              filter: { id: project_id, organization_id: org_ids },
-              fields: { "dataset:projects": ["id"] }
-            ).map(&:id)
+        scope.as_org_owner? do
+          unless sync_project_access?(project_id)
+            raise Verse::Error::Authorization,
+                  "You do not have access to the project provided"
+          end
 
-            if project_ids.empty?
-              raise Verse::Error::Authorization,
-                    "You do not have access to the project provided"
-            end
-
-            # Ensure that datasets belong to the project and organization the user has access to
-            Api[:idah].dataset.datasets.index_all(
-              filter: { project_id:, id: dataset_ids },
-              fields: { "dataset:dataset": ["id"] }
-            ).map(&:id)
-          }
-          scope.as_user? {
-            account_id = auth_context.metadata[:id]
-
-            # Ensure that the user is a project owner of the project
-            project_ids = Api[:idah].dataset.project_members.index_all(
-              filter: { project_id:, account_id:, role: "project_owner", enabled: true },
-              fields: { "dataset:project_members": ["project_id"] }
-            ).map(&:project_id).uniq
-
-            if project_ids.empty?
-              raise Verse::Error::Authorization,
-                    "You do not have access to the project provided"
-            end
-
-            # Ensure that datasets belong to the projects the user has access to
-            project_dataset_ids = Api[:idah].dataset.datasets.index_all(
-              filter: { project_id: project_ids, id: dataset_ids },
-              fields: { "dataset:dataset": ["id"] }
-            ).map(&:id)
-
-            if project_dataset_ids.empty?
-              raise Verse::Error::Authorization,
-                    "Dataset IDs provided do not belong to the project"
-            end
-
-            project_dataset_ids
-          }
+          project_dataset_ids(project_id, dataset_ids)
         end
 
-      # Filter the dataset_ids based on the accessible ones
-      dataset_ids.select { |id| accessible_dataset_ids.include?(id) }
+        scope.as_user? do
+          unless sync_project_access?(project_id)
+            raise Verse::Error::Authorization,
+                  "You do not have access to the project provided"
+          end
+
+          project_dataset_ids(project_id, dataset_ids)
+        end
+      end
+    end
+
+    # Ensure the datasets belong to the project the user has access to.
+    def project_dataset_ids(project_id, dataset_ids)
+      ids = Api[:idah].dataset.datasets.index_all(
+        filter: { project_id:, id: dataset_ids },
+        fields: { "dataset:datasets": ["id"] }
+      ).map(&:id)
+
+      if ids.empty?
+        raise Verse::Error::Authorization,
+              "Dataset IDs provided do not belong to the project"
+      end
+
+      ids
+    end
+
+    # Sync access to a project: the project is in one of the actor's orgs, or the
+    # actor is an enabled project_owner member of it (the sync as_user rule). An
+    # org_owner who is a reviewer on a foreign project therefore has no sync
+    # access there.
+    def sync_project_access?(project_id)
+      org_ids = auth_context.custom_scopes[:org]
+      if org_ids&.any? &&
+         ProjectMembership::Lookup.new.project_ids_for_organizations(org_ids).include?(project_id)
+        return true
+      end
+
+      account_id = auth_context.metadata[:id]
+      ProjectMembership::Lookup.new.memberships_for(account_id)
+                               .any? { |m| m.role == "project_owner" && m.project_id == project_id }
     end
   end
 end

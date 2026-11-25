@@ -332,6 +332,12 @@ RSpec.describe NoteFeed::Service, database: true do
         expect { note_feed_repo.find!(org_owner_note_feed_id) }.to raise_error(Verse::Error::RecordNotFound)
       end
 
+      it "can resolve a note feed in an owned org project" do
+        record = subject.resolve(project_owner_note_feed_id)
+
+        expect(record.status).to eq "resolved"
+      end
+
       it "cannot update others note feed" do
         update_data[:data][:id] = reviewer_first_note_feed_id
 
@@ -362,7 +368,10 @@ RSpec.describe NoteFeed::Service, database: true do
 
         expect {
           subject.create_from_params(create_attributes)
-        }.to raise_error(Verse::Error::ValidationFailed)
+        }.to raise_error(
+          Verse::Error::Unauthorized,
+          "You do not have permission to create note feed on this project"
+        )
       end
 
       it "cannot update" do
@@ -381,6 +390,79 @@ RSpec.describe NoteFeed::Service, database: true do
         # the record we tried to delete should still be there
         expect { note_feed_repo.find!(@not_owned_org_note_feed) }.not_to raise_error(Verse::Error::RecordNotFound)
       end
+    end
+  end
+
+  # Permission: Organization Owner acting through a membership on a FOREIGN project
+  # ------------------------------------------------
+  # An org_owner of Org A who is a reviewer member of a project in Org B is
+  # evaluated on that project with their membership role (not org_owner powers).
+  context "as Organization Owner with a reviewer membership on a foreign project", as: :org_owner do
+    subject { described_class.new(current_auth_context) }
+
+    let(:foreign_project_id) do
+      project_repo.create(name: "Foreign Project", created_by_email: "system@example.com", organization_id: 999)
+    end
+    let(:foreign_dataset_id) do
+      dataset_repo.create(
+        name: "Foreign Dataset",
+        project_id: foreign_project_id,
+        modality: "video",
+        workflow_configuration: { noteable_steps: ["review"] },
+        labeling_configuration: {}
+      )
+    end
+    let(:foreign_entry_id) do
+      entry_repo.create(
+        project_id: foreign_project_id,
+        dataset_id: foreign_dataset_id,
+        priority: 1,
+        resource: "http://example.com/foreign.mp4",
+        wf_step: "review",
+        status: "in_progress",
+        assigned_to_id: current_auth_context.metadata[:id]
+      )
+    end
+    let(:foreign_note_feed_id) do
+      note_feed_repo.create(
+        project_id: foreign_project_id,
+        dataset_id: foreign_dataset_id,
+        entry_id: foreign_entry_id,
+        anchor_type: "entry",
+        position: { "x" => 100, "y" => 200 },
+        content_md: "foreign note",
+        created_by_email: "org_owner@example.com"
+      )
+    end
+
+    before do
+      project_member_repo.create(
+        project_id: foreign_project_id,
+        account_id: current_auth_context.metadata[:id],
+        role: "reviewer",
+        email: "org_owner@example.com",
+        invited_by_id: 1
+      )
+    end
+
+    it "can resolve a note feed on the foreign project per reviewer rules" do
+      foreign_note_feed_id
+
+      record = subject.resolve(foreign_note_feed_id)
+
+      expect(record.status).to eq "resolved"
+    end
+
+    it "cannot resolve a note feed on the foreign project when the membership is removed" do
+      foreign_note_feed_id
+      member = project_member_repo.find_by!(
+        { project_id: foreign_project_id, account_id: current_auth_context.metadata[:id] }
+      )
+      project_member_repo.delete(member.id) # soft delete
+
+      expect {
+        subject.resolve(foreign_note_feed_id)
+      }.to raise_error(Verse::Error::RecordNotFound)
     end
   end
 

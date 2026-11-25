@@ -24,14 +24,9 @@ RSpec.describe Api::Exposition do
   let(:exposition) { described_class.new(api, :test_exposition) }
 
   before do
-    WebMock.enable!
     api.instance_variable_set(:@base_url, "https://api.example.com")
     allow(service).to receive(:parent).and_return(api)
     allow(api).to receive(:base_url).and_return("https://api.example.com")
-  end
-
-  after do
-    WebMock.disable!
   end
 
   describe "#initialize" do

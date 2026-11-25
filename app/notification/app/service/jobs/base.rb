@@ -15,14 +15,6 @@ module Jobs
       @arguments = arguments
     end
 
-    def update_progress(value)
-      emit(:update_progress, value:)
-    end
-
-    def reschedule(after: 10)
-      emit(:reschedule, after:)
-    end
-
     def error(message)
       emit(:error, error: message)
     end

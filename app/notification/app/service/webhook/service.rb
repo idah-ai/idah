@@ -30,17 +30,20 @@ module Webhook
       webhooks.transaction do
         attr = record.attributes.slice(:name, :url, :events, :enabled).compact
 
-        validate_events!(attr[:events])
+        validate_events!(attr[:events], current_role)
         UrlValidator.validate!(attr[:url])
 
-        id = webhooks.create(
-          {
-            **attr,
-            account_id: auth_context.metadata[:id],
-            role_name: current_role,
-            secret: "whsec_#{SecureRandom.hex(32)}"
-          }
-        )
+        # The created event would carry the secret.
+        id = webhooks.no_event do |repo|
+          repo.create(
+            {
+              **attr,
+              account_id: auth_context.metadata[:id],
+              role_name: current_role,
+              secret: "whsec_#{SecureRandom.hex(32)}"
+            }
+          )
+        end
 
         webhooks.find!(id)
       end
@@ -52,7 +55,7 @@ module Webhook
         attr = record.attributes.slice(:name, :url, :events, :enabled).compact
         webhook = webhooks.find!(record.id)
 
-        validate_events!(attr[:events]) if attr.key?(:events)
+        validate_events!(attr[:events], webhook.role_name) if attr.key?(:events)
         UrlValidator.validate!(attr[:url]) if attr.key?(:url)
 
         if attr[:enabled] && webhook.role_name != current_role
@@ -97,7 +100,7 @@ module Webhook
         EventRecord.new(
           {
             id: handler.id,
-            event: handler.event,
+            event: Array(handler.event).first,
             label: handler.label,
             description: handler.desc,
             allowed_roles: handler.allowed_roles
@@ -110,12 +113,12 @@ module Webhook
 
     def current_role = auth_context.role.to_s
 
-    def validate_events!(events)
+    def validate_events!(events, role)
       if !events.is_a?(Array) || events.empty?
         raise Verse::Error::ValidationFailed, "events must be a non-empty list"
       end
 
-      unknown = events - Handlers.allowed_for(current_role).map(&:id)
+      unknown = events - Handlers.allowed_for(role).map(&:id)
       return if unknown.empty?
 
       raise Verse::Error::ValidationFailed, "unknown or not allowed events: #{unknown.join(", ")}"

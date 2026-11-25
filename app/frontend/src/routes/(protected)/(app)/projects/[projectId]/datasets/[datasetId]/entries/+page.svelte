@@ -22,8 +22,6 @@
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
 
-  import type { ProjectMemberScope } from "@/security/types";
-
   // Contexts
   const project: ProjectRecord = getContext("project");
   const dataset: DatasetRecord = getContext("dataset");
@@ -40,10 +38,6 @@
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
 
-  const as_project_owner: { as_user: ProjectMemberScope } = {
-    as_user: { projectId, projectMemberRoles: ["project_owner"] },
-  };
-
   pageBreadcrumbsStore.set([
     projectBreadcrumb,
     { label: project.name, href: resolve(`/projects/${projectId}/datasets`) },
@@ -55,8 +49,8 @@
   onMount(async () => {
     const account = $authStatus.authContext;
     [canUpdateEntry, canDeleteEntry] = await Promise.all([
-      account?.can("update", "dataset:entries", ["as_org_owner", as_project_owner]) || Promise.resolve(false),
-      account?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner]) || Promise.resolve(false),
+      account?.canOnProject("update", "dataset:entries", projectId, "project_owner") || Promise.resolve(false),
+      account?.canOnProject("delete", "dataset:entries", projectId, "project_owner") || Promise.resolve(false),
     ]);
   });
 </script>

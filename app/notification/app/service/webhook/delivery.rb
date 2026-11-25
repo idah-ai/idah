@@ -2,6 +2,7 @@
 
 require "net/http"
 require "openssl"
+require "timeout"
 
 module Webhook
   # Builds, signs and sends webhook requests.
@@ -13,6 +14,7 @@ module Webhook
     extend self
 
     TIMEOUT = 5
+    TOTAL_TIMEOUT = 15
     MAX_RESPONSE_BYTES = 4096
 
     def envelope(event:, resource_id:, payload:)
@@ -45,9 +47,23 @@ module Webhook
       http.read_timeout = TIMEOUT
       http.write_timeout = TIMEOUT
 
-      response = http.request(request)
+      code = nil
+      response_body = +""
+      # The timeouts above apply to each read, so a slow receiver could hold the request forever.
+      Timeout.timeout(TOTAL_TIMEOUT) do
+        # Stops reading past the kept size; a `break` would still read the whole body.
+        catch(:read_enough) do
+          http.request(request) do |response|
+            code = response.code.to_i
+            response.read_body do |chunk|
+              response_body << chunk
+              throw :read_enough if response_body.bytesize >= MAX_RESPONSE_BYTES
+            end
+          end
+        end
+      end
 
-      [response.code.to_i, response.body.to_s.byteslice(0, MAX_RESPONSE_BYTES).scrub]
+      [code, response_body.byteslice(0, MAX_RESPONSE_BYTES).scrub]
     end
 
     def success?(http_code) = http_code.to_i.between?(200, 299)

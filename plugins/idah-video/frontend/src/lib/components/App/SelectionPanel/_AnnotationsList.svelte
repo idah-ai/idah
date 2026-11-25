@@ -23,6 +23,7 @@
   import { getAnnotationActions } from "$lib/components/App/SelectionPanel/menus";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
+  import { categorySearch } from "$lib/state/category-search.svelte";
   import { categoryValueToLabel } from "$lib/utils/annotation";
 
   import { VIDEO_POLYGON } from "$lib/types";
@@ -53,12 +54,25 @@
       .map((entry) => entry.ann),
   );
 
+  // Filter by category search query (case-insensitive).
+  // Normalizes hyphens↔spaces so searching by id or label both work.
+  const filteredSortedAnnotations = $derived(
+    !categorySearch.value
+      ? sortedAnnotations
+      : sortedAnnotations.filter((ann) =>
+          (ann.category ?? "")
+            .toLowerCase()
+            .replace(/-/g, " ")
+            .includes(categorySearch.value.toLowerCase().replace(/-/g, " ")),
+        ),
+  );
+
   // -----------------------------------------------------------------------
   // Pagination
   // -----------------------------------------------------------------------
-  const totalPages = $derived(Math.max(1, Math.ceil(sortedAnnotations.length / PAGE_SIZE)));
-  const pagedAnnotations = $derived(sortedAnnotations.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
-  const showPagination = $derived(sortedAnnotations.length > PAGE_SIZE);
+  const totalPages = $derived(Math.max(1, Math.ceil(filteredSortedAnnotations.length / PAGE_SIZE)));
+  const pagedAnnotations = $derived(filteredSortedAnnotations.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
+  const showPagination = $derived(filteredSortedAnnotations.length > PAGE_SIZE);
 
   // When paginating, pad the last (shorter) page with empty rows so every page
   // keeps the same height and the pagination controls stay anchored at the bottom.
@@ -73,7 +87,7 @@
 <section class="flex flex-col gap-2">
   <div class="flex items-center gap-2">
     <Text weight="semibold">Annotations</Text>
-    <Badge variant="secondary">{annotations.length}</Badge>
+    <Badge variant="secondary">{filteredSortedAnnotations.length}</Badge>
     <Text size="sm" class="text-muted-foreground ml-auto">on Frame : {currentFrame + 1}</Text>
   </div>
 
@@ -121,8 +135,12 @@
       </div>
     {/each}
 
-    {#if annotations.length === 0}
-      <div class="text-muted-foreground px-2 py-4 text-center text-xs">No annotations</div>
+    {#if filteredSortedAnnotations.length === 0}
+      {#if annotations.length === 0}
+        <div class="text-muted-foreground px-2 py-4 text-center text-xs">No annotations on this frame</div>
+      {:else}
+        <div class="text-muted-foreground px-2 py-4 text-center text-xs">No matching annotations</div>
+      {/if}
     {/if}
 
     <!-- Reserve space on the last page so pagination doesn't shift upward.
@@ -133,7 +151,7 @@
   </div>
 
   {#if showPagination}
-    <Pagination count={annotations.length} perPage={PAGE_SIZE} bind:page>
+    <Pagination count={filteredSortedAnnotations.length} perPage={PAGE_SIZE} bind:page>
       {#snippet children({ pages, currentPage })}
         <PaginationContent class="flex-wrap gap-0.5">
           <PaginationItem>

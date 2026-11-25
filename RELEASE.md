@@ -202,8 +202,11 @@ If any step fails, fix on `main` and tag `-rc.2`. Never delete and re-push a tag
 
 ### 4.3 Verify the candidate
 
-- Install or upgrade a staging host with `IDAH_VERSION=0.2.0-rc.1` via
-  [`deploy/compose/install.sh`](deploy/compose/README.md#upgrading).
+- Install or upgrade a staging host to `0.2.0-rc.1` via
+  [`deploy/compose/install.sh`](deploy/compose/README.md#upgrading). To upgrade, set
+  `IDAH_VERSION=0.2.0-rc.1` **in `.env`** (not the shell) and run `./install.sh --upgrade` —
+  the installer reads the target version from `.env`, and refuses a shell value that
+  disagrees with the file.
 - `curl …/healthcheck` on each service reports `0.2.0-rc.1` and the expected revision.
 - Exercise the areas the release touched, plus an export in each format.
 
@@ -222,7 +225,9 @@ The script finds the latest `v0.2.0-rc.N` and tags its commit; it refuses if the
 CD creates the GitHub Release with generated notes: the title of every pull request merged since
 the previous stable version (candidates are skipped, so `v0.2.0-rc.1` and `v0.2.0` both list the
 changes since `v0.1.x`). PR titles are checked Conventional Commits, so the list reads as a
-changelog. Edit the release to add what a list of titles cannot say, and arrange it as:
+changelog. Leave a candidate's auto-generated notes as they are — it is a pre-release, and its
+notes would only duplicate the stable's. Curate only the stable release: edit it to add what a
+list of titles cannot say, and arrange it as:
 
 ```markdown
 ## Highlights
@@ -252,8 +257,10 @@ This is where patches for 0.2.x are made (§5).
 
 ### 4.7 Deploy
 
-Staging first, then production, each by setting `IDAH_VERSION` and running
-`./install.sh --upgrade`. Production never runs an unnamed or `latest` image.
+Staging first, then production, each by setting `IDAH_VERSION` **in `.env`** and running
+`./install.sh --upgrade` — the installer upgrades to the version named in `.env`, and
+refuses a shell value that disagrees with it. Production never runs an unnamed or `latest`
+image.
 
 ---
 
@@ -261,6 +268,22 @@ Staging first, then production, each by setting `IDAH_VERSION` and running
 
 Production runs a released version; `main` has moved past it. Fix on the release branch so a
 hotfix ships only the fix.
+
+### When this section applies
+
+"Patch" means two different things, and only one of them lands here:
+
+- **Patch the version number** — the `Z` in `X.Y.Z`. On 0.x, §1 puts *both features and fixes*
+  in `Z`, so a batch of features can carry a patch number (`0.1.1`) while being ordinary feature
+  work. That work is built on `main` and tagged from `main` (§4) — it does **not** use this
+  section. `release/X.Y` is advanced to the tag afterwards, if at all (§4.6).
+- **Patch the process** — a *hotfix*: a fix to an already-shipped version when `main` has moved
+  on and you need to ship that fix **without** `main`'s other changes. That is what this section
+  is for, and what starts on `release/X.Y`.
+
+The deciding question is not the version number but: **has `main` diverged from what is in
+production, and do you need the fix without `main`'s other changes?** If no, release from `main`.
+If yes, hotfix on the release branch below.
 
 ```bash
 git switch release/0.2 && git pull

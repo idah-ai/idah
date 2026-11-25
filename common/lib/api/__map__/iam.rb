@@ -24,11 +24,22 @@ Api[:idah].register(
 end
 
 Api[:idah].register(
-  :iam, :accounts, :create,
+  :iam, :accounts, :invite,
 ) do |attributes:|
   output = post(
-    "iam/accounts",
-    body: { data: { type: "iam:accounts", attributes: } },
+    "iam/accounts/invite",
+    params: attributes,
+    options: { auth: :bearer } # Enable authentication
+  )
+  deserialize output.body
+end
+
+Api[:idah].register(
+  :iam, :accounts, :resend_invitation,
+) do |id:|
+  output = post(
+    "iam/accounts/:id/resend_invitation",
+    params: { id: },
     options: { auth: :bearer } # Enable authentication
   )
   deserialize output.body
@@ -63,5 +74,16 @@ Api[:idah].register(
     options: { auth: :bearer } # Enable authentication
   )
 
+  deserialize output.body
+end
+
+Api[:idah].register(
+  :iam, :organizations, :show,
+) do |id:|
+  output = get(
+    "iam/organizations/:id",
+    params: { id: },
+    options: { auth: :bearer }
+  )
   deserialize output.body
 end

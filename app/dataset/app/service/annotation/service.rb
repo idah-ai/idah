@@ -55,16 +55,9 @@ module Annotation
       # Prevent modifications on completed entries
       check_entry_not_completed!(entry, :create)
 
-      # With "as_user" ensure account can "create" annotation to the project
-      if auth_context.can?(:create, annotations.class.resource) == :as_user &&
-         !ScopedQuery::Service.with_project_access?(
-           auth_context.metadata[:id],
-           entry.project_id,
-           ["project_owner", "annotator", "reviewer"]
-         )
-        raise Verse::Error::Unauthorized,
-              "You do not have permission to create annotation on this project"
-      end
+      # Creating an annotation requires effective rank >= project_owner on the
+      # project, or an annotator/reviewer membership on the entry's project.
+      ensure_annotation_create_access!(entry.project_id)
 
       # Assign attributes
       attributes = record.attributes
@@ -250,6 +243,22 @@ module Annotation
 
       raise Verse::Error::ValidationFailed,
             "Cannot #{operation} annotations on a completed entry"
+    end
+
+    # Creating an annotation requires effective rank >= project_owner, or an
+    # annotator/reviewer membership on the entry's project. Decides on the
+    # resolver so an org_owner with a membership on a foreign project is
+    # evaluated with their membership role.
+    def ensure_annotation_create_access!(project_id)
+      access = ProjectAccess::Service.resolve(
+        auth_context, project_id, action: :create, resource: annotations.class.resource
+      )
+      return if %i[all org_owner].include?(access)
+
+      return if %i[project_owner annotator reviewer].include?(access)
+
+      raise Verse::Error::Unauthorized,
+            "You do not have permission to create annotation on this project"
     end
   end
 end

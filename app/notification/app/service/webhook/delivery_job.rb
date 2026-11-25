@@ -8,20 +8,27 @@ module Webhook
 
     def run_impl
       webhook = webhooks.find(arguments[:webhook_id])
-      return unless webhook&.enabled
+      return unless webhook
+
+      unless webhook.enabled
+        update_job(response: "not sent: webhook disabled")
+        return
+      end
 
       begin
         http_code, response = Delivery.post(webhook, arguments[:body])
       rescue StandardError
-        jobs.update!(job_id, { http_code: nil, response: nil })
+        update_job(http_code: nil, response: nil)
         raise
       end
 
-      jobs.update!(job_id, { http_code:, response: })
+      update_job(http_code:, response:)
       error("HTTP #{http_code}") unless Delivery.success?(http_code)
     end
 
     private
+
+    def update_job(attributes) = jobs.no_event { _1.update!(job_id, attributes) }
 
     def webhooks = Webhook::Repository.new(Verse::Auth::Context[:system])
 
