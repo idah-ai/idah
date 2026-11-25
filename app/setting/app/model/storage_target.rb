@@ -100,9 +100,14 @@ module StorageTarget
       end
     end
 
-    # The targets a project creator may pick, without credentials.
-    def available_targets
-      index({}, scope: scoped(:list_available), record: Summary, items_per_page: 1_000, sort: ["name"])
+    # The targets a project creator may pick, without credentials; only those
+    # allowing `organization_id` when given, as a new project of that
+    # organization may only use those.
+    def available_targets(organization_id: nil)
+      scope = scoped(:list_available)
+      scope = scope.where(Sequel.lit("? = ANY(organization_ids)", organization_id.to_i)) if organization_id
+
+      index({}, scope:, record: Summary, items_per_page: 1_000, sort: ["name"])
     end
 
     # A target for the credentials route (system role), archived ones included.

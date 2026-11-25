@@ -137,9 +137,10 @@ module StorageTargets
       { ok: error.nil?, error: }
     end
 
-    # The targets the actor may pick for a new project, without credentials.
-    def available
-      storage_targets.available_targets
+    # The targets the actor may pick for a new project, without credentials;
+    # with `organization_id`, only those a project of that organization may use.
+    def available(organization_id: nil)
+      storage_targets.available_targets(organization_id:)
     end
 
     # A target's location and decrypted credentials. System role only: the

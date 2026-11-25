@@ -220,6 +220,13 @@ RSpec.describe StorageTargets::Service, database: true do
   end
 
   describe "#available" do
+    it "keeps only the targets allowing the given organization" do
+      for_three = create_target(organization_ids: [3, 4])
+      create_target(organization_ids: [4])
+
+      expect(described_class.new(org_owner_context([3, 4])).available(organization_id: 3).map(&:id)).to eq([for_three])
+    end
+
     it "lists the targets an org owner may pick, without credentials" do
       id = create_target(organization_ids: [3])
       create_target(organization_ids: [4])

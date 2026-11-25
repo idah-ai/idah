@@ -145,6 +145,15 @@ RSpec.describe StorageTargetsExpo, type: :exposition, database: true do
       expect(body[:data].first[:attributes].keys).to contain_exactly(:name, :endpoint, :bucket)
     end
 
+    it "narrows the available targets to one organization" do
+      create_target(organization_ids: [3])
+
+      get "/storage_targets/_available?organization_id=4"
+
+      expect(last_response.status).to eq(200)
+      expect(body[:data]).to be_empty
+    end
+
     it "can't list, create, test or read credentials" do
       id = create_target(organization_ids: [3])
 

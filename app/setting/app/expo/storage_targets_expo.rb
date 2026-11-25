@@ -38,12 +38,16 @@ class StorageTargetsExpo < BaseExpo
     desc <<~MD
       The storage targets the caller may pick for a new project: enabled ones,
       allowed for one of their organizations (all of them for an admin). No
-      credentials.
+      credentials. With `organization_id`, only the targets a new project of
+      that organization may use.
     MD
+    input do
+      field?(:organization_id, [Integer, NilClass])
+    end
     output Verse::JsonApi::Util.jsonapi_collection(StorageTarget::Summary)
   end
   def available
-    service.available
+    service.available(organization_id: params[:organization_id])
   end
 
   expose on_http(:post, "/_test") do
