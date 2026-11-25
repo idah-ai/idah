@@ -133,6 +133,7 @@
   {title}
   description="The connection is tested before the target is saved."
   loading={submitting}
+  loadingLabel={newRecord ? "Testing and saving…" : undefined}
   disabled={action === "update" ? !changeTracker.hasUnsavedChanges : false}
   onCancel={resetForm}
   onConfirm={submit}
