@@ -280,7 +280,7 @@
         label="Secret key"
         type="password"
         autocomplete="new-password"
-        placeholder={newRecord ? "Secret access key" : `Unchanged (ends in ${target.secret_hint ?? "…"})`}
+        placeholder={newRecord ? "Secret access key" : "Unchanged"}
         required={newRecord}
         description={newRecord
           ? "Stored encrypted. It is never shown again."

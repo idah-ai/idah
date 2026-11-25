@@ -116,11 +116,6 @@ export function maskedAccessKeyId(accessKeyId: string | null | undefined): strin
   return `••••${id.slice(-4)}`;
 }
 
-/** How the stored secret is shown: never the secret, only its last characters. */
-export function maskedSecret(hint: string | null | undefined): string {
-  return hint ? `••••${hint}` : "••••";
-}
-
 /** A project's storage target, as the project show response's meta gives it. */
 export type ProjectStorageTargetSummary = {
   id: string;

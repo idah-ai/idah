@@ -1,7 +1,7 @@
+import StorageTargetAccessKeyCell from "@/components/app/storage-targets/data-tables/storage-target-access-key-cell.svelte";
 import StorageTargetLocationCell from "@/components/app/storage-targets/data-tables/storage-target-location-cell.svelte";
 import StorageTargetOrganizationsCell from "@/components/app/storage-targets/data-tables/storage-target-organizations-cell.svelte";
 import StorageTargetRowActionCell from "@/components/app/storage-targets/data-tables/storage-target-row-action-cell.svelte";
-import StorageTargetSecretCell from "@/components/app/storage-targets/data-tables/storage-target-secret-cell.svelte";
 import StorageTargetStatusCell from "@/components/app/storage-targets/data-tables/storage-target-status-cell.svelte";
 
 import { StorageTargetRecord } from "@/data/model/setting/storage_target/record";
@@ -34,14 +34,14 @@ export const storageTargetColumns: ColumnsSettings<StorageTargetRecord> = {
     cellComponent: StorageTargetLocationCell,
   },
   access_key_id: {
-    label: "Credentials",
+    label: "Access key ID",
     dataType: "string",
     clickable: false,
     sortable: false,
     filterable: false,
     visible: true,
     hidable: false,
-    cellComponent: StorageTargetSecretCell,
+    cellComponent: StorageTargetAccessKeyCell,
   },
   organization_ids: {
     label: "Organizations",

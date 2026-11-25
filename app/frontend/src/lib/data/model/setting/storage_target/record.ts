@@ -9,8 +9,8 @@ import type { Hash } from "@/utils/types";
 
 /**
  * An S3 location an admin registers so a project's files can be kept apart
- * from other customers' data. The backend never returns the secret key: only
- * `secret_hint`, its last characters.
+ * from other customers' data. The backend never returns anything of the secret
+ * key: the access key ID is what tells credentials apart.
  */
 @type("setting:storage_targets")
 export class StorageTargetRecord extends Record {
@@ -26,7 +26,6 @@ export class StorageTargetRecord extends Record {
   @field() public access_key_id!: string;
   /** Write-only: a new secret on create or update. Never in a response. */
   @field() public secret_access_key!: string | null;
-  @field() public readonly secret_hint!: string | null;
 
   @field() public organization_ids!: number[];
   @field() public enabled!: boolean;

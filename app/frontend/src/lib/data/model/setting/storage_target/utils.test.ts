@@ -11,7 +11,6 @@ import {
   firstSectionWithErrors,
   locationSummary,
   maskedAccessKeyId,
-  maskedSecret,
   normalizePrefix,
   projectStorageLabel,
   sectionHasErrors,
@@ -138,13 +137,6 @@ describe("storageTargetLocation", () => {
   it("joins the bucket and the prefix", () => {
     expect(storageTargetLocation({ bucket: "acme-bucket", prefix: "/idah/" })).toBe("acme-bucket/idah");
     expect(storageTargetLocation({ bucket: "acme-bucket", prefix: "" })).toBe("acme-bucket");
-  });
-});
-
-describe("maskedSecret", () => {
-  it("shows only the last characters", () => {
-    expect(maskedSecret("1a2b")).toBe("••••1a2b");
-    expect(maskedSecret(null)).toBe("••••");
   });
 });
 
