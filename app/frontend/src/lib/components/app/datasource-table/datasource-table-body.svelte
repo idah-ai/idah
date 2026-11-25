@@ -16,12 +16,13 @@
   interface Props<T extends Record> {
     tableData: TableData<T>;
     columns: ColumnsSettings<T>;
+    columnSpan: number;
     isFiltering: boolean;
     selectable?: boolean;
     selectedRecords: T[];
     onToggleRow: (record: T) => void;
   }
-  let { tableData, columns, isFiltering, selectable, selectedRecords, onToggleRow }: Props<T> = $props();
+  let { tableData, columns, columnSpan, isFiltering, selectable, selectedRecords, onToggleRow }: Props<T> = $props();
 </script>
 
 <TableBody>
@@ -73,6 +74,6 @@
       {/each}
     </TableRow>
   {:else}
-    <DataTableEmpty {isFiltering}></DataTableEmpty>
+    <DataTableEmpty {columnSpan} {isFiltering}></DataTableEmpty>
   {/each}
 </TableBody>

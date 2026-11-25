@@ -88,6 +88,9 @@
 
   // Local copy so column visibility can be toggled.
   let columns = $state(untrack(() => _columns));
+  let columnSpan = $derived(
+    Math.max(1, Object.values(columns).filter((column) => column.visible).length + (selectable ? 1 : 0)),
+  );
   let selectedRecords = $state<T[]>([]);
   let selectAll: boolean = $derived(selectedRecords.length === tableData.response.data.length);
   let haveSomeHidableColumns: boolean = $derived(Object.values(columns).some((column) => column.hidable));
@@ -392,11 +395,19 @@
       </TableHeader>
 
       {#if tableData.status === "loading"}
-        <DataTableLoading />
+        <DataTableLoading {columnSpan} />
       {:else if tableData.status === "loaded"}
-        <DataTableBody {tableData} {columns} {isFiltering} {selectable} {selectedRecords} onToggleRow={toggleRow} />
+        <DataTableBody
+          {tableData}
+          {columns}
+          {columnSpan}
+          {isFiltering}
+          {selectable}
+          {selectedRecords}
+          onToggleRow={toggleRow}
+        />
       {:else}
-        <DataTableError />
+        <DataTableError {columnSpan} />
       {/if}
     </Table>
   </DataTableContent>
