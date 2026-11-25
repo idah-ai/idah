@@ -49,7 +49,7 @@ module SpecData
           **attributes
         }
       )
-      repo.set_secret!(id, ciphertext: SecretBox.from_env.encrypt(secret), hint: secret[-4..])
+      repo.set_secret!(id, ciphertext: SecretBox.from_env.encrypt(secret))
 
       id
     end

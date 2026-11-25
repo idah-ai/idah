@@ -15,9 +15,6 @@ module StorageTargets
     UPDATE_FIELDS = %i[name path_style access_key_id organization_ids enabled].freeze
     REQUIRED_ON_CREATE = %i[name endpoint bucket access_key_id secret_access_key].freeze
 
-    # Shorter secrets show no hint: 4 characters would be too much of them.
-    HINT_MIN_SECRET_LENGTH = 12
-
     def index(filter = {}, included: [], page: 1, items_per_page: 100, sort: nil, query_count: false)
       storage_targets.index(filter, included:, page:, items_per_page:, sort:, query_count:)
     end
@@ -186,9 +183,7 @@ module StorageTargets
     end
 
     def store_secret(id, secret)
-      hint = secret.length >= HINT_MIN_SECRET_LENGTH ? secret[-4..] : nil
-
-      storage_targets.set_secret!(id, ciphertext: secret_box.encrypt(secret), hint:)
+      storage_targets.set_secret!(id, ciphertext: secret_box.encrypt(secret))
     end
 
     def location_of(target)

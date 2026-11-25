@@ -20,8 +20,7 @@ RSpec.describe StorageTarget::Repository, database: true do
     it "never puts the encrypted secret in a record" do
       record = repo.find!(create_target)
 
-      expect(record.fields.keys).not_to include(:secret_ciphertext, :secret_access_key)
-      expect(record.secret_hint).to eq("-123")
+      expect(record.fields.keys).not_to include(:secret_ciphertext, :secret_access_key, :secret_hint)
     end
 
     it "stores organization ids as integers" do
@@ -41,7 +40,7 @@ RSpec.describe StorageTarget::Repository, database: true do
       published = []
       allow(Verse).to receive(:publish_resource_event) { |**opts| published << opts }
 
-      described_class.new(admin_context).set_secret!(id, ciphertext: "v1:x:y:z", hint: "abcd")
+      described_class.new(admin_context).set_secret!(id, ciphertext: "v1:x:y:z")
 
       expect(published).to be_empty
     end
@@ -56,27 +55,26 @@ RSpec.describe StorageTarget::Repository, database: true do
 
       Verse::Plugin[:sequel].client(:rw) do |db|
         db.loggers << logger
-        repo.set_secret!(id, ciphertext: "v1:CIPHERTEXT-CANARY:x:y", hint: "9999")
+        repo.set_secret!(id, ciphertext: "v1:CIPHERTEXT-CANARY:x:y")
       ensure
         db.loggers.delete(logger)
       end
 
       expect(log.string).not_to include("CIPHERTEXT-CANARY")
       expect(repo.secret_ciphertext(id)).to eq("v1:CIPHERTEXT-CANARY:x:y")
-      expect(repo.find!(id).secret_hint).to eq("9999")
     end
 
     it "still refuses a target the actor can't update" do
       id = create_target
 
       expect {
-        described_class.new(org_owner_context([3])).set_secret!(id, ciphertext: "v1:a:b:c", hint: "x")
+        described_class.new(org_owner_context([3])).set_secret!(id, ciphertext: "v1:a:b:c")
       }.to raise_error(Verse::Error::Unauthorized)
     end
 
     it "still raises for an unknown target" do
       expect {
-        described_class.new(admin_context).set_secret!(UUIDv7.generate, ciphertext: "v1:a:b:c", hint: "x")
+        described_class.new(admin_context).set_secret!(UUIDv7.generate, ciphertext: "v1:a:b:c")
       }.to raise_error(Verse::Error::RecordNotFound)
     end
   end

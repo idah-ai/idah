@@ -26,9 +26,9 @@ module StorageTarget
     # such as MinIO or Ceph need.
     field :path_style, type: TrueClass
 
+    # The key's name, not a secret: it is how an admin tells which credentials
+    # are set. Nothing of the secret itself is ever returned.
     field :access_key_id, type: String
-    # The last 4 characters of the secret, so an admin can tell which one is set.
-    field :secret_hint, type: [String, NilClass], readonly: true
 
     field :organization_ids, type: Array
     field :enabled, type: TrueClass
@@ -147,15 +147,15 @@ module StorageTarget
     # plus the master key would give the secret back. The scope check and the
     # existence check run through Sequel as usual; they carry no secret. Same
     # connection, so the write stays in the caller's transaction.
-    def set_secret!(id, ciphertext:, hint:)
+    def set_secret!(id, ciphertext:)
       with_db_mode :rw do
         raise Verse::Error::RecordNotFound, id unless scoped(:update).where(id:).count.positive?
 
         client do |db|
           db.synchronize do |connection|
             connection.exec_params(
-              "UPDATE storage_targets SET secret_ciphertext = $1, secret_hint = $2 WHERE id = $3",
-              [ciphertext, hint, id]
+              "UPDATE storage_targets SET secret_ciphertext = $1 WHERE id = $2",
+              [ciphertext, id]
             )
           end
         end

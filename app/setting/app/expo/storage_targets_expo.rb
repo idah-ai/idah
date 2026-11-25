@@ -6,7 +6,7 @@ class StorageTargetsExpo < BaseExpo
   use_service StorageTargets::Service
 
   # Explicit input schemas: the secret comes in here and nowhere else, and the
-  # columns the service sets (secret_hint, created_by, timestamps) can't.
+  # columns the service sets (created_by, timestamps) can't.
   CREATE_SCHEMA = Verse::Schema.define do
     field(:name, String)
     field(:endpoint, String)

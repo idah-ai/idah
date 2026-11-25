@@ -15,7 +15,7 @@ RSpec.describe StorageTargetLookup do
           id: target_id,
           attributes: {
             name: "Acme bucket", endpoint: "https://s3.example.com", bucket: "acme-bucket",
-            enabled: true, organization_ids: [1, 2], secret_hint: "-123"
+            enabled: true, organization_ids: [1, 2]
           }
         }
       }.to_json

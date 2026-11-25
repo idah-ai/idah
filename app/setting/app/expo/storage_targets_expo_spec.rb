@@ -38,19 +38,19 @@ RSpec.describe StorageTargetsExpo, type: :exposition, database: true do
   end
 
   context "as an admin", as: :admin do
-    it "creates a target and answers with its hint, never the secret" do
+    it "creates a target and answers with nothing of the secret" do
       post "/storage_targets", create_payload
 
       expect(last_response.status).to eq(201)
-      expect(body.dig(:data, :attributes)).to include(name: "Acme bucket", secret_hint: "-123", organization_ids: [3])
-      expect(body.dig(:data, :attributes)).not_to have_key(:secret_access_key)
+      expect(body.dig(:data, :attributes)).to include(name: "Acme bucket", organization_ids: [3])
+      expect(body.dig(:data, :attributes)).not_to include(:secret_access_key, :secret_hint)
       expect(last_response.body).not_to include(secret)
     end
 
-    it "ignores columns the service sets, such as the hint or the author" do
-      post "/storage_targets", create_payload(secret_hint: "fake", created_by: 99)
+    it "ignores columns the service sets, such as the author" do
+      post "/storage_targets", create_payload(created_by: 99)
 
-      expect(body.dig(:data, :attributes)).to include(secret_hint: "-123", created_by: 1)
+      expect(body.dig(:data, :attributes)).to include(created_by: 1)
     end
 
     it "refuses a target that fails the connection test" do

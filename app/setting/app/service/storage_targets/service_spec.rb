@@ -61,7 +61,6 @@ RSpec.describe StorageTargets::Service, database: true do
         prefix: "idah",
         organization_ids: [3, 7],
         enabled: true,
-        secret_hint: "-123",
         created_by: 1
       )
       expect(stored_secret(record.id)).to eq(secret)
@@ -139,9 +138,8 @@ RSpec.describe StorageTargets::Service, database: true do
         secret_access_key: "NEW-SECRET-9876"
       ).and_return(nil)
 
-      record = service.update(input({ secret_access_key: "NEW-SECRET-9876" }, id:))
+      service.update(input({ secret_access_key: "NEW-SECRET-9876" }, id:))
 
-      expect(record.secret_hint).to eq("9876")
       expect(stored_secret(id)).to eq("NEW-SECRET-9876")
     end
 

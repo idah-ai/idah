@@ -23,7 +23,6 @@ Sequel.migration do
       # Set right after the insert, by a write that publishes no event, so the
       # secret never travels with the created event.
       column :secret_ciphertext, String, null: true
-      column :secret_hint, String, null: true
 
       column :organization_ids, "integer[]", null: false, default: Sequel.lit("'{}'::integer[]")
 
