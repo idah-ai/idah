@@ -47,6 +47,40 @@ RSpec.describe StorageTarget::Repository, database: true do
     end
   end
 
+  describe "#set_secret!, in the SQL log" do
+    it "never prints the ciphertext, which logs plus the master key would turn back into the secret" do
+      id = create_target
+      log = StringIO.new
+      logger = Logger.new(log)
+      repo = described_class.new(admin_context)
+
+      Verse::Plugin[:sequel].client(:rw) do |db|
+        db.loggers << logger
+        repo.set_secret!(id, ciphertext: "v1:CIPHERTEXT-CANARY:x:y", hint: "9999")
+      ensure
+        db.loggers.delete(logger)
+      end
+
+      expect(log.string).not_to include("CIPHERTEXT-CANARY")
+      expect(repo.secret_ciphertext(id)).to eq("v1:CIPHERTEXT-CANARY:x:y")
+      expect(repo.find!(id).secret_hint).to eq("9999")
+    end
+
+    it "still refuses a target the actor can't update" do
+      id = create_target
+
+      expect {
+        described_class.new(org_owner_context([3])).set_secret!(id, ciphertext: "v1:a:b:c", hint: "x")
+      }.to raise_error(Verse::Error::Unauthorized)
+    end
+
+    it "still raises for an unknown target" do
+      expect {
+        described_class.new(admin_context).set_secret!(UUIDv7.generate, ciphertext: "v1:a:b:c", hint: "x")
+      }.to raise_error(Verse::Error::RecordNotFound)
+    end
+  end
+
   describe "#archive!" do
     it "disables the target, hides it, and publishes a deleted event" do
       id = create_target

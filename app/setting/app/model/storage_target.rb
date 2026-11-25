@@ -131,10 +131,24 @@ module StorageTarget
     # Stores a new encrypted secret. No event: the secret must not travel with
     # one. The service publishes the change through `update!` with
     # `secret_changed` in the metadata.
+    #
+    # The write goes through a bound-parameter statement on the raw connection:
+    # Sequel logs every statement with its values, and the ciphertext in a log
+    # plus the master key would give the secret back. The scope check and the
+    # existence check run through Sequel as usual; they carry no secret. Same
+    # connection, so the write stays in the caller's transaction.
     def set_secret!(id, ciphertext:, hint:)
       with_db_mode :rw do
-        updated = scoped(:update).where(id:).update(secret_ciphertext: ciphertext, secret_hint: hint)
-        raise Verse::Error::RecordNotFound, id if updated.zero?
+        raise Verse::Error::RecordNotFound, id unless scoped(:update).where(id:).count.positive?
+
+        client do |db|
+          db.synchronize do |connection|
+            connection.exec_params(
+              "UPDATE storage_targets SET secret_ciphertext = $1, secret_hint = $2 WHERE id = $3",
+              [ciphertext, hint, id]
+            )
+          end
+        end
       end
     end
 
