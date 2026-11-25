@@ -22,6 +22,7 @@ export interface Refetches {
 
   /** SETTING */
   accountSettings: Refetch;
+  storageTargets: Refetch;
 
   /** SYNC */
   jobs: Refetch;
@@ -80,6 +81,10 @@ export const refetches = writable<Refetches>({
 
   /** SETTING */
   accountSettings: {
+    list: new Date(),
+    get: new Date(),
+  },
+  storageTargets: {
     list: new Date(),
     get: new Date(),
   },

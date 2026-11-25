@@ -35,6 +35,7 @@ export const resources = [
 
   /** SETTINGS */
   "setting:account_settings",
+  "setting:storage_targets",
 
   /** SYNC */
   "sync:jobs",

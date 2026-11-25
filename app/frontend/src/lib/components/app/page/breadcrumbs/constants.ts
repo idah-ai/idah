@@ -4,6 +4,7 @@ import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.s
 export const accountBreadcrumb: PageBreadcrumbItem = { label: "Accounts", href: "/accounts" };
 export const organizationBreadcrumb: PageBreadcrumbItem = { label: "Organizations", href: "/organizations" };
 export const apiKeyBreadcrumb: PageBreadcrumbItem = { label: "API Keys", href: "/api-keys" };
+export const storageTargetBreadcrumb: PageBreadcrumbItem = { label: "Storage Targets", href: "/storage-targets" };
 
 /** DATASETS */
 export const projectBreadcrumb: PageBreadcrumbItem = { label: "Projects", href: "/projects" };
