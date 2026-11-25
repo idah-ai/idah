@@ -494,9 +494,9 @@ module Entry
     end
 
     # Custom sort handler for `total_time_spent` — sums all values in the
-    # `time_tracking` JSONB column.  Delegates every other sort key to `super`
-    # which safely quotes identifiers.  Only the hardcoded CASE expression uses
-    # raw SQL.
+    # `time_tracking` JSONB column.  Non-tts keys are quoted as safe identifiers
+    # (same mechanism as the parent's prepare_ordering).  Only the hardcoded
+    # CASE expression uses raw SQL.  The original sort order is preserved.
     def prepare_ordering(query, sort)
       sort = (sort.is_a?(String) ? sort.split(",") : Array(sort)).dup
 
@@ -505,28 +505,39 @@ module Entry
         return super(query, sort)
       end
 
-      # Apply safe columns through super (quoted identifiers).
-      safe_keys = sort.reject { |x| x.delete_prefix("-") == "total_time_spent" }
-      query = super(query, safe_keys) unless safe_keys.empty?
+      # Build each ORDER BY part in the original sort order — safe identifiers
+      # for non-tts columns, hardcoded CASE expression for tts.
+      parts = sort.map { |x|
+        if x.delete_prefix("-") == "total_time_spent"
+          ascending = !x.start_with?("-")
+          # Hardcoded CASE expression — never user input.
+          ::Sequel.lit(
+            "CASE WHEN entries.time_tracking IS NOT NULL " \
+            "THEN (SELECT SUM((value)::integer) " \
+            "FROM jsonb_each_text(entries.time_tracking)) END " \
+            "#{ascending ? "ASC" : "DESC"} NULLS LAST"
+          )
+        else
+          # Safe: replicate super's quoting — convert to a quoted identifier.
+          column = x.delete_prefix("-")
+          direction = x.start_with?("-") ? :desc : :asc
+          if column.include?(".")
+            tbl, col = column.split(".", 2)
+            ::Sequel.send(direction, ::Sequel.qualify(tbl.to_sym, col.to_sym))
+          else
+            ::Sequel.send(direction, column.to_sym)
+          end
+        end
+      }
 
-      # total_time_spent CASE expression — hardcoded, safe.
-      tts_key = sort.find { |x| x.delete_prefix("-") == "total_time_spent" }
-      ascending = !tts_key.start_with?("-")
-      query = query.order_append(
-        ::Sequel.lit(
-          "CASE WHEN entries.time_tracking IS NOT NULL " \
-          "THEN (SELECT SUM((value)::integer) " \
-          "FROM jsonb_each_text(entries.time_tracking)) END " \
-          "#{ascending ? "ASC" : "DESC"} NULLS LAST"
-        )
-      )
-
-      # Tiebreaker when id isn't explicit.
-      unless sort.any? { |x| x.delete_prefix("-") == "id" }
-        query = query.order_append(::Sequel.desc(::Sequel.qualify(:entries, :id)))
+      # Append -entries.id tiebreaker when total_time_spent is sorted without explicit id.
+      has_id = sort.any? { |x| x.delete_prefix("-") == "id" }
+      has_tts = sort.any? { |x| x.delete_prefix("-") == "total_time_spent" }
+      if has_tts && !has_id
+        parts << ::Sequel.desc(::Sequel.qualify(:entries, :id))
       end
 
-      query
+      query.order(*parts)
     end
 
     private
