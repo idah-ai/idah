@@ -10,19 +10,20 @@
   import { Record } from "@/data/model/Record";
   import { cn } from "@/utils";
 
-  import type { ColumnsSettings, TableData } from "@/components/app/datasource-table/types";
+  import type { ColumnSettings, TableData } from "@/components/app/datasource-table/types";
 
   // Props
   interface Props<T extends Record> {
     tableData: TableData<T>;
-    columns: ColumnsSettings<T>;
+    visibleColumns: [string, ColumnSettings<T>][];
     columnSpan: number;
     isFiltering: boolean;
     selectable?: boolean;
     selectedRecords: T[];
     onToggleRow: (record: T) => void;
   }
-  let { tableData, columns, columnSpan, isFiltering, selectable, selectedRecords, onToggleRow }: Props<T> = $props();
+  let { tableData, visibleColumns, columnSpan, isFiltering, selectable, selectedRecords, onToggleRow }: Props<T> =
+    $props();
 </script>
 
 <TableBody>
@@ -35,42 +36,39 @@
         </TableCell>
       {/if}
 
-      {#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
-        {@const { dataType, clickable, cellComponent: CellComponent, filterOptions, visible } = columnSetting}
+      {#each visibleColumns as [columnKey, columnSetting] (columnKey)}
+        {@const { dataType, clickable, cellComponent: CellComponent, filterOptions } = columnSetting}
         {@const value = record[columnKey] || ""}
 
-        {#if visible}
-          <TableCell
-            class={cn("px-5 py-4", {
-              "cursor-pointer": clickable,
-            })}
-          >
-            {#if CellComponent}
-              <CellComponent {record} contexts={tableData.contexts}></CellComponent>
-            {:else if dataType === "string"}
-              {value}
-            {:else if dataType === "number"}
-              {Number(value)}
-            {:else if dataType === "email"}
-              {#if value}
-                <Copyable title="email" value={value as string}></Copyable>
-              {:else}
-                -
-              {/if}
-            {:else if dataType === "date"}
-              <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="MMM dd, yyyy"></DateText>
-            {:else if dataType === "datetime"}
-              <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="MMM dd, yyyy HH:mm:ss"
-              ></DateText>
-            {:else if dataType === "time"}
-              <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="HH:mm:ss"></DateText>
-            {:else if dataType === "enum"}
-              {filterOptions?.choices
-                ? filterOptions.choices.find((choice) => choice.value === value)?.label || value
-                : value}
+        <TableCell
+          class={cn("px-5 py-4", {
+            "cursor-pointer": clickable,
+          })}
+        >
+          {#if CellComponent}
+            <CellComponent {record} contexts={tableData.contexts}></CellComponent>
+          {:else if dataType === "string"}
+            {value}
+          {:else if dataType === "number"}
+            {Number(value)}
+          {:else if dataType === "email"}
+            {#if value}
+              <Copyable title="email" value={value as string}></Copyable>
+            {:else}
+              -
             {/if}
-          </TableCell>
-        {/if}
+          {:else if dataType === "date"}
+            <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="MMM dd, yyyy"></DateText>
+          {:else if dataType === "datetime"}
+            <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="MMM dd, yyyy HH:mm:ss"></DateText>
+          {:else if dataType === "time"}
+            <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="HH:mm:ss"></DateText>
+          {:else if dataType === "enum"}
+            {filterOptions?.choices
+              ? filterOptions.choices.find((choice) => choice.value === value)?.label || value
+              : value}
+          {/if}
+        </TableCell>
       {/each}
     </TableRow>
   {:else}
