@@ -101,9 +101,7 @@ export function enrichWithTimeData(entry: EntryRecord): EntryWithTimeData {
         // Mark each person who has an open session as unsubmitted
         const openEmails = new Set(people.map((p) => p.who));
         const current = existing.people ?? [{ who: existing.performedBy, seconds: existing.seconds }];
-        const merged = current.map((p) =>
-          openEmails.has(p.who) ? { ...p, unsubmitted: true } : p,
-        );
+        const merged = current.map((p) => (openEmails.has(p.who) ? { ...p, unsubmitted: true } : p));
         for (const p of people) {
           if (!merged.some((m) => m.who === p.who)) merged.push(p);
         }
