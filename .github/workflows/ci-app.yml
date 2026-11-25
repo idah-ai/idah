@@ -357,14 +357,6 @@ jobs:
         run: |
           echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/setting\/+//g')" >> $GITHUB_OUTPUT
 
-      - name: Install dependencies
-        if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
-        run: |
-           sudo apt-get update && sudo apt-get install -y \
-            imagemagick \
-            libmagickcore-dev \
-            libmagickwand-dev
-
       - uses: ruby/setup-ruby@v1
         if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
         with:
@@ -608,13 +600,12 @@ jobs:
         run: |
           echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/media\/+//g')" >> $GITHUB_OUTPUT
 
+      # rmagick compiles against libmagickwand-dev. Cached .debs, see the action.
       - name: Install dependencies
         if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
-        run: |
-          sudo apt-get update && sudo apt-get install -y \
-            imagemagick \
-            libmagickcore-dev \
-            libmagickwand-dev
+        uses: ./.github/actions/apt-install
+        with:
+          packages: libmagickwand-dev
 
       - uses: ruby/setup-ruby@v1
         if: ${{ steps.filter.outputs.ruby == 'true' || steps.filter.outputs.common == 'true' }}
