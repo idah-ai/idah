@@ -10,6 +10,7 @@ import {
   connectionErrorMessages,
   firstSectionWithErrors,
   locationSummary,
+  maskedAccessKeyId,
   maskedSecret,
   normalizePrefix,
   projectStorageLabel,
@@ -252,5 +253,16 @@ describe("stepErrors endpoint", () => {
     expect(stepErrors("location", { name: "Acme", endpoint: "", bucket: "acme" }, true).endpoint).toEqual([
       "Endpoint is required.",
     ]);
+  });
+});
+
+describe("maskedAccessKeyId", () => {
+  it("keeps only the last 4 characters", () => {
+    expect(maskedAccessKeyId("AKIAEXAMPLE8FB1")).toBe("••••8FB1");
+  });
+
+  it("hides a key too short to keep any of it", () => {
+    expect(maskedAccessKeyId("AKIA")).toBe("••••");
+    expect(maskedAccessKeyId(null)).toBe("••••");
   });
 });

@@ -108,6 +108,14 @@ export function storageTargetLocation(target: { bucket?: string | null; prefix?:
   return prefix ? `${target.bucket}/${prefix}` : `${target.bucket ?? ""}`;
 }
 
+/** An access key ID while hidden: only its last 4 characters, which tell keys apart. */
+export function maskedAccessKeyId(accessKeyId: string | null | undefined): string {
+  const id = (accessKeyId ?? "").trim();
+  if (id.length <= 4) return "••••";
+
+  return `••••${id.slice(-4)}`;
+}
+
 /** How the stored secret is shown: never the secret, only its last characters. */
 export function maskedSecret(hint: string | null | undefined): string {
   return hint ? `••••${hint}` : "••••";

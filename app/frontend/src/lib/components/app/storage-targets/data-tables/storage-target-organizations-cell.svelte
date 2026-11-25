@@ -16,6 +16,8 @@
     dataSource={organizationsBackendDataSource}
     displayKey="name"
     maxShown={2}
+    variant="secondary"
+    href={(organization) => `/organizations/${organization.id}/projects`}
   />
 {:else}
   <span class="text-muted-foreground text-sm">None yet</span>

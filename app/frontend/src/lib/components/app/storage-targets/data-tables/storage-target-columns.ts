@@ -40,7 +40,7 @@ export const storageTargetColumns: ColumnsSettings<StorageTargetRecord> = {
     sortable: false,
     filterable: false,
     visible: true,
-    hidable: true,
+    hidable: false,
     cellComponent: StorageTargetSecretCell,
   },
   organization_ids: {
@@ -75,7 +75,7 @@ export const storageTargetColumns: ColumnsSettings<StorageTargetRecord> = {
     sortable: true,
     filterable: false,
     visible: true,
-    hidable: true,
+    hidable: false,
   },
   action: {
     label: "Action",
