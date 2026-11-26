@@ -18,7 +18,7 @@ export function register(driver: IdahDriverV2) {
         longDescription: null,
       },
       do() {
-        driver.commandMgr.undo();
+        driver.command.undo();
       },
       isCombinable() {
         return false;

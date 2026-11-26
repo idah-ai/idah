@@ -4,6 +4,7 @@ class AnnotationsExpo < BaseExpo
   http_path "/annotations"
 
   use_service Annotation::Service
+  use_service annotation_changes: AnnotationChange::Service
 
   desc <<~MD
     Annotations capture labeled data or markups on entries,
@@ -23,6 +24,18 @@ class AnnotationsExpo < BaseExpo
     end
     update
     delete
+  end
+
+  expose on_http(:get, "/:id/versions/:version") do
+    desc "Rebuild an annotation as it was at a past version"
+    input do
+      field :id, String
+      field :version, Integer
+    end
+    output Verse::JsonApi::Util.jsonapi_record(Annotation::Record)
+  end
+  def show_version
+    annotation_changes.rebuild(params[:id], params[:version])
   end
 
   # Offer RPC interface for annotations, less verbose and more convenient for
@@ -121,5 +134,19 @@ class AnnotationsExpo < BaseExpo
       params[:key],
       params[:value]
     )
+  end
+
+  expose json_rpc_method(:write_shapes) do
+    desc "Write or delete several annotation_shape entries of one annotation as one change"
+    input do
+      field(:annotation_id, String)
+      field(:entries, Array) do
+        field(:key, String)
+        field?(:value, [Hash, NilClass]) # nil or omitted (delete) or Hash (upsert), as in write_shape
+      end
+    end
+  end
+  def rpc_write_shapes
+    service.write_shapes(params[:annotation_id], params[:entries])
   end
 end

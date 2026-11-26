@@ -146,7 +146,7 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
       if (options.filters) params["filter"] = filtersToHash(options.filters);
       if (options.fields) params["fields"] = options.fields;
       if (options.included) params["included"] = options.included;
-      if (options.sort) params["sort"] = options.sort.join(",");
+      if (options.sort?.length) params["sort"] = options.sort.join(",");
       if (options.pagination) {
         params["page"] = {
           number: options.pagination.page,
@@ -176,7 +176,13 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
           method: "GET",
         });
 
-        body = await out.json();
+        body = await out.json().catch((error) => {
+          if (!out.ok) throw parseSingleElementError({ status: out.status, errors: [] });
+          throw error;
+        });
+        if (!out.ok || body?.errors) {
+          throw parseSingleElementError({ status: out.status, errors: body?.errors ?? [] });
+        }
 
         if (nextBody.data.length > 0) {
           body.data = nextBody.data.concat(body.data);

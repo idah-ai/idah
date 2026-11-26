@@ -8,10 +8,12 @@ module Resource
     Datasets = "dataset:datasets"
     Entries = "dataset:entries"
     Annotations = "dataset:annotations"
+    AnnotationChanges = "dataset:annotation_changes"
     NoteFeeds = "dataset:note_feeds"
     NoteComments = "dataset:note_comments"
     EntryStats = "dataset:entry_stats"
     LabelConfigTemplates = "dataset:label_config_templates"
+    FeedbackConfigTemplates = "dataset:feedback_config_templates"
     AccessChecks = "dataset:access_checks"
     # rubocop:enable Naming/ConstantName
   end

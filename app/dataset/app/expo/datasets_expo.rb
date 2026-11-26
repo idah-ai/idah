@@ -9,6 +9,22 @@ class DatasetsExpo < BaseExpo
     Datasets contain collections of entries (data items) for annotation within a project.
   MD
 
+  expose on_http(:get, "/delivery_breakdown") do
+    desc "Dataset delivery counts for the viewer's local reporting date"
+    input do
+      field :filter, Schemas::ProjectDatasetFilter
+      field :day, String
+    end
+    output do
+      field :meta, Hash
+    end
+  end
+  def delivery_breakdown
+    breakdown = service.delivery_breakdown(params[:filter], day: params[:day])
+    server.content_type "application/vnd.api+json"
+    server.halt 200, JSON.generate(meta: breakdown)
+  end
+
   json_api Dataset::Record do
     allowed_included "entries", "project"
 
@@ -22,7 +38,9 @@ class DatasetsExpo < BaseExpo
                       :created_at__gte,
                       :created_at__lte,
                       :updated_at__gte,
-                      :updated_at__lte
+                      :updated_at__lte,
+                      :delivery_date__gte,
+                      :delivery_date__lte
     end
 
     show
@@ -52,6 +70,31 @@ class DatasetsExpo < BaseExpo
       with_labels: params[:with_labels],
       with_annotations: params[:with_annotations]
     )
+  end
+
+  # Feedback Configuration Management
+  expose on_http(:patch, "/:id/feedback_configuration") do
+    desc "Update the feedback configuration for a dataset (add/update/delete items)"
+    input do
+      field :id, String
+      field :feedback_configuration, Hash
+    end
+  end
+  def update_feedback_configuration
+    service.update_feedback_configuration(
+      params[:id],
+      params[:feedback_configuration]
+    )
+  end
+
+  expose on_http(:get, "/:id/feedback_keys_in_use") do
+    desc "Return which feedback keys are currently referenced by notes"
+    input do
+      field :id, String
+    end
+  end
+  def feedback_keys_in_use
+    service.feedback_keys_in_use(params[:id])
   end
 
   expose on_resource_event(Resource::Dataset::Datasets, "completed")

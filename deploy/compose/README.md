@@ -63,8 +63,9 @@ tar -xzf idah-<version>.tar.gz && cd idah-<version>
 ```
 
 An install on a machine with no internet also needs the three images
-(`service`, which six of the services run, `media` and `frontend`) mirrored into
-a registry it can reach, with `IDAH_IMAGE_PREFIX` pointed at it.
+(`service`, which five of the services run, `media`, which media and sync run,
+and `frontend`) mirrored into a registry it can reach, with `IDAH_IMAGE_PREFIX`
+pointed at it.
 
 To configure anything before installing, create `.env` first and edit it:
 

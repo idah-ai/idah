@@ -300,7 +300,7 @@ RSpec.describe ProjectMember, database: true do
         )
       end
 
-      it "seeds the actor from a request context without add_event_metadata actor code" do
+      it "seeds the actor from a request context without per-write actor code" do
         actor = Verse::Auth::Context.new(
           ["dataset:project_members.*.*"],
           role: :admin,

@@ -124,7 +124,7 @@ module ProjectMember
 
     def create(attributes)
       with_metadata do
-        add_event_metadata(
+        add_metadata(
           project_id: attributes[:project_id],
           project_member_account_id: attributes[:account_id],
           organization_id: project_organization_id(attributes[:project_id])
@@ -138,7 +138,7 @@ module ProjectMember
       with_metadata do
         membership = membership_and_organization(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: attributes[:project_id] || membership[:project_id],
           project_member_account_id: attributes[:account_id] || membership[:account_id],
           organization_id: membership[:organization_id]
@@ -152,7 +152,7 @@ module ProjectMember
       with_metadata do
         membership = membership_and_organization(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: membership[:project_id],
           project_member_account_id: membership[:account_id],
           organization_id: membership[:organization_id]
@@ -185,10 +185,6 @@ module ProjectMember
       raise Verse::Error::NotFound, "Project member not found: #{id}" if row.nil?
 
       row
-    end
-
-    def add_event_metadata(**opts)
-      add_metadata(**opts)
     end
   end
 end

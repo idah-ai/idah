@@ -5,8 +5,10 @@ import { getTextColor, randomHex } from "@/components/app/color-picker/utils";
 import { showToast } from "@/components/ui/toast/index.svelte";
 import { labelColors } from "@/data/model/dataset/labels";
 import { humanize, slugify } from "@/utils/string";
+import { visibilityReferenceErrors } from "@/components/app/datasets/labels/properties/visibility/visibility-fields";
 
 import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/v2/types";
+import type { VisibilityReferenceError } from "@/components/app/datasets/labels/properties/visibility/visibility-fields";
 
 /**
  * Owns all label-config edit state and mutations, so the same editor can be
@@ -28,6 +30,9 @@ export class LabelConfigController {
   categoryOrderMap: Record<string, number> = {};
 
   hasUnsavedChanges = $derived(JSON.stringify(this.labelConfig) !== this.savedSnapshot);
+  hasVisibilityErrors = $derived(
+    Object.keys(this.labelConfig).some((labelConfigKey) => this.hasConfigVisibilityErrors(labelConfigKey)),
+  );
 
   // ---------------------------------------------------------------- lifecycle
   load(config: IConfig | undefined) {
@@ -76,6 +81,25 @@ export class LabelConfigController {
       }
     });
     return cleaned;
+  }
+
+  getPropertyVisibilityErrors(labelConfigKey: string, propertyId: string): VisibilityReferenceError[] {
+    const config = this.labelConfig[labelConfigKey];
+    const property = config?.properties.find((candidate) => candidate.id === propertyId);
+    if (!config || !property) return [];
+
+    return visibilityReferenceErrors(property.visibility, config.values, config.properties);
+  }
+
+  hasPropertyVisibilityErrors(labelConfigKey: string, propertyId: string): boolean {
+    return this.getPropertyVisibilityErrors(labelConfigKey, propertyId).length > 0;
+  }
+
+  hasConfigVisibilityErrors(labelConfigKey: string): boolean {
+    const config = this.labelConfig[labelConfigKey];
+    return (
+      config?.properties.some((property) => this.hasPropertyVisibilityErrors(labelConfigKey, property.id)) ?? false
+    );
   }
 
   // ------------------------------------------------- order helpers (ex-utils)
@@ -417,21 +441,40 @@ export class LabelConfigController {
   }
 
   // -------------------------------------------------------- property mutations
-  setProperty(property: IConfigProperty) {
+  addProperty(property: IConfigProperty) {
+    this.labelConfig[this.selectedConfigKey].properties.push(property);
+  }
+
+  /**
+   * Update a property. Renaming it sets its id to the slugified name, so a
+   * name that gives another property's id is rejected with an error. Other
+   * edits keep the id, even one that isn't the slug of the name (older
+   * configs). Returns whether the update was applied.
+   */
+  setProperty(property: IConfigProperty): boolean {
     const selected = this.labelConfig[this.selectedConfigKey];
     const idx = selected.properties.findIndex((p) => p.id === property.id);
-    if (idx >= 0) {
-      /** Update existing property */
-      const propertyToCreate = property;
-      /** If user update the label, update the property.id with slugified label */
-      if (propertyToCreate.label !== "New Property") {
-        propertyToCreate.id = slugify(propertyToCreate.label);
+    // Renaming re-renders the property's card under its new id; a late update
+    // from the old card must not add a copy.
+    if (idx < 0) return false;
+
+    const next = { ...property };
+    if (next.label !== selected.properties[idx].label && next.label !== "New Property") {
+      next.id = slugify(next.label.trim());
+      if (!next.id) {
+        showToast.error({ title: "Property name required", description: "Enter a name." });
+        return false;
       }
-      selected.properties[idx] = { ...propertyToCreate };
-    } else {
-      /** Add new property */
-      selected.properties.push(property);
+      if (selected.properties.some((p, i) => i !== idx && p.id === next.id)) {
+        showToast.error({
+          title: "Duplicate property",
+          description: `A property named "${next.label}" already exists.`,
+        });
+        return false;
+      }
     }
+    selected.properties[idx] = next;
+    return true;
   }
 
   removeProperty(propertyId: string) {

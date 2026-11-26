@@ -27,6 +27,8 @@ export const resources = [
   "dataset:projects",
   "dataset:project_members",
   "dataset:label_config_templates",
+  "dataset:feedback_config_templates",
+  "dataset:note_feeds",
 
   /** AUDIT */
   "audit:logs",
@@ -48,4 +50,6 @@ export type ProjectMemberScope = {
   projectMemberRoles: ProjectMemberRole[];
 };
 
-export type Scope = (typeof scopes)[number] | { as_user: ProjectMemberScope };
+export type NamedScope = (typeof scopes)[number];
+
+export type Scope = NamedScope | { as_user: ProjectMemberScope };

@@ -70,7 +70,7 @@ RSpec.describe Medias::Repository, database: true do
   end
 
   describe "actor seeding from a request context" do
-    it "emits the actor on a created event without add_event_metadata actor code" do
+    it "emits the actor on a created event without per-write actor code" do
       captured = []
       allow(Verse).to receive(:publish_resource_event) do |**opts|
         captured << opts[:payload][:metadata]

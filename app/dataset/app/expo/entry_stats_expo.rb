@@ -7,7 +7,11 @@ class EntryStatsExpo < BaseExpo
 
   desc <<~MD
     Read-only access to per-entry computed statistics.
-    Stats are recomputed whenever an entry transitions to submitted or errored.
+    Stats are recomputed:
+      - when an entry transitions to submitted or errored
+      - when the dataset's labeling_configuration is updated (e.g. categories renamed/deleted)
+      - when an annotation is updated on an in-progress entry
+      - when an annotation is deleted or restored
   MD
 
   json_api EntryStat::Record do
@@ -29,5 +33,59 @@ class EntryStatsExpo < BaseExpo
   expose on_resource_event(Resource::Dataset::Entries, "errored")
   def compute_stats_on_entry_errored
     service.recompute(message.content[:resource_id])
+  end
+
+  expose on_resource_event(Resource::Dataset::Datasets, "labeling_configuration_updated")
+  def recompute_stats_on_labeling_config_updated
+    changed_ids = message.content.dig(:metadata, :changed_category_ids) || []
+
+    service.recompute_all_for_dataset(
+      message.content[:resource_id],
+      changed_category_ids: changed_ids
+    )
+  end
+
+  %w[created updated].each do |event|
+    expose on_resource_event(Resource::Dataset::Annotations, event)
+    def compute_stats_on_annotation_changed
+      args = message.content.dig(:args, 0) || {}
+      return unless args.key?(:category) || args.key?(:deleted_at)
+
+      # create doesn't add entry/dataset metadata, so fall back to the args
+      entry_id = message.content.dig(:metadata, :entry_id) || args[:entry_id]
+      dataset_id = message.content.dig(:metadata, :dataset_id) || args[:dataset_id]
+
+      # if undo from deleted annotation, use the old category as the new category
+      new_category = args[:category] || message.content.dig(:metadata, :old_category)
+      # create carries it in the args, update in the metadata
+      shape_type = args[:shape_type] || message.content.dig(:metadata, :shape_type)
+
+      service.recompute_from_annotation(entry_id:, dataset_id:, new_category:, shape_type:)
+    end
+  end
+
+  # A delete can only remove an orphan, which the "entry has orphans" check
+  # in the service already covers, so no category is passed.
+  expose on_resource_event(Resource::Dataset::Annotations, "deleted")
+  def compute_stats_on_annotation_deleted
+    metadata = message.content[:metadata] || {}
+    service.recompute_from_annotation(
+      entry_id: metadata[:entry_id],
+      dataset_id: metadata[:dataset_id],
+      new_category: nil,
+      shape_type: metadata[:shape_type]
+    )
+  end
+
+  # A restore can bring an orphan back, so pass the annotation's category.
+  expose on_resource_event(Resource::Dataset::Annotations, "restored")
+  def compute_stats_on_annotation_restored
+    metadata = message.content[:metadata] || {}
+    service.recompute_from_annotation(
+      entry_id: metadata[:entry_id],
+      dataset_id: metadata[:dataset_id],
+      new_category: metadata[:category],
+      shape_type: metadata[:shape_type]
+    )
   end
 end

@@ -56,7 +56,3 @@ export function getTableState<T extends Record>(dataTableId: string): TableState
     tablePreferences,
   };
 }
-
-export function getDataTableSessionStorage(dataTableId: string): string | null {
-  return sessionStorage.getItem(`${DATA_TABLE_PREFIX}:${dataTableId}`);
-}

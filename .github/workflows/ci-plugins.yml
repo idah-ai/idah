@@ -11,6 +11,8 @@
 #   - pnpm build (production build)
 #
 # Backend checks (if backends/Gemfile.lock exists):
+#   - Ubuntu packages (ImageMagick dev headers, FFmpeg), cached .debs,
+#     see .github/actions/apt-install
 #   - bundle install (with caching via ruby/setup-ruby)
 #   - bundle exec rubocop
 #   - bundle exec rspec
@@ -88,14 +90,14 @@ jobs:
       # -------------------------------------------------------
       # System dependencies
       # -------------------------------------------------------
-      - name: Install system dependencies (ImageMagick & FFmpeg)
+      # One list for every plugin, so they share one cache entry:
+      #   libmagickwand-dev  rmagick compiles against it (idah-image, idah-video)
+      #   ffmpeg             idah-video's processor and frame extractor run it
+      - name: Install system dependencies
         if: ${{ hashFiles(format('plugins/{0}/backends/Gemfile.lock', matrix.plugin)) != '' }}
-        run: |
-          sudo apt-get update && sudo apt-get install -y \
-            imagemagick \
-            libmagickcore-dev \
-            libmagickwand-dev \
-            ffmpeg
+        uses: ./.github/actions/apt-install
+        with:
+          packages: libmagickwand-dev ffmpeg
 
       # -------------------------------------------------------
       # Frontend checks

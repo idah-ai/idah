@@ -15,9 +15,11 @@
 
   // Variables
   const resource: string = OrganizationRecord.type;
-  const filterKey: string = columnSetting.filterOptions?.filterKey || "organization_id";
-  const filterOperation: DataTableColumnFilterOperation = columnSetting.filterOptions?.filterOperation || "in";
-  const filterKeyWithOperation: string = `${filterKey}__${filterOperation}`;
+  const filterKey: string = $derived(columnSetting.filterOptions?.filterKey || "organization_id");
+  const filterOperation: DataTableColumnFilterOperation = $derived(
+    columnSetting.filterOptions?.filterOperation || "in",
+  );
+  const filterKeyWithOperation: string = $derived(`${filterKey}__${filterOperation}`);
 
   // Functions
   function handleFilter(selectedChoices: LabelValue<string | number>[]): void {

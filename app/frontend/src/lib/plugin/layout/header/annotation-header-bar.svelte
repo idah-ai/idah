@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import type { HTMLAttributes } from "svelte/elements";
 
   import Separator from "@/components/ui/separator/separator.svelte";
   import AnnotationHeaderBarActions from "./annotation-header-bar-actions.svelte";
   import AnnotationHeaderBarBackButton from "./annotation-header-bar-back-button.svelte";
-  import AnnotationHeaderBarMediaName from "./annotation-header-bar-media-name.svelte";
+  import AnnotationHeaderBarEntryName from "./annotation-header-bar-entry-name.svelte";
   import AnnotationHeaderBarStateBadge from "./annotation-header-bar-state-badge.svelte";
   import AnnotationHeaderBarTools from "./annotation-header-bar-tools.svelte";
 
@@ -19,12 +20,17 @@
   let { ref = $bindable(null), driver }: WithElementRef<HTMLAttributes<HTMLElement>> & Props = $props();
 
   // Derive note sidebar state from the driver's notesAdapter
-  let noteSidebarOpen = $state(driver.notesAdapter!.noteSidebarOpen);
+  let noteSidebarOpen = $state(untrack(() => driver.notesAdapter!.noteSidebarOpen));
   function onNoteToggle() {
     driver.notesAdapter!.toggleNoteSidebar();
   }
-  driver.notesAdapter!.onNoteSidebarChange((open) => {
-    noteSidebarOpen = open;
+  $effect(() => {
+    const notesAdapter = driver.notesAdapter!;
+    return untrack(() =>
+      notesAdapter.onNoteSidebarChange((open) => {
+        noteSidebarOpen = open;
+      }),
+    );
   });
 </script>
 
@@ -35,8 +41,8 @@
     <AnnotationHeaderBarBackButton {driver} />
 
     <Separator orientation="vertical" />
-    <!-- MEDIA NAME -->
-    <AnnotationHeaderBarMediaName name={driver.media.filename} />
+    <!-- ENTRY NAME -->
+    <AnnotationHeaderBarEntryName name={driver.entryName} />
 
     <AnnotationHeaderBarStateBadge {driver} />
   </div>

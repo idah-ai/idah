@@ -96,6 +96,44 @@ RSpec.describe AnnotationsExpo, type: :exposition, as: :system do
     expect(last_response.status).to eq 204
   end
 
+  describe "show_version (rebuild)" do
+    let(:changes_service) { instance_double(AnnotationChange::Service) }
+
+    let(:versioned_record) do
+      Annotation::Record.new(
+        {
+          id: uuid,
+          entry_id: 1,
+          dataset_id: 1,
+          project_id: 1,
+          shape_type: "bounding-box",
+          shape_args: { "x" => 10, "y" => 20, "width" => 30, "height" => 40 },
+          category: "cat",
+          created_by_email: "user@example.com",
+          created_at: now,
+          updated_at: now,
+          version: 3
+        }
+      )
+    end
+
+    before do
+      allow(AnnotationChange::Service).to receive(:new).and_return(changes_service)
+    end
+
+    it "GET /annotations/:id/versions/:version returns the rebuilt record" do
+      expect(changes_service).to receive(:rebuild).with(uuid, 3).and_return(versioned_record)
+
+      get "/annotations/#{uuid}/versions/3"
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      record = deserialize(body)
+      expect(record.id).to eq uuid
+      expect(record.version).to eq 3
+    end
+  end
+
   describe "JSON-RPC" do
     let(:rpc_endpoint) { "/annotations/_rpc" }
 
@@ -189,6 +227,76 @@ RSpec.describe AnnotationsExpo, type: :exposition, as: :system do
       rpc_call [
         rpc_cmd("show", { id: uuid }),
         rpc_cmd("write_shape", { annotation_id: uuid, key: "tile-0x0", value: { rle: "ALPHA" } }),
+        rpc_cmd("delete", { id: uuid }),
+      ]
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      expect(body.size).to eq(3)
+    end
+
+    it "write_shapes" do
+      expect(service).to receive(:write_shapes).with(
+        uuid,
+        [
+          { key: "tile-0x0", value: { "rle" => "ABC" } },
+          { key: "tile-0x1", value: { "rle" => "DEF" } }
+        ]
+      ).and_return(1)
+
+      rpc_call rpc_cmd(
+        "write_shapes",
+        {
+          annotation_id: uuid,
+          entries: [
+            { key: "tile-0x0", value: { rle: "ABC" } },
+            { key: "tile-0x1", value: { rle: "DEF" } }
+          ]
+        }
+      )
+
+      expect(last_response.status).to eq 200
+    end
+
+    it "write_shapes with a nil value (delete)" do
+      expect(service).to receive(:write_shapes).with(
+        uuid,
+        [{ key: "tile-0x0", value: nil }]
+      ).and_return(0)
+
+      rpc_call rpc_cmd(
+        "write_shapes",
+        { annotation_id: uuid, entries: [{ key: "tile-0x0", value: nil }] }
+      )
+
+      expect(last_response.status).to eq 200
+    end
+
+    it "write_shapes with an omitted value is accepted (value absent)" do
+      expect(service).to receive(:write_shapes).with(
+        uuid,
+        [{ key: "tile-0x0" }]
+      ).and_return(0)
+
+      rpc_call rpc_cmd(
+        "write_shapes",
+        { annotation_id: uuid, entries: [{ key: "tile-0x0" }] }
+      )
+
+      expect(last_response.status).to eq 200
+    end
+
+    it "write_shapes in a batch with other calls" do
+      expect(service).to receive(:show).with(uuid).and_return(annotation_record)
+      expect(service).to receive(:write_shapes).with(
+        uuid,
+        [{ key: "tile-0x0", value: { "rle" => "ALPHA" } }]
+      ).and_return(1)
+      expect(service).to receive(:delete).with(uuid).and_return(true)
+
+      rpc_call [
+        rpc_cmd("show", { id: uuid }),
+        rpc_cmd("write_shapes", { annotation_id: uuid, entries: [{ key: "tile-0x0", value: { rle: "ALPHA" } }] }),
         rpc_cmd("delete", { id: uuid }),
       ]
 

@@ -1,8 +1,8 @@
 {
   "type": "idah-plugin",
   "name": "idah-image",
-  "version": "0.1.0",
-  "idahVersion": "0.1.0",
+  "version": "0.1.2",
+  "idahVersion": "0.1.5",
   "title": "IDAH Image Annotation",
   "description": "A module for annotating image.",
   "repository": {
@@ -37,6 +37,11 @@
         "mask": {
           "label": "Mask",
           "icon": "api/v1/plugins/idah-image/assets/mask-icon.svg"
+        }
+      },
+      "systemShapes": {
+        "done-area": {
+          "label": "Done Area"
         }
       }
     }

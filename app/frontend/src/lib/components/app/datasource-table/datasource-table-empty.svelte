@@ -1,4 +1,4 @@
-<script lang="ts" generics="T extends Record">
+<script lang="ts">
   import { FunnelXIcon, InboxIcon, SearchXIcon } from "@lucide/svelte";
   import { getContext, type Snippet } from "svelte";
 
@@ -7,20 +7,17 @@
   import { TableCell, TableRow } from "@/components/ui/table";
 
   import { getTableState } from "@/components/app/datasource-table/datasource-table.stores.svelte";
-
-  import type { ColumnsSettings } from "@/components/app/datasource-table/types";
-  import type { Record } from "@/data/model/Record";
   import { refetches, type RefetchesKey } from "@/utils/refetch";
 
   // Props
   interface Props {
+    columnSpan: number;
     isFiltering: boolean;
   }
-  let { isFiltering }: Props = $props();
+  let { columnSpan, isFiltering }: Props = $props();
 
   // Contexts
   const datasourceTableId: string = getContext("id");
-  const columns: ColumnsSettings<T> = getContext("columns");
   const dataTableName: string = getContext("dataTableName");
   const refetchKey: RefetchesKey = getContext("refetchKey");
   const addNewRecordButton: Snippet | undefined = getContext("addNewRecordButton");
@@ -40,7 +37,7 @@
 </script>
 
 <TableRow class="h-[50vh] min-h-[50vh]">
-  <TableCell colspan={Object.keys(columns).length}>
+  <TableCell colspan={columnSpan}>
     {#if isFiltering}
       {#if filteredState}
         {@render filteredState()}

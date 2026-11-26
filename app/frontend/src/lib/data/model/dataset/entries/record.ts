@@ -8,12 +8,16 @@ import {
   type EntryPriorityBadgeProps,
   type EntryStatus,
   type EntryStatusBadgeProps,
+  type EntrySummary,
+  type EntryCompletionHistory,
   type EntryWorkflowStep,
 } from "@/data/model/dataset/entries/constants";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
+import { getDeliveryStatusBadge, isOverdue, type DeliveryStatusBadgeProps } from "@/utils/date";
+import { Transformers } from "@/data/model/transformers";
 
 import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
-import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
+import type { RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
 
 @type("dataset:entries")
@@ -31,6 +35,7 @@ export class EntryRecord extends Record {
   @field() public resource!: string;
 
   @field() public name!: string;
+  @field() public delivery_date!: string | null;
 
   @field() public assigned_to_id!: number | null;
   @field() public assigned_to_email!: string | null;
@@ -39,6 +44,12 @@ export class EntryRecord extends Record {
   @field() public reviewed_by_id!: number | null;
   @field() public reviewed_by_email!: string | null;
 
+  @field() public reopened_by_id!: number | null;
+  @field() public reopened_by_email!: string | null;
+
+  @field({ transformer: Transformers.Time })
+  public readonly completed_at!: Date | null;
+
   @field() public created_at!: Date;
   @field() public updated_at!: Date;
 
@@ -46,6 +57,7 @@ export class EntryRecord extends Record {
   @relationship() public assigned_to!: ProjectMemberRecord;
   @relationship() public reviewed_by!: ProjectMemberRecord;
   @relationship() public submitted_by!: ProjectMemberRecord;
+  @relationship() public reopened_by!: ProjectMemberRecord;
 
   public get priorityBadge(): EntryPriorityBadgeProps {
     const defaultBadgeProps: EntryPriorityBadgeProps = {
@@ -60,6 +72,10 @@ export class EntryRecord extends Record {
     return foundEntryPriority ?? defaultBadgeProps;
   }
 
+  public get deliveryStatusBadge(): DeliveryStatusBadgeProps {
+    return getDeliveryStatusBadge(this.delivery_date, this.status === "completed");
+  }
+
   public get statusBadge(): EntryStatusBadgeProps {
     const defaultBadgeProps: EntryStatusBadgeProps = {
       label: "Pending",
@@ -71,6 +87,10 @@ export class EntryRecord extends Record {
 
     return foundEntryStatus ?? defaultBadgeProps;
   }
+
+  public isOverdueOn(today: Date): boolean {
+    return this.status !== "completed" && isOverdue(this.delivery_date || this.dataset?.delivery_date, today);
+  }
 }
 
 export const entriesBasePath: string = `/api/v1/dataset/entries`;
@@ -78,7 +98,44 @@ export const entriesBasePath: string = `/api/v1/dataset/entries`;
 RecordFactory.registerTypes(EntryRecord);
 
 export const entriesBackendDataSource = createBackendDataSource(EntryRecord, entriesBasePath, {
-  select: async (params: { id: string }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+  summary: async (projectId: string, datasetIds: string[]): Promise<EntrySummary> => {
+    const response = await fetch(
+      resourcePath(entriesBasePath, "summary", {
+        filter: { project_id: projectId, ...(datasetIds.length ? { dataset_id: datasetIds } : {}) },
+      }),
+    );
+    const body = await response.json().catch((reason) => {
+      if (!response.ok) throw parseSingleElementError({ status: response.status, errors: [] });
+      throw reason;
+    });
+    if (!response.ok || body?.errors) {
+      throw parseSingleElementError({ status: response.status, errors: body?.errors ?? [] });
+    }
+    if (!body?.meta) throw new Error("Dashboard counts unavailable.");
+    return body.meta;
+  },
+  completionHistory: async (
+    projectId: string,
+    datasetIds: string[],
+    options: { tz: string; from?: string; to?: string },
+  ): Promise<EntryCompletionHistory> => {
+    const response = await fetch(
+      resourcePath(entriesBasePath, "completion_history", {
+        filter: { project_id: projectId, ...(datasetIds.length ? { dataset_id: datasetIds } : {}) },
+        ...options,
+      }),
+    );
+    const body = await response.json().catch((reason) => {
+      if (!response.ok) throw parseSingleElementError({ status: response.status, errors: [] });
+      throw reason;
+    });
+    if (!response.ok || body?.errors) {
+      throw parseSingleElementError({ status: response.status, errors: body?.errors ?? [] });
+    }
+    if (!body?.meta?.daily || body.meta.timezone !== options.tz) throw new Error("Completion counts unavailable.");
+    return body.meta;
+  },
+  select: async (params: { id: string }): Promise<RecordResponse<EntryRecord>> => {
     const res = await fetch(`${entriesBasePath}/${params.id}/select`, {
       method: "GET",
     });
@@ -105,10 +162,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     throw "No data returned";
   },
-  assign: async (params: {
-    id: string;
-    memberAccountId: number;
-  }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+  assign: async (params: { id: string; memberAccountId: number }): Promise<RecordResponse<EntryRecord>> => {
     const res = await fetch(`${entriesBasePath}/${params.id}/assign`, {
       method: "PATCH",
       body: encodeModel(EntryRecord, { attributes: { assigned_to_id: params.memberAccountId } }),
@@ -138,7 +192,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     throw "No data returned";
   },
-  unassign: async (entryId: string): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+  unassign: async (entryId: string): Promise<RecordResponse<EntryRecord>> => {
     const res = await fetch(`${entriesBasePath}/${entryId}/unassign`, {
       method: "PATCH",
     });
@@ -167,6 +221,64 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
     }
 
     throw "No data returned";
+  },
+  reopen: async (entryId: string, targetStep: string): Promise<RecordResponse<EntryRecord>> => {
+    const res = await fetch(`${entriesBasePath}/${entryId}/reopen`, {
+      method: "POST",
+      body: JSON.stringify({
+        data: {
+          attributes: {
+            target_step: targetStep,
+          },
+        },
+      }),
+      headers: { "Content-Type": "application/vnd.api+json" },
+    });
+
+    const body = await res.json();
+
+    // Cache Management
+    const cacheIndexKey = resourcePath(entriesBasePath, null, undefined);
+    // Note: Clear dataset cache as well so the Datasets list reflects the updated status on return.
+    const cacheDatasetIndexKey = resourcePath(datasetBasePath, null, undefined);
+    clearCache(cacheIndexKey);
+    clearCache(cacheDatasetIndexKey);
+
+    if (body && body.errors) {
+      if (body.errors.length > 0) {
+        body.errors.forEach((err: Hash) => {
+          console.error(`Error reopening entry: ${err.title} - ${err.detail}`, err);
+        });
+      }
+
+      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    }
+
+    if (body && body.data) {
+      return Promise.resolve(parseSingleElementReturn<EntryRecord>(body));
+    }
+
+    throw "No data returned";
+  },
+  reopenTargets: async (entryId: string): Promise<string[]> => {
+    const res = await fetch(`${entriesBasePath}/${entryId}/reopen_targets`, {
+      method: "GET",
+    });
+
+    const body = await res.json();
+    const reopenTargets = body?.data?.data;
+
+    if (body && body.errors) {
+      if (body.errors.length > 0) {
+        body.errors.forEach((err: Hash) => {
+          console.error(`Error loading reopen targets: ${err.title} - ${err.detail}`, err);
+        });
+      }
+
+      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    }
+
+    return Array.isArray(reopenTargets) ? (reopenTargets as string[]) : [];
   },
   submit: async (entryId: string, opts?: { approved: boolean }) => {
     const res = await fetch(`${entriesBasePath}/${entryId}/submit`, {
@@ -207,19 +319,26 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
     throw "No data returned";
   },
   /**
-   * Finds the next entry to redirect to after submission.
+   * Claims the next eligible entry before redirecting after submission.
    * Returns the entry ID if found, or null to fall back to default behavior.
    */
-  findNextEntry: async (datasetId: string, submittedEntryWfStep: EntryWorkflowStep) => {
+  selectNextEntry: async (datasetId: string, submittedEntryWfStep: EntryWorkflowStep) => {
     try {
-      const res = await entriesBackendDataSource.list({
-        fields: { [EntryRecord.type]: ["id"] },
-        filters: { dataset_id: datasetId, wf_step: submittedEntryWfStep },
-        noCache: true,
-        pagination: { page: 1, itemsPerPage: 1 },
-        sort: ["assigned_to_id", "id"],
+      // This request claims the entry before navigation; do not cache or retry it automatically.
+      const res = await fetch(`${entriesBasePath}/next`, {
+        method: "POST",
+        body: JSON.stringify({ dataset_id: datasetId, wf_step: submittedEntryWfStep }),
+        headers: { "Content-Type": "application/vnd.api+json" },
       });
-      return res.data.length > 0 ? res.data[0].id : null;
+      const body = await res.json();
+      if (!res.ok || body.errors) return null;
+      if (body.data) {
+        clearCache(resourcePath(entriesBasePath, body.data.id));
+        clearCache(resourcePath(datasetBasePath, datasetId));
+        clearCache(resourcePath(datasetBasePath, null, undefined));
+      }
+      clearCache(resourcePath(entriesBasePath, null, undefined));
+      return body.data?.id ?? null;
     } catch {
       return null;
     }

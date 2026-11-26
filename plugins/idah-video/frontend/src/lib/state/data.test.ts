@@ -1,8 +1,18 @@
 // ---------------------------------------------------------------------------
 // data.spec.ts — Unit tests for the DataStore
 // ---------------------------------------------------------------------------
-import { describe, it, expect, vi } from "vitest";
-import { createDataStore, computeMissingRanges, type DataItem, type RangeFetchFn } from "./data.svelte";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import {
+  createDataStore,
+  createAnnotationStore,
+  computeMissingRanges,
+  getDeletedAnnotation,
+  removeDeletedAnnotation,
+  setDeletedAnnotation,
+  type DataItem,
+  type RangeFetchFn,
+  type AnnotationDriver,
+} from "./data.svelte";
 
 // ─── Test helpers ─────────────────────────────────────────────────────────
 
@@ -318,5 +328,106 @@ describe("CRUD", () => {
     store.clear();
     expect(store.items).toHaveLength(0);
     expect(store.loadedRange).toBeNull();
+  });
+});
+
+// ─── Annotation store ─────────────────────────────────────────────────────
+
+function makeDriver(overrides: Partial<AnnotationDriver> = {}): AnnotationDriver {
+  return {
+    fetch: vi.fn(async () => []),
+    create: vi.fn(async (data) => ({ id: "created", ...data })),
+    update: vi.fn(async () => {}),
+    delete: vi.fn(async () => {}),
+    restore: vi.fn(async () => {}),
+    ...overrides,
+  };
+}
+
+describe("createAnnotationStore", () => {
+  it("restore() inserts the snapshot locally and resolves with it", async () => {
+    const driver = makeDriver();
+    const store = createAnnotationStore(driver);
+
+    const snapshot = {
+      id: "ann-1",
+      shape_type: "idah-video:bounding-box",
+      shape_args: { start: 0, end: 4, frames: [] },
+      category: "test/cat",
+    };
+    const result = await store.restore(snapshot as any);
+
+    expect(driver.restore).toHaveBeenCalledWith("ann-1");
+    expect(result).toEqual(snapshot);
+    expect(store.items.find((i) => i.id === "ann-1")).toEqual(snapshot);
+  });
+});
+
+// ─── Deleted-annotation map ───────────────────────────────────────────────
+
+describe("deleted-annotation map", () => {
+  beforeEach(() => {
+    removeDeletedAnnotation("ann-1");
+  });
+
+  it("set/get/remove round-trips a tombstone", () => {
+    const tomb = { id: "ann-1", shape_type: "idah-video:bounding-box", shape_args: {}, category: "test/cat" };
+    expect(getDeletedAnnotation("ann-1")).toBeUndefined();
+    setDeletedAnnotation(tomb as any);
+    expect(getDeletedAnnotation("ann-1")).toEqual(tomb);
+    removeDeletedAnnotation("ann-1");
+    expect(getDeletedAnnotation("ann-1")).toBeUndefined();
+  });
+
+  it("delete() records the tombstone and restore() clears it", async () => {
+    const ann = {
+      id: "ann-1",
+      shape_type: "idah-video:bounding-box",
+      shape_args: { start: 0, end: 4, frames: [] },
+      category: "test/cat",
+    };
+    const driver = makeDriver();
+    const store = createAnnotationStore(driver);
+    store.upsert(ann as any);
+
+    await store.delete("ann-1");
+    expect(getDeletedAnnotation("ann-1")).toEqual(ann);
+
+    await store.restore(ann as any);
+    expect(getDeletedAnnotation("ann-1")).toBeUndefined();
+  });
+
+  it("restore() keeps the local record restored when the backend fails (onSyncError handles it)", async () => {
+    const ann = {
+      id: "ann-1",
+      shape_type: "idah-video:bounding-box",
+      shape_args: { start: 0, end: 4, frames: [] },
+      category: "test/cat",
+    };
+    const driver = makeDriver({ restore: vi.fn(async () => { throw new Error("offline"); }) });
+    const store = createAnnotationStore(driver);
+    store.upsert(ann as any);
+
+    await store.delete("ann-1");
+    expect(getDeletedAnnotation("ann-1")).toEqual(ann);
+
+    await expect(store.restore(ann as any)).rejects.toThrow("offline");
+    expect(getDeletedAnnotation("ann-1")).toBeUndefined();
+    expect(store.items.find((i) => i.id === "ann-1")).toEqual(ann);
+  });
+
+  it("delete() keeps the tombstone on backend failure (surfaced via onSyncError)", async () => {
+    const ann = {
+      id: "ann-1",
+      shape_type: "idah-video:bounding-box",
+      shape_args: { start: 0, end: 4, frames: [] },
+      category: "test/cat",
+    };
+    const driver = makeDriver({ delete: vi.fn(async () => { throw new Error("offline"); }) });
+    const store = createAnnotationStore(driver);
+    store.upsert(ann as any);
+
+    await expect(store.delete("ann-1")).rejects.toThrow("offline");
+    expect(getDeletedAnnotation("ann-1")).toEqual(ann);
   });
 });

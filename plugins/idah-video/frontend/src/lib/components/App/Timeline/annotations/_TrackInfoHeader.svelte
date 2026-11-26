@@ -1,13 +1,14 @@
 <script lang="ts">
   import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
 
+  import AnnotationsErrorAlertIcon from "$lib/components/App/SelectionPanel/_AnnotationsErrorAlertIcon.svelte";
   import KbdTooltipButton from "$lib/components/ui/Tooltips/KbdTooltipButton.svelte";
 
   import { annotation } from "$lib/state/annotation.svelte";
   import { getDriver } from "$lib/state/driver.svelte";
   import { selection } from "$lib/state/selection.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
-  import { showConfirmDialog } from "$lib/components/App/ConfirmDialog/confirm-dialog";
+  import { showConfirmDeleteAnnotationsDialog } from "$lib/components/App/ConfirmDialog/confirm-delete";
   import { isEditable } from "$lib/state/editor.svelte";
 
   import type { Menus } from "$lib/components/App/ContextMenu/types";
@@ -45,7 +46,9 @@
           icon: Trash2Icon,
           disabled: !isEditable() || isSomeLocked || viewport.isReviewWorkspace,
           onClick: () => {
-            showConfirmDialog({
+            showConfirmDeleteAnnotationsDialog({
+              count: annotations.length,
+              type: "annotation",
               title: "Delete all annotations",
               description: "Are you sure you want to delete all annotations?",
               onConfirm: () => getDriver().command.call("idah-video:annotation.delete-all"),
@@ -64,7 +67,10 @@
   onclick={selection.deselect}
   onkeypress={selection.deselect}
 >
-  <p class="text-xs font-medium">Annotations</p>
+  <div class="flex items-center gap-2">
+    <p class="text-xs font-medium">Annotations</p>
+    <AnnotationsErrorAlertIcon {annotations} />
+  </div>
 
   <div class="ml-auto flex items-center">
     {#each Object.entries(menus.actions.items) as [key, { label, icon, disabled, onClick }] (key)}

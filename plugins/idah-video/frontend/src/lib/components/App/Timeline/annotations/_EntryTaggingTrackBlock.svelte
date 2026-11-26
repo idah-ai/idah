@@ -14,9 +14,7 @@
   let { item }: Props = $props();
 
   let { startRange, endRange, rawData } = $derived(item);
-  let entryRootAnnotation = $derived(
-    (rawData as { annotations?: IVideoAnnotationRecord[] }).annotations?.[0],
-  );
+  let entryRootAnnotation = $derived((rawData as { annotations?: IVideoAnnotationRecord[] }).annotations?.[0]);
   const rangeSize = $derived(Number(endRange - startRange) + 1);
 
   let entryRootColor = $derived.by(() =>

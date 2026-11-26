@@ -25,7 +25,7 @@
 
           if (plugins.length == 1)
             goto(
-              resolve("/entries/[entryId]/plugin/[pluginId]", {
+              resolve("/(protected)/entries/[entryId]/plugin/[pluginId]", {
                 entryId: entry.data.id,
                 pluginId: plugins[0],
               }),
