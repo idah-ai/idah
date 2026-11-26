@@ -351,7 +351,7 @@ RSpec.describe Entry, database: true do
 
         it "respects an explicit id sort alongside total_time_spent" do
           # Explicit ascending id alongside total_time_spent
-          result = subject.index({}, sort: ["total_time_spent", "id"])
+          result = subject.index({ dataset_id: [dataset_id] }, sort: ["total_time_spent", "id"])
           ids = result.map(&:id)
           expect(ids).to eq(ids.sort)
         end

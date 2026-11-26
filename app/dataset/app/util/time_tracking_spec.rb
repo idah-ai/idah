@@ -417,7 +417,13 @@ RSpec.describe TimeTracking do
       project_repo.create(name: "P", description: "", organization_id: 1, created_by_email: "t@t.com")
     end
     let!(:dataset_id) do
-      dataset_repo.create(modality: "image", labels: [], labeling_configuration: {}, workflow_configuration: {}, project_id:)
+      dataset_repo.create(
+        modality: "image",
+        labels: [],
+        labeling_configuration: {},
+        workflow_configuration: {},
+        project_id:
+      )
     end
     let!(:entry_id) do
       entry_repo.create(priority: 1, wf_step: "annotate", status: "in_progress", project_id:, dataset_id:)
@@ -425,10 +431,10 @@ RSpec.describe TimeTracking do
 
     before do
       # Insert finalized work-time rows directly
-      row_id = work_repo.upsert_open_row(entry_id, 10, "annotate", Time.utc(2026, 11, 3, 10, 30, 0), "alice@test.com")
+      work_repo.upsert_open_row(entry_id, 10, "annotate", Time.utc(2026, 11, 3, 10, 30, 0), "alice@test.com")
       work_repo.finalize_session(work_repo.table.where(entry_id:, account_id: 10).first[:id], 120)
 
-      row_id = work_repo.upsert_open_row(entry_id, 11, "annotate", Time.utc(2026, 11, 3, 10, 30, 0), "bob@test.com")
+      work_repo.upsert_open_row(entry_id, 11, "annotate", Time.utc(2026, 11, 3, 10, 30, 0), "bob@test.com")
       work_repo.finalize_session(work_repo.table.where(entry_id:, account_id: 11).first[:id], 200)
 
       # A finalized review row
@@ -457,4 +463,3 @@ RSpec.describe TimeTracking do
     end
   end
 end
-
