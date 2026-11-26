@@ -91,7 +91,9 @@
                         <span>Unsubmitted</span>
                         {#if step.seconds > 0}
                           <br />
-                          <span class="text-muted-foreground text-[11px]">(with {formatSeconds(step.seconds)} submitted before)</span>
+                          <span class="text-muted-foreground text-[11px]"
+                            >(with {formatSeconds(step.seconds)} submitted before)</span
+                          >
                         {/if}
                       {:else}
                         <span class="tabular-nums">{formatSeconds(step.seconds)}</span>
