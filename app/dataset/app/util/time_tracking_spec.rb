@@ -405,4 +405,56 @@ RSpec.describe TimeTracking do
       end
     end
   end
+
+  describe ".recompute_entry_cache", database: true do
+    let(:system_ctx) { Verse::Auth::Context[:system] }
+    let(:entry_repo) { Entry::Repository.new(system_ctx) }
+    let(:project_repo) { Project::Repository.new(system_ctx) }
+    let(:dataset_repo) { Dataset::Repository.new(system_ctx) }
+    let(:work_repo) { EntryWorkTime::Repository.new(system_ctx) }
+
+    let!(:project_id) do
+      project_repo.create(name: "P", description: "", organization_id: 1, created_by_email: "t@t.com")
+    end
+    let!(:dataset_id) do
+      dataset_repo.create(modality: "image", labels: [], labeling_configuration: {}, workflow_configuration: {}, project_id:)
+    end
+    let!(:entry_id) do
+      entry_repo.create(priority: 1, wf_step: "annotate", status: "in_progress", project_id:, dataset_id:)
+    end
+
+    before do
+      # Insert finalized work-time rows directly
+      row_id = work_repo.upsert_open_row(entry_id, 10, "annotate", Time.utc(2026, 11, 3, 10, 30, 0), "alice@test.com")
+      work_repo.finalize_session(work_repo.table.where(entry_id:, account_id: 10).first[:id], 120)
+
+      row_id = work_repo.upsert_open_row(entry_id, 11, "annotate", Time.utc(2026, 11, 3, 10, 30, 0), "bob@test.com")
+      work_repo.finalize_session(work_repo.table.where(entry_id:, account_id: 11).first[:id], 200)
+
+      # A finalized review row
+      work_repo.upsert_open_row(entry_id, 10, "review", Time.utc(2026, 11, 3, 11, 0, 0), "alice@test.com")
+      work_repo.finalize_session(work_repo.table.where(entry_id:, account_id: 10, wf_step: "review").first[:id], 60)
+
+      # An open (unsubmitted) session — seconds = 0, not counted
+      work_repo.upsert_open_row(entry_id, 10, "annotate", Time.utc(2026, 11, 3, 12, 0, 0), "alice@test.com")
+    end
+
+    it "sums finalized seconds per step into time_tracking JSONB" do
+      described_class.recompute_entry_cache(entry_repo, entry_id)
+
+      entry = entry_repo.find!(entry_id)
+      expect(entry.time_tracking).to eq({ annotate: 320, review: 60 })
+    end
+
+    it "sets time_tracking to nil when no finalized rows exist" do
+      # Clean up all rows
+      work_repo.table.where(entry_id:).delete
+
+      described_class.recompute_entry_cache(entry_repo, entry_id)
+
+      entry = entry_repo.find!(entry_id)
+      expect(entry.time_tracking).to be_nil
+    end
+  end
 end
+
