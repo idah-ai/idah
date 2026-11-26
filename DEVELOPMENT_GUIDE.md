@@ -603,10 +603,12 @@ and the service reports the defaults above.
 
 Services call each other through nginx, at `/api/v1/<service>`, never through
 the public URL: inside a container `localhost` is the container itself, and a
-public domain may not resolve or route from there. Development sets
-`IDAH_INTERNAL_URL=http://nginx:8081` in each service's `.env.development`
-(8081 is an internal plain-HTTP port on the dev nginx); a deployment sets
-`http://nginx`. Tests leave it unset, so the client falls back to `IDAH_URL`,
+public domain may not resolve or route from there. Both development
+(each service's `.env.development`) and the compose deployment set
+`IDAH_INTERNAL_URL=http://nginx:8081`: 8081 is an internal plain-HTTP port on
+nginx that is never published. Routes meant for the services alone, such as a
+storage target's credentials (`/api/v1/setting/storage_targets/:id/_credentials`),
+answer only there and return 404 on the public ports. Tests leave it unset, so the client falls back to `IDAH_URL`,
 which the specs stub.
 
 To check a service can reach the others, logging in to iam with its own account:

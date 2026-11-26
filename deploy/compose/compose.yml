@@ -64,7 +64,9 @@ x-service-env: &service-env
   IDAH_URL: ${IDAH_URL:?set IDAH_URL to the public URL of this install}
   # Services call each other through nginx on this network, not through the
   # public URL, which may not resolve (or may be `localhost`) inside a container.
-  IDAH_INTERNAL_URL: http://nginx
+  # Port 8081 is nginx's internal port: never published, and the only one that
+  # serves the routes meant for the services alone.
+  IDAH_INTERNAL_URL: http://nginx:8081
   PGPASSWORD: ${POSTGRES_PASSWORD:?run install.sh to generate secrets}
   # IDAH_CA_CERT: extra certificate authorities (config/certs/ca.pem, mounted at
   # /certs) for TLS to your own servers. Public CAs stay trusted.
