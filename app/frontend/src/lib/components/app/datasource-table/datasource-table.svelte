@@ -59,7 +59,6 @@
   // Contexts: table configuration, fixed for the lifetime of this table instance.
   untrack(() => {
     setContext("id", id);
-    setContext("columns", _columns);
     setContext("dataTableName", dataTableName);
     setContext("refetchKey", refetchKey);
     setContext("addNewRecordButton", addNewRecordButton);
@@ -88,6 +87,8 @@
 
   // Local copy so column visibility can be toggled.
   let columns = $state(untrack(() => _columns));
+  let visibleColumns = $derived(Object.entries(columns).filter(([, column]) => column.visible));
+  let columnSpan = $derived(Math.max(1, visibleColumns.length + (selectable ? 1 : 0)));
   let selectedRecords = $state<T[]>([]);
   let selectAll: boolean = $derived(selectedRecords.length === tableData.response.data.length);
   let haveSomeHidableColumns: boolean = $derived(Object.values(columns).some((column) => column.hidable));
@@ -362,41 +363,47 @@
             </TableHead>
           {/if}
 
-          {#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
-            {@const { label, align, filterable, sortable, visible } = columnSetting}
-            {#if visible}
-              <TableHead
-                class={cn(
-                  "bg-primary/10  last:rounded-tr-md",
-                  align ? `text-${align}` : "text-left",
-                  selectable ? "" : "first:rounded-tl-md",
-                )}
-              >
-                {#if !filterable && !sortable}
-                  <DataTableHeadLabel class="px-4">{label}</DataTableHeadLabel>
-                {:else}
-                  <DataTableHeadOptions
-                    {tableData}
-                    {columnKey}
-                    {columnSetting}
-                    {tablePreferences}
-                    onFilter={filterDataSource}
-                    onSort={sortDataSource}
-                    onHide={hideColumn}
-                  />
-                {/if}
-              </TableHead>
-            {/if}
+          {#each visibleColumns as [columnKey, columnSetting] (columnKey)}
+            {@const { label, align, filterable, sortable } = columnSetting}
+            <TableHead
+              class={cn(
+                "bg-primary/10  last:rounded-tr-md",
+                align ? `text-${align}` : "text-left",
+                selectable ? "" : "first:rounded-tl-md",
+              )}
+            >
+              {#if !filterable && !sortable}
+                <DataTableHeadLabel class="px-4">{label}</DataTableHeadLabel>
+              {:else}
+                <DataTableHeadOptions
+                  {tableData}
+                  {columnKey}
+                  {columnSetting}
+                  {tablePreferences}
+                  onFilter={filterDataSource}
+                  onSort={sortDataSource}
+                  onHide={hideColumn}
+                />
+              {/if}
+            </TableHead>
           {/each}
         </TableRow>
       </TableHeader>
 
       {#if tableData.status === "loading"}
-        <DataTableLoading />
+        <DataTableLoading {columnSpan} />
       {:else if tableData.status === "loaded"}
-        <DataTableBody {tableData} {columns} {isFiltering} {selectable} {selectedRecords} onToggleRow={toggleRow} />
+        <DataTableBody
+          {tableData}
+          {visibleColumns}
+          {columnSpan}
+          {isFiltering}
+          {selectable}
+          {selectedRecords}
+          onToggleRow={toggleRow}
+        />
       {:else}
-        <DataTableError />
+        <DataTableError {columnSpan} />
       {/if}
     </Table>
   </DataTableContent>
