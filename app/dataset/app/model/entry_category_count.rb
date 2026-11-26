@@ -58,19 +58,27 @@ module EntryCategoryCount
       grouped(scope, group_by:, category:)
         .group(*(group_by == "category" ? [:category] : [GROUP_COLUMN.fetch(group_by), :category]))
         .select(*(group_by == "category" ? [:category] : [GROUP_COLUMN.fetch(group_by), :category]),
-                Sequel.function(:sum, :count).as(:annotation_count)).order(*(group_by == "category" ? [:category] : [GROUP_COLUMN.fetch(group_by), :category])).all
+                Sequel.function(
+                  :sum,
+                  :count
+                ).as(:annotation_count)).order(*(if group_by == "category"
+                                                   [:category]
+                                                 else
+                                                   [GROUP_COLUMN.fetch(group_by),
+                                                    :category]
+                                                 end)).all
     end
 
     def totals(scope, group_by:)
       column = GROUP_COLUMN.fetch(group_by)
       grouped(scope, group_by:).group(column).select(column, Sequel.function(:sum, :count).as(:annotation_count))
-                            .order(column).all
+                               .order(column).all
     end
 
-    def group_ids(scope, group_by:, category: nil, number:, size:)
+    def group_ids(scope, group_by:, number:, size:, category: nil)
       column = GROUP_COLUMN.fetch(group_by)
       grouped(scope, group_by:, category:).select(column).distinct.order(column)
-        .limit(size + 1, (number - 1) * size).select_map(column)
+                                          .limit(size + 1, (number - 1) * size).select_map(column)
     end
 
     private

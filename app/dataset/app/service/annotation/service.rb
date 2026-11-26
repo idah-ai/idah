@@ -6,17 +6,26 @@ module Annotation
   class Service < Verse::Service::Base
     include CategoryCounts::Query
 
-    use annotations: Annotation::Repository, entries: Entry::Repository,
-        projects: Project::Repository, datasets: Dataset::Repository,
+    use annotations: Annotation::Repository,
+        entries: Entry::Repository,
+        projects: Project::Repository,
+        datasets: Dataset::Repository,
         category_count_rows: EntryCategoryCount::Repository
 
     def category_counts(filters = {}, group_by: "category", page: {})
       scope = count_scope(filters, group_by:, page:, kind: :category)
       scope, more = count_page(scope, group_by:, category: scope[:category])
       observed = category_count_rows.category_totals(scope, group_by:, category: scope[:category])
-      configuration_ids = group_by == "dataset" && scope[:page_ids] ? scope[:page_ids] : scope[:configuration_dataset_ids]
-      configured = datasets.configured_categories(project_id: scope[:project_id], dataset_ids: configuration_ids,
-                                                   by_dataset: %w[dataset entry].include?(group_by))
+      configuration_ids = if group_by == "dataset" && scope[:page_ids]
+                            scope[:page_ids]
+                          else
+                            scope[:configuration_dataset_ids]
+                          end
+      configured = datasets.configured_categories(
+        project_id: scope[:project_id],
+        dataset_ids: configuration_ids,
+        by_dataset: %w[dataset entry].include?(group_by)
+      )
       labels = configured.group_by { |row| row[:category] }
       entry_datasets = if group_by == "entry"
                          ids = observed.map { |row| row[:entry_id] }.uniq
@@ -44,11 +53,13 @@ module Annotation
           next if rows_by_category.key?(category) || (scope[:category] && scope[:category] != category)
 
           configured_label = matching.map { |item| item[:label] }.uniq
-          rows << CategoryCount::Record.new({
-            id: "#{scope[:project_id]}:#{Digest::SHA256.hexdigest(category)}", category:,
-            label: configured_label.length == 1 ? configured_label.first : category,
-            configured: true, annotation_count: 0
-          })
+          rows << CategoryCount::Record.new(
+            {
+              id: "#{scope[:project_id]}:#{Digest::SHA256.hexdigest(category)}", category:,
+              label: configured_label.length == 1 ? configured_label.first : category,
+              configured: true, annotation_count: 0
+            }
+          )
         end
       end
       [rows.sort_by { |row| [row.category, row.dataset_id.to_s, row.entry_id.to_s] }, more]
@@ -69,8 +80,10 @@ module Annotation
               counts.keys
             end
       [ids.map do |id|
-        TotalCategoryCount::Record.new({ id:, "#{group_by}_id".to_sym => id,
-                                         annotation_count: counts.fetch(id, 0) })
+        TotalCategoryCount::Record.new(
+          { id:, "#{group_by}_id".to_sym => id,
+            annotation_count: counts.fetch(id, 0) }
+        )
       end, more]
     end
 

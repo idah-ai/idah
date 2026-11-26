@@ -40,8 +40,13 @@ class AnnotationsExpo < BaseExpo
 
   def category_count_response(rows, type, more)
     server.content_type "application/vnd.api+json"
-    server.halt 200, JSON.generate(data: rows.map { |row| { type:, id: row.id, attributes: row.to_h.except(:id).compact } },
-                                   meta: { more: })
+    server.halt 200,
+                JSON.generate(
+                  data: rows.map { |row|
+                    { type:, id: row.id, attributes: row.to_h.except(:id).compact }
+                  },
+                  meta: { more: }
+                )
   end
 
   json_api Annotation::Record do

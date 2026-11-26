@@ -51,12 +51,13 @@ module CategoryCounts
         available = datasets.scoped(:read).where(project_id:, id: ids[:dataset_id]).select_map(:id).map(&:to_s)
         invalid.call unless available.length == ids[:dataset_id].length
       end
-      if ids[:entry_id] && ids[:dataset_id]
-        invalid.call unless rows.all? { |row| ids[:dataset_id].include?(row[:dataset_id].to_s) }
+      if ids[:entry_id] && ids[:dataset_id] && !rows.all? { |row| ids[:dataset_id].include?(row[:dataset_id].to_s) }
+        invalid.call
       end
+      paged = %w[dataset entry].include?(group_by) && !ids[group_by == "dataset" ? :dataset_id : :entry_id]
       { project_id:, dataset_ids: ids[:dataset_id], entry_ids: ids[:entry_id],
         configuration_dataset_ids: ids[:entry_id] ? rows.map { |row| row[:dataset_id].to_s }.uniq : ids[:dataset_id],
-        category:, number:, size:, paged: %w[dataset entry].include?(group_by) && !ids[group_by == "dataset" ? :dataset_id : :entry_id] }
+        category:, number:, size:, paged: }
     end
   end
 end
