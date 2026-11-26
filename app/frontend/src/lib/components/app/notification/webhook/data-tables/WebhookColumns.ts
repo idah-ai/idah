@@ -1,7 +1,6 @@
 import FilterByWebhookEvents from "@/components/app/notification/webhook/data-tables/filters/_FilterByWebhookEvents.svelte";
 import WebhookEnabledCell from "@/components/app/notification/webhook/data-tables/_WebhookEnabledCell.svelte";
 import WebhookEventTypesCell from "@/components/app/notification/webhook/data-tables/_WebhookEventTypesCell.svelte";
-import WebhookNameCell from "@/components/app/notification/webhook/data-tables/_WebhookNameCell.svelte";
 import WebhookRowActionCell from "@/components/app/notification/webhook/data-tables/_WebhookRowActionCell.svelte";
 import WebhookUrlCell from "@/components/app/notification/webhook/data-tables/_WebhookUrlCell.svelte";
 
@@ -23,7 +22,6 @@ export const webhookColumns: ColumnsSettings<WebhookRecord> = {
     },
     visible: true,
     hidable: false,
-    cellComponent: WebhookNameCell,
   },
   url: {
     label: "URL",
