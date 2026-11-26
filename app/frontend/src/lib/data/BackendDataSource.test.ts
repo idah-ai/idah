@@ -1,15 +1,15 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createBackendDataSource, encodeModel } from "./BackendDataSource";
 import { clearCache } from "./Cache";
 import { Record, RecordFactory, field, type } from "./model/Record";
 
 const TransformerTest = {
-  from(value: any) {
+  from(value: string) {
     return value && value + "from";
   },
-  to(value: any) {
+  to(value: Date | string) {
     return value && value + "to";
-  }
+  },
 };
 
 @type("test/backend_data_source")
@@ -26,8 +26,8 @@ describe(encodeModel, () => {
   it("simple", () => {
     const out = encodeModel(TestRecord, {
       attributes: {
-        foo: "bar"
-      }
+        foo: "bar",
+      },
     });
     expect(out).toBe('{"data":{"type":"test/backend_data_source","attributes":{"foo":"bar"}}}');
   });
@@ -35,8 +35,8 @@ describe(encodeModel, () => {
   it("with transformer", () => {
     const out = encodeModel(TestRecord, {
       attributes: {
-        transformed: "bar"
-      }
+        transformed: "bar",
+      },
     });
     expect(out).toBe('{"data":{"type":"test/backend_data_source","attributes":{"transformed":"barto"}}}');
   });
@@ -44,8 +44,8 @@ describe(encodeModel, () => {
   it("with key", () => {
     const out = encodeModel(TestRecord, {
       attributes: {
-        camelCase: "bar"
-      }
+        camelCase: "bar",
+      },
     });
     expect(out).toBe('{"data":{"type":"test/backend_data_source","attributes":{"under_score":"bar"}}}');
   });
@@ -54,8 +54,8 @@ describe(encodeModel, () => {
     const out = encodeModel(TestRecord, {
       attributes: {
         id: "1",
-        foo: "bar"
-      }
+        foo: "bar",
+      },
     });
     expect(out).toBe('{"data":{"type":"test/backend_data_source","id":"1","attributes":{"foo":"bar"}}}');
   });
@@ -63,15 +63,23 @@ describe(encodeModel, () => {
 
 describe(createBackendDataSource, () => {
   const fetch = vi.fn();
-  global.fetch = <any>fetch;
-
   const ds = createBackendDataSource(TestRecord, "http://example.tld/test_records");
+
+  beforeEach(() => {
+    clearCache(ds.basePath);
+    fetch.mockReset();
+    vi.stubGlobal("fetch", fetch);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   describe("with custom method", () => {
     const ds = createBackendDataSource(TestRecord, "http://example.tld/test_records", {
       customMethod() {
         return "custom";
-      }
+      },
     });
 
     it("simple", () => {
@@ -90,13 +98,13 @@ describe(createBackendDataSource, () => {
               foo: "foo1",
               bar: "bar1",
               under_score: "camelCase1",
-              transformed: "transformed1"
-            }
-          }
+              transformed: "transformed1",
+            },
+          },
         }),
         json() {
           return JSON.parse(this.body);
-        }
+        },
       });
     };
 
@@ -124,8 +132,8 @@ describe(createBackendDataSource, () => {
                 foo: "foo1",
                 bar: "bar1",
                 under_score: "camelCase1",
-                transformed: "transformed1"
-              }
+                transformed: "transformed1",
+              },
             },
             {
               type: "test/backend_data_source",
@@ -134,11 +142,11 @@ describe(createBackendDataSource, () => {
                 foo: "foo2",
                 bar: "bar2",
                 under_score: "camelCase2",
-                transformed: "transformed2"
-              }
-            }
-          ]
-        })
+                transformed: "transformed2",
+              },
+            },
+          ],
+        }),
       );
     };
 
@@ -167,8 +175,8 @@ describe(createBackendDataSource, () => {
 
       await ds.list({
         filters: {
-          id: "2"
-        }
+          id: "2",
+        },
       });
 
       expect(fetch).toHaveBeenCalledWith("http://example.tld/test_records?filter%5Bid%5D=2", { method: "GET" });
@@ -179,8 +187,8 @@ describe(createBackendDataSource, () => {
 
       await ds.list({
         filters: {
-          id: "2"
-        }
+          id: "2",
+        },
       });
 
       expect(fetch).toHaveBeenCalledWith("http://example.tld/test_records?filter%5Bid%5D=2", { method: "GET" });
@@ -191,13 +199,13 @@ describe(createBackendDataSource, () => {
 
       await ds.list({
         filters: {
-          id__in: ["1", "2"]
-        }
+          id__in: ["1", "2"],
+        },
       });
 
       expect(fetch).toHaveBeenCalledWith(
         "http://example.tld/test_records?filter%5Bid__in%5D%5B%5D=1&filter%5Bid__in%5D%5B%5D=2",
-        { method: "GET" }
+        { method: "GET" },
       );
     });
 
@@ -205,28 +213,31 @@ describe(createBackendDataSource, () => {
       mockList();
 
       await ds.list({
-        sort: ["-id", "foo"]
+        sort: ["-id", "foo"],
       });
 
       expect(fetch).toHaveBeenCalledWith("http://example.tld/test_records?sort=-id%2Cfoo", {
-        method: "GET"
+        method: "GET",
       });
     });
 
-    it("loads the requested page with its metadata", async () => {
-      const paged = createBackendDataSource(TestRecord, "http://example.tld/paged_records");
+    it("caches a successful page with its metadata", async () => {
+      const options = { pagination: { page: 2, itemsPerPage: 10 }, count: true };
       fetch.mockResolvedValueOnce(Response.json({ data: [], meta: { count: 12 } }));
 
-      await expect(paged.list({ pagination: { page: 2, itemsPerPage: 10 }, count: true })).resolves.toEqual({
+      await expect(ds.list(options)).resolves.toEqual({
         data: [],
-        meta: { count: 12 }
+        meta: { count: 12 },
       });
       const [url] = fetch.mock.lastCall!;
       expect(Object.fromEntries(new URL(url).searchParams)).toEqual({
         "page[number]": "2",
         "page[size]": "10",
-        count: "true"
+        count: "true",
       });
+
+      await ds.list(options);
+      expect(fetch).toHaveBeenCalledTimes(1);
     });
 
     it.each([
@@ -234,30 +245,25 @@ describe(createBackendDataSource, () => {
       { status: 502, body: "<h1>Bad Gateway</h1>", message: "HTTP 502" },
       { status: 200, body: '{"data":{}}', message: "valid collection" },
       { status: 200, body: '{"data":[null]}', message: "valid collection" },
-      { status: 200, body: "<h1>Unexpected HTML</h1>", message: "valid collection" }
+      { status: 200, body: "<h1>Unexpected HTML</h1>", message: "valid collection" },
     ])("rejects invalid collections ($status $body) and can reload", async ({ status, body, message }) => {
-      const collection = createBackendDataSource(TestRecord, "http://example.tld/error_records");
       fetch
         .mockResolvedValueOnce(new Response(body, { status }))
         .mockResolvedValueOnce(Response.json({ data: [], meta: { count: 0 } }));
-      const callsBefore = fetch.mock.calls.length;
 
-      await expect(collection.list()).rejects.toThrow(message);
-      await expect(collection.list()).resolves.toEqual({ data: [], meta: { count: 0 } });
-      await expect(collection.list()).resolves.toEqual({ data: [], meta: { count: 0 } });
-      expect(fetch.mock.calls).toHaveLength(callsBefore + 2);
-      clearCache(collection.basePath);
+      await expect(ds.list()).rejects.toThrow(message);
+      await expect(ds.list()).resolves.toEqual({ data: [], meta: { count: 0 } });
+      expect(fetch).toHaveBeenCalledTimes(2);
     });
 
     it("preserves JSON:API errors and retries instead of caching them", async () => {
-      const collection = createBackendDataSource(TestRecord, "http://example.tld/json_api_errors");
       const errors = [{ status: "502", title: "Bad Gateway" }];
       fetch
         .mockResolvedValueOnce(Response.json({ errors }, { status: 502 }))
         .mockResolvedValueOnce(Response.json({ data: [] }));
 
-      await expect(collection.list()).rejects.toEqual({ status: 502, errors });
-      await expect(collection.list()).resolves.toMatchObject({ data: [] });
+      await expect(ds.list()).rejects.toEqual({ status: 502, errors });
+      await expect(ds.list()).resolves.toMatchObject({ data: [] });
     });
   });
 
@@ -280,19 +286,19 @@ describe(createBackendDataSource, () => {
               foo: "foo1",
               bar: "bar1",
               under_score: "camelCase1",
-              transformed: "transformed1"
-            }
-          }
+              transformed: "transformed1",
+            },
+          },
         }),
         json() {
           return JSON.parse(this.body);
-        }
+        },
       });
 
       const result = await ds.update("1", {
         attributes: {
-          foo: "bar"
-        }
+          foo: "bar",
+        },
       });
       expect(result.data.id).toBe("1");
     });

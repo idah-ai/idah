@@ -5,7 +5,6 @@ import type { WebhookCallHttpStatus } from "@/data/model/notification/webhooks/c
 export const fallbackWebhookHttpStatus: WebhookCallHttpStatus = {
   label: "No response",
   value: "unknown",
-  success: null,
   bgColor: "gray",
 };
 
@@ -15,7 +14,6 @@ export const webhookCallHttpStatuses = new SvelteMap<string, WebhookCallHttpStat
     {
       label: "Success",
       value: "completed",
-      success: true,
       bgColor: "green",
     },
   ],
@@ -24,10 +22,9 @@ export const webhookCallHttpStatuses = new SvelteMap<string, WebhookCallHttpStat
     {
       label: "Error",
       value: "errored",
-      success: false,
       bgColor: "red",
     },
   ],
-  ["pending", { label: "Pending", value: "pending", success: null, bgColor: "gray" }],
-  ["running", { label: "Running", value: "running", success: null, bgColor: "blue" }],
+  ["pending", { label: "Pending", value: "pending", bgColor: "gray" }],
+  ["running", { label: "Running", value: "running", bgColor: "blue" }],
 ]);

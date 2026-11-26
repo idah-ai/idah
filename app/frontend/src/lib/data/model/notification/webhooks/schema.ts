@@ -5,7 +5,7 @@ export const webhookSchema = z.object({
   url: z
     .string("Webhook URL is required.")
     .min(1, "Webhook URL is required.")
-    .pipe(z.url({ protocol: /^https?$/, error: "Webhook URL must be a valid HTTP or HTTPS URL." }))
+    .pipe(z.url({ error: "Webhook URL must be a valid HTTP or HTTPS URL." }))
     .refine((url) => /^https?:\/\/[^/\s]/i.test(url), "Webhook URL must be a valid HTTP or HTTPS URL."),
   events: z.array(z.string().min(3)).min(1, "Select at least one event type."),
   enabled: z.boolean(),

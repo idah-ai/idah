@@ -179,11 +179,7 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
         if (!out.ok) {
           const errorBody = await out.json().catch(() => null);
           const errors: unknown = errorBody?.errors;
-          if (
-            Array.isArray(errors) &&
-            errors.length > 0 &&
-            errors.every((error) => error && typeof error === "object" && !Array.isArray(error))
-          ) {
+          if (Array.isArray(errors) && errors.length > 0) {
             throw parseSingleElementError({ status: out.status, errors });
           }
 
