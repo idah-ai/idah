@@ -350,10 +350,34 @@ RSpec.describe Entry, database: true do
         end
 
         it "respects an explicit id sort alongside total_time_spent" do
-          # Explicit ascending id alongside total_time_spent
+          # Two entries with the same total_time_spent — id breaks the tie
+          id_a = entry_repo.create(
+            priority: 1,
+            wf_step: "annotate",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
+          )
+          id_b = entry_repo.create(
+            priority: 1,
+            wf_step: "annotate",
+            status: "in_progress",
+            project_id: project_id,
+            dataset_id: dataset_id
+          )
+          entry_repo.table.where(id: id_a).update(
+            time_tracking: Sequel.pg_jsonb({ "annotate" => 100 }), updated_at: Time.now
+          )
+          entry_repo.table.where(id: id_b).update(
+            time_tracking: Sequel.pg_jsonb({ "annotate" => 100 }), updated_at: Time.now
+          )
+
           result = subject.index({ dataset_id: [dataset_id] }, sort: ["total_time_spent", "id"])
           ids = result.map(&:id)
-          expect(ids).to eq(ids.sort)
+          a_idx = ids.index(id_a)
+          b_idx = ids.index(id_b)
+          # Same total_time_spent → id ASC tiebreaker puts the smaller id first
+          expect([id_a, id_b].min).to eq([ids[a_idx], ids[b_idx]].min)
         end
 
         it "rejects malicious SQL in sort keys" do
