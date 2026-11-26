@@ -9,7 +9,7 @@
   let { record: exportRecord, contexts }: DataTableCellBaseProps<ExportRecord> = $props();
 
   // Variables
-  let { datasets: datasetRecords } = contexts as { datasets: DatasetRecord[] };
+  let { datasets: datasetRecords } = $derived(contexts as { datasets: DatasetRecord[] });
 
   let datasetIds = $derived((exportRecord.job as unknown as SyncJobRecord).arguments.dataset_ids);
   let datasets = $derived(datasetRecords.filter((dataset) => datasetIds.includes(dataset.id)));

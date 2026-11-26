@@ -14,11 +14,7 @@
   import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
   import { resetPasswordSchema } from "@/data/model/iam/accounts/auth-schema";
   import { cn } from "@/utils";
-
-  // Type definitions
-  type ErrorDetail = {
-    detail?: string;
-  };
+  import type { JsonApiErrorResponse } from "@/data/model/types";
 
   // Variables
   let resource: string = "iam:account";
@@ -53,7 +49,7 @@
       updated = false;
       showErrorAlert = true;
 
-      error?.errors?.forEach((err: ErrorDetail) => {
+      (error as JsonApiErrorResponse)?.errors?.forEach((err) => {
         if (err.detail) {
           errorMessage = err.detail;
         }

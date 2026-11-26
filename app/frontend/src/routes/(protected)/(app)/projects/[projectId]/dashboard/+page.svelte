@@ -12,11 +12,16 @@
   const project = getContext<ProjectRecord>("project");
   const projectId = $derived(page.params.projectId as string);
 
-  pageBreadcrumbsStore.set([
-    projectBreadcrumb,
-    { label: project.name, href: resolve(`/projects/${projectId}/datasets`) },
-    { label: "Dashboard" },
-  ]);
+  // Follows the project when the layout reuses this page for another one.
+  $effect.pre(() => {
+    pageBreadcrumbsStore.set([
+      projectBreadcrumb,
+      { label: project.name, href: resolve(`/projects/${projectId}/datasets`) },
+      { label: "Dashboard" },
+    ]);
+  });
 </script>
 
-<ProjectDashboard {projectId} />
+{#key projectId}
+  <ProjectDashboard {projectId} />
+{/key}

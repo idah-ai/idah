@@ -1,6 +1,7 @@
 import type { ColumnsSettings } from "@/components/app/datasource-table/types";
+import type { Record } from "@/data/model/Record";
 
-export const projectAnalyticOverviewColumns: ColumnsSettings = {
+export const projectAnalyticOverviewColumns: ColumnsSettings<Record> = {
   label: {
     label: "Label",
     dataType: "string",
@@ -45,7 +46,7 @@ export const projectAnalyticOverviewColumns: ColumnsSettings = {
   },
 };
 
-export const projectAnalyticMemberPerformanceColumns: ColumnsSettings = {
+export const projectAnalyticMemberPerformanceColumns: ColumnsSettings<Record> = {
   email: {
     label: "Member email",
     dataType: "string",

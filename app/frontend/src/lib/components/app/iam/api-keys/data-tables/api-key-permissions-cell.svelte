@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Badge } from "@/components/ui/badge";
 
-  import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
+  import { ApiKeyRecord, type ApiKeyPermission } from "@/data/model/iam/api-keys/record";
   import { humanize } from "@/utils/string";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
@@ -11,7 +11,7 @@
 
   // Types
   type Context = {
-    permissions: Record<string, { title: string }>;
+    permissions: ApiKeyPermission[];
   };
   let { permissions }: Context = $derived(
     (contexts as Context) || {

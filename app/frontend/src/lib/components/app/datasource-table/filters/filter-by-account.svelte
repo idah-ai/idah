@@ -17,12 +17,14 @@
 
   // Variables
   const resource: string = AccountRecord.type;
-  const filterKey: string = columnSetting.filterOptions?.filterKey || "account_id";
-  const filterOperation: DataTableColumnFilterOperation = columnSetting.filterOptions?.filterOperation || "eq";
-  const filterKeyWithOperation: string = `${filterKey}__${filterOperation}`;
+  const filterKey: string = $derived(columnSetting.filterOptions?.filterKey || "account_id");
+  const filterOperation: DataTableColumnFilterOperation = $derived(
+    columnSetting.filterOptions?.filterOperation || "eq",
+  );
+  const filterKeyWithOperation: string = $derived(`${filterKey}__${filterOperation}`);
 
   // Functions
-  function handleFilter(value: string | number): void {
+  function handleFilter(value: string | number | null): void {
     onFilter({
       filters: {
         [filterKeyWithOperation]: value,

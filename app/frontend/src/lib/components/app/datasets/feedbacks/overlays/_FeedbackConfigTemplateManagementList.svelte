@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext, setContext } from "svelte";
+  import { getContext, setContext, untrack } from "svelte";
   import { ArrowDownIcon, SaveIcon, Trash2Icon } from "@lucide/svelte";
 
   import Button from "@/components/ui/button/button.svelte";
@@ -27,7 +27,8 @@
 
   const datasetConfigKey: symbol = FEEDBACK_CONFIG_CONTROLLER_KEY;
   const configTemplateKey: symbol = setContext("key", FEEDBACK_CONFIG_TEMPLATE_CONTROLLER_KEY);
-  const configTemplateController = new FeedBackConfigController(feedbackConfig);
+  // Template controller seeded from the initial config; it owns the edits afterwards.
+  const configTemplateController = new FeedBackConfigController(untrack(() => feedbackConfig));
   const datasetConfigController = getFeedbackConfigController(datasetConfigKey);
   const dataset: DatasetRecord = getContext("dataset");
   setFeedbackConfigController(configTemplateKey, configTemplateController);

@@ -31,7 +31,7 @@ module EntryStats
       # A system shape (e.g. a done area) is never counted, so a change to one
       # cannot change the orphan count. Its category is usually not configured,
       # so without this every create or restore of one would recompute.
-      return if shape_type && EntryStats::SystemShapes.for_all.include?(shape_type)
+      return if shape_type && PluginSystem::SystemShapes.for_all.include?(shape_type)
 
       # Recompute only if the entry already has orphans, or this change makes
       # the annotation an orphan.

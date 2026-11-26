@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
-module EntryStats
+module PluginSystem
   # Reads which shape types are "system shapes" from the plugin manifests —
   # shapes the plugin produces itself (e.g. a coverage mask's "done area")
   # rather than shapes annotators draw. A shape type is
-  # `"<modality id>:<shape name>"`.
+  # `"<modality id>:<shape name>"`. Dataset leaves them out of entry stats, and
+  # the UPD export leaves them out of the file.
   #
   # `for_all` reads the loaded plugins live on every call — a few plugins with a
   # few shapes is cheap, and reading live keeps the result right if a plugin is

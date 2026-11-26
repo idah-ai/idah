@@ -311,6 +311,27 @@ RSpec.describe Exports::Upd::Exporter do
         exporter.export(context)
         expect(annotation_created).to be(false)
       end
+
+      it "leaves out system shapes, such as a coverage mask's done area" do
+        done_area_data = annotation_data[:data][0].dup
+        done_area_data[:id] = "019b2aec-94ff-7b50-bb44-8a3675e266f4"
+        done_area_data[:attributes] = done_area_data[:attributes].merge(
+          shape_type: "idah-image:done-area",
+          shape_args: { rle: [0, 10] },
+          category: nil
+        )
+        done_area_response = Verse::JsonApi::Struct.new done_area_data
+
+        allow(PluginSystem::SystemShapes).to receive(:for_all).and_return(Set["idah-image:done-area"])
+        allow(Api[:idah].dataset.annotations).to receive(:index_all)
+          .and_return([annotation_response, done_area_response])
+
+        exporter.export(context)
+
+        created = @jsonl_writes.select { |line| line.include?("annotation:create") }
+        annotation_ids = created.map { |line| JSON.parse(line).dig("args", "id") }
+        expect(annotation_ids).to eq([annotation_id])
+      end
     end
 
     context "media handling" do
