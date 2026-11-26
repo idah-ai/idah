@@ -1060,34 +1060,37 @@ export class ProjectDashboardController {
       },
     };
     try {
+      const datasetIds = this.effectiveDatasetIds;
       const response = await categoryTotalsBackendDataSource.categoryCounts({
         projectId: this.projectId,
-        datasetIds: this.effectiveDatasetIds,
+        datasetIds,
         category,
         groupBy: "dataset",
-        page,
-        pageSize: 10,
+        ...(datasetIds.length ? {} : { page, pageSize: 10 }),
       });
       if (!current()) return;
       const ids = response.data.map((row) => row.dataset_id).filter((id): id is string => !!id);
       if (ids.length !== response.data.length || new SvelteSet(ids).size !== ids.length)
         throw new Error("Category datasets could not be validated. Please retry.");
-      const names = ids.length
-        ? await datasetsBackendDataSource.list({
+      const byId = new SvelteMap<string, string>();
+      if (ids.length) {
+        try {
+          const names = await datasetsBackendDataSource.list({
             filters: { project_id: this.projectId, id: ids },
             fields: { [DatasetRecord.type]: ["id", "name"] },
             pagination: { page: 1, itemsPerPage: 100 },
-            count: true,
             noCache: true,
-          })
-        : { data: [], meta: { count: 0, more: false } };
+          });
+          for (const record of names.data) byId.set(record.id, record.name);
+        } catch (reason) {
+          if (!current() || this.handleAccessError(reason)) return;
+          // Counts are already scoped. A failed name lookup can fall back to the dataset IDs.
+        }
+      }
       if (!current()) return;
-      const byId = new SvelteMap(names.data.map((record) => [record.id, record.name]));
-      if (names.meta?.more || byId.size !== ids.length || ids.some((id) => !byId.has(id)))
-        throw new Error("Dataset names are incomplete. Please retry.");
       const rows = response.data.map((row) => ({
         id: row.dataset_id!,
-        name: byId.get(row.dataset_id!)!,
+        name: byId.get(row.dataset_id!) || row.dataset_id!,
         annotation_count: row.annotation_count,
       }));
       this.categoryDatasets = {

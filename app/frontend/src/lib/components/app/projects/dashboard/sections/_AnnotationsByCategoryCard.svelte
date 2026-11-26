@@ -273,7 +273,7 @@
             <Collapsible.Content>
               <ul class="text-muted-foreground mt-2 max-h-48 space-y-1 overflow-y-auto text-sm">
                 {#each emptyRows as row (row.id)}
-                  <li title={row.category}>{row.label}</li>
+                  <li class="break-all" title={row.label}>{row.category}</li>
                 {/each}
               </ul>
             </Collapsible.Content>

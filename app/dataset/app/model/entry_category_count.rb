@@ -77,8 +77,13 @@ module EntryCategoryCount
 
     def group_ids(scope, group_by:, number:, size:, category: nil)
       column = GROUP_COLUMN.fetch(group_by)
-      grouped(scope, group_by:, category:).select(column).distinct.order(column)
-                                          .limit(size + 1, (number - 1) * size).select_map(column)
+      groups = grouped(scope, group_by:, category:)
+      groups = if group_by == "dataset" && category
+                 groups.group(column).order(Sequel.desc(Sequel.function(:sum, :count)), column)
+               else
+                 groups.distinct.order(column)
+               end
+      groups.limit(size + 1, (number - 1) * size).select_map(column)
     end
 
     private

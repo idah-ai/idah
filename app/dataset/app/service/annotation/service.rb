@@ -62,7 +62,12 @@ module Annotation
           )
         end
       end
-      [rows.sort_by { |row| [row.category, row.dataset_id.to_s, row.entry_id.to_s] }, more]
+      if group_by == "dataset" && scope[:category]
+        rows.sort_by! { |row| [-row.annotation_count, row.dataset_id] }
+      else
+        rows.sort_by! { |row| [row.category, row.dataset_id.to_s, row.entry_id.to_s] }
+      end
+      [rows, more]
     end
 
     def total_category_counts(filters = {}, group_by: "project", page: {})

@@ -88,12 +88,18 @@ RSpec.describe Annotation::Service, database: true do
     expect(rows.map { |row| [row.dataset_id, row.label, row.annotation_count] }).to eq([[first_id, "Car", 1]])
   end
 
-  it "pages complete grouped rows and preserves totals across pages", as: :project_owner do
+  it "pages contributing datasets by category count, breaking ties by dataset ID", as: :project_owner do
+    ids = [first_id, second_id]
     10.times do
       dataset_id = create_dataset(project_id, "Car")
       entry_id = entries.create(project_id:, dataset_id:, status: "pending", wf_step: "annotate")
       annotate(entry_id, dataset_id, "car")
+      ids << dataset_id
     end
+    leader = ids.max
+    extra_entry = entries.create(project_id:, dataset_id: leader, status: "pending", wf_step: "annotate")
+    annotate(extra_entry, leader, "car")
+    2.times { annotate(first_entry, first_id, "person") }
     service = described_class.new(current_auth_context)
     first, more = service.category_counts(
       { project_id:, category: "car" },
@@ -106,7 +112,14 @@ RSpec.describe Annotation::Service, database: true do
       page: { number: 2, size: 10 }
     )
     expect([first.length, second.length, more, last]).to eq([10, 2, true, false])
-    expect((first + second).sum(&:annotation_count)).to eq(12)
+    expect(first.first.annotation_count).to eq(2)
+    expect((first + second).map(&:dataset_id)).to eq([leader] + (ids - [leader]).sort)
+
+    explicit, more = service.category_counts(
+      { project_id:, category: "car", dataset_id: ids }, group_by: "dataset", page: { number: 2, size: 10 }
+    )
+    expect(more).to be(false)
+    expect(explicit.map(&:dataset_id)).to eq((first + second).map(&:dataset_id))
   end
 
   it "ignores irregular tool and values JSON while retaining valid categories", as: :project_owner do

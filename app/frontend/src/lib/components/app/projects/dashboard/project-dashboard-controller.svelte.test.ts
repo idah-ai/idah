@@ -8,12 +8,12 @@ import {
   TotalCategoryCountRecord,
 } from "@/data/model/dataset/category-totals/record";
 
-const dataset = (id: string) =>
+const dataset = (id: string, name = id) =>
   new DatasetRecord({
     type: DatasetRecord.type,
     id,
     attributes: {
-      name: id,
+      name,
       entries_total_count: 0,
       entries_completed_count: 0,
       progress: 0,
@@ -141,18 +141,63 @@ describe("dashboard category counts", () => {
     expect(categoryTotalsBackendDataSource.categoryCounts).toHaveBeenCalledTimes(4);
   });
 
-  it("waits for category counts and dataset names, and reports lookup failure", async () => {
+  it("loads selected datasets without paging and falls back to IDs for missing names", async () => {
     await controller.start();
-    vi.mocked(categoryTotalsBackendDataSource.categoryCounts).mockResolvedValue({
+    await controller.select(["a", "b"]);
+    vi.mocked(categoryTotalsBackendDataSource.categoryCounts).mockResolvedValueOnce({
+      data: [category("car", 3, "b"), category("car", 2, "a")],
+      more: false,
+    });
+    vi.mocked(datasetsBackendDataSource.list).mockResolvedValueOnce({
+      data: [dataset("a", "Dataset A")],
+      meta: { count: 1, more: false },
+    });
+    await controller.loadCategoryDatasets("car");
+    expect(categoryTotalsBackendDataSource.categoryCounts).toHaveBeenLastCalledWith({
+      projectId: "project",
+      datasetIds: ["a", "b"],
+      groupBy: "dataset",
+      category: "car",
+    });
+    expect(controller.categoryDatasets.car?.rows).toEqual([
+      { id: "b", name: "b", annotation_count: 3 },
+      { id: "a", name: "Dataset A", annotation_count: 2 },
+    ]);
+  });
+
+  it("keeps an unfiltered hover page visible when its name lookup fails", async () => {
+    await controller.start();
+    vi.mocked(categoryTotalsBackendDataSource.categoryCounts).mockResolvedValueOnce({
+      data: [category("car", 2, "a")],
+      more: true,
+    });
+    vi.mocked(datasetsBackendDataSource.list).mockRejectedValueOnce(new Error("names unavailable"));
+    await controller.loadCategoryDatasets("car");
+    expect(categoryTotalsBackendDataSource.categoryCounts).toHaveBeenLastCalledWith({
+      projectId: "project",
+      datasetIds: [],
+      groupBy: "dataset",
+      category: "car",
+      page: 1,
+      pageSize: 10,
+    });
+    expect(controller.categoryDatasets.car).toMatchObject({
+      status: "ready",
+      rows: [{ id: "a", name: "a", annotation_count: 2 }],
+      more: true,
+    });
+  });
+
+  it("clears the dashboard when dataset name lookup reports lost access", async () => {
+    await controller.start();
+    vi.mocked(categoryTotalsBackendDataSource.categoryCounts).mockResolvedValueOnce({
       data: [category("car", 2, "a")],
       more: false,
     });
+    vi.mocked(datasetsBackendDataSource.list).mockRejectedValueOnce({ status: 403 });
     await controller.loadCategoryDatasets("car");
-    expect(controller.categoryDatasets.car?.rows).toEqual([{ id: "a", name: "a", annotation_count: 2 }]);
-    vi.mocked(datasetsBackendDataSource.list).mockRejectedValueOnce(new Error("names unavailable"));
-    await controller.loadCategoryDatasets("person");
-    expect(controller.categoryDatasets.person?.status).toBe("error");
-    expect(controller.categoryDatasets.person?.error).toBe("names unavailable");
+    expect(controller.denied).toBe(true);
+    expect(controller.categoryDatasets.car).toBeUndefined();
   });
 
   it("does not restore a stale category hover after refresh during name lookup", async () => {

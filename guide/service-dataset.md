@@ -359,7 +359,11 @@ All HTTP endpoints use JSON:API format (`Content-Type: application/vnd.api+json`
 
 Both endpoints accept `filter[project_id]`, optional `filter[dataset_id][]` and `filter[entry_id][]` (1–100 UUIDs each), and `group_by`. Entry IDs may supply the project scope on their own, but all must belong to one project. `category_counts` also accepts `filter[category]`. Invalid or inaccessible IDs, unknown filters or groups, and a missing scope return 422; an inaccessible project returns 404. `group_by=entry` requires a dataset or entry filter.
 
-Dataset and entry grouping use `page[number]` and `page[size]` (default 10, range 10–500), with stable ID ordering and `meta.more`. Paging is by group, so a page contains all category rows for each selected group. Explicitly requested IDs return all groups in one response. Category and project grouping are unpaged. The dashboard fetches the category card, current dataset table page, and hover breakdowns separately; it resolves hover dataset names through the scoped datasets list API.
+Dataset and entry grouping support `page[number]` and `page[size]` (default size 10, range 10–500). Each page contains all category rows for its selected groups, and `meta.more` indicates whether another page exists. Groups are selected by ID, except when grouping by dataset for a single category. Those datasets are ordered by annotation count descending, with dataset ID ascending to break ties.
+
+When the request supplies IDs for the grouping level (dataset IDs for dataset grouping, or entry IDs for entry grouping), both endpoints return all matching groups in one response. Valid paging parameters are accepted and ignored. Category and project grouping reject paging parameters.
+
+The dashboard fetches the category card, current dataset table page, and hover breakdowns separately. The hover looks up dataset names through the scoped datasets list API and displays the dataset ID when a name is unavailable.
 
 ### Entry-Specific Endpoints
 
