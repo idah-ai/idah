@@ -4,7 +4,6 @@ import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/d
 import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
 import {
   categoryTotalsBackendDataSource,
-  DatasetCategoryTotalRecord,
   ProjectCategoryTotalRecord,
 } from "@/data/model/dataset/category-totals/record";
 import type { CollectionResponse } from "@/data/model/types";

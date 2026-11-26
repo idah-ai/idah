@@ -1,5 +1,5 @@
 import { getContext, setContext } from "svelte";
-import { SvelteSet } from "svelte/reactivity";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 import {
   addDays,
   addMonths,
@@ -990,7 +990,7 @@ export class ProjectDashboardController {
       );
       return;
     }
-    const grouped = new Map<string, DatasetCategoryTotalRecord[]>([...visibleIds].map((id) => [id, []]));
+    const grouped = new SvelteMap<string, DatasetCategoryTotalRecord[]>([...visibleIds].map((id) => [id, []]));
     for (const row of result.rows) {
       for (const dataset of row.datasets) {
         const rows = grouped.get(dataset.id);
