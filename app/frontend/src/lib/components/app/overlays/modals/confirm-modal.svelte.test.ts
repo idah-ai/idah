@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/svelte";
+import { cleanup, render, screen } from "@testing-library/svelte";
 import { tick } from "svelte";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -11,9 +11,12 @@ import {
 import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
 import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
 
-afterEach(() => {
+afterEach(async () => {
   cancelConfirmModal();
   settleConfirmModal(false);
+  cleanup();
+  // bits-ui restores body styles 24 ms after the last dialog unmounts.
+  await new Promise((resolve) => setTimeout(resolve, 30));
 });
 
 describe("ConfirmModal", () => {
