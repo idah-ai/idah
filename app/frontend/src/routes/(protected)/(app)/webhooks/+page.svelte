@@ -54,8 +54,6 @@
       <PlusIcon />
       New Webhook
     </Button>
-
-    <WebhookFormModal action="create" title="Webhook" bind:open={openNewWebhookFormModal} />
   </Can>
 {/snippet}
 
@@ -65,6 +63,10 @@
       {@render AddNewWebhookButton()}
     {/snippet}
   </PageHeader>
+
+  <Can action="create" resource={webhookResource}>
+    <WebhookFormModal action="create" title="Webhook" bind:open={openNewWebhookFormModal} />
+  </Can>
 
   {#key $refetches.webhooks.list}
     <DatasourceTable

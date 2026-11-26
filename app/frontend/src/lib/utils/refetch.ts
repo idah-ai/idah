@@ -32,7 +32,6 @@ export interface Refetches {
 
   /** NOTIFICATION */
   webhooks: Refetch;
-  webhookCalls: Refetch;
 }
 
 export type RefetchesKey = keyof Refetches;
@@ -106,10 +105,6 @@ export const refetches = writable<Refetches>({
 
   /** NOTIFICATION */
   webhooks: {
-    list: new Date(),
-    get: new Date(),
-  },
-  webhookCalls: {
     list: new Date(),
     get: new Date(),
   },

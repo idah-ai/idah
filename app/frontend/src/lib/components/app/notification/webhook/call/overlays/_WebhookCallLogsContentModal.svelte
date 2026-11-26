@@ -124,12 +124,7 @@
   function onHide(_columnKey: string): void {}
 
   function getCellValue(job: WebhookCallRecord, columnKey: string): string {
-    switch (columnKey) {
-      case "http_code":
-        return String(job.http_code ?? "—");
-      default:
-        return String(job[columnKey as keyof WebhookCallRecord] ?? "-");
-    }
+    return String(job[columnKey as keyof WebhookCallRecord] ?? "-");
   }
 </script>
 
@@ -208,7 +203,7 @@
                     <TableCell class="px-4 py-3 align-top">
                       <div
                         class={cn("text-muted-foreground text-sm", {
-                          "text-right": columnKey === "http_code" || columnSetting.align === "right",
+                          "text-right": columnSetting.align === "right",
                           "text-center": columnSetting.align === "center",
                         })}
                       >
