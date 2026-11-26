@@ -126,7 +126,7 @@
   function getCellValue(job: WebhookCallRecord, columnKey: string): string {
     switch (columnKey) {
       case "http_code":
-        return `${job.http_code ?? "-"} ${job.httpStatus.label}`;
+        return String(job.http_code ?? "—");
       default:
         return String(job[columnKey as keyof WebhookCallRecord] ?? "-");
     }

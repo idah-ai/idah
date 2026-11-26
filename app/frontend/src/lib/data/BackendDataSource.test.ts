@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createBackendDataSource, encodeModel } from "./BackendDataSource";
+import { clearCache } from "./Cache";
 import { Record, RecordFactory, field, type } from "./model/Record";
 
 const TransformerTest = {
@@ -113,8 +114,8 @@ describe(createBackendDataSource, () => {
 
   describe("#list", () => {
     const mockList = () => {
-      fetch.mockResolvedValue({
-        body: JSON.stringify({
+      fetch.mockResolvedValue(
+        Response.json({
           data: [
             {
               type: "test/backend_data_source",
@@ -137,11 +138,8 @@ describe(createBackendDataSource, () => {
               }
             }
           ]
-        }),
-        json() {
-          return JSON.parse(this.body);
-        }
-      });
+        })
+      );
     };
 
     it("simple", async () => {
@@ -213,6 +211,53 @@ describe(createBackendDataSource, () => {
       expect(fetch).toHaveBeenCalledWith("http://example.tld/test_records?sort=-id%2Cfoo", {
         method: "GET"
       });
+    });
+
+    it("loads the requested page with its metadata", async () => {
+      const paged = createBackendDataSource(TestRecord, "http://example.tld/paged_records");
+      fetch.mockResolvedValueOnce(Response.json({ data: [], meta: { count: 12 } }));
+
+      await expect(paged.list({ pagination: { page: 2, itemsPerPage: 10 }, count: true })).resolves.toEqual({
+        data: [],
+        meta: { count: 12 }
+      });
+      const [url] = fetch.mock.lastCall!;
+      expect(Object.fromEntries(new URL(url).searchParams)).toEqual({
+        "page[number]": "2",
+        "page[size]": "10",
+        count: "true"
+      });
+    });
+
+    it.each([
+      { status: 404, body: '{"type":"Verse::Error::NotFound"}', message: "HTTP 404" },
+      { status: 502, body: "<h1>Bad Gateway</h1>", message: "HTTP 502" },
+      { status: 200, body: '{"data":{}}', message: "valid collection" },
+      { status: 200, body: '{"data":[null]}', message: "valid collection" },
+      { status: 200, body: "<h1>Unexpected HTML</h1>", message: "valid collection" }
+    ])("rejects invalid collections ($status $body) and can reload", async ({ status, body, message }) => {
+      const collection = createBackendDataSource(TestRecord, "http://example.tld/error_records");
+      fetch
+        .mockResolvedValueOnce(new Response(body, { status }))
+        .mockResolvedValueOnce(Response.json({ data: [], meta: { count: 0 } }));
+      const callsBefore = fetch.mock.calls.length;
+
+      await expect(collection.list()).rejects.toThrow(message);
+      await expect(collection.list()).resolves.toEqual({ data: [], meta: { count: 0 } });
+      await expect(collection.list()).resolves.toEqual({ data: [], meta: { count: 0 } });
+      expect(fetch.mock.calls).toHaveLength(callsBefore + 2);
+      clearCache(collection.basePath);
+    });
+
+    it("preserves JSON:API errors and retries instead of caching them", async () => {
+      const collection = createBackendDataSource(TestRecord, "http://example.tld/json_api_errors");
+      const errors = [{ status: "502", title: "Bad Gateway" }];
+      fetch
+        .mockResolvedValueOnce(Response.json({ errors }, { status: 502 }))
+        .mockResolvedValueOnce(Response.json({ data: [] }));
+
+      await expect(collection.list()).rejects.toEqual({ status: 502, errors });
+      await expect(collection.list()).resolves.toMatchObject({ data: [] });
     });
   });
 

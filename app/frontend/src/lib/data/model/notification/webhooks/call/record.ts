@@ -4,7 +4,9 @@ import { Transformers } from "@/data/model/transformers";
 
 import type { WebhookCallHttpStatus } from "@/data/model/notification/webhooks/call/types";
 
-@type("notification:jobs")
+export const webhookJobsResource = "notification:jobs" as const;
+
+@type(webhookJobsResource)
 export class WebhookCallRecord extends Record {
   @field() public readonly status!: string;
   @field() public readonly retry_count!: number;
@@ -15,19 +17,8 @@ export class WebhookCallRecord extends Record {
   @field({ transformer: Transformers.Time }) public created_at!: Date;
   @field({ transformer: Transformers.Time }) public updated_at!: Date;
 
-  public get httpStatus(): WebhookCallHttpStatus {
-    if (this.status === "pending" || this.status === "running") {
-      return webhookCallHttpStatuses.get(this.status) ?? fallbackWebhookHttpStatus;
-    }
-    if (this.status === "errored") return webhookCallHttpStatuses.get("errored") ?? fallbackWebhookHttpStatus;
-    if (this.http_code == null) {
-      return fallbackWebhookHttpStatus;
-    }
-    if (this.http_code >= 200 && this.http_code < 300) {
-      return webhookCallHttpStatuses.get("completed") ?? fallbackWebhookHttpStatus;
-    }
-
-    return webhookCallHttpStatuses.get("errored") ?? fallbackWebhookHttpStatus;
+  public get jobStatus(): WebhookCallHttpStatus {
+    return webhookCallHttpStatuses.get(this.status) ?? { ...fallbackWebhookHttpStatus, label: this.status };
   }
 }
 

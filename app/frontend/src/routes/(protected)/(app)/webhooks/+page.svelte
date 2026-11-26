@@ -12,6 +12,7 @@
   import { webhookColumns } from "@/components/app/notification/webhook/data-tables/WebhookColumns";
   import { webhookBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
+  import { webhookJobsResource } from "@/data/model/notification/webhooks/call/record";
   import { WebhookRecord, webhookResource, webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
@@ -35,7 +36,8 @@
   onMount(async () => {
     canUpdateWebhook = (await currentAccount?.can("update", webhookResource)) || false;
     canDeleteWebhook = (await currentAccount?.can("delete", webhookResource)) || false;
-    columns.action.visible = canUpdateWebhook || canDeleteWebhook;
+    const canReadWebhookCalls = (await currentAccount?.can("read", webhookJobsResource)) || false;
+    columns.action.visible = canUpdateWebhook || canDeleteWebhook || canReadWebhookCalls;
   });
 
   // Functions

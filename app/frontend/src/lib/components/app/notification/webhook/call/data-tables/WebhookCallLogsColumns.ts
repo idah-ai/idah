@@ -23,7 +23,7 @@ export const webhookCallLogsColumns: ColumnsSettings<WebhookCallRecord> = {
     cellComponent: WebhookCallCreatedAtCell,
   },
   status: {
-    label: "HTTP Status",
+    label: "Job Status",
     dataType: "string",
     sortable: true,
     filterable: true,

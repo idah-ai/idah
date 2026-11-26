@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { ZodSchema } from "zod";
+
   import Button from "@/components/ui/button/button.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import WebhookForm from "@/components/app/notification/webhook/forms/_WebhookForm.svelte";
@@ -15,7 +17,6 @@
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { Hash } from "@/utils/types";
-  import type { ZodSchema } from "zod";
 
   // Props
   interface Props extends FormModalBaseProps {

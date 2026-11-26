@@ -27,21 +27,20 @@ RecordFactory.registerTypes(WebhookRecord);
 
 export const webhooksBasePath: string = `/api/v1/notification/webhooks`;
 export const webhooksBackendDataSource = createBackendDataSource(WebhookRecord, webhooksBasePath, {
-  test: async (id: string) => {
-    const response = await fetch(`${webhooksBasePath}/${id}/test`, {
-      method: "POST",
+  test: async (id: string): Promise<TestWebhookResponse> => {
+    const response = await fetch(`${webhooksBasePath}/${id}/test`, { method: "POST" }).catch(() => {
+      throw new Error("Could not reach the IDAH API. Check your connection and try again.");
     });
+
     if (!response.ok) {
-      throw new Error("Failed to test webhook");
+      const body = await response.json().catch(() => null);
+      const detail = body?.errors?.[0]?.detail;
+      throw new Error(`IDAH API returned HTTP ${response.status}.${detail ? ` ${detail}` : ""}`);
     }
 
-    const result: TestWebhookResponse = await response.json();
-    if (!result.success) {
-      const status = result.http_code ? ` (HTTP ${result.http_code})` : "";
-      throw new Error(`Webhook delivery failed${status}: ${result.response || "No response received."}`);
-    }
-
-    return result;
+    return response.json().catch(() => {
+      throw new Error("The IDAH API returned an unreadable test result.");
+    });
   },
   event: async () => {
     const response = await fetch(`${webhooksBasePath}/events`, {

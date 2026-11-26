@@ -176,7 +176,24 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
           method: "GET",
         });
 
-        body = await out.json();
+        if (!out.ok) {
+          const errorBody = await out.json().catch(() => null);
+          const errors: unknown = errorBody?.errors;
+          if (
+            Array.isArray(errors) &&
+            errors.length > 0 &&
+            errors.every((error) => error && typeof error === "object" && !Array.isArray(error))
+          ) {
+            throw parseSingleElementError({ status: out.status, errors });
+          }
+
+          throw new Error(`Could not load collection (HTTP ${out.status}).`);
+        }
+
+        body = await out.json().catch(() => null);
+        if (!Array.isArray(body?.data) || body.errors) {
+          throw new Error("The API did not return a valid collection.");
+        }
 
         if (nextBody.data.length > 0) {
           body.data = nextBody.data.concat(body.data);
@@ -195,15 +212,18 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
             });
           }
         }
-
-        if (useCache) {
-          setCache(cacheIndexKey, cacheSignature, body);
-        }
       }
 
-      if (body) return parseCollectionReturn<T>(body);
-
-      throw "No body returned";
+      let collection: CollectionResponse<T>;
+      try {
+        collection = parseCollectionReturn<T>(body);
+      } catch (error) {
+        throw new Error("The API did not return a valid collection.", { cause: error });
+      }
+      if (useCache && !cacheValue) {
+        setCache(cacheIndexKey, cacheSignature, body);
+      }
+      return collection;
     },
 
     async update(

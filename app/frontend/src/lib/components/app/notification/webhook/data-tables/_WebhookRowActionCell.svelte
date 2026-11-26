@@ -5,18 +5,22 @@
   import WebhookFormModal from "@/components/app/notification/webhook/overlays/WebhookFormModal.svelte";
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
+  import PreFormattedText from "@/components/app/texts/PreFormattedText.svelte";
+  import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
   import Button from "@/components/ui/button/button.svelte";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
   import TooltipContent from "@/components/ui/tooltip/tooltip-content.svelte";
   import { ClockIcon, SquarePenIcon, Trash2Icon, WifiIcon } from "@lucide/svelte";
 
+  import { webhookJobsResource } from "@/data/model/notification/webhooks/call/record";
   import { WebhookRecord, webhookResource, webhooksBackendDataSource } from "@/data/model/notification/webhooks/record";
   import { authStatus } from "@/security/AuthContext";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
+  import type { TestWebhookResponse } from "@/data/model/notification/webhooks/types";
   import type { Component } from "svelte";
 
   // Props
@@ -25,6 +29,9 @@
   // Variables
   let openEditWebhookFormModal: boolean = $state(false);
   let openCallLogsModal: boolean = $state(false);
+  let testing = $state(false);
+  let openTestResult = $state(false);
+  let testResult = $state<TestWebhookResponse>();
   let currentAccount = $authStatus.authContext;
   let canReadWebhookCalls = $state(false);
   let canUpdateWebhook = $state(false);
@@ -34,12 +41,14 @@
     icon: Component;
     visible: boolean;
     destructive?: boolean;
+    disabled?: boolean;
     action: () => void | Promise<void>;
   }[] = $derived([
     {
       label: "Test Webhook",
       icon: WifiIcon,
       visible: true,
+      disabled: testing,
       action: testWebhook,
     },
     {
@@ -65,7 +74,7 @@
 
   // Lifecycle
   onMount(async () => {
-    canReadWebhookCalls = (await currentAccount?.can("read", webhookResource)) || false;
+    canReadWebhookCalls = (await currentAccount?.can("read", webhookJobsResource)) || false;
     canUpdateWebhook = (await currentAccount?.can("update", webhookResource)) || false;
     canDeleteWebhook = (await currentAccount?.can("delete", webhookResource)) || false;
   });
@@ -91,18 +100,19 @@
   }
 
   async function testWebhook(): Promise<void> {
+    if (testing) return;
+
+    testing = true;
     try {
-      await webhooksBackendDataSource.test(webhookRecord.id);
-      showToast.success({
-        title: "Webhook tested",
-        description: `The webhook "${webhookRecord.name}" has been tested successfully.`,
-      });
+      testResult = await webhooksBackendDataSource.test(webhookRecord.id);
+      openTestResult = true;
     } catch (error) {
       showToast.error({
         title: "Unable to test webhook",
-        description:
-          error instanceof Error ? error.message : "The action could not be completed, please try again later.",
+        description: error instanceof Error ? error.message : "The IDAH API could not complete the test.",
       });
+    } finally {
+      testing = false;
     }
   }
 
@@ -129,7 +139,7 @@
 </script>
 
 <div class="flex items-center gap-1">
-  {#each actions as { label, icon: Icon, visible, destructive, action } (label)}
+  {#each actions as { label, icon: Icon, visible, destructive, disabled, action } (label)}
     {#if visible}
       <Tooltip>
         <TooltipTrigger class="inline-flex">
@@ -138,6 +148,7 @@
             size="icon"
             class={destructive ? "text-destructive hover:text-destructive" : ""}
             aria-label={label}
+            {disabled}
             onclick={action}
           >
             <Icon />
@@ -149,6 +160,19 @@
     {/if}
   {/each}
 </div>
+
+<Dialog bind:open={openTestResult}>
+  <DialogContent class="max-h-[90dvh] overflow-y-auto">
+    <DialogHeader>
+      <DialogTitle>Test result for "{webhookRecord.name}"</DialogTitle>
+    </DialogHeader>
+    {#if testResult}
+      <p>{testResult.success ? "Delivery succeeded" : "Delivery to the receiver failed"}</p>
+      <p>HTTP status: {testResult.http_code ?? "No response"}</p>
+      <PreFormattedText>{testResult.response || "No response body"}</PreFormattedText>
+    {/if}
+  </DialogContent>
+</Dialog>
 
 <WebhookFormModal title="Webhook" action="update" {webhookRecord} bind:open={openEditWebhookFormModal} />
 
