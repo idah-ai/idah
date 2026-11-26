@@ -13,6 +13,7 @@ Verse.on_boot do
     NoteCommentsExpo,
     EntryStatsExpo,
     LabelConfigTemplatesExpo,
-    FeedbackConfigTemplatesExpo
+    FeedbackConfigTemplatesExpo,
+    AccessExpo
   ].each(&:register)
 end

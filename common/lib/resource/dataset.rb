@@ -14,6 +14,7 @@ module Resource
     EntryStats = "dataset:entry_stats"
     LabelConfigTemplates = "dataset:label_config_templates"
     FeedbackConfigTemplates = "dataset:feedback_config_templates"
+    AccessChecks = "dataset:access_checks"
     # rubocop:enable Naming/ConstantName
   end
 end

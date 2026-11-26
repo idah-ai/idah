@@ -5,6 +5,7 @@ Verse.on_boot do
     HealthcheckExpo,
     ExportsExpo,
     JobsExpo,
-    ProjectMembership::CacheExpo
+    ProjectMembership::CacheExpo,
+    AccessExpo
   ].each(&:register)
 end
