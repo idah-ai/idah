@@ -20,7 +20,7 @@
   let { project, preSelectedOrganizationId, fieldErrors, onValueChange }: Props = $props();
 
   // Variables
-  const isNewRecord = !project.id;
+  const isNewRecord = $derived(!project.id);
 
   let resource: string = ProjectRecord.type;
   let canReadOrganizationAsOrgOwner = $state(false);

@@ -146,7 +146,7 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
       if (options.filters) params["filter"] = filtersToHash(options.filters);
       if (options.fields) params["fields"] = options.fields;
       if (options.included) params["included"] = options.included;
-      if (options.sort) params["sort"] = options.sort.join(",");
+      if (options.sort?.length) params["sort"] = options.sort.join(",");
       if (options.pagination) {
         params["page"] = {
           number: options.pagination.page,
@@ -176,18 +176,14 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
           method: "GET",
         });
 
-        if (!out.ok) {
-          const errorBody = await out.json().catch(() => null);
-          const errors: unknown = errorBody?.errors;
-          if (Array.isArray(errors) && errors.length > 0) {
-            throw parseSingleElementError({ status: out.status, errors });
-          }
-
-          throw new Error(`Could not load collection (HTTP ${out.status}).`);
-        }
-
         body = await out.json().catch(() => null);
-        if (!Array.isArray(body?.data) || body.errors) {
+        if (!out.ok || body?.errors) {
+          throw parseSingleElementError({
+            status: out.status,
+            errors: Array.isArray(body?.errors) ? body.errors : [],
+          });
+        }
+        if (!Array.isArray(body?.data)) {
           throw new Error("The API did not return a valid collection.");
         }
 

@@ -26,7 +26,6 @@ The frontend lives at `app/frontend/` and is built as a standalone Docker contai
 | `@lucide/svelte` | Icon component library |
 | `mode-watcher` | Dark/light mode toggling (`<ModeWatcher />`) |
 | `svelte-sonner` | Toast notifications (`<Toaster />`) |
-| `@tanstack/table-core` | Headless table state for `DatasourceTable` |
 | `tailwind-merge`, `tailwind-variants`, `clsx` | Tailwind class merging utilities |
 | `tw-animate-css` | CSS animation utilities |
 | `zod` | Schema validation |
@@ -34,8 +33,6 @@ The frontend lives at `app/frontend/` and is built as a standalone Docker contai
 | `date-fns` | Date formatting |
 | `marked` | Markdown rendering |
 | `peggy` | Parser generator (used for AST-based label config filtering) |
-| `vaul-svelte` | Drawer component (from vaul) |
-| `paneforge` | Resizable panels |
 
 ---
 
@@ -615,7 +612,7 @@ When IndexedDB is unavailable (e.g., SSR), the driver falls back to `Annotations
 
 The primary pattern for all list views. Located at `src/lib/components/app/datasource-table/`.
 
-Uses `@tanstack/table-core` for headless table state management. Rows, columns, filters, pagination, and sorting are all driven by `DataSource` instances.
+Rows, columns, filters, pagination, and sorting are all driven by `DataSource` instances; the table keeps its own state in per-table stores (`datasource-table.stores.svelte.ts`).
 
 ```
 datasource-table.svelte
@@ -708,7 +705,6 @@ src/
 ├── app.css                         # Tailwind CSS 4 entry + CSS variables
 ├── app.d.ts                        # TypeScript ambient declarations
 ├── lib/
-│   ├── index.ts                    # Barrel exports
 │   ├── utils.ts                    # re-exports from utils/
 │   ├── components/
 │   │   ├── ui/                     # bits-ui / shadcn-svelte components
@@ -752,17 +748,11 @@ src/
 │   │       │   └── manager/        # CommandManagerV2, ToolbarManagerV2
 │   │       ├── components/         # Command palette, etc.
 │   │       └── utils/              # AST evaluator, shortcut utils, browser detection
-│   ├── context/                    # Domain context interfaces
-│   │   ├── ActivityContext.ts      # Activity/annotation context types
-│   │   ├── AnnotationContext.ts    # Annotation CRUD context
-│   │   └── ActivityContextExample.ts
 │   ├── security/                   # Authorization
 │   │   ├── AuthContext.ts          # AuthContext class + authStatus store
 │   │   ├── ActionMap.ts            # Trie-based permission map
 │   │   ├── can.svelte              # Conditional rendering component
 │   │   └── types.ts                # Action, Resource, Scope type constants
-│   ├── shortcut/                   # Keyboard shortcut system
-│   │   └── ShortcutManager.svelte.ts
 │   └── hooks/
 │       └── is-mobile.svelte.ts     # Reactive mobile detection
 └── routes/                         # SvelteKit file-based routing

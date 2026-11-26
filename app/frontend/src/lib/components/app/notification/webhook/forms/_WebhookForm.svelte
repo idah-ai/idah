@@ -1,9 +1,8 @@
 <script lang="ts">
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import SwitchField from "@/components/app/forms/fields/input/switch-field.svelte";
   import SelectMultipleWebhookEventTypes from "@/components/app/notification/webhook/select/SelectMultipleWebhookEventTypes.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
-  import Label from "@/components/ui/label/label.svelte";
-  import Switch from "@/components/ui/switch/switch.svelte";
 
   import { WebhookRecord } from "@/data/model/notification/webhooks/record";
 
@@ -69,13 +68,12 @@
     />
 
     <!-- WEBHOOK::ENABLED -->
-    <div class="flex items-center gap-2">
-      <Switch id="{resource}/enabled" checked={enabled} onCheckedChange={(checkedValue) => (enabled = checkedValue)} />
-
-      <div>
-        <Label for="{resource}/enabled">Enabled</Label>
-        <p class="text-muted-foreground text-sm">set whether the webhook is enabled or not</p>
-      </div>
-    </div>
+    <SwitchField
+      name="{resource}/enabled"
+      label="Enabled"
+      info="Set whether the webhook is enabled."
+      checked={enabled}
+      onCheckedChange={(checked) => (enabled = checked)}
+    />
   </FieldGroup>
 </FieldSet>

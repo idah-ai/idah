@@ -166,6 +166,18 @@ export interface IConfig {
   [shape_type: string]: IShapeConfig;
 }
 
+/**
+ * Project feedback configuration
+ */
+export interface IFeedbackItem {
+  label: string;
+  description: string | null;
+}
+
+export interface IFeedbackConfig {
+  [key: string]: IFeedbackItem;
+}
+
 // ─── AST (conditional visibility) ────────────────────────────────────────
 
 export type ASTValue = string | number | string[] | boolean | undefined;
@@ -174,17 +186,26 @@ export type ASTNode = [string, ASTNodeValue[]];
 
 // ─── Toolbar ──────────────────────────────────────────────────────────────
 
+/**
+ * A toolbar value that is either fixed or read from plugin state on every render.
+ * Functions are re-evaluated whenever the toolbar re-renders — after a mode change or
+ * `toolbar.invalidate()` — so call `invalidate()` after changing the state they read.
+ */
+export type ToolbarText = string | (() => string);
+
 export interface IToolbarItem {
-  /** Raw HTML/SVG string for the icon. */
-  icon: string;
-  /** Label for tooltips. */
-  label: string;
-  /** The mode this item belongs to (e.g. "default", "idah-video:bounding-box"). */
+  /** Raw HTML/SVG string for the icon, or a function returning one (e.g. eye / eye-off). */
+  icon: ToolbarText;
+  /** Label for tooltips and dropdown items, or a function returning one. */
+  label: ToolbarText;
+  /** The mode this item belongs to (e.g. "editor", "idah-video:bounding-box"). */
   mode: string;
   /**
    * Colon-delimited path to the item's flyout container. Items sharing a path render inside
-   * the same dropdown; a deeper path like `"line:trend"` nests a `trend` subgroup under a
-   * top-level `line` group. `null` (or omitted) renders the item as a standalone button.
+   * the same dropdown — e.g. `mode.mask_brush` and `mode.mask_polygon` both use `"mask"` to
+   * collapse under one brush button. A deeper path like `"mask:brush"` nests a `brush`
+   * subgroup under a top-level `mask` group. `null` (or omitted) renders the item as a
+   * standalone button.
    */
   group: string | null;
   /** Click handler. */
@@ -204,6 +225,23 @@ export interface IToolbarItem {
    * Default: false.
    */
   whenToggled?: () => boolean;
+  /**
+   * Optional button variant when the item is toggled (e.g. "success" for green,
+   * "destructive" for red). Defaults to "default" (primary color).
+   */
+  toggledVariant?: string;
+  /**
+   * Optional styling for the item when it is not toggled. `"destructive"` renders it in the
+   * destructive colour (e.g. "Clear All").
+   */
+  variant?: "destructive";
+  /** Inside a group dropdown, draw a separator line above this item. */
+  separatorBefore?: boolean;
+  /**
+   * Toolbar section (e.g. "select", "draw", "check"). Top-level buttons are separated by a
+   * divider wherever the section changes. Omit to stay in the unnamed section.
+   */
+  section?: string;
 }
 
 /**
@@ -213,11 +251,39 @@ export interface IToolbarItem {
  */
 export interface IToolbarGroupNode {
   kind: "group";
-  /** Full colon path, e.g. "line:trend". */
+  /** Full colon path, e.g. "mask". */
   path: string;
-  /** Last path segment, used for the tooltip label. */
+  /** Last path segment, used as the label when the group has no `label`. */
   segment: string;
+  /** Title from `toolbar.defineGroup` — shown as the dropdown header and trigger tooltip. */
+  label?: string;
+  /** Icon from `toolbar.defineGroup` — shown on the trigger while no child is toggled. */
+  icon?: string;
+  /** Accent predicate from `toolbar.defineGroup`. See {@link ToolbarGroupOptions.whenAccented}. */
+  whenAccented?: () => boolean;
+  /** Accent colour from `toolbar.defineGroup`. See {@link ToolbarGroupOptions.accentVariant}. */
+  accentVariant?: "success" | "destructive";
+  /** Section from `toolbar.defineGroup`, else its first item's. See {@link IToolbarItem.section}. */
+  section?: string;
   children: IToolbarNode[];
+}
+
+/** Display metadata for a toolbar group, registered with `toolbar.defineGroup`. */
+export interface ToolbarGroupOptions {
+  /** Title shown at the top of the group's dropdown and as the trigger tooltip. */
+  label?: string;
+  /** Raw HTML/SVG icon for the collapsed trigger while no child is toggled. */
+  icon?: string;
+  /**
+   * When it returns true and no child is toggled, the collapsed trigger gets a light tint
+   * of `accentVariant` — e.g. to show that the entry already has data for this group's tools.
+   * Re-evaluated like `whenToggled`, so call `toolbar.invalidate()` when its inputs change.
+   */
+  whenAccented?: () => boolean;
+  /** Colour of the light tint. Default: `"success"` (green). */
+  accentVariant?: "success" | "destructive";
+  /** Toolbar section of the collapsed button. Default: the section of its first item. */
+  section?: string;
 }
 
 /** A single standalone toolbar item (leaf). */
@@ -319,6 +385,9 @@ export interface IAnnotationRecord<ShapeArgs = Record<string, unknown>, Properti
   created_at?: string;
   updated_at?: string;
 
+  /** Server-set version, bumped on every write. Absent on locally-built records until the next sync. */
+  version?: number;
+
   /** Allow extensibility. */
   [key: string]: unknown;
 }
@@ -368,7 +437,10 @@ export interface INoteRecord {
   anchor: INoteAnchor;
 
   /** Markdown content of the note. */
-  content_md?: string;
+  content_md?: string | null;
+
+  /** Feedback keys */
+  feedback_keys?: string[] | null;
 
   /** Whether the note thread is resolved. */
   resolved?: boolean;
@@ -383,6 +455,67 @@ export interface INoteRecord {
 
   /** Allow extensibility. */
   [key: string]: unknown;
+}
+
+// ─── V2 Driver — Annotation change history ────────────────────────────────
+
+/** One recorded annotation change. `changes` is present when `fields` includes "changes". */
+export interface IAnnotationChange {
+  id: string;
+  annotation_id: string;
+  account_id: number | null;
+  account_email: string | null;
+  op: "baseline" | "created" | "updated" | "deleted" | "restored";
+  version: number;
+  /** Epoch ms, parsed explicitly from the API value (second precision, not ISO). */
+  changed_at: number;
+  /** Diff payload: [op, path, old, new] entries. Only set when `fields` includes "changes". */
+  changes?: ["+" | "-" | "~", string, unknown, unknown][];
+}
+
+/**
+ * Query for the annotation change history, mirroring the backend
+ * `/annotation_changes` index endpoint. `entry_id` is always bound by the
+ * driver. Filters use the raw API keys; time values are epoch-ms and are
+ * converted to ISO by the adapter. Include `changes` in `fields` to get the
+ * diff payload.
+ */
+export interface IChangesQuery {
+  /** Raw API filters (keys mirror the backend's allowed_filters). */
+  filters?: {
+    annotation_id__in?: string[];
+    id__in?: string[];
+    op__in?: IAnnotationChange["op"][];
+    changed_at__gte?: number;
+    changed_at__lte?: number;
+  };
+  /** Sort fields, newest first by default (`-changed_at`). */
+  sort?: string[];
+  /** Page number, 1-based (default 1). */
+  page?: number;
+  /** Page size (default 50, server max 1000). */
+  size?: number;
+  /** Sparse fieldset; include `changes` to get the diff payload. */
+  fields?: IAnnotationChangeField[];
+  /** Request the true total count. */
+  count?: boolean;
+}
+
+/** A selectable field on an annotation change row. */
+export type IAnnotationChangeField =
+  | "annotation_id"
+  | "account_id"
+  | "account_email"
+  | "op"
+  | "version"
+  | "changed_at"
+  | "changes";
+
+export interface IChangesResult {
+  items: IAnnotationChange[];
+  total: number;
+  /** True when the server's count is a lower bound (rows exist past it). */
+  hasMore: boolean;
 }
 
 // ─── V2 Driver — Annotations submodule ────────────────────────────────────
@@ -403,11 +536,20 @@ export interface IAnnotationsDriverV2<ShapeArgs = Record<string, unknown>, Prope
   /** Delete a single annotation. */
   delete(id: string): Promise<void>;
 
-  /** Restore a soft-deleted annotation; resolves with the restored record. */
-  restore(id: string): Promise<IAnnotationRecord<ShapeArgs, Properties>>;
+  /** Restore a soft-deleted annotation; local-first, enqueued like all writes. The backend failure surfaces via onSyncError. */
+  restore(id: string): Promise<void>;
 
   /** Create a new annotation (id is auto-generated via uuidv7). */
   create(data: IAnnotationRecord<ShapeArgs, Properties>): Promise<IAnnotationRecord<ShapeArgs, Properties>>;
+
+  /**
+   * Read the entry's annotation change history, newest first. `limit` defaults
+   * to 50. Each call queries the backend directly.
+   */
+  changes(query?: IChangesQuery): Promise<IChangesResult>;
+
+  /** Rebuild an annotation as it was at a past version. */
+  version(id: string, version: number): Promise<IAnnotationRecord<ShapeArgs, Properties>>;
 }
 
 // ─── V2 Driver — Notes submodule ──────────────────────────────────────────
@@ -573,10 +715,10 @@ export interface ICommandDriverV2 {
 // ─── V2 Driver — Toolbar submodule ────────────────────────────────────────
 
 export interface ToolbarItemOptions {
-  /** Raw HTML/SVG string for the icon. */
-  icon: string;
-  /** Label for tooltips. */
-  label: string;
+  /** Raw HTML/SVG string for the icon, or a function returning one. See {@link ToolbarText}. */
+  icon: ToolbarText;
+  /** Label for tooltips and dropdown items, or a function returning one. */
+  label: ToolbarText;
   /**
    * One or more modes this item belongs to.
    * The item will be visible in any matching mode.
@@ -605,6 +747,23 @@ export interface ToolbarItemOptions {
    * Default: `false`.
    */
   whenToggled?: () => boolean;
+  /**
+   * Optional button variant when the item is toggled (e.g. "success" for green,
+   * "destructive" for red). Defaults to "default" (primary color).
+   */
+  toggledVariant?: string;
+  /**
+   * Optional styling for the item when it is not toggled. `"destructive"` renders it in the
+   * destructive colour (e.g. "Clear All").
+   */
+  variant?: "destructive";
+  /** Inside a group dropdown, draw a separator line above this item. */
+  separatorBefore?: boolean;
+  /**
+   * Toolbar section (e.g. "select", "draw", "check"). Top-level buttons are separated by a
+   * divider wherever the section changes. Omit to stay in the unnamed section.
+   */
+  section?: string;
 }
 
 export interface IToolbarDriverV2 {
@@ -613,8 +772,19 @@ export interface IToolbarDriverV2 {
    */
   add(options: ToolbarItemOptions): void;
 
-  /** Define the display order of groups for a given mode. */
+  /**
+   * Reorder groups for a given mode. Buttons and groups otherwise appear in registration
+   * order (a group at its first item's position); the groups listed here are rearranged
+   * among the slots that groups occupy. Names that are not groups are ignored.
+   */
   orderGroups(mode: string, groups: string[]): void;
+
+  /**
+   * Give a group (by its full colon path) display options: a title (dropdown header and
+   * trigger tooltip), a resting icon, a light accent tint (`whenAccented`, `accentVariant`)
+   * and a toolbar section. See {@link ToolbarGroupOptions}.
+   */
+  defineGroup(path: string, options: ToolbarGroupOptions): void;
 
   /** Monotonically increasing counter for toggle state invalidation. */
   readonly revision: number;

@@ -10,6 +10,7 @@
   import { filterAssignableAccountRoles } from "@/security/roleHierarchy";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
+  import type { Role } from "@/data/model/iam/accounts/auth/constants";
   import type { LabelValue } from "@/utils/types";
   import AccountEntries from "@/components/app/projects/entries/account-entries.svelte";
 
@@ -82,7 +83,7 @@
       errors={fieldErrors["role_name"]}
       value={role_name}
       onSelected={(selectedValue) => {
-        role_name = selectedValue as string;
+        role_name = selectedValue as Role;
       }}
     />
     <!-- {/if} -->

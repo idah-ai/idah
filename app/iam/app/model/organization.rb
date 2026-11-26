@@ -46,15 +46,13 @@ module Organization
 
     def create(attributes)
       with_metadata do
-        add_event_metadata
-
         super(attributes)
       end
     end
 
     def update!(id, attributes, scope: scoped(:update))
       with_metadata do
-        add_event_metadata(organization_id: id)
+        add_metadata(organization_id: id)
 
         super(id, attributes, scope:)
       end
@@ -64,7 +62,7 @@ module Organization
       with_metadata do
         find!(id)
 
-        add_event_metadata(organization_id: id)
+        add_metadata(organization_id: id)
 
         super(id)
       end
@@ -77,10 +75,6 @@ module Organization
       org_ids = ProjectMembership::Lookup.new.memberships_for(account_id).map(&:organization_id).uniq
 
       table.where(id: org_ids)
-    end
-
-    def add_event_metadata(**opts)
-      add_metadata(**opts)
     end
   end
 end

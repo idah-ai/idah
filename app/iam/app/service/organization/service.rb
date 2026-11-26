@@ -41,7 +41,7 @@ module Organization
         filter: { organization_id: id },
         fields: { Resource::Dataset::Projects => %w[id] }
       )
-      unless projects.empty?
+      if projects.any?
         raise Verse::Error::Unauthorized, "Unable to delete organization that still has project(s)"
       end
 

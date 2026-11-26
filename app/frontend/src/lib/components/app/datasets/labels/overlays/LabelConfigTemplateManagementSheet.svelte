@@ -109,6 +109,14 @@
 
   async function saveChanges() {
     if (!selectedTemplateId) return;
+    if (controller.hasVisibilityErrors) {
+      showToast.error({
+        title: "Fix visibility conditions",
+        description: "Resolve all invalid property visibility conditions before saving.",
+      });
+      return;
+    }
+
     saving = true;
     try {
       const cleaned = controller.getCleanedConfig();
@@ -182,7 +190,8 @@
     displayKey="name"
     searchable
     searchKeyWithOperation="name__match"
-    placeholder="Select template"
+    placeholder="Select label template"
+    searchPlaceholder="Search a template"
     valueKey="id"
     dataSource={labelConfigTemplateDataSource}
     listOptions={{
@@ -206,7 +215,7 @@
 
     {#key $refetches.labelConfigTemplates.list}
       {#await refreshSheetData() then}
-        <div class="flex h-full flex-col gap-4 px-4 pb-4">
+        <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
           {#if isSelected && loaded}
             <section class="flex items-center">
               <EditableTextField
@@ -226,7 +235,7 @@
                   variant="outline"
                   loading={saving}
                   loadingLabel="Saving"
-                  disabled={!loaded || !controller.hasUnsavedChanges}
+                  disabled={!loaded || !controller.hasUnsavedChanges || controller.hasVisibilityErrors}
                   onclick={saveChanges}
                 >
                   <SaveIcon />

@@ -23,7 +23,7 @@ RSpec.describe ActorEventMetadata do
 
     attr_reader :auth_context
 
-    # Simulates what a repository's add_event_metadata does: return the current
+    # Simulates what a repository's add_metadata does: return the current
     # metadata as an event would carry it.
     def emit
       @metadata

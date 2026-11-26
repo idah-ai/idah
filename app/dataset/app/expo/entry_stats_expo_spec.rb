@@ -6,6 +6,7 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
   let(:now) { Time.now.utc }
   let(:uuid) { UUIDv7.generate }
   let(:entry_id) { UUIDv7.generate }
+  let(:dataset_id) { UUIDv7.generate }
 
   let(:stat_record) do
     EntryStat::Record.new(
@@ -69,6 +70,178 @@ RSpec.describe EntryStatsExpo, type: :exposition, as: :system do
         resource_id: entry_id,
         event: "errored",
         payload: { resource_id: entry_id }
+      )
+    end
+  end
+
+  describe "#compute_stats_on_annotation_updated" do
+    let(:annotation_id) { UUIDv7.generate }
+
+    it "calls service.recompute_from_annotation with the correct arguments" do
+      expect(service).to receive(:recompute_from_annotation).with(
+        entry_id: entry_id,
+        dataset_id: dataset_id,
+        new_category: "dog",
+        shape_type: "idah-image:polygon"
+      )
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Annotations,
+        resource_id: annotation_id,
+        event: "updated",
+        payload: {
+          resource_id: annotation_id,
+          metadata: {
+            old_category: "cat", entry_id: entry_id, dataset_id: dataset_id, shape_type: "idah-image:polygon"
+          },
+          args: [{ category: "dog" }]
+        }
+      )
+    end
+
+    it "does not call service when the annotation update has no category change" do
+      expect(service).not_to receive(:recompute_from_annotation)
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Annotations,
+        resource_id: annotation_id,
+        event: "updated",
+        payload: {
+          resource_id: annotation_id,
+          metadata: { old_category: "cat", entry_id: entry_id, dataset_id: dataset_id },
+          args: [{ shape_type: "idah-image:polygon" }]
+        }
+      )
+    end
+  end
+
+  describe "#compute_stats_on_annotation_created" do
+    let(:annotation_id) { UUIDv7.generate }
+
+    it "passes the shape type from the create args" do
+      expect(service).to receive(:recompute_from_annotation).with(
+        entry_id: entry_id,
+        dataset_id: dataset_id,
+        new_category: "done_area",
+        shape_type: "idah-image:done-area"
+      )
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Annotations,
+        resource_id: annotation_id,
+        event: "created",
+        payload: {
+          resource_id: annotation_id,
+          args: [{
+            entry_id: entry_id, dataset_id: dataset_id,
+            category: "done_area", shape_type: "idah-image:done-area"
+          }]
+        }
+      )
+    end
+  end
+
+  describe "#compute_stats_on_annotation_deleted" do
+    let(:annotation_id) { UUIDv7.generate }
+
+    it "calls service.recompute_from_annotation with no category" do
+      expect(service).to receive(:recompute_from_annotation).with(
+        entry_id: entry_id,
+        dataset_id: dataset_id,
+        new_category: nil,
+        shape_type: "idah-image:mask"
+      )
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Annotations,
+        resource_id: annotation_id,
+        event: "deleted",
+        payload: {
+          resource_id: annotation_id,
+          metadata: { entry_id: entry_id, dataset_id: dataset_id, shape_type: "idah-image:mask" },
+          args: [{ deleted_by_email: "user@example.com" }]
+        }
+      )
+    end
+  end
+
+  describe "#compute_stats_on_annotation_restored" do
+    let(:annotation_id) { UUIDv7.generate }
+
+    it "calls service.recompute_from_annotation with the annotation's category" do
+      expect(service).to receive(:recompute_from_annotation).with(
+        entry_id: entry_id,
+        dataset_id: dataset_id,
+        new_category: "cat",
+        shape_type: "idah-image:mask"
+      )
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Annotations,
+        resource_id: annotation_id,
+        event: "restored",
+        payload: {
+          resource_id: annotation_id,
+          metadata: { entry_id: entry_id, dataset_id: dataset_id, category: "cat", shape_type: "idah-image:mask" },
+          args: []
+        }
+      )
+    end
+  end
+
+  describe "#recompute_stats_on_labeling_config_updated" do
+    let(:dataset_id) { UUIDv7.generate }
+
+    it "recomputes all stats for the dataset when categories are removed" do
+      expect(service).to receive(:recompute_all_for_dataset).with(dataset_id, changed_category_ids: ["cat"])
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Datasets,
+        resource_id: dataset_id,
+        event: "labeling_configuration_updated",
+        payload: {
+          resource_id: dataset_id,
+          metadata: { changed_category_ids: ["cat"] }
+        }
+      )
+    end
+
+    it "recomputes all stats when categories are added back" do
+      expect(service).to receive(:recompute_all_for_dataset).with(dataset_id, changed_category_ids: ["dog"])
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Datasets,
+        resource_id: dataset_id,
+        event: "labeling_configuration_updated",
+        payload: {
+          resource_id: dataset_id,
+          metadata: { changed_category_ids: ["dog"] }
+        }
+      )
+    end
+
+    it "does not recompute when the dataset update did not touch labeling configuration" do
+      expect(service).not_to receive(:recompute_all_for_dataset)
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Datasets,
+        resource_id: dataset_id,
+        event: "updated",
+        payload: { resource_id: dataset_id, metadata: {} }
+      )
+    end
+
+    it "does not recompute on a generic 'updated' event (no listener)" do
+      expect(service).not_to receive(:recompute_all_for_dataset)
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::Datasets,
+        resource_id: dataset_id,
+        event: "updated",
+        payload: {
+          resource_id: dataset_id,
+          metadata: { labeling_configuration_updated: false }
+        }
       )
     end
   end

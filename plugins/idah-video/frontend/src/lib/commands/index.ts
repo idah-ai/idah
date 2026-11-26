@@ -62,9 +62,11 @@ import { register as registerAnnotationGoToPrevKeyframe } from "./annotation/go_
 import { register as registerAnnotationPolygonAddPoint } from "./annotation/polygon.add_point.svelte";
 import { viewport } from "$lib/state/viewport.svelte";
 import { register as registerAnnotationSplit } from "./annotation/split";
+import { register as registerAnnotationMerge } from "./annotation/merge";
 import { register as registerAnnotationToggleEditabilityAll } from "./annotation/toggle_editability_all";
 import { register as registerAnnotationToggleVisibilityAll } from "./annotation/toggle_visibility_all";
 import { register as registerAnnotationUpdate } from "./annotation/update";
+import { register as registerAnnotationBulkUpdate } from "./annotation/bulk-update";
 import { register as registerAnnotationUpdateGroupCategory } from "./annotation/updateGroupCategory";
 
 import { register as registerToggleColorMode } from "./display/toggle-color-mode";
@@ -83,11 +85,13 @@ import { register as registerCategoryDelete } from "./category/delete";
 import { register as registerCategoryToggleEditability } from "./category/toggle_editability";
 import { register as registerCategoryToggleVisibility } from "./category/toggle_visibility";
 import { register as registerCategoryToggleVisibilitySolo } from "./category/toggle_visibility_solo";
+import { register as registerCategoryReuseLast } from "./category/reuse_last";
 
 import { register as registerModeSelect } from "./mode/select";
 import { register as registerModeBoundingBox } from "./mode/bounding_box";
 import { register as registerModePolygon } from "./mode/polygon";
 import { register as registerSnapMagneticToggle } from "./snap/magnetic_toggle";
+import { register as registerHistoryToggle } from "./history/toggle";
 import { VIDEO_BOUNDING_BOX, VIDEO_POLYGON } from "$lib/types";
 import { hasConfig } from "$idah/v2/utils";
 /**
@@ -133,7 +137,9 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerAnnotationToggleEditabilityAll(driver);
   registerAnnotationPolygonAddPoint(driver);
   registerAnnotationUpdate(driver);
+  registerAnnotationBulkUpdate(driver);
   registerAnnotationSplit(driver, () => viewport.video.currentFrame.value);
+  registerAnnotationMerge(driver);
   registerAnnotationExtendPrev(driver);
   registerAnnotationExtendNext(driver);
   registerAnnotationGoToNextKeyframe(driver);
@@ -146,6 +152,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
   registerCategoryToggleVisibility(driver);
   registerCategoryToggleVisibilitySolo(driver);
   registerCategoryDelete(driver);
+  registerCategoryReuseLast(driver);
 
   // ── Mode ──────────────────────────────────────────────────────
   registerModeSelect(driver);
@@ -166,4 +173,7 @@ export function registerAllCommands(driver: IIdahDriverV2): void {
 
   // ── Snap ─────────────────────────────────────────────────────────────
   registerSnapMagneticToggle(driver);
+
+  // ── History ───────────────────────────────────────────────────────────
+  registerHistoryToggle(driver);
 }

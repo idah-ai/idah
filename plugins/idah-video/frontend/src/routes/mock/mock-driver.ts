@@ -19,6 +19,9 @@ import type {
   INoteAnchor,
   INoteScreenPosition,
   IFilter,
+  IAnnotationChange,
+  IChangesQuery,
+  IChangesResult,
   ICommandAction,
   ICommandDescriptor,
   IModeEvent,
@@ -26,8 +29,10 @@ import type {
   ISyncErrorEvent,
   IShortcut,
   ICommandStackEntry,
+  ToolbarGroupOptions,
   ToolbarItemOptions,
   Unsubscribe,
+  IFeedbackConfig,
 } from "$idah/v2/types";
 import type { IVideoAnnotationShape, IVideoAnnotationValue, IVideoFrameSelection } from "$lib/types";
 
@@ -37,6 +42,7 @@ import { ToolbarManagerV2 } from "./toolbar-manager";
 import { AccountSettingsManager } from "./account-settings-manager.svelte";
 import { AstProcessor } from "./ast-evaluator";
 import { modKey } from "$lib/utils/browser";
+import type { ChangeEntry } from "$lib/utils/diff-lines";
 import { uuidv7 } from "uuidv7";
 
 // ---------------------------------------------------------------------------
@@ -416,6 +422,10 @@ class ToolbarDriverAdapter implements IToolbarDriverV2 {
     this.mgr.orderGroups(mode, groups);
   }
 
+  defineGroup(path: string, options: ToolbarGroupOptions): void {
+    this.mgr.defineGroup(path, options);
+  }
+
   get revision(): number {
     return this.mgr.revision;
   }
@@ -431,7 +441,15 @@ class ToolbarDriverAdapter implements IToolbarDriverV2 {
 type Annot = IAnnotationRecord<IVideoAnnotationShape, IVideoAnnotationValue>;
 
 class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IVideoAnnotationShape, IVideoAnnotationValue> {
-  constructor(private store: InMemoryStore<Annot>) {}
+  private changeRows: IAnnotationChange[] = [];
+  private versionCounter = new Map<string, number>();
+
+  constructor(private store: InMemoryStore<Annot>) {
+    // Seed a baseline row for every fixture annotation.
+    for (const ann of store.all()) {
+      this.recordChange(ann, "baseline", 1, baselineChanges(ann));
+    }
+  }
 
   registerField(name: string, fn: (ann: Annot) => unknown): void {
     this.store.registerField(name, fn);
@@ -442,20 +460,117 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IVideoAnnotationS
   }
 
   async update(id: string, data: Partial<Annot>): Promise<void> {
-    return this.store.update(id, data);
+    const before = this.store.find(id);
+    this.store.update(id, data);
+    const after = this.store.find(id);
+    if (before && after) {
+      const version = this.nextVersion(id);
+      this.recordChange(after, "updated", version, diffChanges(before, after));
+    }
   }
 
   async delete(id: string): Promise<void> {
-    return this.store.delete(id);
+    const before = this.store.find(id);
+    this.store.delete(id);
+    if (before) {
+      const version = this.nextVersion(id);
+      this.recordChange(before, "deleted", version, [["~", "deleted_at", null, new Date().toISOString()]]);
+    }
   }
 
-  async restore(id: string): Promise<Annot> {
-    return this.store.restore(id);
+  async restore(id: string): Promise<void> {
+    const restored = this.store.restore(id);
+    const version = this.nextVersion(id);
+    this.recordChange(restored, "restored", version, [["~", "deleted_at", new Date().toISOString(), null]]);
   }
 
   async create(data: Annot): Promise<Annot> {
-    return this.store.create(data);
+    const created = this.store.create(data);
+    this.recordChange(created, "created", 1, baselineChanges(created));
+    return created;
   }
+
+  // ── Annotation change history (mock) ──────────────────────────────────
+
+  async changes(query?: IChangesQuery): Promise<IChangesResult> {
+    const { filters = {}, page = 1, size = 50, fields, count = true } = query ?? {};
+    let items = this.changeRows;
+    if (filters.annotation_id__in?.length) {
+      const set = new Set(filters.annotation_id__in);
+      items = items.filter((c) => set.has(c.annotation_id));
+    }
+    if (filters.id__in?.length) {
+      const set = new Set(filters.id__in);
+      items = items.filter((c) => set.has(c.id));
+    }
+    if (filters.changed_at__lte !== undefined) {
+      items = items.filter((c) => c.changed_at <= filters.changed_at__lte!);
+    }
+    if (filters.changed_at__gte !== undefined) {
+      items = items.filter((c) => c.changed_at >= filters.changed_at__gte!);
+    }
+    if (filters.op__in?.length) {
+      const set = new Set(filters.op__in);
+      items = items.filter((c) => set.has(c.op));
+    }
+    const includeChanges = fields?.includes("changes") ?? false;
+    const total = items.length;
+    const start = (page - 1) * size;
+    const pageItems = items.slice(start, start + size);
+    return {
+      items: pageItems.map((c) => (includeChanges ? c : omitChanges(c))),
+      total: count ? total : pageItems.length,
+      hasMore: false,
+    };
+  }
+
+  async version(id: string, version: number): Promise<Annot> {
+    throw new Error("version() is not supported in the mock driver");
+  }
+
+  private nextVersion(id: string): number {
+    const v = (this.versionCounter.get(id) ?? 1) + 1;
+    this.versionCounter.set(id, v);
+    return v;
+  }
+
+  private recordChange(ann: Annot, op: IAnnotationChange["op"], version: number, changes: ChangeEntry[]) {
+    this.changeRows.unshift({
+      id: uuidv7(),
+      annotation_id: ann.id,
+      account_id: 1,
+      account_email: "mock@example.com",
+      op,
+      version,
+      changed_at: Date.now(),
+      changes,
+    });
+  }
+}
+
+function omitChanges(c: IAnnotationChange): IAnnotationChange {
+  const { changes: _omit, ...rest } = c;
+  return rest;
+}
+
+function baselineChanges(ann: Annot): ChangeEntry[] {
+  const out: ChangeEntry[] = [];
+  out.push(["+", "shape_type", null, ann.shape_type]);
+  out.push(["+", "category", null, ann.category]);
+  if (ann.shape_args) out.push(["+", "shape_args", null, ann.shape_args]);
+  if (ann.properties) out.push(["+", "properties", null, ann.properties]);
+  return out;
+}
+
+function diffChanges(before: Annot, after: Annot): ChangeEntry[] {
+  const out: ChangeEntry[] = [];
+  if (before.category !== after.category) {
+    out.push(["~", "category", before.category, after.category]);
+  }
+  if (JSON.stringify(before.shape_args) !== JSON.stringify(after.shape_args)) {
+    out.push(["~", "shape_args", before.shape_args, after.shape_args]);
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -583,36 +698,36 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
                 id: "occluded",
                 label: "Occluded",
                 styles: {
-                  opacity: 0
-                }
+                  opacity: 0,
+                },
               },
               {
                 id: "partially_occluded",
                 label: "Partially Occluded",
                 styles: {
                   border: "dashed",
-                  opacity: 4
-                }
+                  opacity: 4,
+                },
               },
               {
                 id: "semi_occluded",
                 label: "Semi Occluded",
                 styles: {
                   border: "dotted",
-                  opacity: 1
-                }
+                  opacity: 1,
+                },
               },
               {
                 id: "not_occluded",
                 label: "Not Occluded",
-                styles: {}
-              }
-            ]
+                styles: {},
+              },
+            ],
           },
           required: false,
           visibility: true,
-          description: ""
-        }
+          description: "",
+        },
       ],
     },
     "idah-video:polygon": {
@@ -639,6 +754,30 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
           description: "Is the object occluded?",
         },
       ],
+    },
+  };
+
+  // ── Default feedback config ──────────────────────────────────────────
+  private _feedbackConfig: IFeedbackConfig = {
+    "1790828241408": {
+      label: "Bounding box is inaccurate — adjust to fit object edges",
+      description: "Use when the drawn box doesn't tightly match the object's visible edges.",
+    },
+    "1790828274075": {
+      label: "Missing label on a visible object",
+      description: "Use when an object clearly visible in the frame has no label at all.",
+    },
+    "1790832229955": {
+      label: "Object occluded — re-check next keyframe",
+      description: "Use when part of the object is hidden needs re-checking on a later frame.",
+    },
+    "1790833411909": {
+      label: "Duplicate annotation on the same object",
+      description: "Use when the same object has more than one overlapping annotation.",
+    },
+    "1790833866791": {
+      label: "Annotation extends outside the frame boundary",
+      description: "Use when the box or polygon extends past the visible video frame.",
     },
   };
 
@@ -833,10 +972,14 @@ export class IdahDriverV2 implements IIdahDriverV2<IVideoAnnotationShape, IVideo
     return this._config;
   }
 
+  get feedbackConfig(): IFeedbackConfig {
+    return this._feedbackConfig;
+  }
+
   getFilteredConfig(
     shapeType: string,
     value: Record<string, unknown>,
-    objectName: string = ""
+    objectName: string = "",
   ): IShapeConfig | undefined {
     const raw = this._config[shapeType];
     if (!raw) return undefined;

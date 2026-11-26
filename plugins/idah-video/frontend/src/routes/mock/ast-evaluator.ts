@@ -20,6 +20,7 @@
 //   or    – logical or (binary)
 //   match – wildcard string matching (binary)
 //   in    – value in array (binary)
+//   has_any / has_all / has_none – list contains any / all / none of a list (binary)
 // ---------------------------------------------------------------------------
 
 import type { ASTNode } from "$idah/v2/types";
@@ -57,6 +58,27 @@ function wildcard_match(pattern1: string, pattern2: string): boolean {
     return false;
   }
   return matchHelper(0, 0);
+}
+
+// ─── List operators ───────────────────────────────────────────────────────
+
+/** A multi-select value as a list. An unanswered one (a missing variable reads as false) is empty. */
+function selection(value: ASTValue): ASTValue[] {
+  if (Array.isArray(value)) return value;
+  return value === undefined || value === null || value === false ? [] : [value];
+}
+
+/** The values a list operator compares with; the parser always gives a list. */
+function wanted(value: ASTValue): ASTValue[] {
+  return Array.isArray(value) ? value : [value];
+}
+
+/** A list operator: tests a multi-select value against the wanted values. */
+function listOperator(test: (items: ASTValue[], values: ASTValue[]) => boolean): OperatorCallback {
+  return (props) => {
+    if (props.length !== 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
+    return test(selection(props[0]), wanted(props[1]));
+  };
 }
 
 // ─── AstProcessor ─────────────────────────────────────────────────────────
@@ -164,21 +186,38 @@ export class AstProcessor {
         return Array.isArray(list) ? (list as ASTValue[]).includes(val) : false;
       },
     ],
+    ["has_any", listOperator((items, values) => values.some((v) => items.includes(v)))],
+    ["has_all", listOperator((items, values) => values.every((v) => items.includes(v)))],
+    ["has_none", listOperator((items, values) => !values.some((v) => items.includes(v)))],
   ]);
 
-  /** Evaluate an AST node and return true/false. */
+  /**
+   * Evaluate an AST node and return true/false. A condition that can't be
+   * evaluated hides the property instead of breaking the properties panel.
+   */
   processAST(node: ASTNode): boolean {
-    return this.processOperator(node) === true;
+    return this.evaluateSafely(node) === true;
   }
 
   private processOperator(node: ASTNode): ASTValue {
     const [operator, args] = node;
-    if (typeof operator !== "string") {
-      throw new Error(`Invalid operator type: ${typeof operator}`);
-    }
+    if (typeof operator !== "string") throw new Error(`Invalid operator type: ${typeof operator}`);
+    // An operator this version doesn't know, e.g. from a config saved by a newer one, fails its condition.
     const cmd = this.operators.get(operator);
     if (!cmd) throw new Error(`Operator not found: ${operator}`);
-    return cmd(args.map((a) => this.processValue(a)));
+    // A failed operand of and/or is false, so only that branch fails. Elsewhere the failure goes up to
+    // the nearest and/or: a comparison such as neq must not compare the failure as a value.
+    const logical = operator === "and" || operator === "or";
+    return cmd(args.map((a) => (logical ? this.evaluateSafely(a) : this.processValue(a))));
+  }
+
+  private evaluateSafely(value: ASTNodeValue): ASTValue {
+    try {
+      return this.processValue(value);
+    } catch (error) {
+      console.warn("Invalid visibility condition", value, error);
+      return false;
+    }
   }
 
   private processValue(value: ASTNodeValue): ASTValue {

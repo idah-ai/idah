@@ -209,6 +209,12 @@ describe(createBackendDataSource, () => {
       );
     });
 
+    it("omits an empty sort parameter", async () => {
+      mockList();
+      await ds.list({ sort: [], noCache: true });
+      expect(new URL(fetch.mock.lastCall![0]).searchParams.has("sort")).toBe(false);
+    });
+
     it("with sort", async () => {
       mockList();
 
@@ -241,8 +247,6 @@ describe(createBackendDataSource, () => {
     });
 
     it.each([
-      { status: 404, body: '{"type":"Verse::Error::NotFound"}', message: "HTTP 404" },
-      { status: 502, body: "<h1>Bad Gateway</h1>", message: "HTTP 502" },
       { status: 200, body: '{"data":{}}', message: "valid collection" },
       { status: 200, body: '{"data":[null]}', message: "valid collection" },
       { status: 200, body: "<h1>Unexpected HTML</h1>", message: "valid collection" },
@@ -255,21 +259,47 @@ describe(createBackendDataSource, () => {
       await expect(ds.list()).resolves.toEqual({ data: [], meta: { count: 0 } });
       expect(fetch).toHaveBeenCalledTimes(2);
     });
+  });
 
-    it("preserves JSON:API errors and retries instead of caching them", async () => {
-      const errors = [{ status: "502", title: "Bad Gateway" }];
-      fetch
-        .mockResolvedValueOnce(Response.json({ errors }, { status: 502 }))
-        .mockResolvedValueOnce(Response.json({ data: [] }));
+  describe("#list error compatibility", () => {
+    it.each([401, 403, 404, 500])("rejects JSON:API failures with HTTP status %s", async (status) => {
+      const errors = [{ status: String(status), title: "Request failed" }];
+      fetch.mockResolvedValue({ ok: false, status, json: async () => ({ errors }) });
+      await expect(ds.list({ noCache: true })).rejects.toEqual({ status, errors });
+    });
 
-      await expect(ds.list()).rejects.toEqual({ status: 502, errors });
-      await expect(ds.list()).resolves.toMatchObject({ data: [] });
+    it("preserves status for a non-JSON failure", async () => {
+      fetch.mockResolvedValue({
+        ok: false,
+        status: 502,
+        json: async () => {
+          throw new SyntaxError("HTML response");
+        },
+      });
+      await expect(ds.list({ noCache: true })).rejects.toEqual({ status: 502, errors: [] });
+    });
+
+    it("rejects JSON:API errors even on a successful HTTP status", async () => {
+      const errors = [{ title: "Invalid filter" }];
+      fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ errors }) });
+      await expect(ds.list({ noCache: true })).rejects.toEqual({ status: 200, errors });
+    });
+
+    it("does not cache failed responses", async () => {
+      fetch.mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({}) });
+      await expect(ds.list({ filters: { foo: "retry-after-failure" } })).rejects.toMatchObject({ status: 503 });
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: [], meta: { count: 0, more: false } }),
+      });
+      await expect(ds.list({ filters: { foo: "retry-after-failure" } })).resolves.toMatchObject({ data: [] });
     });
   });
 
   describe("#delete", () => {
     it("simple", async () => {
-      fetch.mockResolvedValue({ body: "" });
+      fetch.mockResolvedValue({ ok: true, body: "" });
       const result = await ds.delete("1");
       expect(result).toBe(true);
     });

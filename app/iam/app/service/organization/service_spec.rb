@@ -59,8 +59,9 @@ RSpec.describe Organization::Service, database: true do
   end
 
   describe "#delete" do
+    # index_all returns an Enumerator (Api.all), not an Array: stub it that way.
     it "deletes an organization when it has no projects" do
-      allow(Api[:idah].dataset.projects).to receive(:index_all).and_return([])
+      allow(Api[:idah].dataset.projects).to receive(:index_all).and_return([].each)
 
       organization_id = organization_repo.create(attributes)
       subject.delete(organization_id)
@@ -69,7 +70,7 @@ RSpec.describe Organization::Service, database: true do
 
     it "refuses to delete an organization that still has projects" do
       allow(Api[:idah].dataset.projects).to receive(:index_all).and_return(
-        [double(id: "p1")]
+        [double(id: "p1")].each
       )
 
       organization_id = organization_repo.create(attributes)

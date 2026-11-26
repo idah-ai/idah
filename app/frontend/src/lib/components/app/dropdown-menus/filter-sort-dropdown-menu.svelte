@@ -13,7 +13,7 @@
     type Icon as IconType,
   } from "@lucide/svelte";
   import type { DateRange } from "bits-ui";
-  import { addDays, addMonths, endOfMonth, endOfWeek, startOfWeek } from "date-fns";
+  import { addDays, addMonths, endOfMonth, endOfWeek, format, startOfWeek } from "date-fns";
   import type { Snippet } from "svelte";
 
   import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
@@ -89,7 +89,7 @@
   // Variables
   let openDropdown: boolean = $state(false);
 
-  let { label, filterable, hidable, sortable, filterComponent, filterOptions } = columnSetting;
+  let { label, filterable, hidable, sortable, filterComponent, filterOptions } = $derived(columnSetting);
   let filterKey: string = $derived(`${filterOptions?.filterKey || columnKey}`);
   let filterKeyWithOperation: string = $derived(
     filterOptions?.filterOperation ? `${filterKey}__${filterOptions.filterOperation}` : filterKey,
@@ -146,7 +146,7 @@
     icon: typeof IconType;
     onSelect: () => Promise<void> | void;
   }
-  const sortOptionItems: SortOptionItem[] = [
+  const sortOptionItems: SortOptionItem[] = $derived([
     {
       label: "Sort A-Z",
       value: columnKey,
@@ -168,7 +168,7 @@
         closeDropdown();
       },
     },
-  ];
+  ]);
 
   const datePresets = {
     today: { label: "Today" },
@@ -254,8 +254,10 @@
 
   function filterByDateRange(dateRange: DateRange): void {
     if (dateRange.start && dateRange.end) {
-      const formattedStartDate = dateRange.start.toString().concat(" 00:00:00");
-      const formattedEndDate = dateRange.end.toString().concat(" 23:59:59");
+      const formattedStartDate = dateRange.start
+        .toString()
+        .concat(columnSetting.dataType === "date" ? "" : " 00:00:00");
+      const formattedEndDate = dateRange.end.toString().concat(columnSetting.dataType === "date" ? "" : " 23:59:59");
 
       onFilter({
         filters: {
@@ -330,8 +332,14 @@
 
     onFilter({
       filters: {
-        [`${filterKey}__gte`]: filterStartDate.toISOString().split("T")[0].concat(" 00:00:00"),
-        [`${filterKey}__lte`]: filterEndDate.toISOString().split("T")[0].concat(" 23:59:59"),
+        [`${filterKey}__gte`]:
+          columnSetting.dataType === "date"
+            ? format(filterStartDate, "yyyy-MM-dd")
+            : filterStartDate.toISOString().split("T")[0].concat(" 00:00:00"),
+        [`${filterKey}__lte`]:
+          columnSetting.dataType === "date"
+            ? format(filterEndDate, "yyyy-MM-dd")
+            : filterEndDate.toISOString().split("T")[0].concat(" 23:59:59"),
       },
     });
   }
@@ -508,7 +516,7 @@
       {#if sortable}
         <CommandGroup heading="Sort">
           {#each sortOptionItems as { label, value, icon: Icon, onSelect } (value)}
-            <CommandItem disabled={sort.includes(value)} onclick={onSelect}>
+            <CommandItem disabled={value === "none" ? !isSorting : sort.includes(value)} onclick={onSelect}>
               <Icon class="size-4"></Icon>
               {label}
             </CommandItem>

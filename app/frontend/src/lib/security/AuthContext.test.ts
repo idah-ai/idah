@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AuthContext } from "./AuthContext";
 import { rank } from "./roleHierarchy";
@@ -7,6 +7,10 @@ import { projectsBackendDataSource } from "@/data/model/dataset/projects/project
 import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
 
 import type { Hash } from "@/utils/types";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 function buildContext(roleName: string, rights: string[], roleScope: Hash = { org: [] }): AuthContext {
   return new AuthContext({

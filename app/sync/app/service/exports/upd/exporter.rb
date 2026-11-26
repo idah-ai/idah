@@ -23,13 +23,17 @@ module Exports
         # unique in a UPD file: keep track of the resources already appended.
         exported_resources = Set.new
 
-        # Export only the completed entries unless explicitly told otherwise.
+        # Export all entries unless explicitly requested to export only completed ones.
         entries_filter =
-          context.options.fetch(:completed_entries, true) ? { status: "completed" } : {}
+          context.options.fetch(:completed_entries, false) ? { status: "completed" } : {}
 
         # Keep references to media tempfiles so they are not garbage collected
         # before updcli-static reads them during the append call.
         media_tempfiles = []
+
+        # Shapes a plugin draws itself, such as a coverage mask's done area,
+        # are not annotations: they stay out of the file.
+        system_shapes = PluginSystem::SystemShapes.for_all
 
         Open3.popen3("updcli-static", "--input", file_path, "append") do |stdin, stdout, stderr, wait_thr|
           io = SubprocessIO.new(stdin, stdout, stderr)
@@ -47,6 +51,8 @@ module Exports
                 io.write_jsonl(build_entry_jsonl(dataset.record.id, entry, include_medias))
 
                 entry.annotations.each do |annotation|
+                  next if system_shapes.include?(annotation.record.shape_type)
+
                   jsonl = build_annotation_jsonl(entry.record.id, annotation)
                   io.write_jsonl(jsonl) if jsonl
                 end

@@ -12,6 +12,9 @@ import type {
   ICommandStackEntry,
   IConfig,
   IFilter,
+  IAnnotationChange,
+  IChangesQuery,
+  IChangesResult,
   IIdahDriverV2,
   IMediaInfo,
   IModeEvent,
@@ -24,13 +27,23 @@ import type {
   ISyncErrorEvent,
   ISyncEvent,
   IToolbarDriverV2,
+  ToolbarGroupOptions,
   ToolbarItemOptions,
   Unsubscribe,
+  IFeedbackConfig,
 } from "$idah/v2/types";
-import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_POLYGON, REVIEW_MODE, type IImageAnnotationShape, type IImageAnnotationValue } from "$lib/types";
+import {
+  DEFAULT_MODE,
+  IMAGE_BOUNDING_BOX,
+  IMAGE_POLYGON,
+  REVIEW_MODE,
+  type IImageAnnotationShape,
+  type IImageAnnotationValue,
+} from "$lib/types";
 
 import { modKey } from "$lib/utils/browser";
 import { uuidv7 } from "uuidv7";
+import type { ChangeEntry } from "$lib/utils/diff-lines";
 import { AstProcessor } from "./ast-evaluator";
 import { AccountSettingsManager } from "./account-settings-manager.svelte";
 import { CommandManagerV2 } from "./command-manager";
@@ -200,6 +213,10 @@ class ToolbarDriverAdapter implements IToolbarDriverV2 {
     this.mgr.orderGroups(mode, groups);
   }
 
+  defineGroup(path: string, options: ToolbarGroupOptions): void {
+    this.mgr.defineGroup(path, options);
+  }
+
   get revision(): number {
     return this.mgr.revision;
   }
@@ -215,7 +232,15 @@ class ToolbarDriverAdapter implements IToolbarDriverV2 {
 type Annot = IAnnotationRecord<IImageAnnotationShape, IImageAnnotationValue>;
 
 class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IImageAnnotationShape, IImageAnnotationValue> {
-  constructor(private store: InMemoryStore<Annot>) {}
+  private changeRows: IAnnotationChange[] = [];
+  private versionCounter = new Map<string, number>();
+
+  constructor(private store: InMemoryStore<Annot>) {
+    // Seed a baseline row for every fixture annotation.
+    for (const ann of store.all()) {
+      this.recordChange(ann, "baseline", 1, baselineChanges(ann));
+    }
+  }
 
   registerField(name: string, fn: (ann: Annot) => unknown): void {
     this.store.registerField(name, fn);
@@ -226,28 +251,166 @@ class AnnotationsDriverAdapter implements IAnnotationsDriverV2<IImageAnnotationS
   }
 
   async update(id: string, data: Partial<Annot>): Promise<void> {
-    return this.store.update(id, data);
+    const before = this.store.find(id);
+    this.store.update(id, data);
+    const after = this.store.find(id);
+    if (before && after) {
+      const version = this.nextVersion(id);
+      this.recordChange(after, "updated", version, diffChanges(before, after));
+    }
   }
 
   async delete(id: string): Promise<void> {
-    return this.store.delete(id);
+    const before = this.store.find(id);
+    this.store.delete(id);
+    if (before) {
+      const version = this.nextVersion(id);
+      this.recordChange(before, "deleted", version, [["~", "deleted_at", null, new Date().toISOString()]]);
+    }
   }
 
-  async restore(id: string): Promise<Annot> {
-    return this.store.restore(id);
+  async restore(id: string): Promise<void> {
+    const restored = this.store.restore(id);
+    const version = this.nextVersion(id);
+    this.recordChange(restored, "restored", version, [["~", "deleted_at", new Date().toISOString(), null]]);
   }
 
   async create(data: Annot): Promise<Annot> {
-    return this.store.create(data);
+    const created = this.store.create(data);
+    this.recordChange(created, "created", 1, baselineChanges(created));
+    return created;
   }
 
   async setShape(annotationId: string, key: string, value: object | null): Promise<void> {
-    // Mock adapter: no-op for now
+    const before = this.store.find(annotationId);
+    if (!before) return;
+    const shape = { ...(before.shape_args as Record<string, unknown>) };
+    if (value === null) {
+      delete shape[key];
+    } else {
+      shape[key] = value;
+    }
+    this.store.update(annotationId, { shape_args: shape } as Partial<Annot>);
+    const after = this.store.find(annotationId);
+    if (after) {
+      const version = this.nextVersion(annotationId);
+      this.recordChange(after, "updated", version, [
+        ["~", `shape_args.${escapeKey(key)}`, before.shape_args[key], after.shape_args[key] ?? null],
+      ]);
+    }
   }
 
   async setShapes(annotationId: string, entries: Array<{ key: string; value: object | null }>): Promise<void> {
-    // Mock adapter: no-op for now
+    if (entries.length === 0) return;
+    const before = this.store.find(annotationId);
+    if (!before) return;
+    const shape = { ...(before.shape_args as Record<string, unknown>) };
+    for (const { key, value } of entries) {
+      if (value === null) {
+        delete shape[key];
+      } else {
+        shape[key] = value;
+      }
+    }
+    this.store.update(annotationId, { shape_args: shape } as Partial<Annot>);
+    const after = this.store.find(annotationId);
+    if (after) {
+      const version = this.nextVersion(annotationId);
+      const changes = entries.map(({ key, value }) => {
+        const old = before.shape_args[key] ?? null;
+        const fresh = value === null ? null : after.shape_args[key] ?? null;
+        return ["~", `shape_args.${escapeKey(key)}`, old, fresh] as ChangeEntry;
+      });
+      this.recordChange(after, "updated", version, changes);
+    }
   }
+
+  // ── Annotation change history (mock) ──────────────────────────────────
+
+  async changes(query?: IChangesQuery): Promise<IChangesResult> {
+    const { filters = {}, page = 1, size = 50, fields, count = true } = query ?? {};
+    let items = this.changeRows;
+    if (filters.annotation_id__in?.length) {
+      const set = new Set(filters.annotation_id__in);
+      items = items.filter((c) => set.has(c.annotation_id));
+    }
+    if (filters.id__in?.length) {
+      const set = new Set(filters.id__in);
+      items = items.filter((c) => set.has(c.id));
+    }
+    if (filters.changed_at__lte !== undefined) {
+      items = items.filter((c) => c.changed_at <= filters.changed_at__lte!);
+    }
+    if (filters.changed_at__gte !== undefined) {
+      items = items.filter((c) => c.changed_at >= filters.changed_at__gte!);
+    }
+    if (filters.op__in?.length) {
+      const set = new Set(filters.op__in);
+      items = items.filter((c) => set.has(c.op));
+    }
+    const includeChanges = fields?.includes("changes") ?? false;
+    const total = items.length;
+    const start = (page - 1) * size;
+    const pageItems = items.slice(start, start + size);
+    return {
+      items: pageItems.map((c) => (includeChanges ? c : omitChanges(c))),
+      total: count ? total : pageItems.length,
+      hasMore: false,
+    };
+  }
+
+  async version(id: string, version: number): Promise<Annot> {
+    throw new Error("version() is not supported in the mock driver");
+  }
+
+  private nextVersion(id: string): number {
+    const v = (this.versionCounter.get(id) ?? 1) + 1;
+    this.versionCounter.set(id, v);
+    return v;
+  }
+
+  private recordChange(ann: Annot, op: IAnnotationChange["op"], version: number, changes: ChangeEntry[]) {
+    this.changeRows.unshift({
+      id: uuidv7(),
+      annotation_id: ann.id,
+      account_id: 1,
+      account_email: "mock@example.com",
+      op,
+      version,
+      changed_at: Date.now(),
+      changes,
+    });
+  }
+}
+
+function omitChanges(c: IAnnotationChange): IAnnotationChange {
+  const { changes: _omit, ...rest } = c;
+  return rest;
+}
+
+/** Escape a plain path segment the way the backend's AnnotationDiff.escape does. */
+function escapeKey(key: string): string {
+  return key.replace(/([.\[\]\\])/g, "\\$1");
+}
+
+function baselineChanges(ann: Annot): ChangeEntry[] {
+  const out: ChangeEntry[] = [];
+  out.push(["+", "shape_type", null, ann.shape_type]);
+  out.push(["+", "category", null, ann.category]);
+  if (ann.shape_args) out.push(["+", "shape_args", null, ann.shape_args]);
+  if (ann.properties) out.push(["+", "properties", null, ann.properties]);
+  return out;
+}
+
+function diffChanges(before: Annot, after: Annot): ChangeEntry[] {
+  const out: ChangeEntry[] = [];
+  if (before.category !== after.category) {
+    out.push(["~", "category", before.category, after.category]);
+  }
+  if (JSON.stringify(before.shape_args) !== JSON.stringify(after.shape_args)) {
+    out.push(["~", "shape_args", before.shape_args, after.shape_args]);
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -303,7 +466,7 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
 
   // ── Default project config ──────────────────────────────────────────
   private _config: IConfig = {
-    IMAGE_BOUNDING_BOX: {
+    [IMAGE_BOUNDING_BOX]: {
       values: [
         { id: "vehicles/car", color: "#F6402B", label: "Car", text_color: "#FFFFFF", description: "A car" },
         { id: "vehicles/bus", color: "#EB1461", label: "Bus", text_color: "#FFFFFF", description: "A bus" },
@@ -367,6 +530,30 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
           description: "Is the object occluded?",
         },
       ],
+    },
+  };
+
+  // ── Default feedback config ──────────────────────────────────────────
+  private _feedbackConfig: IFeedbackConfig = {
+    "1790828241408": {
+      label: "Bounding box is inaccurate — adjust to fit object edges",
+      description: "Use when the drawn box doesn't tightly match the object's visible edges.",
+    },
+    "1790828274075": {
+      label: "Missing label on a visible object",
+      description: "Use when an object clearly visible in the frame has no label at all.",
+    },
+    "1790832229955": {
+      label: "Object occluded — re-check next keyframe",
+      description: "Use when part of the object is hidden needs re-checking on a later frame.",
+    },
+    "1790833411909": {
+      label: "Duplicate annotation on the same object",
+      description: "Use when the same object has more than one overlapping annotation.",
+    },
+    "1790833866791": {
+      label: "Annotation extends outside the frame boundary",
+      description: "Use when the box or polygon extends past the visible video frame.",
     },
   };
 
@@ -551,6 +738,10 @@ export class IdahDriverV2 implements IIdahDriverV2<IImageAnnotationShape, IImage
 
   get config(): IConfig {
     return this._config;
+  }
+
+  get feedbackConfig(): IFeedbackConfig {
+    return this._feedbackConfig;
   }
 
   getFilteredConfig(

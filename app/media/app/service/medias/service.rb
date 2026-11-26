@@ -49,8 +49,16 @@ module Medias
           Zip::File.open_buffer(file.tempfile) do |zip|
             # Pass 1 (scan_zip_entries) inspects headers only and rejects bombs
             # before anything is extracted; pass 2 extracts only the survivors.
-            scan_zip_entries(zip, skipped).each do |zip_entry|
+            entries = scan_zip_entries(zip, skipped)
+            wrapper = wrapping_folder(entries)
+            # Every report names a file as its entry would be, without the wrapping folder.
+            skipped.map! { |report| report.merge(filename: report[:filename].delete_prefix(wrapper)) }
+
+            entries.each do |zip_entry|
               ext = File.extname(zip_entry.name).downcase
+              # The path inside the zip ("cam_a/0001.jpg"), so same-named files in
+              # different folders stay apart once they become entries.
+              name = zip_entry.name.delete_prefix(wrapper)
 
               entry_io = StreamWithPath.new(
                 zip_entry.get_input_stream,
@@ -61,9 +69,9 @@ module Medias
               begin
                 result = store_media(
                   io: entry_io, # Stream directly from zip entry to storage - no tempfiles
-                  filename: File.basename(zip_entry.name),
+                  filename: name,
                   size: zip_entry.size,
-                  mime_type: Rack::Mime.mime_type(ext, "application/octet-stream"),
+                  mime_type: mime_type_for(ext) || "application/octet-stream",
                   resource: "#{SecureRandom.hex(8)}#{ext}",
                   key:,
                   project_id:,
@@ -74,11 +82,11 @@ module Medias
                   results << result
                 else
                   # store_media returns a reason string when the file is intentionally rejected
-                  skipped << { filename: zip_entry.name, message: result }
+                  skipped << { filename: name, message: result }
                 end
               rescue StandardError => e
                 # A failing entry must not abort the rest of the archive
-                errored << { filename: zip_entry.name, message: e.message }
+                errored << { filename: name, message: e.message }
               end
             end
           end
@@ -98,7 +106,7 @@ module Medias
           result = store_media(
             io: file.tempfile,
             filename: file.filename,
-            mime_type: file.type,
+            mime_type: detect_mime_type(file),
             resource:,
             key:,
             project_id:,
@@ -117,6 +125,19 @@ module Medias
     end
 
     private
+
+    # Prefer the extension-based type, as zip entries do: browsers report some
+    # extensions inconsistently (e.g. .ts as TypeScript or Qt Linguist instead
+    # of an MPEG transport stream). Fall back to the browser type when unknown.
+    def detect_mime_type(file)
+      ext = File.extname(file.filename.to_s).downcase
+      mime_type_for(ext) || file.type.to_s.then { |t| t.empty? ? "application/octet-stream" : t }
+    end
+
+    # MIME type for a lowercase extension (".mp4"), or nil when unknown.
+    def mime_type_for(ext)
+      UploadConstants::MIME_TYPE_OVERRIDES[ext] || Rack::Mime.mime_type(ext, nil)
+    end
 
     # Returns true when the file is a zip archive.
     def zip_file?(file)
@@ -157,6 +178,17 @@ module Medias
       end
 
       to_process
+    end
+
+    # A zipped folder ("Compress" on macOS, "Send to > Compressed folder" on Windows) holds
+    # everything under one top folder. Returns that "folder/" prefix, dropped from the media
+    # names so the zip names its entries like the folder itself would; "" otherwise.
+    def wrapping_folder(entries)
+      tops = entries.map { |entry| entry.name.split("/", 2) }
+      return "" if tops.empty? || tops.any? { |parts| parts.length < 2 }
+
+      folders = tops.map(&:first).uniq
+      folders.one? ? "#{folders.first}/" : ""
     end
 
     def file_too_large_message

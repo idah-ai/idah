@@ -32,6 +32,6 @@
   {@render children?.()}
 
   {#if required}
-    <span class="font-mono text-xs">*</span>
+    <span class="font-mono text-xs text-destructive">*</span>
   {/if}
 </Label>

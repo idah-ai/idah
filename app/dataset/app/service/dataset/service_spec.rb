@@ -29,6 +29,44 @@ RSpec.describe Dataset::Service, database: true do
     }
   end
 
+  describe "delivery date validation" do
+    let!(:dataset_id) { repo.create(attributes.merge(delivery_date: Date.today - 10)) }
+
+    def date_update(attrs)
+      subject.update(deserialize(data: { type: Resource::Dataset::Datasets, id: dataset_id, attributes: attrs }))
+    end
+
+    it "rejects an explicitly selected past date on creation" do
+      allow(subject).to receive(:authorize_creation).and_return(true)
+      record = deserialize(
+        data: {
+          type: Resource::Dataset::Datasets,
+          attributes: attributes.merge(delivery_date: Date.today - 1),
+          relationships: { project: { data: { type: Resource::Dataset::Projects, id: project_id } } }
+        }
+      )
+      expect { subject.create(record) }.to raise_error(Verse::Error::ValidationFailed)
+    end
+
+    it "rejects a changed past date" do
+      expect { date_update(delivery_date: Date.today - 1) }.to raise_error(Verse::Error::ValidationFailed)
+    end
+
+    it "accepts today and future dates" do
+      expect(date_update(delivery_date: Date.today).delivery_date).to eq(Date.today)
+      expect(date_update(delivery_date: Date.today + 1).delivery_date).to eq(Date.today + 1)
+    end
+
+    it "allows unchanged past dates and unrelated updates" do
+      expect(date_update(name: "Renamed", delivery_date: Date.today - 10).name).to eq("Renamed")
+      expect(date_update(name: "Again").delivery_date).to eq(Date.today - 10)
+    end
+
+    it "allows clearing a past date" do
+      expect(date_update(delivery_date: nil).delivery_date).to be_nil
+    end
+  end
+
   describe "#index" do
     it "returns all datasets" do
       dataset1_id = repo.create(attributes)
@@ -113,6 +151,98 @@ RSpec.describe Dataset::Service, database: true do
 
       updated_dataset = repo.find!(dataset_id)
       expect(updated_dataset.labels).to eq(["cat", "dog", "bird"])
+    end
+
+    it "sets syncing_stats and fires event when labeling_configuration changes" do
+      dataset_id = repo.create(
+        attributes.merge(
+          labeling_configuration: {
+            "tool" => { values: [{ id: "cat" }, { id: "dog" }] }
+          }
+        )
+      )
+
+      record = deserialize(
+        {
+          data: {
+            type: "datasets",
+            id: dataset_id,
+            attributes: {
+              labeling_configuration: {
+                "tool" => { values: [{ id: "cat" }] }
+              }
+            }
+          }
+        }
+      )
+
+      allow(subject.send(:datasets)).to receive(:labeling_configuration_updated)
+
+      result = subject.update(record)
+
+      updated = repo.find!(dataset_id)
+      expect(updated.labeling_configuration).to eq(tool: { values: [{ id: "cat" }] })
+      expect(updated.syncing_stats).to be(true)
+      expect(updated.syncing_stats_at).to be_within(5).of(Time.now)
+      expect(result.syncing_stats).to be(true)
+      expect(subject.send(:datasets)).to have_received(:labeling_configuration_updated)
+    end
+
+    it "does not set syncing_stats when only a new category is added" do
+      dataset_id = repo.create(
+        attributes.merge(
+          labeling_configuration: {
+            "tool" => { values: [{ id: "cat" }] }
+          }
+        )
+      )
+
+      record = deserialize(
+        {
+          data: {
+            type: "datasets",
+            id: dataset_id,
+            attributes: {
+              labeling_configuration: {
+                "tool" => { values: [{ id: "cat" }, { id: "dog" }] }
+              }
+            }
+          }
+        }
+      )
+
+      allow(subject.send(:datasets)).to receive(:labeling_configuration_updated)
+
+      result = subject.update(record)
+
+      expect(result.syncing_stats).to be(false)
+      expect(subject.send(:datasets)).not_to have_received(:labeling_configuration_updated)
+    end
+
+    it "does not fire event when labeling_configuration is unchanged" do
+      dataset_id = repo.create(
+        attributes.merge(
+          labeling_configuration: {
+            "tool" => { values: [{ id: "cat" }, { id: "dog" }] }
+          }
+        )
+      )
+
+      record = deserialize(
+        {
+          data: {
+            type: "datasets",
+            id: dataset_id,
+            attributes: { name: "Renamed" }
+          }
+        }
+      )
+
+      allow(subject.send(:datasets)).to receive(:labeling_configuration_updated)
+
+      subject.update(record)
+
+      expect(subject.send(:datasets)).not_to have_received(:labeling_configuration_updated)
     end
   end
 
@@ -250,6 +380,14 @@ RSpec.describe Dataset::Service, database: true do
       allow(subject).to receive(:authorize_creation).and_return(true)
     end
 
+    it "resets the duplicated deadline and preserves the original" do
+      date = Date.today + 10
+      repo.update!(original_dataset_id, { delivery_date: date })
+      duplicated = subject.duplicate(original_dataset_id)
+      expect(duplicated.delivery_date).to be_nil
+      expect(repo.find!(original_dataset_id).delivery_date).to eq(date)
+    end
+
     it "duplicates the dataset with basic fields reset" do
       duplicated = subject.duplicate(original_dataset_id)
 
@@ -278,6 +416,183 @@ RSpec.describe Dataset::Service, database: true do
         entry_ids: [1, 2, 3],
         with_annotations: true
       )
+    end
+
+    it "copies the feedback configuration to the duplicated dataset" do
+      repo.update!(
+        original_dataset_id,
+        { feedback_configuration: {
+          "aB3kF9mN2q" => { label: "Fix this", description: "Annotation is misaligned" }
+        } }
+      )
+
+      duplicated = subject.duplicate(original_dataset_id)
+
+      expect(duplicated.feedback_configuration).to eq(
+        aB3kF9mN2q: { label: "Fix this", description: "Annotation is misaligned" }
+      )
+    end
+  end
+
+  describe "#update_feedback_configuration" do
+    let(:system_repo) { Dataset::Repository.new(Verse::Auth::Context[:system]) }
+    let!(:dataset_id) { repo.create(attributes) }
+
+    before do
+      system_repo.update!(
+        dataset_id,
+        { feedback_configuration: {
+          "keep_key" => { label: "Keep me" },
+          "delete_key" => { label: "Delete me" }
+        } }
+      )
+    end
+
+    it "adds new items and keeps existing ones" do
+      new_config = {
+        "keep_key" => { label: "Keep me" },
+        "delete_key" => { label: "Delete me" },
+        "new_key" => { label: "New item", description: "Just added" }
+      }
+
+      result = subject.update_feedback_configuration(dataset_id, new_config)
+
+      expect(result.keys).to match_array(%i[keep_key new_key delete_key])
+      expect(result[:new_key][:label]).to eq("New item")
+    end
+
+    it "deletes an item that is not referenced by any note" do
+      new_config = { "keep_key" => { label: "Keep me" } }
+
+      result = subject.update_feedback_configuration(dataset_id, new_config)
+
+      expect(result.key?(:delete_key)).to be false
+    end
+
+    it "raises error when a deleted key is used by a note" do
+      system_note_repo = NoteFeed::Repository.new(Verse::Auth::Context[:system])
+      entry_id = Entry::Repository.new(Verse::Auth::Context[:system]).create(
+        priority: 1,
+        resource: "http://example.com/img.jpg",
+        wf_step: "review",
+        status: "in_progress",
+        assigned_to_id: 1,
+        project_id: project_id,
+        dataset_id: dataset_id
+      )
+
+      system_note_repo.create(
+        project_id: project_id,
+        dataset_id: dataset_id,
+        entry_id: entry_id,
+        anchor_type: "entry",
+        feedback_keys: ["delete_key"],
+        content_md: nil,
+        created_by_email: "user@example.com"
+      )
+
+      new_config = { "keep_key" => { label: "Keep me" } }
+
+      expect {
+        subject.update_feedback_configuration(dataset_id, new_config)
+      }.to raise_error(Verse::Error::ValidationFailed, /already used by a note/)
+    end
+
+    it "updates an existing item's label" do
+      new_config = {
+        "keep_key" => { label: "Updated label" },
+        "delete_key" => { label: "Delete me" }
+      }
+
+      result = subject.update_feedback_configuration(dataset_id, new_config)
+
+      expect(result[:keep_key][:label]).to eq("Updated label")
+    end
+
+    context "structural validation" do
+      it "raises when an item has no label" do
+        expect do
+          subject.update_feedback_configuration(
+            dataset_id,
+            { "new_key" => { description: "no label" } }
+          )
+        end.to raise_error(Verse::Error::ValidationFailed, /Invalid feedback configuration/)
+      end
+
+      it "raises when an item label is empty" do
+        expect do
+          subject.update_feedback_configuration(
+            dataset_id,
+            { "new_key" => { label: "" } }
+          )
+        end.to raise_error(Verse::Error::ValidationFailed, /can't be empty/)
+      end
+
+      it "raises when an item is not an object" do
+        expect do
+          subject.update_feedback_configuration(
+            dataset_id,
+            { "new_key" => "not a hash" }
+          )
+        end.to raise_error(Verse::Error::ValidationFailed, /Invalid feedback configuration/)
+      end
+
+      it "raises when the configuration is not an object" do
+        expect do
+          subject.update_feedback_configuration(dataset_id, [])
+        end.to raise_error(Verse::Error::ValidationFailed, /Invalid feedback configuration/)
+      end
+
+      it "accepts an empty configuration" do
+        result = subject.update_feedback_configuration(dataset_id, {})
+
+        expect(result).to eq({})
+      end
+    end
+  end
+
+  describe "#feedback_keys_in_use" do
+    let!(:dataset_id) { repo.create(attributes) }
+
+    it "returns an empty array when no notes use feedback keys" do
+      result = subject.feedback_keys_in_use(dataset_id)
+      expect(result[:keys]).to eq([])
+    end
+
+    it "returns distinct feedback keys referenced by notes" do
+      system_note_repo = NoteFeed::Repository.new(Verse::Auth::Context[:system])
+      entry_id = Entry::Repository.new(Verse::Auth::Context[:system]).create(
+        priority: 1,
+        resource: "http://example.com/img.jpg",
+        wf_step: "review",
+        status: "in_progress",
+        assigned_to_id: 1,
+        project_id: project_id,
+        dataset_id: dataset_id
+      )
+
+      system_note_repo.create(
+        project_id: project_id,
+        dataset_id: dataset_id,
+        entry_id: entry_id,
+        anchor_type: "entry",
+        feedback_keys: %w[key1 key2],
+        content_md: nil,
+        created_by_email: "user@example.com"
+      )
+      system_note_repo.create(
+        project_id: project_id,
+        dataset_id: dataset_id,
+        entry_id: entry_id,
+        anchor_type: "entry",
+        feedback_keys: %w[key2 key3],
+        content_md: nil,
+        created_by_email: "user@example.com"
+      )
+
+      result = subject.feedback_keys_in_use(dataset_id)
+
+      expect(result[:keys]).to match_array(%w[key1 key2 key3])
     end
   end
 end

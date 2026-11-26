@@ -861,6 +861,28 @@ RSpec.describe Account::Service, database: true do
         expect(result.role_scope).to be_nil
         expect(result.enabled).to be_nil
       end
+
+      it "leaves an account in another org unchanged when invited as user" do
+        create_account(
+          base_attrs.merge(email: "other@test.com", role_name: "org_owner", role_scope: { org: ["9"] }, enabled: true)
+        )
+
+        subject.invite(build_record(base_attrs.merge(email: "other@test.com", role_name: "user")))
+
+        stored = system_repo.find_by({ email: "other@test.com" })
+        expect(stored.role_name).to eq("org_owner")
+        expect(stored.role_scope).to eq("org" => ["9"])
+        expect(stored.enabled).to eq(true)
+      end
+
+      it "does not create a second account for an existing email" do
+        create_account(base_attrs.merge(email: "other@test.com", role_name: "user"))
+
+        subject.invite(build_record(base_attrs.merge(email: "other@test.com", role_name: "user")))
+
+        count = system_repo.index({ email: "other@test.com" }).count
+        expect(count).to eq(1)
+      end
     end
 
     context "as admin" do

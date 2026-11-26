@@ -67,6 +67,23 @@ Each modality object describes an annotation mode:
 | `id` | `string` | Unique modality identifier (namespaced with plugin name) |
 | `label` | `string` | Human-readable modality name |
 | `shapes` | `object` | Map of shape types this modality supports |
+| `systemShapes` | `object` | Optional. Map of shape types the plugin produces itself (e.g. a coverage mask's "done area"), which annotators cannot draw. They are not configurable tools, are excluded from the core entry stats (orphan count, annotation/category/shape counts), and are left out of exports. |
+
+Each shape (and tagging entry) may declare an optional `args` object describing its `shape_args` keys. The syntax follows JSON Schema (`type`, with an `x-` extension for the identity key):
+
+```json
+"bounding-box": {
+  "label": "Bounding Box",
+  "icon": "api/v1/plugins/idah-video/assets/bounding-box-icon.svg",
+  "args": {
+    "frames": { "type": "array", "x-identity-key": "frame" }
+  }
+}
+```
+
+Only `type: "array"` entries with a non-empty String `x-identity-key` are read today: they tell the dataset service which arrays inside `shape_args` are keyed by that identity key, so annotation change history diffs keyed arrays by item rather than by position (the video plugin's `frames` is keyed by `frame`). A non-Hash `args` fails the manifest schema and stops the service from booting; any other malformed entry is ignored with a warning. The image plugin declares no `args`. The setting service returns `args` to the frontend (see "Modality Shapes" below).
+
+`systemShapes` entries use the same shape object shape as `shapes` (a `label`, optionally `icon` and `args`). `PluginSystem::SystemShapes` (`common/lib/plugin_system/system_shapes.rb`) reads them from the loaded plugins: the dataset service uses it to exclude those shape types from the core entry stats, the sync service's UPD exporter to leave them out of the file (the image plugin's COCO, YOLO and Mask Segmentation exporters drop `done-area` themselves), and the setting service returns them in the modalities list (see "List Modalities" below) so the frontend can do the same — but never inside `shapes`, so they cannot be configured as tools. The image plugin declares `"done-area"` as a system shape.
 
 ### Entry Points
 
@@ -252,7 +269,7 @@ The Setting Service exposes several HTTP endpoints that the frontend and other s
 GET /plugins/modalities
 ```
 
-Returns all modalities across all plugins, mapped to their owning plugin names. The frontend uses this to populate the annotation mode selector.
+Returns all modalities across all plugins, mapped to their owning plugin names. The frontend uses this to populate the annotation mode selector. Each modality includes its `label` and `description`, plus its `system_shapes` when the manifest declares any (see "Modality Objects" above) — the frontend excludes those shape types from the core entry stats.
 
 ### Modality Shapes
 
@@ -260,7 +277,7 @@ Returns all modalities across all plugins, mapped to their owning plugin names. 
 GET /plugins/modalities/:name
 ```
 
-Returns the available shape types for a specific modality (identified by its `name` parameter). Each shape includes a label and any shape-specific configuration.
+Returns the available shape types for a specific modality (identified by its `name` parameter). Each shape includes a label, an icon, and — when the manifest declares it — its `args` (see "Modality Objects" above). The frontend types this as `ModalityShape` with an optional `args` field.
 
 ### Plugin Assets
 

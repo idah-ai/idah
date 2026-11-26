@@ -1,0 +1,59 @@
+name: Install apt packages (cached)
+description: >-
+  Installs Ubuntu packages with --no-install-recommends and caches the
+  downloaded .deb files, keyed on the package list and the runner image, so a
+  slow or throttled Ubuntu mirror costs only a cache miss. See install.sh.
+
+inputs:
+  packages:
+    description: Package names, separated by spaces or newlines.
+    required: true
+
+outputs:
+  cache-hit:
+    description: "'true' when the packages were installed from an exact cache hit."
+    value: ${{ steps.restore.outputs.cache-hit }}
+
+runs:
+  using: composite
+  steps:
+    - name: Compute the cache key
+      id: key
+      shell: bash
+      env:
+        PACKAGES: ${{ inputs.packages }}
+      run: |
+        list=$(tr -s ' \t' '\n' <<< "$PACKAGES" | sed '/^$/d' | sort -u | paste -sd' ' -)
+        echo "packages=$list" >> "$GITHUB_OUTPUT"
+        # ImageOS and ImageVersion are set on GitHub-hosted runners; a new
+        # image (about weekly) gets a new key, restored from the previous one.
+        prefix="apt-${RUNNER_ARCH}-$(sha256sum <<< "$list" | cut -c1-12)-${ImageOS:-unknown}-"
+        echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
+        echo "key=${prefix}${ImageVersion:-unknown}" >> "$GITHUB_OUTPUT"
+
+    - name: Restore cached packages
+      id: restore
+      uses: actions/cache/restore@v6
+      with:
+        path: ~/.apt-debs
+        key: ${{ steps.key.outputs.key }}
+        restore-keys: ${{ steps.key.outputs.prefix }}
+
+    - name: Install packages
+      shell: bash
+      env:
+        EXACT_HIT: ${{ steps.restore.outputs.cache-hit }}
+        PACKAGES: ${{ steps.key.outputs.packages }}
+      # PACKAGES is split on purpose: one argument per package.
+      run: bash "$GITHUB_ACTION_PATH/install.sh" "$HOME/.apt-debs" "${EXACT_HIT:-false}" $PACKAGES
+
+    # Saved right away rather than at the end of the job, so a failing test run
+    # still keeps the packages. Two jobs saving the same key at once is fine:
+    # the second one only warns.
+    - name: Save packages to the cache
+      if: ${{ steps.restore.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@v6
+      continue-on-error: true
+      with:
+        path: ~/.apt-debs
+        key: ${{ steps.key.outputs.key }}

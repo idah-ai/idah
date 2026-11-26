@@ -13,6 +13,9 @@ module Exports
     def register(plugin_name, modalities, klass)
       modalities = [modalities] unless modalities in Array
 
+      # The export dialog shows the exporter's options: reject what it cannot.
+      Options.check!(options_schema(klass))
+
       @registry ||= {}
 
       modalities.each do |modality|
@@ -40,6 +43,24 @@ module Exports
     end
 
     def clear_all = @registry.clear
+
+    # The registered export class of a given name, or nil.
+    # @param name String the class name, as `/formats` lists it
+    # @return Class|nil
+    def export_class(name)
+      @registry ||= {}
+      @registry.each_value do |classes|
+        found = classes.find { |klass| klass.to_s == name }
+        return found if found
+      end
+
+      nil
+    end
+
+    # The options an export class declares, as a Verse::Schema.
+    def options_schema(klass)
+      klass.method_defined?(:options) ? klass.new.options : Verse::Schema.empty
+    end
 
     def valid_export_class?(klass)
       @registry ||= {}
@@ -79,7 +100,8 @@ module Exports
         {
           name: exporter.name,
           description: exporter.description,
-          exporter: klass.to_s
+          exporter: klass.to_s,
+          options: Options.describe(options_schema(klass))
         }
       end
     end

@@ -1,7 +1,7 @@
 <script lang="ts" generics="T extends Record">
   import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
-  import { onDestroy, onMount, setContext } from "svelte";
+  import { onDestroy, onMount, setContext, untrack } from "svelte";
 
   import DataTableBody from "@/components/app/datasource-table/datasource-table-body.svelte";
   import DataTableContent from "@/components/app/datasource-table/datasource-table-content.svelte";
@@ -56,18 +56,19 @@
     filteredState,
   }: DataTableBaseProps<T> = $props();
 
-  // Contexts
-  setContext("id", id);
-  setContext("columns", _columns);
-  setContext("dataTableName", dataTableName);
-  setContext("refetchKey", refetchKey);
-  setContext("addNewRecordButton", addNewRecordButton);
-  setContext("emptyState", emptyState);
-  setContext("filteredState", filteredState);
-  setContext("disabledActiveStateFilterSortKeys", disabledActiveStateFilterSortKeys);
+  // Contexts: table configuration, fixed for the lifetime of this table instance.
+  untrack(() => {
+    setContext("id", id);
+    setContext("dataTableName", dataTableName);
+    setContext("refetchKey", refetchKey);
+    setContext("addNewRecordButton", addNewRecordButton);
+    setContext("emptyState", emptyState);
+    setContext("filteredState", filteredState);
+    setContext("disabledActiveStateFilterSortKeys", disabledActiveStateFilterSortKeys);
+  });
 
   // Variables
-  let tableState: TableState<T> = getTableState(id);
+  const tableState: TableState<T> = getTableState(untrack(() => id));
   let tableData: TableData<T> = $state({
     status: "loading",
     error: null,
@@ -84,7 +85,10 @@
     sort: [],
   });
 
-  let columns = $state(_columns);
+  // Local copy so column visibility can be toggled.
+  let columns = $state(untrack(() => _columns));
+  let visibleColumns = $derived(Object.entries(columns).filter(([, column]) => column.visible));
+  let columnSpan = $derived(Math.max(1, visibleColumns.length + (selectable ? 1 : 0)));
   let selectedRecords = $state<T[]>([]);
   let selectAll: boolean = $derived(selectedRecords.length === tableData.response.data.length);
   let haveSomeHidableColumns: boolean = $derived(Object.values(columns).some((column) => column.hidable));
@@ -118,8 +122,7 @@
     try {
       let listOpts: ListOptions = { ...listOptions };
 
-      const searchParams = $derived(page.url.searchParams);
-      const urlSearchParamsFilters = convertSearchParamsToHash(searchParams);
+      const urlSearchParamsFilters = convertSearchParamsToHash(page.url.searchParams);
 
       const mergedFilters = { ...listOptions?.filters, ...tablePreferences.filters, ...urlSearchParamsFilters };
 
@@ -359,41 +362,47 @@
             </TableHead>
           {/if}
 
-          {#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
-            {@const { label, align, filterable, sortable, visible } = columnSetting}
-            {#if visible}
-              <TableHead
-                class={cn(
-                  "bg-primary/10  last:rounded-tr-md",
-                  align ? `text-${align}` : "text-left",
-                  selectable ? "" : "first:rounded-tl-md",
-                )}
-              >
-                {#if !filterable && !sortable}
-                  <DataTableHeadLabel class="px-4">{label}</DataTableHeadLabel>
-                {:else}
-                  <DataTableHeadOptions
-                    {tableData}
-                    {columnKey}
-                    {columnSetting}
-                    {tablePreferences}
-                    onFilter={filterDataSource}
-                    onSort={sortDataSource}
-                    onHide={hideColumn}
-                  />
-                {/if}
-              </TableHead>
-            {/if}
+          {#each visibleColumns as [columnKey, columnSetting] (columnKey)}
+            {@const { label, align, filterable, sortable } = columnSetting}
+            <TableHead
+              class={cn(
+                "bg-primary/10  last:rounded-tr-md",
+                align ? `text-${align}` : "text-left",
+                selectable ? "" : "first:rounded-tl-md",
+              )}
+            >
+              {#if !filterable && !sortable}
+                <DataTableHeadLabel class="px-4">{label}</DataTableHeadLabel>
+              {:else}
+                <DataTableHeadOptions
+                  {tableData}
+                  {columnKey}
+                  {columnSetting}
+                  {tablePreferences}
+                  onFilter={filterDataSource}
+                  onSort={sortDataSource}
+                  onHide={hideColumn}
+                />
+              {/if}
+            </TableHead>
           {/each}
         </TableRow>
       </TableHeader>
 
       {#if tableData.status === "loading"}
-        <DataTableLoading />
+        <DataTableLoading {columnSpan} />
       {:else if tableData.status === "loaded"}
-        <DataTableBody {tableData} {columns} {isFiltering} {selectable} {selectedRecords} onToggleRow={toggleRow} />
+        <DataTableBody
+          {tableData}
+          {visibleColumns}
+          {columnSpan}
+          {isFiltering}
+          {selectable}
+          {selectedRecords}
+          onToggleRow={toggleRow}
+        />
       {:else}
-        <DataTableError />
+        <DataTableError {columnSpan} />
       {/if}
     </Table>
   </DataTableContent>

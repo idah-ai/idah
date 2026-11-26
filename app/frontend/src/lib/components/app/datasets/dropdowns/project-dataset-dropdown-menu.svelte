@@ -5,9 +5,9 @@
   import { onMount } from "svelte";
 
   import DatasetDuplicateModal from "@/components/app/datasets/overlays/dataset-duplicate-modal.svelte";
-  import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
+  import DatasetFormModal from "@/components/app/datasets/overlays/DatasetFormModal.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
-  import ExportFormModal from "@/components/app/projects/exports/overlays/export-form-modal.svelte";
+  import ExportFormModal from "@/components/app/projects/exports/overlays/_ExportFormModal.svelte";
 
   import { showConfirmModal } from "@/components/app/overlays/modals/confirm-modal.service.svelte";
   import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
@@ -19,6 +19,7 @@
 
   import type { DropdownMenuContentAlignment, IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import type { JsonApiErrorResponse } from "@/data/model/types";
 
   // Props
   interface Props {
@@ -109,7 +110,7 @@
     return await datasetsBackendDataSource.get(datasetId, {
       fields: {
         [ProjectRecord.type]: ["id"],
-        [DatasetRecord.type]: ["name", "modality", "entries_total_count"],
+        [DatasetRecord.type]: ["name", "modality", "entries_total_count", "delivery_date"],
       },
       included: ["project"],
       noCache: true,
@@ -132,7 +133,9 @@
         } catch (error) {
           showToast.error({
             title: "Unable to delete dataset",
-            description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
+            description:
+              (error as JsonApiErrorResponse)?.errors?.[0]?.detail ||
+              "The action could not be completed, please try again later.",
           });
           return confirmModalResult.KeepOpen;
         }
@@ -174,7 +177,7 @@
   <DatasetFormModal title="Dataset" action="update" {datasetRecord} bind:open={openEditDatasetFormModal} />
 
   <ExportFormModal
-    title="Export Dataset(s)"
+    title="Export Datasets"
     action="create"
     datasetRecords={datasetRecord ? [datasetRecord] : []}
     bind:open={openExportFormModal}

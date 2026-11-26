@@ -93,6 +93,17 @@ RSpec.describe NoteComment::Service, database: true do
     subject { described_class.new(current_auth_context) }
 
     describe "#create" do
+      it "rejects a blank reply" do
+        record = deserialize(
+          { data: { type: "dataset:note_comments",
+                    attributes: { content_md: "  " },
+                    relationships: { note_feed: { data: { type: "dataset:note_feeds", id: note_feed_id } } } } }
+        )
+
+        expect { subject.create(record) }
+          .to raise_error(Verse::Error::ValidationFailed, "comment content is required")
+      end
+
       context "when note_feed is provided" do
         it "creates a note comment with is_edited false" do
           record = deserialize(
@@ -230,6 +241,16 @@ RSpec.describe NoteComment::Service, database: true do
     end
 
     describe "#update" do
+      it "rejects a blank reply" do
+        record = deserialize(
+          { data: { type: "dataset:note_comments", id: note_comment.id,
+                    attributes: { content_md: "  " } } }
+        )
+
+        expect { subject.update(record) }
+          .to raise_error(Verse::Error::ValidationFailed, "comment content is required")
+      end
+
       it "updates a note comment and sets is_edited to true" do
         record = deserialize(
           {

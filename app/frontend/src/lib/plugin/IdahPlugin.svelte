@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, untrack } from "svelte";
 
   import type { IdahDriverV2 } from "./v2/driver";
   import type { IPluginDriver } from "./v2/types";
@@ -7,7 +7,7 @@
   import AnnotationHeaderBar from "@/plugin/layout/header/annotation-header-bar.svelte";
   import IdahCommandPalette from "./v2/components/idah-command-palette.svelte";
   import NoteOverlay from "@/plugin/layout/notes/NoteOverlay.svelte";
-  import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
+  import NoteSidebar from "@/plugin/layout/sidebar/notes/NoteSidebar.svelte";
 
   import { authStatus } from "@/security/AuthContext";
 
@@ -31,18 +31,36 @@
     }
   });
   // ── Listen to mode changes to refresh toolbar ────────────────────────
-  let currentMode = $state(driver.mode);
-  let paletteOpen = $state(driver.command.isPaletteOpen());
+  // Initial values; kept current by the driver subscriptions below.
+  let currentMode = $state(untrack(() => driver.mode));
+  let paletteOpen = $state(untrack(() => driver.command.isPaletteOpen()));
   let initialized = $state(false);
 
-  let noteSidebarOpen = $state(driver.notesAdapter!.noteSidebarOpen);
+  let noteSidebarOpen = $state(untrack(() => driver.notesAdapter!.noteSidebarOpen));
 
-  driver.onModeChange((event) => {
-    currentMode = event.newValue;
-  });
+  $effect(() => {
+    const d = driver;
+    return untrack(() => {
+      const unsubscribers = [
+        d.onModeChange((event) => {
+          currentMode = event.newValue;
 
-  driver.notesAdapter!.onNoteSidebarChange((open) => {
-    noteSidebarOpen = open;
+          switch (currentMode) {
+            case "review": {
+              noteSidebarOpen = true;
+              break;
+            }
+            default: {
+              break;
+            }
+          }
+        }),
+        d.notesAdapter!.onNoteSidebarChange((open) => {
+          noteSidebarOpen = open;
+        }),
+      ];
+      return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
+    });
   });
 
   onMount(() => {
@@ -99,7 +117,7 @@
 <div class="relative">
   {#if initialized}
     {#if notesReady && (currentMode === "review" || currentMode === "note")}
-      <NoteOverlay notesAdapter={driver.notesAdapter} />
+      <NoteOverlay {driver} notesAdapter={driver.notesAdapter} />
     {/if}
 
     <AnnotationHeaderBar bind:ref={headerBarElement} {driver} />

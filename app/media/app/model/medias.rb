@@ -64,7 +64,7 @@ module Medias
     # might need to review or suppress on that
     def create(attributes)
       with_metadata do
-        add_event_metadata(
+        add_metadata(
           project_id: attributes[:project_id],
           media_resource: attributes[:resource]
         )
@@ -77,7 +77,7 @@ module Medias
       with_metadata do
         media = find!(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: media.project_id,
           media_resource: media.resource
         )
@@ -90,7 +90,7 @@ module Medias
       with_metadata do
         media = find!(id)
 
-        add_event_metadata(
+        add_metadata(
           project_id: media.project_id,
           media_resource: media.resource
         )
@@ -125,10 +125,6 @@ module Medias
       project_ids = ProjectMembership::Lookup.new.memberships_for(account_id).map(&:project_id)
 
       table.where(project_id: project_ids)
-    end
-
-    def add_event_metadata(**opts)
-      add_metadata(**opts)
     end
   end
 end
