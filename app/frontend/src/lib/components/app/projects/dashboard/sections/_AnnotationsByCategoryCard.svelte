@@ -5,10 +5,13 @@
     ArrowDownAZIcon,
     ArrowDownZAIcon,
     ArrowUpDownIcon,
+    ChevronDownIcon,
+    ChevronRightIcon,
     RefreshCwIcon,
   } from "@lucide/svelte";
 
   import * as Card from "$lib/components/ui/card/index";
+  import * as Collapsible from "@/components/ui/collapsible";
   import * as HoverCard from "@/components/ui/hover-card/index";
   import Button from "@/components/ui/button/button.svelte";
   import Skeleton from "@/components/ui/skeleton/skeleton.svelte";
@@ -20,7 +23,7 @@
   } from "@/components/app/projects/dashboard/project-dashboard-controller.svelte";
   import {
     categoryShare,
-    sortCategories,
+    splitCategories,
     type CategorySort,
   } from "@/components/app/projects/dashboard/category-totals";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
@@ -36,7 +39,10 @@
   let categoryList: HTMLDivElement | undefined = $state();
   const categoryScope = $derived(JSON.stringify(controller.effectiveDatasetIds));
   let refreshPosition = $state<{ scope: string; top: number; height: number } | null>(null);
-  const sortedRows = $derived(sortCategories(result?.rows ?? [], sort));
+  let showEmptyCategories = $state(false);
+  const splitRows = $derived(splitCategories(result?.rows ?? [], sort));
+  const sortedRows = $derived(splitRows.annotated);
+  const emptyRows = $derived(splitRows.empty);
 
   $effect.pre(() => {
     if (refreshPosition?.scope !== categoryScope) refreshPosition = null;
@@ -169,7 +175,7 @@
         />
       {:else}
         {#if result.total === 0}
-          <p class="text-muted-foreground mb-3 text-sm">No annotations yet. Configured categories are shown below.</p>
+          <p class="text-muted-foreground mb-3 text-sm">No annotations yet.</p>
         {/if}
         <div bind:this={categoryList} use:restoreCategoryScroll class="max-h-96 overflow-y-auto pr-1">
           {#each sortedRows as row (row.id)}
@@ -179,7 +185,11 @@
               class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 py-2 pr-2 sm:grid-cols-[minmax(8rem,3fr)_minmax(0,7fr)_auto_auto]"
             >
               <div class="col-start-1 row-start-1 min-w-0">
-                <HoverCard.Root>
+                <HoverCard.Root
+                  onOpenChange={(open) => {
+                    if (open) void controller.loadCategoryDatasets(row.category);
+                  }}
+                >
                   <HoverCard.Trigger
                     class="flex max-w-full min-w-0 cursor-pointer items-center gap-1.5 text-left text-sm font-medium"
                     aria-label={`${row.category}: show category details and datasets`}
@@ -200,14 +210,37 @@
                     <p class="font-medium break-words">{row.label}</p>
                     <p class="text-muted-foreground mt-1 break-all">ID: {row.category}</p>
                     <p class="mt-3 font-medium">Contributing datasets</p>
-                    <ul class="mt-1 max-h-48 space-y-1 overflow-y-auto">
-                      {#each row.datasets as dataset (dataset.id)}
-                        <li class="flex justify-between gap-3">
-                          <span class="min-w-0 break-words">{dataset.name}</span>
-                          <span class="shrink-0 tabular-nums">{dataset.annotation_count.toLocaleString()}</span>
-                        </li>
-                      {/each}
-                    </ul>
+                    {@const breakdown = controller.categoryDatasets[row.category]}
+                    {#if !breakdown || (breakdown.status === "loading" && !breakdown.rows.length)}
+                      <div role="status" aria-label="Loading contributing datasets" class="mt-2 space-y-1">
+                        <Skeleton class="h-4 w-36" /><Skeleton class="h-4 w-28" />
+                      </div>
+                    {:else if breakdown.status === "error"}
+                      <p class="text-destructive mt-2">{breakdown.error}</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        class="mt-2"
+                        onclick={() => controller.retryCategoryDatasets(row.category)}>Retry</Button
+                      >
+                    {:else}
+                      <ul class="mt-1 max-h-48 space-y-1 overflow-y-auto">
+                        {#each breakdown.rows as dataset (dataset.id)}
+                          <li class="flex justify-between gap-3">
+                            <span class="min-w-0 break-words">{dataset.name}</span>
+                            <span class="shrink-0 tabular-nums">{dataset.annotation_count.toLocaleString()}</span>
+                          </li>
+                        {/each}
+                      </ul>
+                      {#if breakdown.more}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={breakdown.status === "loading"}
+                          onclick={() => void controller.loadCategoryDatasets(row.category, true)}>Load more</Button
+                        >
+                      {/if}
+                    {/if}
                   </HoverCard.Content>
                 </HoverCard.Root>
               </div>
@@ -227,6 +260,25 @@
             </div>
           {/each}
         </div>
+        {#if emptyRows.length}
+          <Collapsible.Root bind:open={showEmptyCategories}>
+            <Collapsible.Trigger>
+              {#snippet child({ props })}
+                <Button {...props} variant="ghost" size="sm" class="text-muted-foreground mt-3">
+                  {#if showEmptyCategories}<ChevronDownIcon />{:else}<ChevronRightIcon />{/if}
+                  Categories without annotations ({emptyRows.length})
+                </Button>
+              {/snippet}
+            </Collapsible.Trigger>
+            <Collapsible.Content>
+              <ul class="text-muted-foreground mt-2 max-h-48 space-y-1 overflow-y-auto text-sm">
+                {#each emptyRows as row (row.id)}
+                  <li title={row.category}>{row.label}</li>
+                {/each}
+              </ul>
+            </Collapsible.Content>
+          </Collapsible.Root>
+        {/if}
       {/if}
     {/if}
   </Card.Content>

@@ -12,8 +12,8 @@ Sequel.migration do
 
       constraint(:entry_category_counts_nonnegative_count, Sequel.lit("count >= 0"))
       index %i[entry_id category], unique: true
-      index %i[dataset_id category]
-      index %i[project_id category]
+      index %i[dataset_id category], include: [:count]
+      index %i[project_id category], include: [:count]
     end
 
     # This trigger owns cleanup during annotation and parent cascades. A second

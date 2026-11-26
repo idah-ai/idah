@@ -13,8 +13,8 @@ module Resource
     NoteComments = "dataset:note_comments"
     EntryStats = "dataset:entry_stats"
     EntryCategoryCounts = "dataset:entry_category_counts"
-    CategoryTotals = "dataset:category_totals"
-    ProjectCategoryTotals = "dataset:project_category_totals"
+    CategoryCounts = "dataset:category_counts"
+    TotalCategoryCounts = "dataset:total_category_counts"
     LabelConfigTemplates = "dataset:label_config_templates"
     FeedbackConfigTemplates = "dataset:feedback_config_templates"
     # rubocop:enable Naming/ConstantName

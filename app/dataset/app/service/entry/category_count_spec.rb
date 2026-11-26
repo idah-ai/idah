@@ -59,46 +59,6 @@ RSpec.describe Entry::Service, database: true do
     end
   end
 
-  it "returns only one visible entry's positive category rows", as: :annotator do
-    service = Entry::Service.new(current_auth_context)
-
-    rows = service.category_counts(assigned_entry_id)
-    expect(rows.map { |row| [row.entry_id, row.category, row.count] }).to eq(
-      [[assigned_entry_id, "car", 1]]
-    )
-    expect { service.category_counts(other_entry_id) }.to raise_error(Verse::Error::RecordNotFound)
-  end
-
-  it "returns counts for a reviewer's accessible unassigned review entry", as: :reviewer do
-    members.create(
-      project_id:,
-      account_id: 5,
-      role: "reviewer",
-      email: "reviewer@example.com",
-      invited_by_id: 1
-    )
-    review_entry_id = entries.create(
-      project_id:,
-      dataset_id:,
-      status: "submitted",
-      wf_step: "review",
-      submitted_by_id: 4,
-      assigned_to_id: nil
-    )
-    annotations.create(
-      project_id:,
-      dataset_id:,
-      entry_id: review_entry_id,
-      category: "person",
-      shape_type: "image:box",
-      shape_args: {},
-      created_by_email: "system@example.com"
-    )
-
-    rows = Entry::Service.new(current_auth_context).category_counts(review_entry_id)
-    expect(rows.map { |row| [row.category, row.count] }).to eq([["person", 1]])
-  end
-
   it "filters visible entries by category count, treating missing rows as zero", as: :project_owner do
     service = Entry::Service.new(current_auth_context)
 

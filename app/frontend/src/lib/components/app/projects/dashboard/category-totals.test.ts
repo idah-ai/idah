@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { categoryShare, categoryTotal, sortCategories } from "./category-totals";
+import { categoryShare, categoryTotal, sortCategories, splitCategories } from "./category-totals";
 
 const row = (id: string, count: number, label = id) => ({
   id,
@@ -10,6 +10,11 @@ const row = (id: string, count: number, label = id) => ({
 });
 
 describe("category totals", () => {
+  it("separates annotated categories from configured zeros", () => {
+    const result = splitCategories([row("car", 2), row("z", 0, "Z"), row("a", 0, "A")], "count-desc");
+    expect(result.annotated.map((item) => item.category)).toEqual(["car"]);
+    expect(result.empty.map((item) => item.category)).toEqual(["a", "z"]);
+  });
   it("counts annotations rather than entries, including zero and unconfigured categories", () => {
     expect(categoryTotal([row("car", 3), row("person", 0), { ...row("removed", 2), configured: false }])).toBe(5);
     expect(categoryTotal([])).toBe(0);

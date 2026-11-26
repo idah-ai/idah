@@ -68,11 +68,18 @@ module Dataset
     self.table = "datasets"
     self.resource = Resource::Dataset::Datasets
 
-    # Intentionally unpaginated: dashboard totals must cover the entire scope.
-    def for_category_counts(project_id, dataset_ids = nil)
+    def configured_categories(project_id:, dataset_ids: nil, by_dataset: false)
       collection = scoped(:read).where(project_id:)
       collection = collection.where(id: dataset_ids) if dataset_ids
-      collection.select(:id, :name, :labeling_configuration).order(:id).all.map { |row| Record.new(decode(row)) }
+      expanded = collection.select(:id, :labeling_configuration).from_self(alias: :d)
+        .cross_join(Sequel.lit("LATERAL jsonb_each(CASE WHEN jsonb_typeof(d.labeling_configuration) = 'object' THEN d.labeling_configuration ELSE '{}'::jsonb END) AS tool(key, config)"))
+        .cross_join(Sequel.lit("LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(tool.config->'values') = 'array' THEN tool.config->'values' ELSE '[]'::jsonb END) AS item(value)"))
+        .where(Sequel.lit("jsonb_typeof(tool.config) = 'object' AND jsonb_typeof(item.value) = 'object' AND jsonb_typeof(item.value->'id') = 'string' AND item.value->>'id' <> ''"))
+        .select(Sequel.lit("d.id AS dataset_id"), Sequel.lit("item.value->>'id' AS category"),
+                Sequel.lit("COALESCE(NULLIF(item.value->>'label', ''), item.value->>'id') AS label"))
+      columns = by_dataset ? %i[dataset_id category] : [:category]
+      expanded.from_self(alias: :configured_category_rows).group(*columns)
+        .select(*columns, Sequel.lit("CASE WHEN COUNT(DISTINCT label) = 1 THEN MIN(label) ELSE category END AS label")).all
     end
 
     custom_filter :category_counts do |collection, value|

@@ -10,18 +10,6 @@ class ProjectsExpo < BaseExpo
     for collaborative data annotation work.
   MD
 
-  expose on_http(:get, "/:id/category_counts") do
-    desc "Annotation totals by category ID and label across a Project's Datasets"
-    input do
-      field :id, String
-      field? :filter, Hash, default: {}
-    end
-    output Verse::JsonApi::Util.jsonapi_collection(ProjectCategoryTotal::Record)
-  end
-  def category_counts
-    service.category_counts(params[:id], params[:filter])
-  end
-
   json_api Project::Record do
     show
     index do

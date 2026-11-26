@@ -8,8 +8,7 @@ module Entry
         datasets: Dataset::Repository,
         projects: Project::Repository,
         project_members: ProjectMember::Repository,
-        annotations: Annotation::Repository,
-        category_count_rows: EntryCategoryCount::Repository
+        annotations: Annotation::Repository
     use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
@@ -94,11 +93,6 @@ module Entry
 
     def show(id, included: [])
       entries.find!(id, included:)
-    end
-
-    def category_counts(id)
-      entries.find!(id)
-      category_count_rows.for_entry(id)
     end
 
     def create(record)

@@ -351,27 +351,15 @@ All HTTP endpoints use JSON:API format (`Content-Type: application/vnd.api+json`
 | `/note_comments`   | CRUD                                                                                                         |
 | `/entry_stats`     | Read-only `index` and `show`; recomputed on entry `submitted`/`errored` events                               |
 
-### Dashboard Category Totals
+### Dashboard Category Counts
 
-| Endpoint | Scope and response |
-|----------|--------------------|
-| `GET /projects/:id/category_counts` | All datasets in the project, optionally restricted by `filter[dataset_id][]`; returns `dataset:project_category_totals`. |
-| `GET /datasets/category_counts` | Requires `filter[project_id]` and `filter[dataset_id][]`; returns a batch of `dataset:category_totals`. |
-| `GET /datasets/:id/category_counts` | Existing single-dataset totals, enriched with `label` and `configured`. |
-| `GET /entries/:id/category_counts` | Per-entry `dataset:entry_category_counts` records with `count`; distinct from aggregate `annotation_count`. |
+`GET /annotations/category_counts` returns flat category rows. `group_by=category` (default) returns one row per category, including configured categories with zero annotations. `group_by=project`, `dataset`, or `entry` returns positive rows per group and category. Each row has `category`, `label`, `configured`, `annotation_count`, and only the ID for its group level. An unconfigured category uses its ID as its label; conflicting labels across datasets also fall back to the category ID.
 
-Explicit dataset selections accept 1–100 UUIDs. Invalid, inaccessible, or cross-project selections fail rather
-than silently returning partial totals. Dataset/project totals require project-owner access for user-scoped
-accounts; admin and organization scopes retain repository authorization.
+`GET /annotations/total_category_counts` returns annotation totals without a category dimension. `group_by=project` (default), `dataset`, or `entry` selects the group level. Explicitly requested dataset and entry IDs return a row even when their count is zero. Both endpoints use `dataset:entry_category_counts` read scope, so counts cover only entries visible to the caller; configured categories come from datasets the caller can read, including datasets with no visible annotation counts. The `idah-image:done-area` shape and soft-deleted annotations are excluded by the count trigger.
 
-Counts sum the scoped `entry_category_counts` table across all entry statuses, independently of the dashboard's
-completion date range and entry tabs. Configured categories with zero annotations and observed unconfigured
-categories are included; `idah-image:done-area` system shapes are excluded. Project aggregation combines all rows with the same category ID, including categories
-with different labels or missing configuration. When labels differ, the aggregate uses the category ID as its
-label. Each row includes its contributing dataset IDs, names, category labels, configured flags, and annotation counts. Unconfigured categories use
-their ID as the label. These collections are complete, unpaginated
-aggregates; the dashboard uses the project response for its category card and every page of its dataset table.
-The dataset batch endpoint remains available for other consumers.
+Both endpoints accept `filter[project_id]`, optional `filter[dataset_id][]` and `filter[entry_id][]` (1–100 UUIDs each), and `group_by`. Entry IDs may supply the project scope on their own, but all must belong to one project. `category_counts` also accepts `filter[category]`. Invalid or inaccessible IDs, unknown filters or groups, and a missing scope return 422; an inaccessible project returns 404. `group_by=entry` requires a dataset or entry filter.
+
+Dataset and entry grouping use `page[number]` and `page[size]` (default 10, range 10–500), with stable ID ordering and `meta.more`. Paging is by group, so a page contains all category rows for each selected group. Explicitly requested IDs return all groups in one response. Category and project grouping are unpaged. The dashboard fetches the category card, current dataset table page, and hover breakdowns separately; it resolves hover dataset names through the scoped datasets list API.
 
 ### Entry-Specific Endpoints
 

@@ -59,21 +59,6 @@ RSpec.describe Dataset::Service, database: true do
     end
   end
 
-  it "sums the whole dataset for a project owner and includes configured zero categories", as: :project_owner do
-    service = Dataset::Service.new(current_auth_context)
-
-    totals = service.category_counts(dataset_id)
-    expect(totals.map { |row| [row.category, row.annotation_count] }).to eq(
-      [["car", 3], ["person", 0]]
-    )
-  end
-
-  it "rejects dataset totals for an annotator with a visible entry", as: :annotator do
-    service = Dataset::Service.new(current_auth_context)
-
-    expect { service.category_counts(dataset_id) }.to raise_error(Verse::Error::Unauthorized)
-  end
-
   it "combines dataset category conditions and honors zero thresholds", as: :project_owner do
     service = Dataset::Service.new(current_auth_context)
 

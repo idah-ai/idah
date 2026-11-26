@@ -53,3 +53,18 @@ export function sortCategories<T extends CategoryTotal>(rows: T[], sort: Categor
     return -byCount || a.label.localeCompare(b.label) || byCategory;
   });
 }
+
+export function splitCategories<T extends CategoryTotal>(
+  rows: T[],
+  sort: CategorySort,
+): { annotated: T[]; empty: T[] } {
+  return {
+    annotated: sortCategories(
+      rows.filter((row) => row.annotation_count > 0),
+      sort,
+    ),
+    empty: rows
+      .filter((row) => row.annotation_count === 0)
+      .sort((a, b) => a.label.localeCompare(b.label) || a.category.localeCompare(b.category)),
+  };
+}

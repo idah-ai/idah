@@ -54,21 +54,37 @@ module EntryCategoryCount
       end
     end
 
-    def for_entry(entry_id)
-      scoped(:read).where(entry_id:).order(:category).all.map { |row| Record.new(row) }
+    def category_totals(scope, group_by:, category: nil)
+      grouped(scope, group_by:, category:)
+        .group(*(group_by == "category" ? [:category] : [GROUP_COLUMN.fetch(group_by), :category]))
+        .select(*(group_by == "category" ? [:category] : [GROUP_COLUMN.fetch(group_by), :category]),
+                Sequel.function(:sum, :count).as(:annotation_count)).order(*(group_by == "category" ? [:category] : [GROUP_COLUMN.fetch(group_by), :category])).all
     end
 
-    def totals_for_dataset(dataset_id)
-      scoped(:read).where(dataset_id:).group(:category)
-                   .select(:category, Sequel.function(:sum, :count).as(:annotation_count)).all
+    def totals(scope, group_by:)
+      column = GROUP_COLUMN.fetch(group_by)
+      grouped(scope, group_by:).group(column).select(column, Sequel.function(:sum, :count).as(:annotation_count))
+                            .order(column).all
     end
 
-    def totals_for_datasets(dataset_ids)
-      scoped(:read).where(dataset_id: dataset_ids).group(:dataset_id, :category)
-                   .select(:dataset_id, :category, Sequel.function(:sum, :count).as(:annotation_count)).all
+    def group_ids(scope, group_by:, category: nil, number:, size:)
+      column = GROUP_COLUMN.fetch(group_by)
+      grouped(scope, group_by:, category:).select(column).distinct.order(column)
+        .limit(size + 1, (number - 1) * size).select_map(column)
     end
 
     private
+
+    GROUP_COLUMN = { "project" => :project_id, "dataset" => :dataset_id, "entry" => :entry_id }.freeze
+
+    def grouped(scope, group_by:, category: nil)
+      rows = scoped(:read).where(project_id: scope[:project_id])
+      rows = rows.where(dataset_id: scope[:dataset_ids]) if scope[:dataset_ids]
+      rows = rows.where(entry_id: scope[:entry_ids]) if scope[:entry_ids]
+      rows = rows.where(category:) if category
+      rows = rows.where(GROUP_COLUMN.fetch(group_by) => scope[:page_ids]) if scope[:page_ids]
+      rows
+    end
 
     def visible_entry_counts
       visible_entries = Entry::Repository.new(auth_context).scoped(:read).select(:id)

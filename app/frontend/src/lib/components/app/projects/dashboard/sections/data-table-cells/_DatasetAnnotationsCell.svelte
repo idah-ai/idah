@@ -16,6 +16,7 @@
   let { row: dataset }: Props = $props();
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
   const result = $derived(controller.datasetAnnotations[dataset.id]);
+  const categories = $derived(controller.datasetCategories[dataset.id]);
   let open = $state(false);
   let closeTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -36,10 +37,7 @@
   }
   onDestroy(cancelClose);
   $effect(() => {
-    if (dataset.id && result) {
-      open = false;
-      cancelClose();
-    }
+    if (open && dataset.id) void controller.loadDatasetCategories(dataset.id);
   });
 </script>
 
@@ -88,15 +86,24 @@
       </div>
       <Separator />
       <div class="max-h-64 overflow-y-auto p-1">
-        {#each result.rows as row (row.id)}
-          <div class="flex items-start justify-between gap-4 px-2 pt-2">
-            <span class="min-w-0 break-words">{row.category}</span>
-
-            <span class="shrink-0 font-semibold tabular-nums">{row.annotation_count.toLocaleString()}</span>
-          </div>
+        {#if !categories || categories.status === "loading"}
+          <div role="status" aria-label="Loading dataset categories" class="p-2"><Skeleton class="h-4 w-32" /></div>
+        {:else if categories.status === "error"}
+          <p class="text-destructive p-2">{categories.error}</p>
+          <Button variant="outline" size="sm" class="m-2" onclick={() => controller.retryDatasetCategories(dataset.id)}
+            >Retry</Button
+          >
         {:else}
-          <p class="text-muted-foreground p-2">No configured categories or annotations.</p>
-        {/each}
+          {#each categories.rows as row (row.id)}
+            <div class="flex items-start justify-between gap-4 px-2 pt-2">
+              <span class="min-w-0 break-words">{row.category}</span>
+
+              <span class="shrink-0 font-semibold tabular-nums">{row.annotation_count.toLocaleString()}</span>
+            </div>
+          {:else}
+            <p class="text-muted-foreground p-2">No annotations yet.</p>
+          {/each}
+        {/if}
       </div>
     </Popover.Content>
   </Popover.Root>

@@ -141,17 +141,6 @@ class EntriesExpo < BaseExpo
     service.select(entry_id)
   end
 
-  expose on_http(:get, "/:id/category_counts") do
-    desc "Visible annotation counts by category for one entry"
-    input do
-      field :id, String
-    end
-    output Verse::JsonApi::Util.jsonapi_collection(EntryCategoryCount::Record)
-  end
-  def category_counts
-    service.category_counts(params[:id])
-  end
-
   expose on_http(:post, "/:id/submit") do
     desc "Submit workflow event for an entry"
     input do
