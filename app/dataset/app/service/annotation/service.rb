@@ -4,8 +4,8 @@ module Annotation
   class Service < Verse::Service::Base
     use annotations: Annotation::Repository,
         entries: Entry::Repository,
-        entry_time_slots: EntryTimeSlot::Repository,
         entry_work_times: EntryWorkTime::Repository
+    use_system system_entry_time_slots: EntryTimeSlot::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       result = annotations.index(
@@ -212,7 +212,7 @@ module Annotation
     def touch_time_tracking(entry)
       TimeTracking.safe_touch(
         entry_repo: entries,
-        slot_repo: entry_time_slots,
+        slot_repo: system_entry_time_slots,
         work_repo: entry_work_times,
         entry_id: entry.id,
         account_id: auth_context.metadata[:id],

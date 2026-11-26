@@ -9,7 +9,6 @@ module Entry
         projects: Project::Repository,
         project_members: ProjectMember::Repository,
         annotations: Annotation::Repository,
-        entry_time_slots: EntryTimeSlot::Repository,
         entry_work_times: EntryWorkTime::Repository
     use_system system_datasets_repo: Dataset::Repository,
                system_entries_repo: Entry::Repository,
@@ -227,7 +226,7 @@ module Entry
 
         TimeTracking.safe_touch(
           entry_repo: entries,
-          slot_repo: entry_time_slots,
+          slot_repo: system_entry_time_slots_repo,
           work_repo: entry_work_times,
           entry_id: entry.id,
           account_id: account_id,
@@ -241,11 +240,12 @@ module Entry
 
     # Fire-and-forget activity ping. Updates time-tracking slots for the
     # current user if they are the assignee and the step is trackable.
-    # Never raises (savepoint + rescue inside safe_touch).
     def notify_activity(entry_id)
+      entries.find!(entry_id)
+
       TimeTracking.safe_touch(
         entry_repo: entries,
-        slot_repo: entry_time_slots,
+        slot_repo: system_entry_time_slots_repo,
         work_repo: entry_work_times,
         entry_id: entry_id,
         account_id: auth_context.metadata[:id],

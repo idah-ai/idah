@@ -79,6 +79,47 @@ describe("enrichWithTimeData", () => {
     expect(result.steps).toHaveLength(1);
     expect(result.steps[0].seconds).toBe(0);
     expect(result.steps[0].stage).toBe("Annotate");
+    expect(result.steps[0].people).toBeDefined();
+    expect(result.steps[0].people![0].unsubmitted).toBe(true);
+  });
+
+  it("shows 'Unsubmitted' for an open session on a step with no finalized time", () => {
+    const result = enrichWithTimeData(
+      mockEntry({
+        time_tracking: null,
+        wf_step: "review",
+        assigned_to_email: "reviewer@test.com",
+        entry_work_times: [
+          { account_id: 2, wf_step: "review", seconds: 0, email: "reviewer@test.com", session_started_at: new Date() },
+        ] as unknown as EntryWorkTimeRecord[],
+      }),
+    );
+    expect(result.steps).toHaveLength(1);
+    expect(result.steps[0].stage).toBe("Review");
+    expect(result.steps[0].seconds).toBe(0);
+    // Always has people when unsubmitted
+    expect(result.steps[0].people).toHaveLength(1);
+    expect(result.steps[0].people![0].unsubmitted).toBe(true);
+  });
+
+  it("shows both finalized time and unsubmitted status when the same reviewer has both", () => {
+    const result = enrichWithTimeData(
+      mockEntry({
+        time_tracking: { review: 14 },
+        wf_step: "review",
+        assigned_to_email: "reviewer@test.com",
+        entry_work_times: [
+          { account_id: 2, wf_step: "review", seconds: 14, email: "reviewer@test.com", session_started_at: null },
+          { account_id: 2, wf_step: "review", seconds: 0, email: "reviewer@test.com", session_started_at: new Date() },
+        ] as unknown as EntryWorkTimeRecord[],
+      }),
+    );
+    expect(result.steps).toHaveLength(1);
+    expect(result.steps[0].stage).toBe("Review");
+    expect(result.steps[0].seconds).toBe(14);
+    expect(result.steps[0].people).toHaveLength(1);
+    expect(result.steps[0].people![0].seconds).toBe(14);
+    expect(result.steps[0].people![0].unsubmitted).toBe(true);
   });
 
   it("handles entry with no assigned email gracefully", () => {

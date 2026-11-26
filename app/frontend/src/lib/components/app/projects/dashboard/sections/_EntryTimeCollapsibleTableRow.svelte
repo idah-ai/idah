@@ -87,7 +87,15 @@
                       {multi ? `${step.people!.length} users` : step.performedBy}
                     </td>
                     <td class="py-1.5 text-right text-[13px] font-medium tabular-nums">
-                      {step.people && step.people[0].unsubmitted ? "Unsubmitted" : formatSeconds(step.seconds)}
+                      {#if step.people && step.people.some((p) => p.unsubmitted)}
+                        <span>Unsubmitted</span>
+                        {#if step.seconds > 0}
+                          <br />
+                          <span class="text-muted-foreground text-[11px]">(with {formatSeconds(step.seconds)} submitted before)</span>
+                        {/if}
+                      {:else}
+                        <span class="tabular-nums">{formatSeconds(step.seconds)}</span>
+                      {/if}
                     </td>
                   </tr>
                   {#if multi}

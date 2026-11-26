@@ -33,22 +33,21 @@ RSpec.describe EntryTimeSlot, database: true do
   end
 
   describe "#insert_slot" do
-    it "inserts a slot row" do
+    it "inserts a slot row and returns true" do
       slot_start = Time.utc(2026, 11, 3, 10, 30, 0)
-      repo.insert_slot(entry_id, 10, "annotate", slot_start)
+      expect(repo.insert_slot(entry_id, 10, "annotate", slot_start)).to be(true)
 
       row = repo.table.where(entry_id:, account_id: 10).first
       expect(row[:slot_start]).to eq(slot_start)
       expect(row[:wf_step]).to eq("annotate")
     end
 
-    it "ignores a duplicate (same entry, account, step, slot)" do
+    it "returns false on duplicate (same entry, account, step, slot)" do
       slot_start = Time.utc(2026, 11, 3, 10, 30, 0)
       repo.insert_slot(entry_id, 10, "annotate", slot_start)
 
-      expect do
-        repo.insert_slot(entry_id, 10, "annotate", slot_start)
-      end.not_to(change { repo.table.count })
+      expect(repo.insert_slot(entry_id, 10, "annotate", slot_start)).to be(false)
+      expect(repo.table.count).to eq(1)
     end
 
     it "allows the same slot for a different account" do

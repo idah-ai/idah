@@ -1662,4 +1662,24 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
       end
     end
   end
+
+  describe "POST /entries/:id/activity" do
+    let!(:entry_id) do
+      entries.create(
+        project_id: project_id,
+        dataset_id: dataset_id,
+        status: "in_progress",
+        wf_step: "annotate",
+        assigned_to_id: 1,
+        assigned_to_email: "admin@example.com"
+      )
+    end
+
+    it "returns 200 and does not raise Verse::Error::Authorization" do
+      post "/entries/#{entry_id}/activity"
+
+      expect(last_response.status).to eq(200), last_response.body
+      expect(last_response.body).to include("accepted")
+    end
+  end
 end

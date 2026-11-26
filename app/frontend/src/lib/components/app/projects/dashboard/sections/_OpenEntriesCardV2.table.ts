@@ -94,7 +94,7 @@ export function enrichWithTimeData(entry: EntryRecord): EntryWithTimeData {
     }
 
     for (const [stage, info] of Object.entries(byStep)) {
-      const people = info.emails.map((email) => ({ who: email, seconds: 0 }));
+      const people = info.emails.map((email) => ({ who: email, seconds: 0, unsubmitted: true }));
       // Check if a finalized step with the same stage already exists
       const existing = steps.find((s) => s.stage === stage);
       if (existing) {
@@ -111,7 +111,7 @@ export function enrichWithTimeData(entry: EntryRecord): EntryWithTimeData {
           stage,
           performedBy: people[0].who,
           seconds: 0,
-          people: people.length > 1 ? people : undefined,
+          people,
         });
       }
     }
