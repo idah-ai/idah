@@ -402,11 +402,8 @@ export class IdahDriverV2 implements IIdahDriverV2 {
       (this.command as CommandDriverAdapter).openPalette();
       return true;
     }
-    const handled = this.command.resolveKeyEvent(event, this._mode);
-    // A resolved command means the user did something — record it for time
-    // tracking. Catches every keyboard-triggered command in one place.
-    if (handled) this.notifyActivity();
-    return handled;
+
+    return this.command.resolveKeyEvent(event, this._mode);
   }
 
   /**

@@ -4,6 +4,8 @@
   import { media } from "$lib/state/media.svelte";
   import { viewport } from "$lib/state/viewport.svelte";
   import { ui } from "$lib/state/ui.svelte";
+  import { getDriver } from "$lib/state/driver.svelte";
+  import { startPlaybackActivity } from "$lib/utils/playback-activity";
 
   let {
     src = undefined,
@@ -362,7 +364,16 @@
       videoElement.src = src;
     }
 
+    // Time tracking: watching playback is work too, but only while the tab is
+    // in front, so a video left playing in another tab records no time.
+    const stopPlaybackActivity = startPlaybackActivity({
+      isPlaying: () => viewport.video.status === "play",
+      isVisible: () => document.visibilityState === "visible",
+      notify: () => getDriver().notifyActivity(),
+    });
+
     return () => {
+      stopPlaybackActivity();
       stopRAF();
       // The seek effect's one-shot rVFC is separate from the playback loop;
       // cancel it too so it can't write displayedFrame after unmount.
