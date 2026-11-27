@@ -9,6 +9,8 @@ export interface FormModalBaseProps extends ModalBaseProps {
   title?: string;
   description?: string;
   loading?: boolean;
+  // The confirm button's text while `loading`, instead of "Creating …" / "Saving".
+  loadingLabel?: string;
   disabled?: boolean;
   closeOnOutsideClick?: boolean;
   actions?: Snippet;

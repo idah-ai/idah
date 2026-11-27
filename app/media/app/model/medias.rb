@@ -26,8 +26,11 @@ module Medias
 
     field :project_id, type: String, readonly: true
 
+    # The storage target the file was written to; nil is the default storage.
+    field :storage_target_id, type: [String, NilClass], readonly: true
+
     def open
-      Verse::Plugin[:shrine].with_storage do |storage|
+      StorageRegistry.with_storage(storage_target_id) do |storage|
         storage.open(id)
       rescue Shrine::FileNotFound
         raise Verse::Error::NotFound, "File not found"
@@ -47,17 +50,26 @@ module Medias
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
 
-        scope.as_org_owner? do
-          if auth_context.custom_scopes[:project]
-            # API-key project scope: no membership union.
-            table.where(project_id: auth_context.custom_scopes[:project])
-          else
-            project_from_orgs_and_memberships_scoped
-          end
-        end
-
-        scope.as_user? { project_from_memberships_scoped }
+        scope.as_org_owner? { table.where(project_id: org_owner_project_ids) }
+        scope.as_user? { table.where(project_id: member_project_ids) }
       end
+    end
+
+    # Refuses unless the actor may add media to the project: the same projects
+    # `#scoped(:create)` gives them. The project id comes from the client, and the
+    # project decides where its files are stored.
+    def authorize_project!(project_id)
+      # The block returns the allowed projects, never false: Verse rejects a
+      # falsy scope result with its own generic error.
+      project_ids = auth_context.can!(:create, self.class.resource) do |scope|
+        scope.all? { :all }
+        scope.as_org_owner? { org_owner_project_ids }
+        scope.as_user? { member_project_ids }
+      end
+
+      return if project_ids == :all || project_ids.include?(project_id)
+
+      raise Verse::Error::Authorization, "no access to project `#{project_id}`"
     end
 
     # TODO: background processors also trigger this event and causing error logs on audit as there's no actor id
@@ -101,30 +113,23 @@ module Medias
 
     private
 
-    def project_from_orgs_scoped
-      org_ids = auth_context.custom_scopes[:org]
-      project_ids = ProjectMembership::Lookup.new.project_ids_for_organizations(org_ids)
+    # as_org_owner: the API key's project when the key is scoped to one (no
+    # membership union), otherwise the org's projects and the projects where the
+    # actor is an enabled member.
+    def org_owner_project_ids
+      if (project_scope = auth_context.custom_scopes[:project])
+        return Array(project_scope)
+      end
 
-      table.where(project_id: project_ids)
-    end
-
-    # as_org_owner union: org projects ∪ projects where the actor is an enabled
-    # member.
-    def project_from_orgs_and_memberships_scoped
-      account_id = auth_context.metadata[:id]
       lookup = ProjectMembership::Lookup.new
-
       project_ids = lookup.project_ids_for_organizations(auth_context.custom_scopes[:org])
-      project_ids += lookup.memberships_for(account_id).map(&:project_id)
-
-      table.where(project_id: project_ids.uniq)
+      project_ids += lookup.memberships_for(auth_context.metadata[:id]).map(&:project_id)
+      project_ids.uniq
     end
 
-    def project_from_memberships_scoped
-      account_id = auth_context.metadata[:id]
-      project_ids = ProjectMembership::Lookup.new.memberships_for(account_id).map(&:project_id)
-
-      table.where(project_id: project_ids)
+    # as_user: the projects where the actor is an enabled member.
+    def member_project_ids
+      ProjectMembership::Lookup.new.memberships_for(auth_context.metadata[:id]).map(&:project_id)
     end
   end
 end

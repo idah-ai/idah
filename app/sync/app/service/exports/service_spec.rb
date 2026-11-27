@@ -65,6 +65,17 @@ RSpec.describe Exports::Service, database: true do
         expect(export).not_to be_nil
       end
 
+      it "records the project's storage target, where the export file will go" do
+        target_id = UUIDv7.generate
+        allow(StorageRegistry::ProjectTargets).to receive(:for).with(project_id).and_return(target_id)
+
+        expect(subject.create(project_id, dataset_ids, exporter).storage_target_id).to eq(target_id)
+      end
+
+      it "records no target for a project in the default storage" do
+        expect(subject.create(project_id, dataset_ids, exporter).storage_target_id).to be_nil
+      end
+
       it "stores the created_by_id from auth context" do
         export = subject.create(project_id, dataset_ids, exporter)
 
@@ -512,7 +523,7 @@ RSpec.describe Exports::Service, database: true do
 
     context "with valid file and export" do
       before do
-        allow(Verse::Plugin[:shrine]).to receive(:with_storage).and_yield(mock_storage)
+        allow(StorageRegistry).to receive(:with_storage).and_yield(mock_storage)
         allow(mock_storage).to receive(:upload).with(mock_file).and_return(uploaded_file)
         allow(repo.table.db).to receive(:after_rollback)
       end
@@ -554,6 +565,21 @@ RSpec.describe Exports::Service, database: true do
         expect(repo.find!(export_id).filename).to eq("idah-coco-image_2026-10-16_0430.zip")
       end
 
+      it "uploads to the default storage when the export has no target, without retrying the stream" do
+        expect(StorageRegistry).to receive(:with_storage).with(nil, retriable: false).and_yield(mock_storage)
+
+        service.upload(export_id, mock_file)
+      end
+
+      it "uploads to the storage target recorded on the export" do
+        target_id = UUIDv7.generate
+        repo.table.where(id: export_id).update(storage_target_id: target_id)
+
+        expect(StorageRegistry).to receive(:with_storage).with(target_id, retriable: false).and_yield(mock_storage)
+
+        service.upload(export_id, mock_file)
+      end
+
       it "registers rollback callback for file cleanup" do
         expect(repo.table.db).to receive(:after_rollback)
 
@@ -583,7 +609,7 @@ RSpec.describe Exports::Service, database: true do
 
       before do
         allow(File).to receive(:basename).with("/tmp/export.json").and_return("export.json")
-        allow(Verse::Plugin[:shrine]).to receive(:with_storage).and_yield(mock_storage)
+        allow(StorageRegistry).to receive(:with_storage).and_yield(mock_storage)
         allow(mock_storage).to receive(:upload).with(json_file).and_return(json_uploaded_file)
         allow(repo.table.db).to receive(:after_rollback)
       end
@@ -599,7 +625,7 @@ RSpec.describe Exports::Service, database: true do
 
     context "rollback behavior" do
       before do
-        allow(Verse::Plugin[:shrine]).to receive(:with_storage).and_yield(mock_storage)
+        allow(StorageRegistry).to receive(:with_storage).and_yield(mock_storage)
         allow(mock_storage).to receive(:upload).with(mock_file).and_return(uploaded_file)
       end
 
@@ -653,7 +679,7 @@ RSpec.describe Exports::Service, database: true do
 
     context "when file upload fails" do
       before do
-        allow(Verse::Plugin[:shrine]).to receive(:with_storage).and_yield(mock_storage)
+        allow(StorageRegistry).to receive(:with_storage).and_yield(mock_storage)
         allow(mock_storage).to receive(:upload).and_raise(StandardError.new("Upload failed"))
       end
 
@@ -691,7 +717,7 @@ RSpec.describe Exports::Service, database: true do
       before do
         # First upload
         allow(File).to receive(:basename).with(file_path).and_return("test_export.csv")
-        allow(Verse::Plugin[:shrine]).to receive(:with_storage).and_yield(mock_storage)
+        allow(StorageRegistry).to receive(:with_storage).and_yield(mock_storage)
         allow(mock_storage).to receive(:upload).with(mock_file).and_return(uploaded_file)
         allow(repo.table.db).to receive(:after_rollback)
         service.upload(export_id, mock_file)

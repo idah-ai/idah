@@ -39,6 +39,7 @@
             name: null,
             description: null,
             organization_id: preSelectedOrganizationId || null,
+            storage_target_id: null,
           },
         }),
   );
@@ -76,6 +77,8 @@
           name: draft.name,
           description: draft.description,
           organization_id: draft.organization_id,
+          // Chosen once: an update never sends it.
+          storage_target_id: draft.storage_target_id ?? null,
         },
       },
       {

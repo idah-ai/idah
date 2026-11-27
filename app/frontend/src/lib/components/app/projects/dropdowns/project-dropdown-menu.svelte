@@ -73,7 +73,7 @@
   async function fetchProject() {
     return await projectsBackendDataSource.get(projectId, {
       fields: {
-        [ProjectRecord.type]: ["name", "description", "organization_id"],
+        [ProjectRecord.type]: ["name", "description", "organization_id", "storage_target_id"],
       },
       noCache: true,
     });

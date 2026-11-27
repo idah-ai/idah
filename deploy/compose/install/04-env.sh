@@ -44,6 +44,10 @@ for svc in $services; do
   if [ -z "$pw" ]; then pw=$(secret 32); set_env "$key" "$pw"; fi
   service_list="${service_list:+$service_list,}$svc:$pw"
 done
+
+# Encrypts the storage targets' S3 secrets. Kept like the others: a new key
+# would make every stored secret unreadable.
+[ -n "$(from_file STORAGE_TARGETS_MASTER_KEY)" ] || set_env STORAGE_TARGETS_MASTER_KEY "$(secret 48)"
 echo "   your settings kept, missing secrets generated"
 
 mkdir -p "$keys_dir" "$certs_dir"

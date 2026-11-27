@@ -45,6 +45,10 @@ module Exports
       # avoids generating an export that silently skips (or misses) entries.
       entry_ids = filter_entry_ids_by_rights(dataset_ids, entry_ids)
 
+      # Where the export file will go, fixed now so the job can't put it
+      # anywhere else.
+      storage_target_id = StorageRegistry::ProjectTargets.for(project_id)
+
       exports.transaction do
         arguments = {
           exporter:, # Exporter class
@@ -62,6 +66,7 @@ module Exports
           {
             job_id: job.id,
             project_id:,
+            storage_target_id:,
             created_by_id: auth_context.metadata[:id]
           }
         )
@@ -76,7 +81,8 @@ module Exports
       export = exports.find!(id)
       filename ||= File.basename(file.path)
 
-      Verse::Plugin[:shrine].with_storage do |storage|
+      # The upload streams from `file`, so a rejected upload is not retried.
+      StorageRegistry.with_storage(export.storage_target_id, retriable: false) do |storage|
         file = storage.upload(file)
 
         exports.table.db.after_rollback do

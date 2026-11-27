@@ -69,6 +69,87 @@ RSpec.describe Medias::Repository, database: true do
     end
   end
 
+  describe "#authorize_project!" do
+    def context_for(rights, role:, custom_scopes: {})
+      Verse::Auth::Context.new(
+        rights,
+        role:,
+        custom_scopes:,
+        metadata: { id: 2, email: "actor@test.com", name: "Actor", role: }
+      )
+    end
+
+    def membership(project_id)
+      double(project_id:, role: "annotator", organization_id: org_b)
+    end
+
+    before do
+      allow(ProjectMembership::Lookup).to receive(:new).and_return(
+        double(project_ids_for_organizations: [project_a], memberships_for: [membership(project_b)])
+      )
+    end
+
+    it "lets an admin add media to any project" do
+      repo = described_class.new(context_for(["media:medias.*.*"], role: :admin))
+
+      expect { repo.authorize_project!("any-project") }.not_to raise_error
+    end
+
+    context "as a user" do
+      subject(:repo) { described_class.new(context_for(["media:medias.*.as_user"], role: :user)) }
+
+      it "allows a project the user is an enabled member of" do
+        expect { repo.authorize_project!(project_b) }.not_to raise_error
+      end
+
+      it "refuses any other project" do
+        expect { repo.authorize_project!(project_a) }.to raise_error(Verse::Error::Authorization, /#{project_a}/)
+      end
+    end
+
+    context "as an org_owner" do
+      subject(:repo) do
+        described_class.new(
+          context_for(["media:medias.*.as_org_owner"], role: :org_owner, custom_scopes: { org: [org_a] })
+        )
+      end
+
+      it "allows a project of the actor's organizations" do
+        expect { repo.authorize_project!(project_a) }.not_to raise_error
+      end
+
+      it "allows a foreign project where the actor is an enabled member" do
+        expect { repo.authorize_project!(project_b) }.not_to raise_error
+      end
+
+      it "refuses a foreign project where the actor is not a member" do
+        expect { repo.authorize_project!("project-c") }.to raise_error(Verse::Error::Authorization)
+      end
+    end
+
+    context "with an API key scoped to one project" do
+      subject(:repo) do
+        described_class.new(
+          context_for(["media:medias.*.as_org_owner"], role: :org_owner, custom_scopes: { project: project_a })
+        )
+      end
+
+      it "allows that project" do
+        expect { repo.authorize_project!(project_a) }.not_to raise_error
+      end
+
+      it "refuses others, even where the key's owner is a member" do
+        expect { repo.authorize_project!(project_b) }.to raise_error(Verse::Error::Authorization)
+      end
+    end
+
+    it "refuses an actor with no right to create media" do
+      repo = described_class.new(context_for(["media:medias.read.*"], role: :user))
+
+      expect { repo.authorize_project!(project_a) }.to raise_error(Verse::Error::Authorization)
+    end
+  end
+
   describe "actor seeding from a request context" do
     it "emits the actor on a created event without per-write actor code" do
       captured = []

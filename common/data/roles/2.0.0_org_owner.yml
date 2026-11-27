@@ -43,6 +43,8 @@ org_owner:
 
     # Setting Service
     - "setting:account_settings.*.own"
+    # Storage targets their organizations may pick for a new project.
+    - "setting:storage_targets.list_available.as_org_owner"
 
     # Sync Service
     - "sync:jobs.read.as_org_owner"

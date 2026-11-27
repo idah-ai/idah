@@ -11,6 +11,7 @@
   import { AccountRecord } from "@/data/model/iam/accounts/record";
   import { OrganizationRecord } from "@/data/model/iam/organizations/record";
   import { MediaRecord } from "@/data/model/media/medias/medias-record";
+  import { StorageTargetRecord } from "@/data/model/setting/storage_target/record";
   import { ExportRecord } from "@/data/model/sync/exports/record";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
@@ -28,8 +29,19 @@
     entries: EntryRecord[];
     medias: MediaRecord[];
     exports: ExportRecord[];
+    storageTargets: StorageTargetRecord[];
   };
-  let { accounts, organizations, projects, projectMembers, datasets, entries, medias, exports }: Context = $derived(
+  let {
+    accounts,
+    organizations,
+    projects,
+    projectMembers,
+    datasets,
+    entries,
+    medias,
+    exports,
+    storageTargets,
+  }: Context = $derived(
     (contexts as Context) || {
       accounts: [],
       organizations: [],
@@ -39,6 +51,7 @@
       entries: [],
       medias: [],
       exports: [],
+      storageTargets: [],
     },
   );
 
@@ -53,12 +66,16 @@
       entries,
       medias,
       exports,
+      storageTargets,
     }),
   );
+  let resourceDetail = $derived(resourceDetails[resource_type]);
 </script>
 
 <div class="flex flex-col gap-1">
-  <Text size="sm">{resourceDetails[resource_type].name || resource_id}</Text>
+  <Text size="sm">{resourceDetail?.name || resource_id}</Text>
 
-  <Link href={resourceDetails[resource_type].url} target="_blank" showIcon>View resource</Link>
+  {#if resourceDetail?.url}
+    <Link href={resourceDetail.url} target="_blank" showIcon>View resource</Link>
+  {/if}
 </div>

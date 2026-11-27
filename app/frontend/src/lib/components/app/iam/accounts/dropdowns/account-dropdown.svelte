@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import {
+    HardDriveIcon,
     KeyIcon,
     LogOutIcon,
     MoonIcon,
@@ -87,6 +88,14 @@
           visibleIfRoles: ["admin", "org_owner"],
           action: () => {
             goto(resolve("/api-keys"));
+          },
+        },
+        {
+          label: "Storage Targets",
+          icon: HardDriveIcon,
+          visibleIfRoles: ["admin"],
+          action: () => {
+            goto(resolve("/storage-targets"));
           },
         },
       ],

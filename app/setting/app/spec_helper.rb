@@ -51,6 +51,13 @@ RSpec.configure do |config|
 
   Verse::Spec.add_user(:system, "system")
   Verse::Spec.add_user(:anonymous, "anonymous")
+  Verse::Spec.add_user(:admin, "admin", user_data: { id: 1, email: "admin@example.com", name: "Admin User" })
+  Verse::Spec.add_user(
+    :org_owner,
+    "org_owner",
+    scopes: { org: ["3"] },
+    user_data: { id: 2, email: "org_owner@example.com", name: "Org Owner User" }
+  )
 
   config.example_status_persistence_file_path = ".rspec_status"
 

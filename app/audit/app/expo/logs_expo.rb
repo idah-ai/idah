@@ -142,6 +142,15 @@ class LogsExpo < BaseExpo
     end
   end
 
+  # Storage target events. The secret never travels with them; an update
+  # carries `secret_changed` in its metadata instead.
+  %w[created updated deleted].each do |event|
+    expose on_resource_event(Resource::Setting::StorageTargets, event)
+    def on_storage_target_event
+      log!
+    end
+  end
+
   # Sync events
   expose on_resource_event(Resource::Sync::Exports, "created")
   def on_exported

@@ -66,6 +66,12 @@ RSpec.configure do |config|
   # Verse::Auth::Context.backend = Service::RoleBackend.new
   Verse::Event::Dispatcher.event_mode = :immediate
 
+  # Files go to the default storage unless a spec says otherwise; looking up a
+  # project's storage target would otherwise call the dataset service.
+  config.before do
+    allow(StorageRegistry::ProjectTargets).to receive(:for).and_return(nil)
+  end
+
   config.include Rack::Test::Methods
   config.include Verse::JsonApi::Deserializer
 

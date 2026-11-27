@@ -90,6 +90,26 @@ RSpec.describe Processor::Context, type: :repository, database: true do
         expect { context.download_original }.to raise_error("media not found")
       end
     end
+
+    context "when the media is in a storage target" do
+      it "reads it from the target recorded on the media" do
+        target_id = UUIDv7.generate
+        uploaded_file = Verse::Plugin[:shrine].storage.upload(tempfile)
+        media_repo.create(
+          id: uploaded_file.id,
+          resource: resource,
+          key: "",
+          filename: "file.txt",
+          size: 12,
+          mime_type: "text/plain",
+          storage_target_id: target_id
+        )
+
+        expect(StorageRegistry).to receive(:with_storage).with(target_id).and_yield(Verse::Plugin[:shrine].storage)
+
+        expect(File.read(context.download_original)).to eq("test-content")
+      end
+    end
   end
 
   describe "#upload_media" do
@@ -126,6 +146,32 @@ RSpec.describe Processor::Context, type: :repository, database: true do
       end
     end
 
+    context "when the resource is in a storage target" do
+      it "puts the derived file in the same target and project" do
+        target_id = UUIDv7.generate
+        media_repo.create(
+          id: "original-id",
+          resource: resource,
+          key: "",
+          filename: "original.png",
+          size: 12,
+          mime_type: "image/png",
+          project_id: "project-1",
+          storage_target_id: target_id
+        )
+
+        expect(StorageRegistry).to receive(:with_storage)
+          .with(target_id, retriable: false)
+          .and_yield(Verse::Plugin[:shrine].storage)
+
+        context.upload_media(tempfile, "thumbnail", "image/png")
+
+        derived = media_repo.find_by({ resource: resource, key: "thumbnail" })
+        expect(derived.storage_target_id).to eq(target_id)
+        expect(derived.project_id).to eq("project-1")
+      end
+    end
+
     context "when media already exists" do
       before do
         Medias::Repository.new(auth_context).create(
@@ -139,7 +185,7 @@ RSpec.describe Processor::Context, type: :repository, database: true do
       end
 
       it "skips the upload" do
-        expect(Verse::Plugin[:shrine]).to receive(:with_storage).at_most(:once).and_call_original
+        expect(StorageRegistry).not_to receive(:with_storage)
 
         expect {
           context.upload_media(tempfile, "existing_key", "image/png")

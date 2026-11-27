@@ -11,6 +11,7 @@
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
   import ProjectDropdownMenu from "@/components/app/projects/dropdowns/project-dropdown-menu.svelte";
+  import ProjectStorageTargetLabel from "@/components/app/projects/storage-target/project-storage-target-label.svelte";
   import InviteMemberButton from "@/components/app/projects/members/buttons/invite-member-button.svelte";
   import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
   import Text from "@/components/ui/text/Text.svelte";
@@ -21,6 +22,7 @@
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
+  import type { ProjectStorageTargetSummary } from "@/data/model/setting/storage_target/utils";
   import type { ProjectMemberScope } from "@/security/types";
 
   // Props
@@ -42,15 +44,21 @@
   setContext("project", project);
 
   // Functions
-  async function fetchProject(): Promise<{ project: ProjectRecord }> {
+  async function fetchProject(): Promise<{
+    project: ProjectRecord;
+    storageTarget: ProjectStorageTargetSummary | null;
+  }> {
     const requestedProjectId = projectId;
     const projectRes = await projectsBackendDataSource.get(requestedProjectId, {
       fields: {
-        [ProjectRecord.type]: ["name", "description", "organization_id"],
+        [ProjectRecord.type]: ["name", "description", "organization_id", "storage_target_id"],
       },
     });
     if (requestedProjectId === projectId) Object.assign(project, projectRes.data);
-    return { project };
+
+    // Only projects in a dedicated storage target say where their files are.
+    const storageTarget = (projectRes.meta?.storage_target as ProjectStorageTargetSummary | undefined) ?? null;
+    return { project, storageTarget };
   }
 
   async function getProjectTabs(projectId: string): Promise<typeof projectTabs> {
@@ -83,7 +91,7 @@
 {#key $refetches.projects.get}
   {#await fetchProject()}
     <PageLoading />
-  {:then { project }}
+  {:then { project, storageTarget }}
     {#await getProjectTabs(project.id)}
       <PageLoading />
     {:then tabs}
@@ -103,6 +111,10 @@
 
               {#if project.description}
                 <Text class="text-muted-foreground" size="sm">{project.description}</Text>
+              {/if}
+
+              {#if storageTarget}
+                <ProjectStorageTargetLabel summary={storageTarget} />
               {/if}
             {/snippet}
           </PageHeader>

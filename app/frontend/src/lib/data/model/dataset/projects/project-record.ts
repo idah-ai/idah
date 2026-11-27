@@ -13,6 +13,8 @@ export class ProjectRecord extends Record {
   @field() public name!: string;
   @field() public description!: string;
   @field() public organization_id!: number;
+  /** Where the project's files go: chosen at creation, never changed. Null is the platform default. */
+  @field() public storage_target_id!: string | null;
   @field() public readonly created_by_email!: string;
 
   @field({ transformer: Transformers.Time }) public readonly created_at!: Date;

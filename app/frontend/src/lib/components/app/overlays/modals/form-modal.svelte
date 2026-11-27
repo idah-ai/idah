@@ -23,6 +23,7 @@
     title,
     description,
     loading,
+    loadingLabel,
     disabled,
     closeOnOutsideClick = true,
     onCancel,
@@ -135,7 +136,12 @@
           {#if confirm}
             {@render confirm()}
           {:else}
-            <Button {loading} {disabled} loadingLabel={confirmButtonProps.loadingLabel} onclick={handleClickConfirm}>
+            <Button
+              {loading}
+              {disabled}
+              loadingLabel={loadingLabel ?? confirmButtonProps.loadingLabel}
+              onclick={handleClickConfirm}
+            >
               {confirmButtonProps.label}
             </Button>
           {/if}

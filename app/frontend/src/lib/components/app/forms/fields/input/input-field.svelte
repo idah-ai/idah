@@ -1,6 +1,6 @@
 <script lang="ts">
   import { InfoIcon } from "@lucide/svelte";
-  import type { HTMLInputTypeAttribute } from "svelte/elements";
+  import type { HTMLInputAttributes, HTMLInputTypeAttribute } from "svelte/elements";
 
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -19,6 +19,8 @@
   // Props
   interface Props extends InputFieldBaseProps {
     type?: HTMLInputTypeAttribute;
+    // e.g. "new-password" for a secret that isn't the user's own sign-in password.
+    autocomplete?: HTMLInputAttributes["autocomplete"];
     value: string | null | undefined;
   }
   let {
@@ -31,6 +33,7 @@
     onblur = undefined,
     name,
     type = "text",
+    autocomplete = undefined,
     label,
     placeholder,
     disabled = false,
@@ -65,6 +68,7 @@
       id={name}
       aria-invalid={errors ? "true" : "false"}
       {type}
+      {autocomplete}
       {placeholder}
       {disabled}
       {required}

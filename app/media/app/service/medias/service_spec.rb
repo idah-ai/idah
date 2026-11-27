@@ -656,6 +656,103 @@ RSpec.describe Medias::Service, as: :system, database: true do
     end
   end
 
+  describe "project access" do
+    it "refuses an upload to a project the actor can't access, before storing anything" do
+      user = Verse::Auth::Context.new(
+        ["media:medias.*.as_user"],
+        role: :user,
+        metadata: { id: 9, email: "user@test.com", role: :user }
+      )
+      allow(ProjectMembership::Lookup).to receive(:new).and_return(double(memberships_for: []))
+      expect(StorageRegistry).not_to receive(:with_storage)
+
+      expect {
+        described_class.new(user).upload(uploaded_file, resource: "foreign", project_id: "foreign-project")
+      }.to raise_error(Verse::Error::Authorization)
+    end
+  end
+
+  describe "storage targets" do
+    it "stores a file in the default storage and records no target" do
+      result = subject.upload(uploaded_file, resource: "default_resource", project_id: "mocked_project_id")
+
+      expect(result[:processed].first.storage_target_id).to be_nil
+    end
+
+    it "uploads to the project's storage target and records it" do
+      target_id = UUIDv7.generate
+      allow(StorageRegistry::ProjectTargets).to receive(:for).with("confidential_project").and_return(target_id)
+      expect(StorageRegistry).to receive(:with_storage)
+        .with(target_id, retriable: false)
+        .and_yield(Verse::Plugin[:shrine].storage)
+
+      result = subject.upload(uploaded_file, resource: "confidential_resource", project_id: "confidential_project")
+
+      expect(result[:processed].first.storage_target_id).to eq(target_id)
+    end
+
+    it "puts every file of a zip in the project's storage target" do
+      target_id = UUIDv7.generate
+      allow(StorageRegistry::ProjectTargets).to receive(:for).and_return(target_id)
+      allow(StorageRegistry).to receive(:with_storage).and_yield(Verse::Plugin[:shrine].storage)
+
+      zip_path = Tempfile.create(["batch", ".zip"]).path
+      Zip::File.open(zip_path, create: true) do |zip|
+        zip.get_output_stream("a.jpg") { |f| f.write("a") }
+        zip.get_output_stream("b.jpg") { |f| f.write("b") }
+      end
+      zip = Verse::Http::UploadedFileStruct.new(
+        { filename: "batch.zip", type: "application/zip", tempfile: File.open(zip_path, "rb") }
+      )
+
+      result = subject.upload(zip, resource: "ignored", project_id: "confidential_project")
+
+      expect(result[:processed].map(&:storage_target_id)).to eq([target_id, target_id])
+      expect(StorageRegistry).to have_received(:with_storage).with(target_id, retriable: false).twice
+    ensure
+      FileUtils.rm_f(zip_path)
+    end
+
+    it "writes to the given target, without retrying the streamed upload, and records it" do
+      target_id = UUIDv7.generate
+      expect(StorageRegistry).to receive(:with_storage)
+        .with(target_id, retriable: false)
+        .and_yield(Verse::Plugin[:shrine].storage)
+
+      media = subject.send(
+        :store_media,
+        io: File.open(file_path, "rb"),
+        filename: "test.mp4",
+        mime_type: "video/mp4",
+        resource: "target_resource",
+        key: "",
+        project_id: "mocked_project_id",
+        storage_target_id: target_id
+      )
+
+      expect(media.storage_target_id).to eq(target_id)
+    end
+
+    it "opens a file from the target recorded on it" do
+      target_id = UUIDv7.generate
+      allow(StorageRegistry).to receive(:with_storage).and_yield(Verse::Plugin[:shrine].storage)
+      media = subject.send(
+        :store_media,
+        io: File.open(file_path, "rb"),
+        filename: "test.mp4",
+        mime_type: "video/mp4",
+        resource: "open_resource",
+        key: "",
+        project_id: "mocked_project_id",
+        storage_target_id: target_id
+      )
+
+      expect(StorageRegistry).to receive(:with_storage).with(target_id).and_yield(Verse::Plugin[:shrine].storage)
+
+      media.open.close
+    end
+  end
+
   describe "#create" do
     let(:media_record) do
       Verse::JsonApi::Struct.new(

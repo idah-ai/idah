@@ -37,6 +37,14 @@ admin:
 
     # Setting Service
     - "setting:account_settings.*.*"
+    # Storage targets: no `credentials` action, which only the system role
+    # (service accounts) holds.
+    - "setting:storage_targets.read.*"
+    - "setting:storage_targets.create.*"
+    - "setting:storage_targets.update.*"
+    - "setting:storage_targets.delete.*"
+    - "setting:storage_targets.test.*"
+    - "setting:storage_targets.list_available.*"
 
     # Sync Service
     - "sync:jobs.read.*"

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Badge } from "@/components/ui/badge";
+  import { Badge, type BadgeVariant } from "@/components/ui/badge";
   import { Spinner } from "@/components/ui/spinner";
 
   import { Record } from "@/data/model/Record";
@@ -14,8 +14,19 @@
     truncateLength?: number;
     dataSource?: DataSource<Record>;
     displayKey?: string;
+    variant?: BadgeVariant;
+    // Makes each fetched record's badge a link (with a dataSource only).
+    href?: (record: Record) => string;
   }
-  let { values = $bindable([]), maxShown = 1, truncateLength = 30, dataSource, displayKey = "name" }: Props = $props();
+  let {
+    values = $bindable([]),
+    maxShown = 1,
+    truncateLength = 30,
+    dataSource,
+    displayKey = "name",
+    variant = "default",
+    href,
+  }: Props = $props();
 
   // Records
   let records: Record[] = $state([]);
@@ -33,11 +44,11 @@
 <div class="flex w-full gap-1">
   {#if !dataSource}
     {#each values.slice(0, maxShown) as value, index (index)}
-      <Badge>{humanize(truncate(String(value), truncateLength))}</Badge>
+      <Badge {variant}>{humanize(truncate(String(value), truncateLength))}</Badge>
     {/each}
 
     {#if values.slice(maxShown).length}
-      <Badge>+{values.slice(maxShown).length} more...</Badge>
+      <Badge {variant}>+{values.slice(maxShown).length} more...</Badge>
     {/if}
   {/if}
 
@@ -46,11 +57,13 @@
       <Spinner size="sm"></Spinner>
     {:then _}
       {#each records.slice(0, maxShown) as record, index (index)}
-        <Badge>{humanize(truncate(record[displayKey], truncateLength))}</Badge>
+        <Badge {variant} href={href?.(record)} class={href ? "hover:underline" : undefined}>
+          {humanize(truncate(record[displayKey], truncateLength))}
+        </Badge>
       {/each}
 
       {#if records.length > maxShown}
-        <Badge>+{records.length - maxShown} more...</Badge>
+        <Badge {variant}>+{records.length - maxShown} more...</Badge>
       {/if}
     {/await}
   {/if}

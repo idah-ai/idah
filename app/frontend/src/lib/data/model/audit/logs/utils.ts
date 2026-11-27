@@ -7,6 +7,7 @@ import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 import { AccountRecord } from "@/data/model/iam/accounts/record";
 import { OrganizationRecord } from "@/data/model/iam/organizations/record";
 import { mediaBasePath, MediaRecord } from "@/data/model/media/medias/medias-record";
+import { StorageTargetRecord } from "@/data/model/setting/storage_target/record";
 import { ExportRecord } from "@/data/model/sync/exports/record";
 
 import type { Hash } from "@/utils/types";
@@ -28,10 +29,12 @@ export function getLogResourceDetails(
     entries: EntryRecord[];
     medias: MediaRecord[];
     exports: ExportRecord[];
+    storageTargets?: StorageTargetRecord[];
   },
 ) {
   const { action, resource_type, resource_id, project_id, dataset_id } = logRecord;
   const { accounts, organizations, projects, projectMembers, datasets, entries, medias, exports } = opts;
+  const storageTargets = opts.storageTargets ?? [];
 
   /** 1. Construct resource hash */
   const resourceHash = logResourceTypes.reduce((acc, resourceType) => {
@@ -43,7 +46,11 @@ export function getLogResourceDetails(
     return acc;
   }, {} as Hash<LogResourceDetail>);
 
-  /** 2. Populate resource hash */
+  /**
+   * 2. Populate resource hash. A type the list above doesn't know yet (a new service's resource) still gets an
+   *    entry, so its rows show the resource id instead of breaking the table.
+   */
+  resourceHash[resource_type] ??= { ids: [], url: "", name: undefined };
   const resource = resourceHash[resource_type];
   switch (resource_type) {
     case "accounts": {
@@ -88,7 +95,8 @@ export function getLogResourceDetails(
           break;
         }
         default: {
-          resource.url = `/organizations/${resource_id}`;
+          // An organization has no page of its own: its projects page is where it opens.
+          resource.url = `/organizations/${resource_id}/projects`;
           break;
         }
       }
@@ -163,6 +171,15 @@ export function getLogResourceDetails(
     case "exports": {
       resource.name = exports.find((exportRecord) => exportRecord.id == String(resource_id))?.filename ?? undefined;
       resource.url = `/projects/${project_id}/exports?filters[id]=${resource_id}`;
+      break;
+    }
+    case "storage_targets": {
+      // An archived target isn't listed anymore: its row keeps the id.
+      const foundTarget = storageTargets.find((target) => target.id == String(resource_id));
+      resource.name = foundTarget?.name;
+      resource.url = foundTarget
+        ? `/storage-targets?filters[name__match]=${encodeURIComponent(foundTarget.name)}`
+        : "/storage-targets";
       break;
     }
     default: {

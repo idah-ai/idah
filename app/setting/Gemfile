@@ -14,6 +14,9 @@ gem "verse-sequel", github: "verse-rb/verse-sequel", branch: "master"
 
 gem "pg"
 
+# Storage targets: the connection test talks to the target's bucket.
+gem "aws-sdk-s3", "~> 1.14", require: false
+
 gem "dotenv"
 gem "zeitwerk"
 
