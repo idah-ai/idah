@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/svelte";
+import { cleanup, render, screen } from "@testing-library/svelte";
 import { tick } from "svelte";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 
 import {
   cancelConfirmModal,
@@ -14,6 +14,14 @@ import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlay
 afterEach(() => {
   cancelConfirmModal();
   settleConfirmModal(false);
+});
+
+// When the last dialog unmounts, bits-ui schedules its body scroll-lock reset
+// on a 24 ms timer. Let it run before vitest tears down jsdom, otherwise it
+// fires with no `document` and fails the run as an unhandled error.
+afterAll(async () => {
+  cleanup();
+  await new Promise((resolve) => setTimeout(resolve, 50));
 });
 
 describe("ConfirmModal", () => {

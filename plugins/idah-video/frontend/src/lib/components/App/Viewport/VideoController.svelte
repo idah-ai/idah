@@ -79,6 +79,8 @@
     value = Math.max(1, Math.min(media.totalFrames, value));
     frameInputValue = value;
     viewport.video.goToFrame(value - 1);
+    // Seeking is not a command — record it for time tracking.
+    getDriver().notifyActivity();
   };
 
   const handleKeyUp = (event: KeyboardEvent) => {

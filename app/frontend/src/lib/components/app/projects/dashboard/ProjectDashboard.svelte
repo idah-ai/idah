@@ -12,8 +12,8 @@
   import EntriesByStatusCard from "@/components/app/projects/dashboard/sections/_EntriesByStatusCard.svelte";
   import CompletedEntriesPerPeriodCard from "@/components/app/projects/dashboard/sections/_CompletedEntriesPerPeriodCard.svelte";
   import ProgressByDatasetCard from "@/components/app/projects/dashboard/sections/_ProgressByDatasetCard.svelte";
-  import OpenEntriesCard from "@/components/app/projects/dashboard/sections/_OpenEntriesCard.svelte";
-  // import AnnotationsByCategoryCard from "@/components/app/projects/dashboard/sections/_AnnotationsByCategoryCard.svelte";
+  import OpenEntriesCardV2 from "@/components/app/projects/dashboard/sections/_OpenEntriesCardV2.svelte";
+  import AnnotationsByCategoryCard from "@/components/app/projects/dashboard/sections/_AnnotationsByCategoryCard.svelte";
 
   // Props
   interface Props {
@@ -22,7 +22,7 @@
   let { projectId }: Props = $props();
 
   // Variables
-  let entryCard: ReturnType<typeof OpenEntriesCard> | undefined;
+  let entryCard: ReturnType<typeof OpenEntriesCardV2> | undefined;
   // One controller per instance; the page keys this component by project.
   const controller = new ProjectDashboardController(untrack(() => projectId));
   setProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY, controller);
@@ -45,7 +45,7 @@
 
   <ProgressByDatasetCard />
 
-  <OpenEntriesCard bind:this={entryCard} />
+  <OpenEntriesCardV2 bind:this={entryCard} />
 
-  <!-- <AnnotationsByCategoryCard /> -->
+  <AnnotationsByCategoryCard />
 </div>

@@ -25,6 +25,7 @@ export function register(driver: IIdahDriverV2): void {
     callback: () => ({
       command: { ...command },
       do() {
+        driver.notifyActivity();
         // stepBy gates on framePending (and clamps), so scrubbing can never
         // run ahead of what is painted on screen.
         viewport.video.stepBy(-1);

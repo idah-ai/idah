@@ -16,6 +16,7 @@ api/project_rw_all:
     - "dataset:label_config_templates.*.*"
     - "dataset:feedback_config_templates.*.*"
     - "dataset:entry_stats.read.*"
+    - "dataset:entry_work_times.read.*"
 
     # Media Service - Read Write (Project level)
     - "media:medias.*.*"
