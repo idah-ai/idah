@@ -169,7 +169,6 @@
     } catch (error) {
       /** Set TableData status to 'error'*/
       tableState.tableData.update((state) => ({ ...state, status: "error", error: error }));
-      throw error;
     }
   }
 

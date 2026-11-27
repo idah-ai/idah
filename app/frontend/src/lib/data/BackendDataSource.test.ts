@@ -1,12 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createBackendDataSource, encodeModel } from "./BackendDataSource";
+import { clearCache } from "./Cache";
 import { Record, RecordFactory, field, type } from "./model/Record";
 
 const TransformerTest = {
   from(value: string) {
     return value && value + "from";
   },
-  to(value: Date | string) {
+  to(value: string) {
     return value && value + "to";
   },
 };
@@ -62,9 +63,17 @@ describe(encodeModel, () => {
 
 describe(createBackendDataSource, () => {
   const fetch = vi.fn();
-  globalThis.fetch = fetch;
-
   const ds = createBackendDataSource(TestRecord, "http://example.tld/test_records");
+
+  beforeEach(() => {
+    clearCache(ds.basePath);
+    fetch.mockReset();
+    vi.stubGlobal("fetch", fetch);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
   describe("with custom method", () => {
     const ds = createBackendDataSource(TestRecord, "http://example.tld/test_records", {
@@ -113,10 +122,8 @@ describe(createBackendDataSource, () => {
 
   describe("#list", () => {
     const mockList = () => {
-      fetch.mockResolvedValue({
-        ok: true,
-        status: 200,
-        body: JSON.stringify({
+      fetch.mockResolvedValue(
+        Response.json({
           data: [
             {
               type: "test/backend_data_source",
@@ -140,10 +147,7 @@ describe(createBackendDataSource, () => {
             },
           ],
         }),
-        async json() {
-          return JSON.parse(this.body);
-        },
-      });
+      );
     };
 
     it("simple", async () => {
@@ -221,6 +225,39 @@ describe(createBackendDataSource, () => {
       expect(fetch).toHaveBeenCalledWith("http://example.tld/test_records?sort=-id%2Cfoo", {
         method: "GET",
       });
+    });
+
+    it("caches a successful page with its metadata", async () => {
+      const options = { pagination: { page: 2, itemsPerPage: 10 }, count: true };
+      fetch.mockResolvedValueOnce(Response.json({ data: [], meta: { count: 12 } }));
+
+      await expect(ds.list(options)).resolves.toEqual({
+        data: [],
+        meta: { count: 12 },
+      });
+      const [url] = fetch.mock.lastCall!;
+      expect(Object.fromEntries(new URL(url).searchParams)).toEqual({
+        "page[number]": "2",
+        "page[size]": "10",
+        count: "true",
+      });
+
+      await ds.list(options);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+      { status: 200, body: '{"data":{}}', message: "valid collection" },
+      { status: 200, body: '{"data":[null]}', message: "valid collection" },
+      { status: 200, body: "<h1>Unexpected HTML</h1>", message: "valid collection" },
+    ])("rejects invalid collections ($status $body) and can reload", async ({ status, body, message }) => {
+      fetch
+        .mockResolvedValueOnce(new Response(body, { status }))
+        .mockResolvedValueOnce(Response.json({ data: [], meta: { count: 0 } }));
+
+      await expect(ds.list()).rejects.toThrow(message);
+      await expect(ds.list()).resolves.toEqual({ data: [], meta: { count: 0 } });
+      expect(fetch).toHaveBeenCalledTimes(2);
     });
   });
 
