@@ -14,41 +14,6 @@ class AnnotationsExpo < BaseExpo
     Use the `deleted` filter ("true"/"false") to narrow results explicitly.
   MD
 
-  expose on_http(:get, "/category_counts") do
-    input do
-      field? :filter, Hash, default: {}
-      field? :group_by, String, default: "category"
-      field? :page, Hash, default: {}
-    end
-  end
-  def category_counts
-    rows, more = service.category_counts(params[:filter], group_by: params[:group_by], page: params[:page])
-    category_count_response(rows, Resource::Dataset::CategoryCounts, more)
-  end
-
-  expose on_http(:get, "/total_category_counts") do
-    input do
-      field? :filter, Hash, default: {}
-      field? :group_by, String, default: "project"
-      field? :page, Hash, default: {}
-    end
-  end
-  def total_category_counts
-    rows, more = service.total_category_counts(params[:filter], group_by: params[:group_by], page: params[:page])
-    category_count_response(rows, Resource::Dataset::TotalCategoryCounts, more)
-  end
-
-  def category_count_response(rows, type, more)
-    server.content_type "application/vnd.api+json"
-    server.halt 200,
-                JSON.generate(
-                  data: rows.map { |row|
-                    { type:, id: row.id, attributes: row.to_h.except(:id).compact }
-                  },
-                  meta: { more: }
-                )
-  end
-
   json_api Annotation::Record do
     show
     index do

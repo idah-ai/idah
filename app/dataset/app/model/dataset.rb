@@ -114,6 +114,7 @@ module Dataset
         collection = collection.where(project_id: owned_projects)
       end
 
+      counts = EntryCategoryCount.without_system_shapes(collection.db[:entry_category_counts])
       conditions.each do |condition|
         category = condition[:category]
         if condition.key?(:entries_gte)
@@ -128,8 +129,10 @@ module Dataset
                        else
                          collection.where(
                            Sequel.lit(
-                             "(SELECT COUNT(*) FROM entry_category_counts ecc WHERE ecc.dataset_id = datasets.id " \
-                             "AND ecc.category = ? AND ecc.count >= ?) >= ?",
+                             "(SELECT COUNT(*) FROM (SELECT ecc.entry_id FROM ? ecc " \
+                             "WHERE ecc.dataset_id = datasets.id AND ecc.category = ? GROUP BY ecc.entry_id " \
+                             "HAVING SUM(ecc.count) >= ?) matching_entries) >= ?",
+                             counts,
                              category,
                              minimum,
                              condition[:entries_gte]
@@ -141,8 +144,9 @@ module Dataset
 
         collection = collection.where(
           Sequel.lit(
-            "COALESCE((SELECT SUM(ecc.count) FROM entry_category_counts ecc " \
+            "COALESCE((SELECT SUM(ecc.count) FROM ? ecc " \
             "WHERE ecc.dataset_id = datasets.id AND ecc.category = ?), 0) >= ?",
+            counts,
             category,
             condition[:total_gte]
           )

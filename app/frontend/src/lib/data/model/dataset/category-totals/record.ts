@@ -43,7 +43,7 @@ async function fetchCounts<T extends Record>(
   params: CountParams,
   expectedType: string,
 ): Promise<CountResponse<T>> {
-  const url = resourcePath(`/api/v1/dataset/annotations/${path}`, null, {
+  const url = resourcePath(`/api/v1/dataset/entries/${path}`, null, {
     filter: {
       ...(params.projectId ? { project_id: params.projectId } : {}),
       ...(params.datasetIds?.length ? { dataset_id: params.datasetIds } : {}),

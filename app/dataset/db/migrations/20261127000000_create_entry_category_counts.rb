@@ -8,12 +8,13 @@ Sequel.migration do
       column :dataset_id, :uuid, null: false
       column :project_id, :uuid, null: false
       column :category, :text, null: false
+      column :shape_type, :text, null: false
       column :count, :integer, null: false
 
       constraint(:entry_category_counts_nonnegative_count, Sequel.lit("count >= 0"))
-      index %i[entry_id category], unique: true
-      index %i[dataset_id category], include: [:count]
-      index %i[project_id category], include: [:count]
+      index %i[entry_id category shape_type], unique: true
+      index %i[dataset_id category], include: %i[shape_type count]
+      index %i[project_id category], include: %i[shape_type count]
     end
 
     # This trigger owns cleanup during annotation and parent cascades. A second
@@ -30,14 +31,14 @@ Sequel.migration do
         remaining_count integer;
       BEGIN
         IF TG_OP = 'INSERT' THEN
-          add_new := NEW.deleted_at IS NULL AND NEW.shape_type <> 'idah-image:done-area';
+          add_new := NEW.deleted_at IS NULL;
         ELSIF TG_OP = 'DELETE' THEN
-          remove_old := OLD.deleted_at IS NULL AND OLD.shape_type <> 'idah-image:done-area';
+          remove_old := OLD.deleted_at IS NULL;
         ELSE
-          old_counted := OLD.deleted_at IS NULL AND OLD.shape_type <> 'idah-image:done-area';
-          new_counted := NEW.deleted_at IS NULL AND NEW.shape_type <> 'idah-image:done-area';
-          key_changed := ROW(OLD.entry_id, OLD.dataset_id, OLD.project_id, OLD.category)
-            IS DISTINCT FROM ROW(NEW.entry_id, NEW.dataset_id, NEW.project_id, NEW.category);
+          old_counted := OLD.deleted_at IS NULL;
+          new_counted := NEW.deleted_at IS NULL;
+          key_changed := ROW(OLD.entry_id, OLD.dataset_id, OLD.project_id, OLD.category, OLD.shape_type)
+            IS DISTINCT FROM ROW(NEW.entry_id, NEW.dataset_id, NEW.project_id, NEW.category, NEW.shape_type);
           remove_old := old_counted AND (NOT new_counted OR key_changed);
           add_new := new_counted AND (NOT old_counted OR key_changed);
         END IF;
@@ -46,19 +47,19 @@ Sequel.migration do
           -- An unconditional update waits for a concurrent upsert before decrementing.
           UPDATE entry_category_counts
           SET count = count - 1
-          WHERE entry_id = OLD.entry_id AND category = OLD.category
+          WHERE entry_id = OLD.entry_id AND category = OLD.category AND shape_type = OLD.shape_type
           RETURNING count INTO remaining_count;
 
           IF remaining_count = 0 THEN
             DELETE FROM entry_category_counts
-            WHERE entry_id = OLD.entry_id AND category = OLD.category;
+            WHERE entry_id = OLD.entry_id AND category = OLD.category AND shape_type = OLD.shape_type;
           END IF;
         END IF;
 
         IF add_new THEN
-          INSERT INTO entry_category_counts (entry_id, dataset_id, project_id, category, count)
-          VALUES (NEW.entry_id, NEW.dataset_id, NEW.project_id, NEW.category, 1)
-          ON CONFLICT (entry_id, category) DO UPDATE
+          INSERT INTO entry_category_counts (entry_id, dataset_id, project_id, category, shape_type, count)
+          VALUES (NEW.entry_id, NEW.dataset_id, NEW.project_id, NEW.category, NEW.shape_type, 1)
+          ON CONFLICT (entry_id, category, shape_type) DO UPDATE
           SET count = entry_category_counts.count + 1,
               dataset_id = EXCLUDED.dataset_id,
               project_id = EXCLUDED.project_id;
@@ -79,11 +80,11 @@ Sequel.migration do
     # CREATE TRIGGER holds the write lock until this migration commits, so the
     # snapshot backfill and incoming writes cannot count the same row twice.
     run <<~SQL
-      INSERT INTO entry_category_counts (entry_id, dataset_id, project_id, category, count)
-      SELECT entry_id, dataset_id, project_id, category, COUNT(*)::integer
+      INSERT INTO entry_category_counts (entry_id, dataset_id, project_id, category, shape_type, count)
+      SELECT entry_id, dataset_id, project_id, category, shape_type, COUNT(*)::integer
       FROM annotations
-      WHERE deleted_at IS NULL AND shape_type <> 'idah-image:done-area'
-      GROUP BY entry_id, dataset_id, project_id, category;
+      WHERE deleted_at IS NULL
+      GROUP BY entry_id, dataset_id, project_id, category, shape_type;
     SQL
 
     run "DELETE FROM entry_stats WHERE key LIKE 'category.%.count'"

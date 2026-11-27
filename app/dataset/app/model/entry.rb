@@ -142,12 +142,14 @@ module Entry
 
       condition = conditions.first
       condition[:count_gte] = 1 unless condition.key?(:count_gte) || condition.key?(:count_lte)
-      expression = "COALESCE((SELECT ecc.count FROM entry_category_counts ecc " \
+      counts = EntryCategoryCount.without_system_shapes(collection.db[:entry_category_counts])
+      expression = "COALESCE((SELECT SUM(ecc.count) FROM ? ecc " \
                    "WHERE ecc.entry_id = entries.id AND ecc.category = ?), 0)"
       if condition.key?(:count_gte)
         collection = collection.where(
           Sequel.lit(
             "#{expression} >= ?",
+            counts,
             condition[:category],
             condition[:count_gte]
           )
@@ -157,6 +159,7 @@ module Entry
         collection = collection.where(
           Sequel.lit(
             "#{expression} <= ?",
+            counts,
             condition[:category],
             condition[:count_lte]
           )

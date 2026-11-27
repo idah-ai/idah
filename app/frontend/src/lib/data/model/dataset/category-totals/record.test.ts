@@ -27,7 +27,7 @@ describe("annotation count transport", () => {
     vi.stubGlobal("fetch", fetch);
     const response = await categoryTotalsBackendDataSource.categoryCounts({ projectId: "project", datasetIds: ["a"] });
     const url = new URL(fetch.mock.calls[0][0], "http://localhost");
-    expect(url.pathname).toBe("/api/v1/dataset/annotations/category_counts");
+    expect(url.pathname).toBe("/api/v1/dataset/entries/category_counts");
     expect(url.searchParams.get("filter[project_id]")).toBe("project");
     expect(url.searchParams.getAll("filter[dataset_id][]")).toEqual(["a"]);
     expect(response.data[0]).toBeInstanceOf(CategoryCountRecord);
@@ -53,7 +53,7 @@ describe("annotation count transport", () => {
       pageSize: 10,
     });
     const url = new URL(fetch.mock.calls[0][0], "http://localhost");
-    expect(url.pathname).toBe("/api/v1/dataset/annotations/total_category_counts");
+    expect(url.pathname).toBe("/api/v1/dataset/entries/total_category_counts");
     expect(url.searchParams.get("group_by")).toBe("dataset");
     expect(url.searchParams.get("page[number]")).toBe("2");
     expect(response.data[0]).toBeInstanceOf(TotalCategoryCountRecord);

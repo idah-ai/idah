@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 module EntryCategoryCount
+  def self.without_system_shapes(rows)
+    rows.exclude(shape_type: PluginSystem::SystemShapes.for_all.to_a)
+  end
+
   module Filter
     def self.parse(value, allowed:)
       data = value.is_a?(String) ? JSON.parse(value, symbolize_names: true) : value
@@ -39,6 +43,7 @@ module EntryCategoryCount
     field :dataset_id, type: String, readonly: true
     field :project_id, type: String, readonly: true
     field :category, type: String, readonly: true
+    field :shape_type, type: String, readonly: true
     field :count, type: Integer, readonly: true
   end
 
@@ -91,7 +96,7 @@ module EntryCategoryCount
     GROUP_COLUMN = { "project" => :project_id, "dataset" => :dataset_id, "entry" => :entry_id }.freeze
 
     def grouped(scope, group_by:, category: nil)
-      rows = scoped(:read).where(project_id: scope[:project_id])
+      rows = EntryCategoryCount.without_system_shapes(scoped(:read)).where(project_id: scope[:project_id])
       rows = rows.where(dataset_id: scope[:dataset_ids]) if scope[:dataset_ids]
       rows = rows.where(entry_id: scope[:entry_ids]) if scope[:entry_ids]
       rows = rows.where(category:) if category

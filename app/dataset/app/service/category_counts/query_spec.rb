@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe Annotation::Service, database: true do
+RSpec.describe Entry::Service, database: true do
   let(:system) { Verse::Auth::Context[:system] }
   let(:projects) { Project::Repository.new(system) }
   let(:datasets) { Dataset::Repository.new(system) }
@@ -35,13 +35,13 @@ RSpec.describe Annotation::Service, database: true do
     )
   end
 
-  def annotate(entry_id, dataset_id, category)
+  def annotate(entry_id, dataset_id, category, shape_type: "image:box")
     annotations.create(
       project_id:,
       dataset_id:,
       entry_id:,
       category:,
-      shape_type: "image:box",
+      shape_type:,
       shape_args: {},
       created_by_email: "system@example.com"
     )
@@ -65,6 +65,29 @@ RSpec.describe Annotation::Service, database: true do
     annotate(first_entry, first_id, "car")
     annotate(first_entry, first_id, "removed")
     annotate(second_entry, second_id, "car")
+  end
+
+  it "applies live system shape declarations consistently to totals and list filters", as: :project_owner do
+    %w[plugin:box plugin:line plugin:mask].each { |type| annotate(first_entry, first_id, "mixed", shape_type: type) }
+    entry_service = described_class.new(current_auth_context)
+    dataset_service = Dataset::Service.new(current_auth_context)
+    scope = { project_id:, entry_id: [first_entry] }
+
+    [Set["plugin:mask"], Set.new].zip([2, 3]).each do |system_shapes, expected|
+      allow(PluginSystem::SystemShapes).to receive(:for_all).and_return(system_shapes)
+      rows, = entry_service.category_counts(scope.merge(category: "mixed"))
+      expect(rows.map(&:annotation_count)).to eq([expected])
+      totals, = entry_service.total_category_counts(scope)
+      expect(totals.map(&:annotation_count)).to eq([expected + 2])
+
+      condition = { category: "mixed", count_gte: expected, count_lte: expected }
+      expect(entry_service.index({ category_count: condition }).map(&:id)).to eq([first_entry])
+      filter = { category: "mixed", min_annotations_per_entry: expected, entries_gte: 1, total_gte: expected }
+      expect(dataset_service.index({ category_counts: filter }).map(&:id)).to eq([first_id])
+      %i[min_annotations_per_entry entries_gte total_gte].each do |key|
+        expect(dataset_service.index({ category_counts: filter.merge(key => filter[key] + 1) })).to be_empty
+      end
+    end
   end
 
   it "returns complete category totals, configured zeros, and conflict labels", as: :project_owner do
