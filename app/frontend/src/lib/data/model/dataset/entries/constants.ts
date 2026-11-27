@@ -69,6 +69,8 @@ export interface EntrySummary {
   completed: number;
   review: number;
   annotation: number;
+  reviewing: number;
+  annotating: number;
 }
 
 export interface EntryCompletionHistory {

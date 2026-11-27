@@ -2,7 +2,9 @@
 
 module Project
   class Service < Verse::Service::Base
-    use projects: Project::Repository
+    use projects: Project::Repository,
+        datasets: Dataset::Repository,
+        project_members: ProjectMember::Repository
     use_system system_datasets: Dataset::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)

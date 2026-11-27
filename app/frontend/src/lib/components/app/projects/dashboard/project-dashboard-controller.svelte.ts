@@ -1,5 +1,5 @@
 import { getContext, setContext } from "svelte";
-import { SvelteSet } from "svelte/reactivity";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 import {
   addDays,
   addMonths,
@@ -23,6 +23,8 @@ import {
 import { get, type Unsubscriber } from "svelte/store";
 
 import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+import { categoryTotalsBackendDataSource, CategoryCountRecord } from "@/data/model/dataset/category-totals/record";
+import { categoryTotal, sortCategories, type CategoryTotalsResult } from "./category-totals";
 import { EntryRecord, entriesBackendDataSource } from "@/data/model/dataset/entries/record";
 import { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 import { getDeliveryStatusBadge, today } from "@/utils/date";
@@ -89,6 +91,7 @@ export class ProjectDashboardController {
     this.clearCompletionHistory();
     this.clearDatasetProgress();
     this.clearEntryProgress();
+    this.clearCategoryTotals();
     this.unsubscribeToday?.();
     this.unsubscribeToday = undefined;
   }
@@ -125,6 +128,7 @@ export class ProjectDashboardController {
     this.clearCompletionHistory();
     this.clearDatasetProgress();
     this.clearEntryProgress();
+    this.clearCategoryTotals();
     this.entryOverviewPage = 1;
     this.selectedDatasetIds = selected;
     this.focused = null;
@@ -225,8 +229,8 @@ export class ProjectDashboardController {
     const summary = this.summary;
     if (!summary) return "Workflow breakdown unavailable";
     const parts = [
-      `${summary.review.toLocaleString()} In review`,
-      `${summary.annotation.toLocaleString()} In annotation`,
+      `${summary.review.toLocaleString()} In reviewing`,
+      `${summary.annotation.toLocaleString()} In annotating`,
     ];
 
     return parts.join(" · ");
@@ -257,6 +261,8 @@ export class ProjectDashboardController {
   private loadMetrics(resetOverviewPages = true): void {
     if (this.disposed || this.denied || !this.scopeReady) return;
     this.clearMetrics();
+    this.clearCategoryTotals();
+    void this.loadAnnotationsByCategory();
     void this.loadSummary();
     void this.loadAttention();
     void this.loadCompletionHistory();
@@ -832,7 +838,10 @@ export class ProjectDashboardController {
       return;
 
     this.datasetProgressPagination = next;
-    if (this.focused || this.selectedDatasetIds.length) return;
+    if (this.focused || this.selectedDatasetIds.length) {
+      void this.loadDatasetAnnotationTotals();
+      return;
+    }
     await this.loadDatasetProgress();
   }
 
@@ -859,7 +868,10 @@ export class ProjectDashboardController {
     this.datasetProgressResponse = null;
     this.datasetProgressError = "";
     this.datasetProgressLoading = false;
-    if (this.focused || this.selectedDatasetIds.length) return;
+    if (this.focused || this.selectedDatasetIds.length) {
+      void this.loadDatasetAnnotationTotals();
+      return;
+    }
 
     this.datasetProgressLoading = true;
     const pagination = { ...this.datasetProgressPagination };
@@ -885,12 +897,260 @@ export class ProjectDashboardController {
       if (!current()) return;
       if (!Array.isArray(response.data)) throw new Error("Dataset results are unavailable. Please retry.");
       this.datasetProgressResponse = response;
+      void this.loadDatasetAnnotationTotals();
     } catch (reason) {
       if (!current() || this.handleAccessError(reason)) return;
       this.datasetProgressError = reason instanceof Error ? reason.message : "Dataset progress is unavailable.";
     } finally {
       if (current()) this.datasetProgressLoading = false;
     }
+  }
+
+  // ==================== Annotation Categories ====================
+
+  public annotationsByCategory: CategoryTotalsResult<CategoryCountRecord> | null = $state.raw(null);
+  public datasetAnnotations: Record<
+    string,
+    { status: "loading" | "ready" | "error"; total: number | null; error: string }
+  > = $state.raw({});
+  public datasetCategories: Record<string, CategoryTotalsResult<CategoryCountRecord>> = $state.raw({});
+  public categoryDatasets: Record<
+    string,
+    {
+      status: "loading" | "ready" | "error";
+      rows: { id: string; name: string; annotation_count: number }[];
+      more: boolean;
+      page: number;
+      error: string;
+    }
+  > = $state.raw({});
+  private categoryGeneration = 0;
+  private datasetAnnotationsGeneration = 0;
+  private hoverGeneration = 0;
+
+  public get categoryScopeLabel(): string {
+    if (this.focused) return this.focused.name;
+    const count = this.selectedDatasetIds.length;
+    return count ? `${count} selected dataset${count === 1 ? "" : "s"}` : "All datasets";
+  }
+
+  private clearCategoryTotals(): void {
+    this.categoryGeneration++;
+    this.datasetAnnotationsGeneration++;
+    this.hoverGeneration++;
+    this.annotationsByCategory = null;
+    this.datasetAnnotations = {};
+    this.datasetCategories = {};
+    this.categoryDatasets = {};
+  }
+
+  async refreshCategoryCounts(): Promise<void> {
+    if (this.disposed || this.denied || this.loading) return;
+    if (!this.scopeReady) {
+      await this.retry();
+      return;
+    }
+    this.clearCategoryTotals();
+    await Promise.all([this.loadAnnotationsByCategory(), this.loadDatasetAnnotationTotals()]);
+  }
+
+  private async loadAnnotationsByCategory(): Promise<void> {
+    if (this.disposed || this.denied || !this.scopeReady) return;
+    const scope = this.generation;
+    const request = ++this.categoryGeneration;
+    const current = (): boolean => this.isCurrent(scope) && request === this.categoryGeneration;
+    const ids = this.effectiveDatasetIds;
+    this.annotationsByCategory = { status: "loading", rows: [], total: null, error: "" };
+    try {
+      const response = await categoryTotalsBackendDataSource.categoryCounts({
+        projectId: this.projectId,
+        datasetIds: ids,
+      });
+      if (!current()) return;
+      if (response.more) throw new Error("Category results are incomplete. Please retry.");
+      const total = categoryTotal(response.data);
+      this.annotationsByCategory = { status: "ready", rows: sortCategories(response.data), total, error: "" };
+    } catch (reason) {
+      if (!current() || this.handleAccessError(reason)) return;
+      this.annotationsByCategory = {
+        status: "error",
+        rows: [],
+        total: null,
+        error: reason instanceof Error ? reason.message : "Annotation categories are unavailable.",
+      };
+    }
+  }
+
+  async retryDatasetAnnotations(): Promise<void> {
+    if (this.disposed || this.denied || this.loading || !this.scopeReady) return;
+    await this.loadDatasetAnnotationTotals();
+  }
+
+  private async loadDatasetAnnotationTotals(): Promise<void> {
+    if (this.disposed || this.denied || !this.scopeReady) return;
+    const ids = [...new SvelteSet(this.datasetProgressRows.map((row) => row.id))];
+    const scope = this.generation;
+    const request = ++this.datasetAnnotationsGeneration;
+    const current = (): boolean => this.isCurrent(scope) && request === this.datasetAnnotationsGeneration;
+    this.datasetAnnotations = Object.fromEntries(ids.map((id) => [id, { status: "loading", total: null, error: "" }]));
+    if (!ids.length) return;
+    try {
+      const response = await categoryTotalsBackendDataSource.totalCategoryCounts({
+        projectId: this.projectId,
+        datasetIds: ids,
+        groupBy: "dataset",
+      });
+      if (!current()) return;
+      const totals = new SvelteMap<string, number>();
+      for (const row of response.data) {
+        if (
+          !row.dataset_id ||
+          !ids.includes(row.dataset_id) ||
+          totals.has(row.dataset_id) ||
+          !Number.isSafeInteger(row.annotation_count) ||
+          row.annotation_count < 0
+        )
+          throw new Error("Dataset totals could not be validated. Please retry.");
+        totals.set(row.dataset_id, row.annotation_count);
+      }
+      if (response.more || totals.size !== ids.length) throw new Error("Dataset totals are incomplete. Please retry.");
+      this.datasetAnnotations = Object.fromEntries(
+        ids.map((id) => [id, { status: "ready", total: totals.get(id)!, error: "" }]),
+      );
+    } catch (reason) {
+      if (!current() || this.handleAccessError(reason)) return;
+      const error = reason instanceof Error ? reason.message : "Dataset totals are unavailable.";
+      this.datasetAnnotations = Object.fromEntries(ids.map((id) => [id, { status: "error", total: null, error }]));
+    }
+  }
+
+  async loadDatasetCategories(datasetId: string): Promise<void> {
+    if (this.datasetCategories[datasetId] || this.disposed || this.denied) return;
+    const scope = this.generation;
+    const hover = this.hoverGeneration;
+    const current = (): boolean => this.isCurrent(scope) && hover === this.hoverGeneration;
+    this.datasetCategories = {
+      ...this.datasetCategories,
+      [datasetId]: { status: "loading", rows: [], total: null, error: "" },
+    };
+    try {
+      const response = await categoryTotalsBackendDataSource.categoryCounts({
+        projectId: this.projectId,
+        datasetIds: [datasetId],
+        groupBy: "dataset",
+      });
+      if (!current()) return;
+      if (response.more) throw new Error("Dataset categories are incomplete. Please retry.");
+      this.datasetCategories = {
+        ...this.datasetCategories,
+        [datasetId]: {
+          status: "ready",
+          rows: sortCategories(response.data),
+          total: categoryTotal(response.data),
+          error: "",
+        },
+      };
+    } catch (reason) {
+      if (!current() || this.handleAccessError(reason)) return;
+      this.datasetCategories = {
+        ...this.datasetCategories,
+        [datasetId]: {
+          status: "error",
+          rows: [],
+          total: null,
+          error: reason instanceof Error ? reason.message : "Dataset categories are unavailable.",
+        },
+      };
+    }
+  }
+
+  retryDatasetCategories(datasetId: string): void {
+    const { [datasetId]: _removed, ...rest } = this.datasetCategories;
+    this.datasetCategories = rest;
+    void this.loadDatasetCategories(datasetId);
+  }
+
+  async loadCategoryDatasets(category: string, nextPage = false): Promise<void> {
+    const previous = this.categoryDatasets[category];
+    if (this.disposed || this.denied || previous?.status === "loading" || (!nextPage && previous)) return;
+    if (nextPage && (!previous || !previous.more)) return;
+    const scope = this.generation;
+    const hover = this.hoverGeneration;
+    const current = (): boolean => this.isCurrent(scope) && hover === this.hoverGeneration;
+    const page = nextPage ? previous!.page + 1 : 1;
+    this.categoryDatasets = {
+      ...this.categoryDatasets,
+      [category]: {
+        status: "loading",
+        rows: previous?.rows ?? [],
+        more: false,
+        page,
+        error: "",
+      },
+    };
+    try {
+      const datasetIds = this.effectiveDatasetIds;
+      const response = await categoryTotalsBackendDataSource.categoryCounts({
+        projectId: this.projectId,
+        datasetIds,
+        category,
+        groupBy: "dataset",
+        ...(datasetIds.length ? {} : { page, pageSize: 10 }),
+      });
+      if (!current()) return;
+      const ids = response.data.map((row) => row.dataset_id).filter((id): id is string => !!id);
+      if (ids.length !== response.data.length || new SvelteSet(ids).size !== ids.length)
+        throw new Error("Category datasets could not be validated. Please retry.");
+      const byId = new SvelteMap<string, string>();
+      if (ids.length) {
+        try {
+          const names = await datasetsBackendDataSource.list({
+            filters: { project_id: this.projectId, id: ids },
+            fields: { [DatasetRecord.type]: ["id", "name"] },
+            pagination: { page: 1, itemsPerPage: 100 },
+            noCache: true,
+          });
+          for (const record of names.data) byId.set(record.id, record.name);
+        } catch (reason) {
+          if (!current() || this.handleAccessError(reason)) return;
+          // Counts are already scoped. A failed name lookup can fall back to the dataset IDs.
+        }
+      }
+      if (!current()) return;
+      const rows = response.data.map((row) => ({
+        id: row.dataset_id!,
+        name: byId.get(row.dataset_id!) || row.dataset_id!,
+        annotation_count: row.annotation_count,
+      }));
+      this.categoryDatasets = {
+        ...this.categoryDatasets,
+        [category]: {
+          status: "ready",
+          rows: [...(nextPage ? previous!.rows : []), ...rows],
+          more: response.more,
+          page,
+          error: "",
+        },
+      };
+    } catch (reason) {
+      if (!current() || this.handleAccessError(reason)) return;
+      this.categoryDatasets = {
+        ...this.categoryDatasets,
+        [category]: {
+          status: "error",
+          rows: previous?.rows ?? [],
+          more: false,
+          page,
+          error: reason instanceof Error ? reason.message : "Category datasets are unavailable.",
+        },
+      };
+    }
+  }
+
+  retryCategoryDatasets(category: string): void {
+    const { [category]: _removed, ...rest } = this.categoryDatasets;
+    this.categoryDatasets = rest;
+    void this.loadCategoryDatasets(category);
   }
 
   private handleAccessError(reason: unknown): boolean {
@@ -906,6 +1166,7 @@ export class ProjectDashboardController {
     this.clearCompletionHistory();
     this.clearDatasetProgress();
     this.clearEntryProgress();
+    this.clearCategoryTotals();
     this.denied = true;
     this.scopeReady = false;
     this.loading = false;

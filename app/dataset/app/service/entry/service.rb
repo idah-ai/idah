@@ -4,10 +4,13 @@ require "tzinfo"
 
 module Entry
   class Service < Verse::Service::Base
+    include CategoryCounts::Query
+
     use entries: Entry::Repository,
         datasets: Dataset::Repository,
         projects: Project::Repository,
         project_members: ProjectMember::Repository,
+        category_count_rows: EntryCategoryCount::Repository,
         annotations: Annotation::Repository,
         entry_work_times: EntryWorkTime::Repository
     use_system system_datasets_repo: Dataset::Repository,

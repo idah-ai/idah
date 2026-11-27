@@ -1,8 +1,10 @@
 <script lang="ts">
-  import { ChartColumnIcon } from "@lucide/svelte";
+  import { ChartColumnIcon, ChevronDownIcon, ChevronRightIcon } from "@lucide/svelte";
   import { SvelteMap } from "svelte/reactivity";
 
   import * as Dialog from "@/components/ui/dialog";
+  import * as Collapsible from "@/components/ui/collapsible";
+  import Button from "@/components/ui/button/button.svelte";
   import KbdTooltipButton from "@/components/app/tooltips/KbdTooltipButton.svelte";
 
   import type { IIdahDriverV2, IStatEntry, IStatTag } from "@/plugin/v2/types";
@@ -21,6 +23,7 @@
   let stats = $state<IStatEntry[]>([]);
   let loading = $state(false);
   let error = $state<string | null>(null);
+  let showEmptyCategories = $state(false);
 
   function humanizeKey(parts: string[], unitHeader = ""): string {
     const unit = unitHeader.toLowerCase();
@@ -106,11 +109,18 @@
 
     return [...map.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([, group]) => ({
-        section: group.header,
-        unitHeader: group.unitHeader,
-        rows: group.rows.sort((a, b) => a.sortKey.localeCompare(b.sortKey)),
-      }));
+      .map(([key, group]) => {
+        const rows = group.rows.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+        return {
+          section: group.header,
+          unitHeader: group.unitHeader,
+          rows: key === "category" ? rows.filter((row) => row.value !== "0") : rows,
+          emptyRows:
+            key === "category"
+              ? rows.filter((row) => row.value === "0").sort((a, b) => a.label.localeCompare(b.label))
+              : [],
+        };
+      });
   });
 
   // Stats are collected from the driver: built-in core stats (annotation/category/
@@ -130,7 +140,10 @@
 
   function handleOpen(isOpen: boolean) {
     open = isOpen;
-    if (isOpen) fetchStats();
+    if (isOpen) {
+      showEmptyCategories = false;
+      fetchStats();
+    }
   }
 </script>
 
@@ -190,7 +203,7 @@
             <span class="text-xl font-bold tabular-nums">{annotationTotal}</span>
           </div>
 
-          {#each grouped as { section, unitHeader, rows } (section)}
+          {#each grouped as { section, unitHeader, rows, emptyRows } (section)}
             <div class="mb-4">
               {#if unitHeader}
                 <div
@@ -218,6 +231,35 @@
                   {/each}
                 </tbody>
               </table>
+              {#if emptyRows.length}
+                <Collapsible.Root bind:open={showEmptyCategories}>
+                  <Collapsible.Trigger>
+                    {#snippet child({ props })}
+                      <Button {...props} variant="ghost" size="sm" class="text-muted-foreground mt-2">
+                        {#if showEmptyCategories}<ChevronDownIcon />{:else}<ChevronRightIcon />{/if}
+                        Categories without annotations ({emptyRows.length})
+                      </Button>
+                    {/snippet}
+                  </Collapsible.Trigger>
+                  <Collapsible.Content>
+                    <table class="w-full text-sm">
+                      <tbody>
+                        {#each emptyRows as { label, value, tags } (label)}
+                          <tr class="border-b last:border-0">
+                            <td class="inline-flex items-center gap-2 py-1.5">
+                              {label}
+                              {#each tags ?? [] as tag (tag.label)}
+                                <Badge variant={tag.variant} class="px-1.5 text-[10px]">{tag.label}</Badge>
+                              {/each}
+                            </td>
+                            <td class="py-1.5 text-right tabular-nums">{value}</td>
+                          </tr>
+                        {/each}
+                      </tbody>
+                    </table>
+                  </Collapsible.Content>
+                </Collapsible.Root>
+              {/if}
             </div>
           {/each}
         {:else}

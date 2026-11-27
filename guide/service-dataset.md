@@ -351,6 +351,20 @@ All HTTP endpoints use JSON:API format (`Content-Type: application/vnd.api+json`
 | `/note_comments`   | CRUD                                                                                                         |
 | `/entry_stats`     | Read-only `index` and `show`; recomputed on entry `submitted`/`errored` events                               |
 
+### Dashboard Category Counts
+
+`GET /entries/category_counts` returns flat category rows. `group_by=category` (default) returns one row per category, including configured categories with zero annotations. `group_by=project`, `dataset`, or `entry` returns positive rows per group and category. Each row has `category`, `label`, `configured`, `annotation_count`, and only the ID for its group level. An unconfigured category uses its ID as its label; conflicting labels across datasets also fall back to the category ID.
+
+`GET /entries/total_category_counts` returns annotation totals without a category dimension. `group_by=project` (default), `dataset`, or `entry` selects the group level. Explicitly requested dataset and entry IDs return a row even when their count is zero. Both endpoints use `dataset:entry_category_counts` read scope, so counts cover only entries visible to the caller; configured categories come from datasets the caller can read, including datasets with no visible annotation counts. The trigger counts non-deleted annotations by entry, category, and shape type. Both endpoints and both category list filters exclude system shapes declared by the currently loaded plugins.
+
+Both endpoints accept `filter[project_id]`, optional `filter[dataset_id][]` and `filter[entry_id][]` (1–100 UUIDs each), and `group_by`. Entry IDs may supply the project scope on their own, but all must belong to one project. `category_counts` also accepts `filter[category]`. Invalid or inaccessible IDs, unknown filters or groups, and a missing scope return 422; an inaccessible project returns 404. `group_by=entry` requires a dataset or entry filter.
+
+Dataset and entry grouping support `page[number]` and `page[size]` (default size 10, range 10–500). Each page contains all category rows for its selected groups, and `meta.more` indicates whether another page exists. Groups are selected by ID, except when grouping by dataset for a single category. Those datasets are ordered by annotation count descending, with dataset ID ascending to break ties.
+
+When the request supplies IDs for the grouping level (dataset IDs for dataset grouping, or entry IDs for entry grouping), both endpoints return all matching groups in one response. Valid paging parameters are accepted and ignored. Category and project grouping reject paging parameters.
+
+The dashboard fetches the category card, current dataset table page, and hover breakdowns separately. The hover looks up dataset names through the scoped datasets list API and displays the dataset ID when a name is unavailable.
+
 ### Entry-Specific Endpoints
 
 #### Assign (`PATCH /entries/:id/assign`)

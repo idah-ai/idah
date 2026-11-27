@@ -6,16 +6,11 @@ module EntryStats
     #
     # Keys produced:
     #   "annotation.count"                  → total annotation count
-    #   "category.<id>.count"    → one key per distinct category id;
-    #                                         configured category ids (from all tool types
-    #                                         in labeling_configuration) are zero-filled,
-    #                                         data-driven ids not in config are also emitted
-    #                                         with their real count (never silently dropped)
     #   "shape.<type>.count"                → count of annotations per shape type, with the
     #                                         "<modality>:" prefix stripped (e.g.
     #                                         "idah-video:bounding-box" → "shape.bounding-box.count").
-    #                                         Shape types from tool-type config keys are zero-filled
-    #                                         (like categories). Generic across modalities, so it
+    #                                         Shape types from tool-type config keys are zero-filled.
+    #                                         Generic across modalities, so it
     #                                         lives here rather than in a per-plugin generator.
     #   "orphan_category.count"             → count of annotations whose category is not
     #                                         present in labeling_configuration (e.g. was
@@ -27,10 +22,6 @@ module EntryStats
     # annotator-drawn shapes, so they never contribute to the annotation,
     # category, shape, or orphan counts.
     #
-    # Category ids are collected by flattening values[*][:id] across all tool-type keys
-    # in labeling_configuration (e.g. "idah-video:bounding-box" → :values → :id).
-    # The category field is always `category` — no per-dataset override is supported.
-    #
     # Note: Verse::Sequel::JsonEncoder deserialises JSON with symbolized keys.
     #
     # @param entry [Entry::Record] entry with dataset and annotations preloaded
@@ -39,10 +30,6 @@ module EntryStats
       config = entry.dataset.labeling_configuration || {}
       # Collect all configured category ids across all tool types (flat).
       configured_ids = entry.dataset.configured_category_ids
-
-      # Zero-fill all configured ids upfront
-      label_counts = Hash.new(0)
-      configured_ids.each { |id| label_counts[id] = 0 }
 
       # Shape type is "<modality>:<type>" in annotation.dimensions[:type]; strip the
       # modality prefix generically (everything up to the first ":") so the key reads
@@ -65,18 +52,11 @@ module EntryStats
         type && system_shapes.include?(type)
       end
       counted_annotations.each do |annotation|
-        category = annotation.category
-        label_counts[category] += 1 if category
-
         type = annotation.shape_type
         shape_counts[type.split(":", 2).last] += 1 if type
       end
 
       stats = { "annotation.count" => counted_annotations.size.to_s }
-
-      label_counts.each do |label, count|
-        stats["category.#{label}.count"] = count.to_s
-      end
 
       # Count annotations whose category is not present in the labeling configuration.
       # These are "orphan" annotations — the category was deleted, renamed, or never

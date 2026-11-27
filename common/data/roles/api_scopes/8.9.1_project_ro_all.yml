@@ -10,6 +10,7 @@ api/project_ro_all:
     - "dataset:project_members.read.*"
     - "dataset:datasets.read.*"
     - "dataset:entries.read.*"
+    - "dataset:entry_category_counts.read.*"
     - "dataset:annotations.read.*"
     - "dataset:note_feeds.read.*"
     - "dataset:note_comments.read.*"

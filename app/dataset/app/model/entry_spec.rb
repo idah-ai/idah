@@ -58,7 +58,7 @@ RSpec.describe Entry, database: true do
         )
         counts = described_class.new(current_auth_context).summary(project_id: project_id)
         expect(counts).to eq(
-          { total: 1, completed: 0, review: 0, annotation: 1, errored: 0,
+          { total: 1, completed: 0, review: 0, annotation: 1, reviewing: 0, annotating: 1, errored: 0,
             processing: 0, pending_annotation: 1, pending_review: 0, open: 1 }
         )
       end

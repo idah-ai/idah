@@ -95,6 +95,8 @@ module Entry
           open: workflow,
           review: workflow.merge(wf_step: "review"),
           annotation: workflow.merge(wf_step: "annotate"),
+          reviewing: Sequel.&(workflow.merge(wf_step: "review"), Sequel.~(assigned_to_id: nil)),
+          annotating: Sequel.&(workflow.merge(wf_step: "annotate"), Sequel.~(assigned_to_id: nil))
         }
         collection.select(
           *counts.map do |name, condition|
@@ -137,6 +139,38 @@ module Entry
                           .group(day).order(day).all.to_h { |row| [row[:day].iso8601, row[:count]] }
         { from: from, to: to, daily: daily }
       end
+    end
+
+    custom_filter :category_count do |collection, value|
+      conditions = EntryCategoryCount::Filter.parse(value, allowed: %i[category count_gte count_lte])
+      raise Verse::Error::ValidationFailed, "Expected one category condition" unless conditions.one?
+
+      condition = conditions.first
+      condition[:count_gte] = 1 unless condition.key?(:count_gte) || condition.key?(:count_lte)
+      counts = EntryCategoryCount.without_system_shapes(collection.db[:entry_category_counts])
+      expression = "COALESCE((SELECT SUM(ecc.count) FROM ? ecc " \
+                   "WHERE ecc.entry_id = entries.id AND ecc.category = ?), 0)"
+      if condition.key?(:count_gte)
+        collection = collection.where(
+          Sequel.lit(
+            "#{expression} >= ?",
+            counts,
+            condition[:category],
+            condition[:count_gte]
+          )
+        )
+      end
+      if condition.key?(:count_lte)
+        collection = collection.where(
+          Sequel.lit(
+            "#{expression} <= ?",
+            counts,
+            condition[:category],
+            condition[:count_lte]
+          )
+        )
+      end
+      collection
     end
 
     custom_filter :participated do |collection, value|

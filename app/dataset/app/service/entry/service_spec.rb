@@ -35,7 +35,7 @@ RSpec.describe Entry::Service, database: true do
     it "counts through the existing repositories with the selected Project scope" do
       repo.create(project_id: project_id, dataset_id: dataset_id, status: "completed", wf_step: "done")
       expect(subject.summary(project_id: project_id, dataset_id: [dataset_id]))
-        .to include(total: 1, completed: 1, review: 0, annotation: 0)
+        .to include(total: 1, completed: 1, review: 0, annotation: 0, reviewing: 0, annotating: 0)
     end
   end
 

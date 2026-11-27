@@ -10,6 +10,7 @@ api/project_rw_all:
     - "dataset:project_members.*.*"
     - "dataset:datasets.*.*"
     - "dataset:entries.*.*"
+    - "dataset:entry_category_counts.read.*"
     - "dataset:annotations.*.*"
     - "dataset:note_feeds.*.*"
     - "dataset:note_comments.*.*"
