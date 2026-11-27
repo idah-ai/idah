@@ -10,6 +10,7 @@
   import NoteSidebar from "@/plugin/layout/sidebar/notes/NoteSidebar.svelte";
 
   import { authStatus } from "@/security/AuthContext";
+  import { trackActivity } from "./v2/driver/activity-tracker";
 
   interface Props {
     driver: IdahDriverV2;
@@ -62,6 +63,11 @@
       return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
     });
   });
+
+  // Time tracking: every click, mouse-wheel and key press in the editor counts
+  // as work (the server also counts saved changes). On the document, so dialogs
+  // and the command palette, rendered outside the plugin container, count too.
+  onMount(() => trackActivity(document, () => driver.notifyActivity()));
 
   onMount(() => {
     // Initialise notes cache from backend

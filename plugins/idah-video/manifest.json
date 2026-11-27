@@ -1,7 +1,7 @@
 {
   "type": "idah-plugin",
   "name": "idah-video",
-  "version": "0.1.2",
+  "version": "0.1.3",
 
   "idahVersion": "0.1.6",
 
