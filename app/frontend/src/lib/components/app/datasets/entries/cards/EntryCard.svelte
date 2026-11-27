@@ -135,6 +135,9 @@
         title: "Failed to assign entry to you",
       });
     } finally {
+      // Fire a time-tracking activity ping before navigating — clicking the
+      // entry card is the action that starts the work session.
+      entriesBackendDataSource.activity(entryId).catch(() => {});
       goto(resolve(`/entries/${entryId}/plugin`));
     }
   }

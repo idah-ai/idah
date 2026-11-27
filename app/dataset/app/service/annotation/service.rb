@@ -3,7 +3,9 @@
 module Annotation
   class Service < Verse::Service::Base
     use annotations: Annotation::Repository,
-        entries: Entry::Repository
+        entries: Entry::Repository,
+        entry_work_times: EntryWorkTime::Repository
+    use_system system_entry_time_slots: EntryTimeSlot::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       result = annotations.index(
@@ -71,7 +73,9 @@ module Annotation
       begin
         annotations.transaction do
           id = annotations.create(attributes)
-          annotations.find!(id)
+          record = annotations.find!(id)
+          touch_time_tracking(entry)
+          record
         end
       # Rescue Verse::Error::CannotCreateRecord to catch a retry create from a
       # slow client that may have hung up on the previous response.
@@ -95,6 +99,7 @@ module Annotation
         check_entry_not_completed!(annotation.entry, :update)
 
         annotations.update!(record.id, record.attributes)
+        touch_time_tracking(annotation.entry)
         annotations.find!(record.id)
       end
     end
@@ -106,6 +111,7 @@ module Annotation
         check_entry_not_completed!(annotation.entry, :update)
 
         annotations.update!(id, attributes)
+        touch_time_tracking(annotation.entry)
         annotations.find!(id)
       end
     end
@@ -117,6 +123,7 @@ module Annotation
         check_entry_not_completed!(annotation.entry, :delete)
 
         annotations.soft_delete(id, deleted_by_email: auth_context.metadata[:email])
+        touch_time_tracking(annotation.entry)
         annotations.find!(id) # return the tombstoned record, not nil
       end
     end
@@ -126,6 +133,7 @@ module Annotation
         annotation = annotations.find!(id, included: [:entry])
         check_entry_not_completed!(annotation.entry, :update)
         annotations.restore(id)
+        touch_time_tracking(annotation.entry)
         record = annotations.find!(id)
         merge_annotation_shapes([record])
         record
@@ -198,6 +206,19 @@ module Annotation
     end
 
     private
+
+    # Fire-and-forget time tracking: records the current user's activity on the
+    # entry. Never raises (safe_touch uses a savepoint + rescues).
+    def touch_time_tracking(entry)
+      TimeTracking.safe_touch(
+        entry_repo: entries,
+        slot_repo: system_entry_time_slots,
+        work_repo: entry_work_times,
+        entry_id: entry.id,
+        account_id: auth_context.metadata[:id],
+        email: auth_context.metadata[:email]
+      )
+    end
 
     def merge_annotation_shapes(records)
       annotation_ids = records.map(&:id)

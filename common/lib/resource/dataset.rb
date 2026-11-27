@@ -16,6 +16,8 @@ module Resource
     CategoryCounts = "dataset:category_counts"
     TotalCategoryCounts = "dataset:total_category_counts"
     LabelConfigTemplates = "dataset:label_config_templates"
+    EntryTimeSlots = "dataset:entry_time_slots"
+    EntryWorkTimes = "dataset:entry_work_times"
     FeedbackConfigTemplates = "dataset:feedback_config_templates"
     # rubocop:enable Naming/ConstantName
   end

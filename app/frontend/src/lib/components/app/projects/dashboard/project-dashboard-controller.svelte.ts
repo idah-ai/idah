@@ -105,6 +105,10 @@ export class ProjectDashboardController {
   public error = $state("");
   public denied = $state(false);
 
+  public get singleDatasetView(): boolean {
+    return this.focused !== null || this.selectedDatasetIds.length === 1;
+  }
+
   public get effectiveDatasetIds(): string[] {
     return this.focused ? [this.focused.id] : [...this.selectedDatasetIds];
   }
@@ -599,6 +603,18 @@ export class ProjectDashboardController {
 
   public entryTab: OpenEntryTab = $state("all");
 
+  /** Tab definitions with live counts derived from summary. */
+  public get entryTabItems(): { label: string; value: string; count: number | null }[] {
+    const s = this.summary;
+    return [
+      { label: "All", value: "all", count: s?.total ?? null },
+      { label: "Open", value: "open", count: s != null ? s.total - s.completed - s.errored - s.processing : null },
+      { label: "Not ready", value: "not_ready", count: s?.processing ?? null },
+      { label: "Completed", value: "completed", count: s?.completed ?? null },
+      { label: "Errored", value: "error", count: s?.errored ?? null },
+    ];
+  }
+
   changeEntryTab(value: string): void {
     if (value !== "all" && value !== "open" && value !== "not_ready" && value !== "completed" && value !== "error")
       return;
@@ -608,7 +624,18 @@ export class ProjectDashboardController {
     void this.loadEntryProgress(true);
   }
 
+  sortTotalTimeSpent(): void {
+    if (this.entryProgressSort[0] === "-total_time_spent") {
+      this.entryProgressSort = ["total_time_spent", "-id"];
+    } else {
+      this.entryProgressSort = ["-total_time_spent", "-id"];
+    }
+    this.entryProgressPagination = { ...this.entryProgressPagination, page: 1 };
+    void this.loadEntryProgress(true);
+  }
+
   public entryProgressResponse: CollectionResponse<EntryRecord> | null = $state.raw(null);
+  public entryProgressSort: string[] = $state([]);
   public entryProgressPagination: Pagination = $state.raw({ page: 1, itemsPerPage: 10 });
   public entryProgressLoading = $state(false);
   public entryProgressError = $state("");
@@ -689,7 +716,8 @@ export class ProjectDashboardController {
     const request = ++this.entryProgressGeneration;
     const current = (): boolean => this.isCurrent(scope) && request === this.entryProgressGeneration;
     const ids = this.effectiveDatasetIds;
-    const overview = !this.focused;
+    const overview = !this.singleDatasetView;
+    // const overview = !this.focused;
     this.entryProgressResponse = null;
     this.entryProgressError = "";
     this.entryProgressLoading = true;
@@ -722,12 +750,13 @@ export class ProjectDashboardController {
             "wf_step",
             "assigned_to_id",
             "assigned_to_email",
+            "time_tracking",
           ],
           [ProjectMemberRecord.type]: ["name", "email", "picture_url"],
           ...(overview ? { [DatasetRecord.type]: ["name"] } : {}),
         },
-        included: ["assigned_to", ...(overview ? ["dataset"] : [])],
-        sort: ["-created_at", "-id"],
+        included: ["assigned_to", "entry_work_times", ...(overview ? ["dataset"] : [])],
+        sort: this.entryProgressSort.length ? this.entryProgressSort : ["-created_at", "-id"],
         pagination: { ...this.entryProgressPagination },
         count: true,
         noCache: true,

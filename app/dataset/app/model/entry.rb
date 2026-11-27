@@ -30,6 +30,8 @@ module Entry
     field :reopened_by_id, type: [Integer, NilClass]
     field :reopened_by_email, type: [String, NilClass]
 
+    field :time_tracking, type: [Hash, NilClass], readonly: true
+
     field :completed_at, type: [Time, NilClass], readonly: true
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -66,6 +68,7 @@ module Entry
 
     has_many :annotations, repository: "Annotation::Repository", foreign_key: :entry_id
     has_many :entry_stats, repository: "EntryStat::Repository", foreign_key: :entry_id
+    has_many :entry_work_times, repository: "EntryWorkTime::Repository", foreign_key: :entry_id
   end
 
   class Repository < Verse::Sequel::Repository
@@ -73,6 +76,8 @@ module Entry
 
     self.table = "entries"
     self.resource = Resource::Dataset::Entries
+
+    encoder :time_tracking, Verse::Sequel::JsonEncoder
 
     query
     def summary(project_id:, dataset_ids: nil)
@@ -509,6 +514,75 @@ module Entry
       transaction do
         update!(entry.id, { status: })
       end
+    end
+
+    # Persist the combined per-step time cache without emitting an event.
+    # Called from TimeTracking.recompute_entry_cache via a system repository.
+    def update_time_tracking(entry_id, time_tracking)
+      no_event do
+        table.where(id: entry_id).update(
+          time_tracking: time_tracking.nil? ? nil : Sequel.pg_jsonb(time_tracking),
+          updated_at: Time.now
+        )
+      end
+    end
+
+    # Custom sort handler for `total_time_spent` — sums all values in the
+    # `time_tracking` JSONB column.  Non-tts keys are quoted as safe identifiers
+    # (same mechanism as the parent's prepare_ordering).  Only the hardcoded
+    # CASE expression uses raw SQL.  The original sort order is preserved.
+    def prepare_ordering(query, sort)
+      sort = (sort.is_a?(String) ? sort.split(",") : Array(sort)).dup
+
+      # Fast path: no total_time_spent — delegate entirely to super.
+      unless sort.any? { |x| x.delete_prefix("-") == "total_time_spent" }
+        return super(query, sort)
+      end
+
+      # Build each ORDER BY part in the original sort order — safe identifiers
+      # for non-tts columns, hardcoded CASE expression for tts.
+      parts = sort.map { |x|
+        if x.delete_prefix("-") == "total_time_spent"
+          ascending = !x.start_with?("-")
+          # Hardcoded CASE expression — never user input.
+          ::Sequel.lit(
+            "CASE WHEN entries.time_tracking IS NOT NULL " \
+            "THEN (SELECT SUM((value)::integer) " \
+            "FROM jsonb_each_text(entries.time_tracking)) END " \
+            "#{ascending ? "ASC" : "DESC"} NULLS LAST"
+          )
+        else
+          # Safe: replicate super's quoting — convert to a quoted identifier.
+          column = x.delete_prefix("-")
+          direction = x.start_with?("-") ? :desc : :asc
+          if column.include?(".")
+            tbl, col = column.split(".", 2)
+            ::Sequel.send(direction, ::Sequel.qualify(tbl.to_sym, col.to_sym))
+          else
+            ::Sequel.send(direction, column.to_sym)
+          end
+        end
+      }
+
+      # Append -entries.id tiebreaker when total_time_spent is sorted without explicit id.
+      has_id = sort.any? { |x| x.delete_prefix("-") == "id" }
+      has_tts = sort.any? { |x| x.delete_prefix("-") == "total_time_spent" }
+      if has_tts && !has_id
+        parts << ::Sequel.desc(::Sequel.qualify(:entries, :id))
+      end
+
+      query.order(*parts)
+    end
+
+    private
+
+    def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
   end
 end
