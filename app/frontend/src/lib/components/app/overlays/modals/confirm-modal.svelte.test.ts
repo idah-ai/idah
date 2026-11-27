@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/svelte";
+import { cleanup, render, screen } from "@testing-library/svelte";
 import { tick } from "svelte";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   cancelConfirmModal,
@@ -11,9 +11,20 @@ import {
 import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
 import { ConfirmModalChoice, confirmModalResult } from "@/components/app/overlays/modals/confirm-modal.types";
 
-afterEach(() => {
-  cancelConfirmModal();
-  settleConfirmModal(false);
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+});
+
+afterEach(async () => {
+  try {
+    cancelConfirmModal();
+    settleConfirmModal(false);
+    cleanup();
+    // Bits UI restores body styles on a timer when the dialog unmounts.
+    await vi.runOnlyPendingTimersAsync();
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 describe("ConfirmModal", () => {
