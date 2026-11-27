@@ -26,7 +26,7 @@
   }
 </script>
 
-<Card.Root>
+<Card.Root class="gap-2">
   <Card.Header>
     <Card.Title>Progress by dataset</Card.Title>
     {#if controller.focused}

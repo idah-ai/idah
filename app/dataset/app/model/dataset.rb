@@ -68,6 +68,93 @@ module Dataset
     self.table = "datasets"
     self.resource = Resource::Dataset::Datasets
 
+    def configured_categories(project_id:, dataset_ids: nil, by_dataset: false)
+      collection = scoped(:read).where(project_id:)
+      collection = collection.where(id: dataset_ids) if dataset_ids
+      expanded = collection.select(:id, :labeling_configuration).from_self(alias: :d)
+                           .cross_join(Sequel.lit(<<~SQL))
+                             LATERAL jsonb_each(
+                               CASE WHEN jsonb_typeof(d.labeling_configuration) = 'object'
+                                    THEN d.labeling_configuration ELSE '{}'::jsonb END
+                             ) AS tool(key, config)
+                           SQL
+                           .cross_join(Sequel.lit(<<~SQL))
+                             LATERAL jsonb_array_elements(
+                               CASE WHEN jsonb_typeof(tool.config->'values') = 'array'
+                                    THEN tool.config->'values' ELSE '[]'::jsonb END
+                             ) AS item(value)
+                           SQL
+                           .where(Sequel.lit(<<~SQL))
+                             jsonb_typeof(tool.config) = 'object'
+                             AND jsonb_typeof(item.value) = 'object'
+                             AND jsonb_typeof(item.value->'id') = 'string'
+                             AND item.value->>'id' <> ''
+                           SQL
+                           .select(Sequel.lit("d.id AS dataset_id"),
+                                   Sequel.lit("item.value->>'id' AS category"),
+                                   Sequel.lit("COALESCE(NULLIF(item.value->>'label', ''), item.value->>'id') AS label"))
+      columns = by_dataset ? %i[dataset_id category] : [:category]
+      expanded.from_self(alias: :configured_category_rows).group(*columns)
+              .select(
+                *columns,
+                Sequel.lit("CASE WHEN COUNT(DISTINCT label) = 1 THEN MIN(label) ELSE category END AS label")
+              ).all
+    end
+
+    custom_filter :category_counts do |collection, value|
+      conditions = EntryCategoryCount::Filter.parse(
+        value, allowed: %i[category min_annotations_per_entry entries_gte total_gte]
+      )
+
+      if auth_context.can?(:read, self.class.resource) == :as_user
+        owned_projects = ProjectMember::Repository.new(auth_context)
+                                                  .owned_project_ids(auth_context.metadata[:id])
+        raise Verse::Error::Unauthorized, "Project owner access required" unless owned_projects.any?
+
+        collection = collection.where(project_id: owned_projects)
+      end
+
+      counts = EntryCategoryCount.without_system_shapes(collection.db[:entry_category_counts])
+      conditions.each do |condition|
+        category = condition[:category]
+        if condition.key?(:entries_gte)
+          minimum = condition.fetch(:min_annotations_per_entry, 1)
+          collection = if minimum.zero?
+                         collection.where(
+                           Sequel.lit(
+                             "(SELECT COUNT(*) FROM entries e WHERE e.dataset_id = datasets.id) >= ?",
+                             condition[:entries_gte]
+                           )
+                         )
+                       else
+                         collection.where(
+                           Sequel.lit(
+                             "(SELECT COUNT(*) FROM (SELECT ecc.entry_id FROM ? ecc " \
+                             "WHERE ecc.dataset_id = datasets.id AND ecc.category = ? GROUP BY ecc.entry_id " \
+                             "HAVING SUM(ecc.count) >= ?) matching_entries) >= ?",
+                             counts,
+                             category,
+                             minimum,
+                             condition[:entries_gte]
+                           )
+                         )
+                       end
+        end
+        next unless condition.key?(:total_gte)
+
+        collection = collection.where(
+          Sequel.lit(
+            "COALESCE((SELECT SUM(ecc.count) FROM ? ecc " \
+            "WHERE ecc.dataset_id = datasets.id AND ecc.category = ?), 0) >= ?",
+            counts,
+            category,
+            condition[:total_gte]
+          )
+        )
+      end
+      collection
+    end
+
     encoder :labeling_configuration, Verse::Sequel::JsonEncoder
     encoder :feedback_configuration, Verse::Sequel::JsonEncoder
     encoder :workflow_configuration, Verse::Sequel::JsonEncoder

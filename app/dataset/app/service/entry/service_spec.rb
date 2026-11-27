@@ -35,7 +35,7 @@ RSpec.describe Entry::Service, database: true do
     it "counts through the existing repositories with the selected Project scope" do
       repo.create(project_id: project_id, dataset_id: dataset_id, status: "completed", wf_step: "done")
       expect(subject.summary(project_id: project_id, dataset_id: [dataset_id]))
-        .to include(total: 1, completed: 1, review: 0, annotation: 0)
+        .to include(total: 1, completed: 1, review: 0, annotation: 0, reviewing: 0, annotating: 0)
     end
   end
 
@@ -167,6 +167,36 @@ RSpec.describe Entry::Service, database: true do
       create_candidate.call(assigned_to_id: nil, wf_step: "review", submitted_by_id: 4)
       expect { claim_service.select_next(dataset_id: dataset_id, wf_step: "review") }
         .to raise_error(Verse::Error::RecordNotFound)
+    end
+  end
+
+  describe "#select", as: :admin do
+    let(:claim_service) { described_class.new(current_auth_context) }
+    let(:entry_time_slot_repo) { EntryTimeSlot::Repository.new(auth_context) }
+
+    before do
+      ProjectMember::Repository.new(auth_context).create(
+        project_id: project_id,
+        account_id: 1,
+        email: "admin@example.com",
+        role: "project_owner",
+        invited_by_id: 1
+      )
+    end
+
+    it "creates a time-tracking slot for the assignee" do
+      entry_id = repo.create(
+        priority: 1,
+        wf_step: "annotate",
+        status: "in_progress",
+        assigned_to_id: 1,
+        project_id:,
+        dataset_id:
+      )
+
+      expect { claim_service.select(entry_id) }
+        .to change { entry_time_slot_repo.table.where(entry_id:, account_id: 1).count }
+        .by(1)
     end
   end
 
@@ -1495,6 +1525,153 @@ RSpec.describe Entry::Service, database: true do
         expect(changes).to include(["+", "deleted_by_email", nil, "user@example.com"])
         expect(changes.any? { |c| c[1] == "deleted_at" && c[0] == "+" }).to be(true)
       end
+    end
+  end
+
+  describe "#notify_activity" do
+    let(:annotator_ctx) do
+      Verse::Auth::Context.new(["*.*.*"], metadata: { id: 4, email: "annotator@example.com", role: "annotator" })
+    end
+    subject(:activity_service) { described_class.new(annotator_ctx) }
+
+    before do
+      ProjectMember::Repository.new(auth_context).create(
+        project_id: project_id,
+        account_id: 4,
+        name: "Annotator User",
+        email: "annotator@example.com",
+        role: "annotator",
+        invited_by_id: 1
+      )
+    end
+
+    let!(:annotate_entry) do
+      repo.no_event do
+        repo.create(
+          {
+            priority: 1,
+            dataset_id:,
+            resource: "notify-activity.mp4",
+            status: "in_progress",
+            wf_step: "annotate",
+            project_id: project_id,
+            assigned_to_id: 4,
+            assigned_to_email: "annotator@example.com"
+          }
+        )
+      end
+    end
+
+    let(:slot_repo) { EntryTimeSlot::Repository.new(auth_context) }
+    let(:work_repo) { EntryWorkTime::Repository.new(auth_context) }
+
+    it "creates a slot and an open work-time row for the assignee" do
+      result = activity_service.notify_activity(annotate_entry)
+
+      expect(result).to eq({ data: { attributes: { accepted: true } } })
+      expect(slot_repo.table.where(entry_id: annotate_entry).count).to eq(1)
+      expect(work_repo.table.where(entry_id: annotate_entry, account_id: 4).count).to eq(1)
+    end
+
+    it "returns accepted=true but writes nothing when the caller is not the assignee" do
+      admin_ctx = Verse::Auth::Context.new(["*.*.*"], metadata: { id: 1, email: "admin@example.com", role: "admin" })
+      result = described_class.new(admin_ctx).notify_activity(annotate_entry)
+
+      expect(result[:data][:attributes][:accepted]).to be true
+      expect(slot_repo.table.where(entry_id: annotate_entry).count).to eq(0)
+      expect(work_repo.table.where(entry_id: annotate_entry).count).to eq(0)
+    end
+  end
+
+  describe "time tracking rollup on submit/error" do
+    let(:slot_repo) { EntryTimeSlot::Repository.new(auth_context) }
+    let(:work_repo) { EntryWorkTime::Repository.new(auth_context) }
+
+    let!(:annotate_entry) do
+      repo.no_event do
+        repo.create(
+          {
+            priority: 1,
+            dataset_id:,
+            resource: "rollup-entry.mp4",
+            status: "in_progress",
+            wf_step: "annotate",
+            project_id: project_id,
+            assigned_to_id: 10,
+            assigned_to_email: "annotator@example.com"
+          }
+        )
+      end
+    end
+
+    def touch_entry(entry_id, account_id: 10, at: Time.utc(2026, 11, 3, 10, 30, 15))
+      TimeTracking.safe_touch(
+        entry_repo: repo,
+        slot_repo: slot_repo,
+        work_repo: work_repo,
+        entry_id: entry_id,
+        account_id: account_id,
+        email: "annotator@example.com",
+        at: at
+      )
+    end
+
+    it "submit rolls up the leaving step's open sessions into time_tracking" do
+      touch_entry(annotate_entry)
+
+      result = subject.submit(annotate_entry)
+
+      expect(result.time_tracking).to be_a(Hash)
+      expect(result.time_tracking[:annotate]).to be_a(Integer)
+      expect(result.time_tracking[:annotate]).to be > 0
+      # session finalized
+      row = work_repo.table.where(entry_id: annotate_entry, account_id: 10).first
+      expect(row[:session_started_at]).to be_nil
+    end
+
+    it "error rolls up the step being left (not 'error')" do
+      touch_entry(annotate_entry)
+
+      subject.error(annotate_entry)
+
+      row = work_repo.table.where(entry_id: annotate_entry, account_id: 10).first
+      expect(row[:seconds]).to be > 0
+      expect(Entry::Repository.new(auth_context).find!(annotate_entry).time_tracking[:annotate]).to be > 0
+    end
+
+    it "a wf_step PATCH rolls up the old step" do
+      touch_entry(annotate_entry)
+
+      record = deserialize(
+        data: { type: Resource::Dataset::Entries, id: annotate_entry,
+                attributes: { wf_step: "review" } }
+      )
+      result = subject.update(record)
+
+      expect(result.wf_step).to eq("review")
+      expect(result.time_tracking).to be_a(Hash)
+      expect(result.time_tracking[:annotate]).to be_a(Integer)
+      expect(result.time_tracking[:annotate]).to be > 0
+      # session finalized
+      row = work_repo.table.where(entry_id: annotate_entry, account_id: 10).first
+      expect(row[:session_started_at]).to be_nil
+    end
+
+    it "a refused wf_step PATCH leaves sessions untouched" do
+      touch_entry(annotate_entry)
+
+      allow(subject.entries).to receive(:update!).and_raise("ERROR")
+
+      record = deserialize(
+        data: { type: Resource::Dataset::Entries, id: annotate_entry,
+                attributes: { wf_step: "review" } }
+      )
+      expect { subject.update(record) }.to raise_error("ERROR")
+
+      # Sessions still open — not rolled up
+      row = work_repo.table.where(entry_id: annotate_entry, account_id: 10).first
+      expect(row[:session_started_at]).not_to be_nil
+      expect(row[:seconds]).to eq(0)
     end
   end
 end

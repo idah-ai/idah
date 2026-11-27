@@ -401,6 +401,19 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
       )
     end
   end
+
+  describe "#activity" do
+    it "calls service.notify_activity with the entry id and returns accepted" do
+      expect(service).to receive(:notify_activity).with(uuid).and_return(
+        { data: { attributes: { accepted: true } } }
+      )
+
+      post "/entries/#{uuid}/activity"
+
+      expect(last_response.status).to eq 200
+      expect(last_response.body).to include("accepted")
+    end
+  end
 end
 
 # Real-service integration coverage stays outside the service-stubbed group above.
@@ -445,7 +458,7 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
       expect(last_response.status).to eq(200), last_response.body
       expect(JSON.parse(last_response.body)).to eq(
         "meta" => { "total" => 7, "completed" => 1, "review" => 2,
-                    "annotation" => 2, "errored" => 1,
+                    "annotation" => 2, "reviewing" => 1, "annotating" => 1, "errored" => 1,
                     "processing" => 1, "pending_annotation" => 1, "pending_review" => 1, "open" => 4 }
       )
     end
@@ -552,7 +565,7 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
       expect(last_response.status).to eq(200), last_response.body
       expect(JSON.parse(last_response.body).fetch("meta")).to eq(
         { "total" => 1001, "completed" => 0, "review" => 0, "annotation" => 0,
-          "errored" => 1001,
+          "reviewing" => 0, "annotating" => 0, "errored" => 1001,
           "processing" => 0, "pending_annotation" => 0, "pending_review" => 0, "open" => 0 }
       )
     end
@@ -570,8 +583,8 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
         read_summary
         expect(last_response.status).to eq(200), last_response.body
         counts = JSON.parse(last_response.body).fetch("meta")
-        total_key, pending_key = step == "review" ? %w[review pending_review] : %w[annotation pending_annotation]
-        expect(counts).to include("total" => 1001, "open" => 1001, total_key => 1001, pending_key => 0)
+        total_key = step == "review" ? "review" : "annotation"
+        expect(counts).to include("total" => 1001, total_key => 1001)
       end
     end
 
@@ -1023,6 +1036,650 @@ RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
           )["data"]
         ).to be_empty
       end
+    end
+  end
+end
+
+# Real-service integration coverage stays outside the service-stubbed group above.
+RSpec.describe EntriesExpo, type: :exposition, database: true, as: :admin do
+  let(:system_context) { Verse::Auth::Context[:system] }
+  let(:entries) { Entry::Repository.new(system_context) }
+  let!(:project_id) do
+    Project::Repository.new(system_context).create(
+      name: "Completion API",
+      organization_id: 1,
+      created_by_email: "test@example.com"
+    )
+  end
+  let!(:dataset_id) do
+    Dataset::Repository.new(system_context).create(
+      project_id:,
+      modality: "video",
+      labels: [],
+      labeling_configuration: {},
+      workflow_configuration: {}
+    )
+  end
+  let(:forged) { "2000-01-01T00:00:00Z" }
+
+  describe "GET /entries/summary" do
+    def read_summary(filters = { project_id: project_id })
+      get "/entries/summary?#{Rack::Utils.build_nested_query(filter: filters)}"
+    end
+
+    it "returns exact KPI and mutually exclusive dashboard counts" do
+      rows = [
+        ["completed", "done", nil], ["pending", "review", nil],
+        ["in_progress", "review", 7], ["pending", "annotate", nil],
+        ["in_progress", "annotate", 7], ["processing", "start", nil],
+        ["errored", "error", nil]
+      ].map do |status, step, assigned|
+        { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset_id,
+          status: status, wf_step: step, assigned_to_id: assigned }
+      end
+      entries.client { |db| db[:entries].multi_insert(rows) }
+      read_summary
+      expect(last_response.status).to eq(200), last_response.body
+      expect(JSON.parse(last_response.body)).to eq(
+        "meta" => { "total" => 7, "completed" => 1, "review" => 2,
+                    "annotation" => 2, "reviewing" => 1, "annotating" => 1, "errored" => 1,
+                    "processing" => 1, "pending_annotation" => 1, "pending_review" => 1, "open" => 4 }
+      )
+    end
+
+    it "classifies every status and workflow independently of assignment" do
+      combinations = %w[pending in_progress processing errored completed].product(%w[annotate review start], [nil, 7])
+      rows = combinations.map do |status, step, assigned|
+        { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset_id,
+          status: status, wf_step: step, assigned_to_id: assigned }
+      end
+      entries.client { |db| db[:entries].multi_insert(rows) }
+      read_summary
+      expect(last_response.status).to eq(200), last_response.body
+      counts = JSON.parse(last_response.body).fetch("meta")
+      expect(counts).to include(
+        { "total" => 30, "completed" => 6, "errored" => 6, "processing" => 6, "open" => 12,
+          "annotation" => 4, "review" => 4, "pending_annotation" => 2, "pending_review" => 2 }
+      )
+      expect(counts["annotation"] - counts["pending_annotation"]).to eq(2)
+      expect(counts["review"] - counts["pending_review"]).to eq(2)
+      classified = counts.values_at("completed", "errored", "processing", "annotation", "review").sum
+      expect(counts["total"] - classified).to eq(4)
+      filters = {
+        open: %w[pending in_progress], not_ready: ["processing"], error: ["errored"], completed: ["completed"]
+      }
+      results = filters.transform_values do |statuses|
+        get "/entries?#{Rack::Utils.build_nested_query(filter: { project_id: project_id, status__in: statuses })}"
+        expect(last_response.status).to eq(200), last_response.body
+        JSON.parse(last_response.body).fetch("data").map { |row| row.fetch("id") }
+      end
+      expect(results.transform_values(&:size)).to eq(open: 12, not_ready: 6, error: 6, completed: 6)
+      expect(results.values.flatten.uniq.size).to eq(30)
+      processing_ids = rows.select { |row| row[:status] == "processing" }.map { |row| row[:id] }
+      expect(results[:not_ready]).to match_array(processing_ids)
+      expect(counts["total"] - counts["completed"]).to eq(24)
+    end
+
+    it "does not include an unknown legacy status in the Open count" do
+      entries.client do |db|
+        db[:entries].insert(
+          { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset_id,
+            status: "legacy_status", wf_step: "annotate" }
+        )
+      end
+      read_summary
+      expect(last_response.status).to eq(200), last_response.body
+      expect(JSON.parse(last_response.body).fetch("meta")).to include("total" => 1, "open" => 0, "processing" => 0)
+      filters = { project_id: project_id, status__in: %w[pending in_progress] }
+      get "/entries?#{Rack::Utils.build_nested_query(filter: filters)}"
+      expect(last_response.status).to eq(200), last_response.body
+      expect(JSON.parse(last_response.body).fetch("data")).to be_empty
+    end
+
+    it "counts and paginates more than 1000 processing Entries independently of assignment" do
+      entries.client do |db|
+        db[:entries].multi_insert(
+          Array.new(1001) do |index|
+            { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset_id,
+              status: "processing", wf_step: "annotate", assigned_to_id: index.even? ? 7 : nil }
+          end
+        )
+      end
+      read_summary
+      expect(last_response.status).to eq(200), last_response.body
+      expect(JSON.parse(last_response.body).fetch("meta")).to include(
+        "total" => 1001,
+        "processing" => 1001,
+        "open" => 0,
+        "annotation" => 0
+      )
+      [100, 101, 102].each do |page|
+        get "/entries?#{Rack::Utils.build_nested_query(
+          filter: { project_id: project_id, status__in: ["processing"] },
+          page: { number: page, size: 10 },
+          sort: "id",
+          count: true
+        )}"
+        expect(last_response.status).to eq(200), last_response.body
+        expect(JSON.parse(last_response.body).fetch("data").size).to eq({ 100 => 10, 101 => 1, 102 => 0 }.fetch(page))
+      end
+    end
+
+    it "returns exact counts above the list count cap" do
+      rows = Array.new(2005) do
+        { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset_id,
+          status: "completed", wf_step: "done" }
+      end
+      entries.client { |db| db[:entries].multi_insert(rows) }
+      read_summary
+      expect(last_response.status).to eq(200), last_response.body
+      expect(JSON.parse(last_response.body).fetch("meta")).to include("total" => 2005, "completed" => 2005)
+    end
+
+    it "returns exact counts for more than 1000 errored Entries" do
+      entries.client do |db|
+        db[:entries].multi_insert(
+          Array.new(1001) do
+            { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset_id,
+              status: "errored", wf_step: "annotate" }
+          end
+        )
+      end
+      read_summary
+      expect(last_response.status).to eq(200), last_response.body
+      expect(JSON.parse(last_response.body).fetch("meta")).to eq(
+        { "total" => 1001, "completed" => 0, "review" => 0, "annotation" => 0,
+          "reviewing" => 0, "annotating" => 0, "errored" => 1001,
+          "processing" => 0, "pending_annotation" => 0, "pending_review" => 0, "open" => 0 }
+      )
+    end
+
+    ["review", "annotate"].each do |step|
+      it "counts more than 1000 assigned Entries in #{step}" do
+        entries.client do |db|
+          db[:entries].multi_insert(
+            Array.new(1001) do
+              { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset_id,
+                status: "in_progress", wf_step: step, assigned_to_id: 7 }
+            end
+          )
+        end
+        read_summary
+        expect(last_response.status).to eq(200), last_response.body
+        counts = JSON.parse(last_response.body).fetch("meta")
+        total_key, assigned_key = step == "review" ? %w[review reviewing] : %w[annotation annotating]
+        expect(counts).to include("total" => 1001, total_key => 1001, assigned_key => 1001)
+      end
+    end
+
+    it "supports selected and focused Dataset scopes and an empty Project" do
+      other = Dataset::Repository.new(system_context).create(
+        project_id: project_id,
+        modality: "video",
+        labels: [],
+        labeling_configuration: {},
+        workflow_configuration: {}
+      )
+      read_summary
+      expect(JSON.parse(last_response.body).fetch("meta").values).to all(eq(0))
+      entries.create(project_id: project_id, dataset_id: dataset_id, status: "errored", wf_step: "annotate")
+      entries.create(project_id: project_id, dataset_id: other, status: "completed", wf_step: "done")
+      read_summary(project_id: project_id, dataset_id: [dataset_id])
+      expect(JSON.parse(last_response.body).fetch("meta")).to include("total" => 1, "completed" => 0, "errored" => 1)
+      read_summary(project_id: project_id, dataset_id: [dataset_id, other])
+      expect(JSON.parse(last_response.body).fetch("meta")).to include("total" => 2, "completed" => 1, "errored" => 1)
+    end
+
+    [{}, { project_id: "invalid" }, { dataset_id: [""] }, { dataset_id: "bad" },
+     { dataset_id: ["bad"] }, { status: "completed" }].each do |invalid|
+      it "rejects invalid filters #{invalid.inspect}" do
+        filters = invalid.empty? ? {} : { project_id: project_id }.merge(invalid)
+        read_summary(filters)
+        expect(last_response.status).to eq(422), last_response.body
+      end
+    end
+
+    it "rejects Dataset IDs belonging to a different Project" do
+      foreign_project = Project::Repository.new(system_context).create(
+        name: "Foreign", organization_id: 2, created_by_email: "other@example.com"
+      )
+      foreign_dataset = Dataset::Repository.new(system_context).create(
+        project_id: foreign_project,
+        modality: "video",
+        labels: [],
+        labeling_configuration: {},
+        workflow_configuration: {}
+      )
+      read_summary(project_id: project_id, dataset_id: [foreign_dataset])
+      expect(last_response.status).to eq(422)
+    end
+
+    context "as an Organization Owner", as: :org_owner do
+      it "denies summary access to another organization" do
+        foreign_project = Project::Repository.new(system_context).create(
+          name: "Foreign", organization_id: 2, created_by_email: "other@example.com"
+        )
+        read_summary(project_id: foreign_project)
+        expect(last_response.status).to be_between(403, 404)
+        read_summary
+        expect(last_response.status).to eq(200), last_response.body
+      end
+    end
+
+    context "as a Project Owner", as: :project_owner do
+      it "denies a foreign Project and permits the owner's Project" do
+        read_summary
+        expect(last_response.status).to be_between(403, 404)
+        ProjectMember::Repository.new(system_context).create(
+          project_id: project_id,
+          account_id: 3,
+          role: "project_owner",
+          email: "owner@example.com",
+          invited_by_id: 1
+        )
+        read_summary
+        expect(last_response.status).to eq(200), last_response.body
+      end
+    end
+  end
+
+  describe "Dashboard filter schema" do
+    [
+      {}, { project_id: "invalid" }, { project_id: nil },
+      { dataset_id: "not-an-array" },
+      { dataset_id: ["invalid"] }, { dataset_id: Array.new(101) { UUIDv7.generate } },
+      { unexpected: "value" }
+    ].each_with_index do |invalid, index|
+      it "rejects invalid filter case #{index + 1} before invoking the Service" do
+        expect_any_instance_of(Entry::Service).not_to receive(:summary)
+        filter = { project_id: project_id }.merge(invalid)
+        filter = {} if invalid.empty?
+        get "/entries/summary?#{Rack::Utils.build_nested_query(filter: filter)}"
+        expect(last_response.status).to eq(422), last_response.body
+        expect(JSON.parse(last_response.body).fetch("errors")).not_to be_empty
+      end
+    end
+
+    it "rejects an explicit empty Dataset array in the input schema" do
+      result = Schemas::ProjectDatasetFilter.validate({ project_id: project_id, dataset_id: [] })
+      expect(result.success?).to be(false)
+    end
+
+    it "accepts 100 Dataset IDs" do
+      ids = Array.new(100) { UUIDv7.generate }
+      entries.client do |db|
+        db[:datasets].multi_insert(
+          ids.map do |id|
+            { id: id, project_id: project_id, modality: "video", labeling_configuration: "{}",
+              workflow_configuration: "{}" }
+          end
+        )
+      end
+      get "/entries/summary?#{Rack::Utils.build_nested_query(filter: { project_id: project_id, dataset_id: ids })}"
+      expect(last_response.status).to eq(200), last_response.body
+    end
+  end
+
+  describe "GET /entries/completion_history" do
+    def completion_rows(timestamps, dataset: dataset_id, assigned_to: nil)
+      rows = timestamps.map do |timestamp|
+        { id: UUIDv7.generate, project_id: project_id, dataset_id: dataset,
+          status: "completed", wf_step: "done", assigned_to_id: assigned_to,
+          completed_at: timestamp && Time.iso8601(timestamp).utc }
+      end
+      entries.client do |db|
+        # Rollback-isolated historical/legacy fixtures; restore the existing trigger immediately.
+        db.run("ALTER TABLE entries DISABLE TRIGGER trg_set_entry_completed_at")
+        begin
+          db[:entries].multi_insert(rows)
+        ensure
+          db.run("ALTER TABLE entries ENABLE TRIGGER trg_set_entry_completed_at")
+        end
+      end
+      rows.map { |row| row[:id] }
+    end
+
+    def read_completion(from: "2026-11-01", to: "2026-11-30", timezone: "UTC",
+                        filter: { project_id: project_id })
+      get "/entries/completion_history?#{Rack::Utils.build_nested_query(
+        {
+          filter: filter,
+          from: from,
+          to: to,
+          tz: timezone
+        }.compact
+      )}"
+      JSON.parse(last_response.body)
+    end
+
+    it "aggregates more than 1000 completed Entries and excludes legacy nulls" do
+      completion_rows(Array.new(1001, "2026-11-02T12:00:00Z") + [nil])
+      body = read_completion
+      expect(last_response.status).to eq(200), last_response.body
+      expect(body).to eq(
+        "meta" => { "timezone" => "UTC", "from" => "2026-11-01", "to" => "2026-11-30",
+                    "daily" => { "2026-11-02" => 1001 } }
+      )
+      automatic = read_completion(from: nil, to: nil)
+      expect(automatic.fetch("meta")).to include(
+        "from" => "2026-10-27",
+        "to" => "2026-11-02",
+        "daily" => { "2026-11-02" => 1001 }
+      )
+    end
+
+    it "resolves the latest seven days independently of today's date" do
+      completion_rows(["2026-11-07T12:00:00Z", "2026-11-08T12:00:00Z", "2026-11-14T12:00:00Z"])
+      body = read_completion(from: nil, to: nil)
+      expect(last_response.status).to eq(200), last_response.body
+      expect(body.fetch("meta")).to include(
+        "from" => "2026-11-08",
+        "to" => "2026-11-14",
+        "daily" => { "2026-11-08" => 1, "2026-11-14" => 1 }
+      )
+    end
+
+    it "uses the viewer's local completion date and calendar days across DST" do
+      completion_rows(["2026-03-09T03:59:59.999999Z"])
+      body = read_completion(from: nil, to: nil, timezone: "America/New_York")
+      expect(body.fetch("meta")).to include(
+        "from" => "2026-03-02",
+        "to" => "2026-03-08",
+        "daily" => { "2026-03-08" => 1 }
+      )
+    end
+
+    it "falls back to the viewer's current day for empty or legacy-only scopes" do
+      timezone = "Pacific/Kiritimati"
+      day = entries.client { |db| db.get(Sequel.lit("(CURRENT_TIMESTAMP AT TIME ZONE ?)::date", timezone)) }
+      [false, true].each do |legacy|
+        completion_rows([nil]) if legacy
+        body = read_completion(from: nil, to: nil, timezone: timezone)
+        expect(body.fetch("meta")).to include("from" => (day - 6).iso8601, "to" => day.iso8601, "daily" => {})
+      end
+    end
+
+    it "ends the range today when the latest completion is today" do
+      day = entries.client { |db| db.get(Sequel.lit("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date")) }
+      completion_rows(["#{day.iso8601}T00:00:00Z"])
+      body = read_completion(from: nil, to: nil)
+      expect(body.fetch("meta")).to include("from" => (day - 6).iso8601, "to" => day.iso8601)
+    end
+
+    it "resolves each Dataset scope independently and excludes reopened Entries" do
+      other = Dataset::Repository.new(system_context).create(
+        project_id: project_id, modality: "video", labels: [], labeling_configuration: {}, workflow_configuration: {}
+      )
+      completion_rows(["2026-11-14T12:00:00Z"])
+      newer = completion_rows(["2026-11-18T12:00:00Z"], dataset: other).first
+      selected = read_completion(
+        from: nil,
+        to: nil,
+        filter: { project_id: project_id, dataset_id: [dataset_id] }
+      )
+      expect(selected.dig("meta", "to")).to eq("2026-11-14")
+      expect(read_completion(from: nil, to: nil).dig("meta", "to")).to eq("2026-11-18")
+      entries.update!(newer, { status: "pending" })
+      expect(read_completion(from: nil, to: nil).dig("meta", "to")).to eq("2026-11-14")
+    end
+
+    [{ from: "2026-11-01" }, { to: "2026-11-07" },
+     { from: "", to: "2026-11-07" }, { from: "2026-11-01", to: "" }, { from: "", to: "" },
+     { from: "2026-11-01", to: "invalid" }].each do |range|
+      it "rejects a partial, empty, or malformed completion range #{range}" do
+        get "/entries/completion_history?#{Rack::Utils.build_nested_query(
+          { filter: { project_id: project_id }, tz: "UTC" }.merge(range)
+        )}"
+        expect(last_response.status).to eq(422), last_response.body
+      end
+    end
+
+    it "returns an empty map for a successful empty range" do
+      expect(read_completion.dig("meta", "daily")).to eq({})
+      expect(last_response.status).to eq(200)
+    end
+
+    it "uses inclusive local dates and excludes the next midnight without rounding microseconds" do
+      completion_rows(
+        ["2026-11-01T16:59:59.999999Z", "2026-11-01T17:00:00Z",
+         "2026-11-02T16:59:59.999999Z", "2026-11-02T17:00:00Z"]
+      )
+      body = read_completion(from: "2026-11-02", to: "2026-11-02", timezone: "Asia/Bangkok")
+      expect(last_response.status).to eq(200), last_response.body
+      expect(body.dig("meta", "daily")).to eq("2026-11-02" => 2)
+    end
+
+    it "interprets stored wall-clock UTC independently of the database session timezone" do
+      completion_rows(["2026-11-01T23:30:00Z"])
+      entries.client do |db|
+        db.run("SET LOCAL TIME ZONE 'Pacific/Honolulu'")
+        body = read_completion(from: "2026-11-02", to: "2026-11-02", timezone: "Asia/Bangkok")
+        expect(body.dig("meta", "daily")).to eq("2026-11-02" => 1)
+      end
+    end
+
+    it "handles the 23-hour local day at DST start" do
+      completion_rows(
+        ["2026-03-08T04:59:59.999999Z", "2026-03-08T05:00:00Z",
+         "2026-03-09T03:59:59.999999Z", "2026-03-09T04:00:00Z"]
+      )
+      body = read_completion(from: "2026-03-08", to: "2026-03-08", timezone: "America/New_York")
+      expect(body.dig("meta", "daily")).to eq("2026-03-08" => 2)
+    end
+
+    it "counts both repeated hours in the 25-hour DST end day" do
+      completion_rows(
+        ["2026-11-01T03:59:59.999999Z", "2026-11-01T05:30:00Z",
+         "2026-11-01T06:30:00Z", "2026-11-02T04:59:59.999999Z", "2026-11-02T05:00:00Z"]
+      )
+      body = read_completion(from: "2026-11-01", to: "2026-11-01", timezone: "America/New_York")
+      expect(body.dig("meta", "daily")).to eq("2026-11-01" => 3)
+    end
+
+    it "supports a 366-day leap year and half-hour timezone across year end" do
+      completion_rows(["2024-02-29T12:00:00Z", "2023-12-31T18:30:00Z"])
+      body = read_completion(from: "2024-01-01", to: "2024-12-31", timezone: "Asia/Kolkata")
+      expect(last_response.status).to eq(200), last_response.body
+      expect(body.dig("meta", "daily")).to eq("2024-01-01" => 1, "2024-02-29" => 1)
+    end
+
+    [{ from: "2024-01-01", to: "2025-01-01" }, { from: "2026-2-1" },
+     { from: "2026-02-30" }, { from: "2026-12-01", to: "2026-11-01" },
+     { timezone: "Invalid/Timezone" }, { from: "2026-11-01T00:00:00Z" }].each do |invalid|
+      it "rejects invalid completion range #{invalid}" do
+        read_completion(**invalid)
+        expect(last_response.status).to eq(422), last_response.body
+      end
+    end
+
+    it "preserves reopen/recomplete lifecycle and counts only currently completed Entries" do
+      id = completion_rows(["2026-11-02T12:00:00Z"]).first
+      entries.update!(id, { status: "pending" })
+      expect(read_completion.dig("meta", "daily")).to eq({})
+      expect(entries.find!(id).completed_at).to be_nil
+      entries.update!(id, { status: "completed" })
+      day = entries.find!(id).completed_at.utc.to_date.iso8601
+      expect(read_completion(from: day, to: day).dig("meta", "daily")).to eq(day => 1)
+    end
+
+    it "filters selected and focused Datasets and rejects cross-project IDs" do
+      other = Dataset::Repository.new(system_context).create(
+        project_id: project_id,
+        modality: "video",
+        labels: [],
+        labeling_configuration: {},
+        workflow_configuration: {}
+      )
+      completion_rows(["2026-11-02T12:00:00Z"])
+      completion_rows(["2026-11-03T12:00:00Z"], dataset: other)
+      expect(read_completion(filter: { project_id: project_id, dataset_id: [other] }).dig("meta", "daily"))
+        .to eq("2026-11-03" => 1)
+      expect(
+        read_completion(filter: { project_id: project_id, dataset_id: [dataset_id, other] }).dig(
+          "meta",
+          "daily"
+        ).values.sum
+      )
+        .to eq(2)
+      read_completion(filter: { project_id: UUIDv7.generate, dataset_id: [dataset_id] })
+      expect(last_response.status).to be_between(403, 404)
+    end
+
+    it "enforces Project Owner access", as: :project_owner do
+      read_completion
+      expect(last_response.status).to be_between(403, 404)
+      read_completion(from: nil, to: nil)
+      expect(last_response.status).to be_between(403, 404)
+      ProjectMember::Repository.new(system_context).create(
+        project_id: project_id,
+        account_id: 3,
+        role: "project_owner",
+        email: "owner@example.com",
+        invited_by_id: 1
+      )
+      read_completion
+      expect(last_response.status).to eq(200), last_response.body
+      read_completion(from: nil, to: nil)
+      expect(last_response.status).to eq(200), last_response.body
+    end
+
+    it "uses the Entry read scope rather than a system repository", as: :annotator do
+      ProjectMember::Repository.new(system_context).create(
+        project_id: project_id,
+        account_id: 4,
+        role: "annotator",
+        email: "annotator@example.com",
+        invited_by_id: 1
+      )
+      completion_rows(["2026-11-02T12:00:00Z"], assigned_to: 4)
+      completion_rows(["2026-11-14T12:00:00Z"], assigned_to: 5)
+      expect(read_completion.dig("meta", "daily")).to eq("2026-11-02" => 1)
+      automatic = read_completion(from: nil, to: nil)
+      expect(automatic.fetch("meta")).to include("to" => "2026-11-02", "daily" => { "2026-11-02" => 1 })
+    end
+  end
+
+  describe "offset-aware Entry pagination" do
+    [999, 1000, 1001, 2005].each do |total|
+      it "keeps metadata and rows correct for #{total} Entries" do
+        ids = Array.new(total) { UUIDv7.generate }.sort
+        entries.client do |db|
+          db[:entries].multi_insert(
+            ids.map do |id|
+              { id: id, project_id: project_id, dataset_id: dataset_id, status: "pending",
+                wf_step: "annotate" }
+            end
+          )
+        end
+        final = (total / 10.0).ceil
+        [99, 100, 101, final, final + 1].uniq.each do |page|
+          get "/entries?#{Rack::Utils.build_nested_query(
+            filter: { project_id: project_id }, sort: "id", page: { number: page, size: 10 }, count: true
+          )}"
+          expect(last_response.status).to eq(200), last_response.body
+          body = JSON.parse(last_response.body)
+          offset = (page - 1) * 10
+          remaining = [total - offset, 0].max
+          expect(body.fetch("meta")).to include("count" => offset + [remaining, 1000].min, "more" => remaining >= 1000)
+          expect(body.fetch("data").map { |record| record["id"] }).to eq(ids.drop(offset).take(10))
+        end
+      end
+    end
+  end
+
+  it "returns an offset-bearing timestamp and cannot overwrite it through ordinary updates" do
+    id = entries.create(project_id:, dataset_id:, status: "completed", wf_step: "done")
+    original = entries.find!(id).completed_at
+    patch "/entries/#{id}", { data: { type: Resource::Dataset::Entries, id:, attributes: { name: "Edited", completed_at: forged } } }
+    expect(last_response.status).to eq(200)
+    expect(entries.find!(id).name).to eq("Edited")
+    expect(entries.find!(id).completed_at).to eq(original)
+    timestamp = JSON.parse(last_response.body).dig("data", "attributes", "completed_at")
+    expect(timestamp).to match(/(?:Z|[+-]\d{2}:?\d{2})\z/)
+    expect(Time.parse(timestamp).to_i).to eq(original.to_i)
+    patch "/entries/#{id}", { data: { type: Resource::Dataset::Entries, id:, attributes: { priority: 3, completed_at: nil } } }
+    expect(last_response.status).to eq(200)
+    expect(entries.find!(id).completed_at).to eq(original)
+  end
+
+  it "does not accept a caller-chosen completion time on creation" do
+    post "/entries",
+         {
+           data: {
+             type: Resource::Dataset::Entries,
+             attributes: { resource: UUIDv7.generate, status: "completed", wf_step: "done", completed_at: forged },
+             relationships: { dataset: { data: { type: Resource::Dataset::Datasets, id: dataset_id } } }
+           }
+         }
+    expect(last_response.status).to eq(201)
+    body = JSON.parse(last_response.body)
+    completed_at = entries.find!(body.dig("data", "id")).completed_at
+    expect(completed_at).to be_a(Time)
+    expect(completed_at).not_to eq(Time.iso8601(forged))
+  end
+
+  describe "Entry read scope" do
+    let!(:entry_id) { entries.create(project_id:, dataset_id:, status: "completed", wf_step: "done") }
+
+    def read_entries(extra = {})
+      params = { filter: { project_id:, dataset_id: [dataset_id], status__in: ["completed"] }.merge(extra),
+                 sort: "id", page: { number: 1, size: 1000 }, count: false,
+                 fields: { Resource::Dataset::Entries => ["id", "completed_at"] } }
+      get "/entries?#{Rack::Utils.build_nested_query(params)}"
+      expect(last_response.status).to eq(200), last_response.body
+      JSON.parse(last_response.body)
+    end
+
+    context "as a Project Owner", as: :project_owner do
+      it "retains repository scope even with an explicit foreign project filter" do
+        ProjectMember::Repository.new(system_context).create(
+          project_id:,
+          account_id: 3,
+          role: "project_owner",
+          email: "owner@example.com",
+          invited_by_id: 1
+        )
+        foreign_project = Project::Repository.new(system_context).create(
+          name: "Foreign",
+          organization_id: 2,
+          created_by_email: "other@example.com"
+        )
+        foreign_dataset = Dataset::Repository.new(system_context).create(
+          project_id: foreign_project,
+          modality: "video",
+          labels: [],
+          labeling_configuration: {},
+          workflow_configuration: {}
+        )
+        entries.create(project_id: foreign_project, dataset_id: foreign_dataset, status: "completed", wf_step: "done")
+        expect(read_entries["data"].map { |entry| entry["id"] }).to eq([entry_id])
+        expect(
+          read_entries(
+            project_id: foreign_project,
+            dataset_id: [foreign_dataset]
+          )["data"]
+        ).to be_empty
+      end
+    end
+  end
+
+  describe "POST /entries/:id/activity" do
+    let!(:entry_id) do
+      entries.create(
+        project_id: project_id,
+        dataset_id: dataset_id,
+        status: "in_progress",
+        wf_step: "annotate",
+        assigned_to_id: 1,
+        assigned_to_email: "admin@example.com"
+      )
+    end
+
+    it "returns 200 and does not raise Verse::Error::Authorization" do
+      post "/entries/#{entry_id}/activity"
+
+      expect(last_response.status).to eq(200), last_response.body
+      expect(last_response.body).to include("accepted")
     end
   end
 end

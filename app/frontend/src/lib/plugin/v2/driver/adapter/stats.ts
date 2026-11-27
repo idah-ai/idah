@@ -1,16 +1,21 @@
 import type { IIdahDriverV2, IStatEntry, IStatProvider, IStatsDriverV2 } from "../../types";
 import { computeCoreStats } from "../stats/core-stats";
+import { TimeStatsProvider } from "../stats/time-stats";
 
 // ---------------------------------------------------------------------------
 // Adapter: stats driver → IStatsDriverV2
 //
-// Produces the built-in core stats from the driver and merges in any stats
-// contributed by registered providers (e.g. the active plugin).
+// Produces the built-in core stats (annotation/category/shape counts) plus the
+// time-tracking section, and merges in any stats contributed by registered
+// providers (e.g. the active plugin).
 // ---------------------------------------------------------------------------
 export class StatsDriverAdapter implements IStatsDriverV2 {
   private providers: IStatProvider[] = [];
 
-  constructor(private driver: IIdahDriverV2) {}
+  constructor(private driver: IIdahDriverV2) {
+    // Core time-tracking section — always available.
+    this.providers.push(new TimeStatsProvider(driver));
+  }
 
   register(provider: IStatProvider): void {
     this.providers.push(provider);

@@ -11,6 +11,7 @@ export interface IDropdownMenuItem {
   tooltip?: string;
   icon?: typeof IconType;
   disabled?: boolean;
+  active?: boolean;
   hidden?: boolean;
   visibleIfRoles?: Array<Role>;
   destructive?: boolean;

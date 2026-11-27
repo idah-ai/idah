@@ -1,0 +1,50 @@
+import { describe, expect, it } from "vitest";
+import { categoryShare, categoryTotal, sortCategories, splitCategories } from "./category-totals";
+
+const row = (id: string, count: number, label = id) => ({
+  id,
+  category: id,
+  label,
+  configured: true,
+  annotation_count: count,
+});
+
+describe("category totals", () => {
+  it("separates annotated categories from configured zeros", () => {
+    const result = splitCategories([row("car", 2), row("z", 0, "Z"), row("a", 0, "A")], "count-desc");
+    expect(result.annotated.map((item) => item.category)).toEqual(["car"]);
+    expect(result.empty.map((item) => item.category)).toEqual(["a", "z"]);
+  });
+  it("counts annotations rather than entries, including zero and unconfigured categories", () => {
+    expect(categoryTotal([row("car", 3), row("person", 0), { ...row("removed", 2), configured: false }])).toBe(5);
+    expect(categoryTotal([])).toBe(0);
+  });
+
+  it("rejects negative, fractional, duplicate and unsafe counts", () => {
+    for (const value of [-1, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])
+      expect(() => categoryTotal([row("car", value)])).toThrow();
+    expect(() => categoryTotal([row("car", 1), row("car", 2)])).toThrow();
+    expect(() => categoryTotal([row("car", Number.MAX_SAFE_INTEGER), row("person", 1)])).toThrow();
+  });
+
+  it("keeps small positive shares visible and handles an empty denominator", () => {
+    expect(categoryShare(1, 1000)).toEqual({ value: 0.1, label: "<1%" });
+    expect(categoryShare(1, 4)).toEqual({ value: 25, label: "25%" });
+    expect(categoryShare(0, 0)).toEqual({ value: 0, label: "0%" });
+  });
+
+  it("sorts by count then label without combining conflicting labels or mutating the input", () => {
+    const rows = [row("car", 3, "Vehicle"), row("automobile", 3, "Car"), row("person", 10)];
+    expect(sortCategories(rows).map((item) => item.label)).toEqual(["person", "Car", "Vehicle"]);
+    expect(rows[0].label).toBe("Vehicle");
+  });
+
+  it("sorts by the full category path and count in both directions", () => {
+    const rows = [row("z/dog", 2, "Dog"), row("a/cat", 4, "Cat"), row("a/dog", 2, "Dog")];
+    expect(sortCategories(rows, "category-asc").map((item) => item.category)).toEqual(["a/cat", "a/dog", "z/dog"]);
+    expect(sortCategories(rows, "category-desc").map((item) => item.category)).toEqual(["z/dog", "a/dog", "a/cat"]);
+    expect(sortCategories(rows, "count-asc").map((item) => item.category)).toEqual(["a/dog", "z/dog", "a/cat"]);
+    expect(sortCategories(rows, "count-desc").map((item) => item.category)).toEqual(["a/cat", "a/dog", "z/dog"]);
+    expect(rows.map((item) => item.category)).toEqual(["z/dog", "a/cat", "a/dog"]);
+  });
+});

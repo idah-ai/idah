@@ -10,12 +10,14 @@ api/project_rw_all:
     - "dataset:project_members.*.*"
     - "dataset:datasets.*.*"
     - "dataset:entries.*.*"
+    - "dataset:entry_category_counts.read.*"
     - "dataset:annotations.*.*"
     - "dataset:note_feeds.*.*"
     - "dataset:note_comments.*.*"
     - "dataset:label_config_templates.*.*"
     - "dataset:feedback_config_templates.*.*"
     - "dataset:entry_stats.read.*"
+    - "dataset:entry_work_times.read.*"
 
     # Media Service - Read Write (Project level)
     - "media:medias.*.*"

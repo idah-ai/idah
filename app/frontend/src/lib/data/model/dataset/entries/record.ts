@@ -19,6 +19,7 @@ import { Transformers } from "@/data/model/transformers";
 import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 import type { RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
+import { EntryWorkTimeRecord } from "@/data/model/dataset/entry-work-times/record";
 
 @type("dataset:entries")
 export class EntryRecord extends Record {
@@ -36,6 +37,8 @@ export class EntryRecord extends Record {
 
   @field() public name!: string;
   @field() public delivery_date!: string | null;
+
+  @field() public time_tracking!: { [key: string]: number } | null;
 
   @field() public assigned_to_id!: number | null;
   @field() public assigned_to_email!: string | null;
@@ -58,6 +61,7 @@ export class EntryRecord extends Record {
   @relationship() public reviewed_by!: ProjectMemberRecord;
   @relationship() public submitted_by!: ProjectMemberRecord;
   @relationship() public reopened_by!: ProjectMemberRecord;
+  @relationship() public entry_work_times?: EntryWorkTimeRecord[] | null;
 
   public get priorityBadge(): EntryPriorityBadgeProps {
     const defaultBadgeProps: EntryPriorityBadgeProps = {
@@ -342,5 +346,13 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
     } catch {
       return null;
     }
+  },
+  /** Fire-and-forget activity ping for time tracking. */
+  activity: async (entryId: string): Promise<void> => {
+    await fetch(`${entriesBasePath}/${entryId}/activity`, {
+      method: "POST",
+      headers: { "Content-Type": "application/vnd.api+json" },
+      body: JSON.stringify({}),
+    });
   },
 });

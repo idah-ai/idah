@@ -50,6 +50,7 @@ export function register(driver: IIdahDriverV2): void {
       return {
         command: command as any,
         do() {
+          driver.notifyActivity();
           const totalFrames = media.totalFrames;
           const { startRange, endRange } = viewport.timeline.range;
           const rangeWidth = endRange - startRange;

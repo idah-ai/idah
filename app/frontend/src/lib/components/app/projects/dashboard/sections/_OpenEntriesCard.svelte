@@ -16,7 +16,7 @@
 
   // Variables
   const controller = getProjectDashboardController(PROJECT_DASHBOARD_CONTROLLER_KEY);
-  const columns = $derived(getColumns(!controller.focused));
+  const columns = $derived(getColumns(!controller.singleDatasetView));
   const rows = $derived(controller.entryProgressRows);
   const pagination = $derived(controller.entryProgressTablePagination);
 
@@ -52,7 +52,7 @@
   }
 </script>
 
-<Card.Root bind:ref={section} class="scroll-mt-4">
+<Card.Root bind:ref={section} class="scroll-mt-4 gap-2">
   <Card.Header>
     <Card.Title>Progress by entry</Card.Title>
   </Card.Header>

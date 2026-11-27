@@ -42,8 +42,10 @@
     class={cn("", {
       "cursor-not-allowed": item.disabled,
       "cursor-pointer": item.action,
+      "bg-accent text-accent-foreground": item.active,
     })}
     disabled={item.disabled}
+    aria-current={item.active ? "true" : undefined}
     onclick={() => item.action?.()}
   >
     {#if item.icon}

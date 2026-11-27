@@ -10,6 +10,41 @@ class EntriesExpo < BaseExpo
     that can be assigned, annotated, and tracked through workflow stages.
   MD
 
+  expose on_http(:get, "/category_counts") do
+    input do
+      field? :filter, Hash, default: {}
+      field? :group_by, String, default: "category"
+      field? :page, Hash, default: {}
+    end
+  end
+  def category_counts
+    rows, more = service.category_counts(params[:filter], group_by: params[:group_by], page: params[:page])
+    category_count_response(rows, Resource::Dataset::CategoryCounts, more)
+  end
+
+  expose on_http(:get, "/total_category_counts") do
+    input do
+      field? :filter, Hash, default: {}
+      field? :group_by, String, default: "project"
+      field? :page, Hash, default: {}
+    end
+  end
+  def total_category_counts
+    rows, more = service.total_category_counts(params[:filter], group_by: params[:group_by], page: params[:page])
+    category_count_response(rows, Resource::Dataset::TotalCategoryCounts, more)
+  end
+
+  def category_count_response(rows, type, more)
+    server.content_type "application/vnd.api+json"
+    server.halt 200,
+                JSON.generate(
+                  data: rows.map { |row|
+                    { type:, id: row.id, attributes: row.to_h.except(:id).compact }
+                  },
+                  meta: { more: }
+                )
+  end
+
   expose on_http(:get, "/summary") do
     desc "Exact Dashboard Entry counts for a Project and optional Datasets"
     input do
@@ -52,7 +87,8 @@ class EntriesExpo < BaseExpo
                      "submitted_by",
                      "reviewed_by",
                      "reopened_by",
-                     "entry_stats"
+                     "entry_stats",
+                     "entry_work_times"
     show
     index do
       allowed_filters :id__in,
@@ -69,7 +105,8 @@ class EntriesExpo < BaseExpo
                       :name__match,
                       :delivery_date__gte,
                       :delivery_date__lte,
-                      :orphan_categories
+                      :orphan_categories,
+                      :category_count
     end
     create do
       authorized_relationships dataset: [:link]
@@ -138,6 +175,24 @@ class EntriesExpo < BaseExpo
     entry_id = params[:id]
 
     service.select(entry_id)
+  end
+
+  expose on_http(:post, "/:id/activity") do
+    desc "Record activity for time tracking (fire-and-forget)"
+    input do
+      field :id, String
+    end
+
+    output do
+      field :data, Hash do
+        field :attributes, Hash do
+          field :accepted, TrueClass
+        end
+      end
+    end
+  end
+  def activity
+    service.notify_activity(params[:id])
   end
 
   expose on_http(:post, "/:id/submit") do

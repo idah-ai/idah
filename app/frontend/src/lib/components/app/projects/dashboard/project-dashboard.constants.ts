@@ -26,7 +26,8 @@ export function getEntryWorkflowGroup(
   const { status, wf_step } = entry;
   let key = status === "completed" ? "completed" : status === "errored" ? "errored" : undefined;
 
-  if (status === "pending") {
+  if (status === "processing") key = "notReady";
+  else if (status === "pending") {
     if (wf_step === "review") key = "pendingReview";
     else if (wf_step === "annotate") key = "pendingAnnotation";
   } else if (status === "in_progress") {
