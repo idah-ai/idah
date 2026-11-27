@@ -421,6 +421,15 @@ RSpec.describe Account::Service, database: true do
         expect(updated.role_scope).to eq("org" => ["999"])
       end
 
+      it "clears organization scope when changing an org_owner to user with an empty scope" do
+        id = create_account(base_attrs.merge(role_name: "org_owner", role_scope: { org: ["1"] }))
+
+        updated = subject.update(build_record({ id: id, role_name: "user", role_scope: { org: [] } }))
+
+        expect(updated.role_name).to eq("user")
+        expect(updated.role_scope).to eq("org" => [])
+      end
+
       it "can assign admin" do
         id = create_account(base_attrs)
         updated = subject.update(build_record({ id: id, role_name: "admin" }))

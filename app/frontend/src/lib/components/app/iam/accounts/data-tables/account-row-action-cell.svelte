@@ -79,7 +79,7 @@
   async function fetchAccount() {
     return await accountsBackendDataSource.get(account.id, {
       fields: {
-        [AccountRecord.type]: ["name", "email", "enabled", "role_name", "sso_channel"],
+        [AccountRecord.type]: ["name", "email", "enabled", "role_name", "role_scope", "sso_channel"],
       },
       noCache: true,
     });

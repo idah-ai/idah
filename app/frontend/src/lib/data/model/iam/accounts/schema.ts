@@ -19,16 +19,22 @@ export const accountSchema = z.object({
   updated_at: z.string().transform((str) => new Date(str)),
 });
 
-export const createAccountSchema = accountSchema.pick({
-  name: true,
-  email: true,
-  enabled: true,
-  role_name: true,
-});
+const accountFormSchema = accountSchema
+  .pick({
+    name: true,
+    email: true,
+    enabled: true,
+    role_name: true,
+  })
+  .extend({
+    role_scope: z.object({ org: z.array(z.string()) }).optional(),
+  });
 
-export const updateAccountSchema = accountSchema.pick({
-  name: true,
-  email: true,
-  enabled: true,
-  role_name: true,
-});
+const ownerScopeRequired = (account: Partial<z.infer<typeof accountFormSchema>>) =>
+  account.role_name !== "org_owner" || !!account.role_scope?.org.length;
+
+const ownerScopeError = { message: "Select at least one organization.", path: ["role_scope"] };
+
+export const createAccountSchema = accountFormSchema.refine(ownerScopeRequired, ownerScopeError);
+
+export const updateAccountSchema = accountFormSchema.partial().refine(ownerScopeRequired, ownerScopeError);
