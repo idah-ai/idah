@@ -343,10 +343,9 @@ RSpec.describe Entry, database: true do
           # Sorting by total_time_spent DESC with id DESC tiebreaker
           result = subject.index({}, sort: ["-total_time_spent"])
           ids = result.map(&:id)
-          a_idx = ids.index(id_a)
-          b_idx = ids.index(id_b)
+          smaller, larger = [id_a, id_b].sort
           # Both have the same total_time, so the tiebreaker (-id) puts the larger id first
-          expect([id_a, id_b].max).to eq([ids[a_idx], ids[b_idx]].max)
+          expect(ids.index(larger)).to be < ids.index(smaller)
         end
 
         it "respects an explicit id sort alongside total_time_spent" do
@@ -374,10 +373,9 @@ RSpec.describe Entry, database: true do
 
           result = subject.index({ dataset_id: [dataset_id] }, sort: ["total_time_spent", "id"])
           ids = result.map(&:id)
-          a_idx = ids.index(id_a)
-          b_idx = ids.index(id_b)
+          smaller, larger = [id_a, id_b].sort
           # Same total_time_spent → id ASC tiebreaker puts the smaller id first
-          expect([id_a, id_b].min).to eq([ids[a_idx], ids[b_idx]].min)
+          expect(ids.index(smaller)).to be < ids.index(larger)
         end
 
         it "rejects malicious SQL in sort keys" do
